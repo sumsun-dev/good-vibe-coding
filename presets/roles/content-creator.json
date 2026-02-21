@@ -1,0 +1,24 @@
+{
+  "name": "content-creator",
+  "displayName": "콘텐츠 크리에이터",
+  "description": "블로거, 마케터, 카피라이터를 위한 Claude Code 설정",
+  "category": "role",
+  "agents": [
+    { "template": "content-editor-kr", "config": { "model": "sonnet" } }
+  ],
+  "skills": ["blog-writer", "seo-checker", "content-calendar"],
+  "commands": ["write-post", "check-seo"],
+  "rules": { "core": true, "writing_standards": true },
+  "hooks": { "spell_check": true },
+  "workflow": "content-pipeline",
+  "guides": ["common", "content"],
+  "claudeMd": { "language": "korean" },
+  "workflowSteps": [
+    "기획: 주제 선정 + 키워드 리서치",
+    "구조화: 아웃라인 작성",
+    "작성: 초안 작성",
+    "편집: 교정 + SEO 최적화",
+    "발행: 최종 검토 + 게시"
+  ],
+  "roleDescription": "블로그 작성, SNS 콘텐츠 제작, SEO 최적화, 뉴스레터 관리"
+}

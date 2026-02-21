@@ -1,0 +1,26 @@
+{
+  "name": "developer",
+  "displayName": "개발자",
+  "description": "소프트웨어 개발자를 위한 Claude Code 설정",
+  "category": "role",
+  "agents": [
+    { "template": "code-reviewer-kr", "config": { "model": "sonnet" } },
+    { "template": "tdd-coach-kr", "config": { "model": "haiku" } }
+  ],
+  "skills": ["side-impact", "verify", "tdd-workflow", "code-review"],
+  "commands": ["start"],
+  "rules": { "core": true, "languages": ["typescript"] },
+  "hooks": { "consolelog_warning": true, "prettier_format": true, "env_commit_block": true },
+  "workflow": "dev-tdd",
+  "guides": ["common", "developer"],
+  "claudeMd": { "language": "korean" },
+  "workflowSteps": [
+    "기획: Plan Mode → 구현 계획 → 사용자 승인",
+    "Side Impact 확인: /side-impact 체크리스트 실행",
+    "TDD: 테스트 먼저 (RED → GREEN)",
+    "진행: 구현 + 리팩토링",
+    "검증: build, lint, typecheck, test all pass",
+    "Code Review: code-reviewer로 리뷰"
+  ],
+  "roleDescription": "소프트웨어 개발 (풀스택, 프론트엔드, 백엔드, 데이터 엔지니어링)"
+}

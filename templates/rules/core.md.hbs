@@ -1,0 +1,95 @@
+# Core Rules
+
+## Language
+- Always respond in Korean (keep code/technical terms in English)
+
+## Workflow
+{{#each workflow}}
+{{@index}}. **{{this}}**
+{{/each}}
+
+{{#ifEquals role "developer"}}
+## Security (CRITICAL)
+- No hardcoded API keys, secrets, tokens
+- Never commit .env files
+- Never use user input directly in SQL, HTML, or commands
+- Use parameterized queries, validate inputs at boundaries
+
+## Code Style
+- Immutability: spread operator for updates, no mutation
+- Functions: max 50 lines, early return over deep nesting (max 4 levels)
+- Files: max 800 lines, split if exceeded
+- Naming: camelCase (vars/funcs), PascalCase (classes/types), SCREAMING_SNAKE_CASE (constants), kebab-case (files)
+- Remove console.log before commit
+
+## Extensibility
+- Define contracts with interfaces/types before implementation
+- Extract config to constants/env vars (no magic numbers)
+- Single Responsibility Principle: one role per function/class
+- Dependency injection for testability
+
+## Git
+- Conventional commits: `feat|fix|refactor|docs|test|chore(scope): subject`
+- Branches: main, develop, feature/xxx, fix/xxx
+
+## Testing
+- TDD: RED → GREEN → REFACTOR
+- Coverage target: 80%+, core logic: 100%
+- AAA pattern: Arrange, Act, Assert
+- No test interdependencies, no real API calls (use mocks)
+{{/ifEquals}}
+
+{{#ifEquals role "pm"}}
+## 문서 작성 규칙
+- 명확하고 간결한 문장 사용
+- 의사결정 사항은 근거와 함께 기록
+- 날짜/버전 명시
+- 체크리스트 활용
+
+## 이슈 관리
+- 이슈 제목은 행동 동사로 시작 (예: "추가", "수정", "개선")
+- 우선순위 명시 (P0~P3)
+- 담당자 지정 필수
+
+## 데이터/리포트
+- 수치는 출처와 함께 제시
+- 시각화 자료 적극 활용
+- 주간/월간 정기 리포트 템플릿 사용
+{{/ifEquals}}
+
+{{#ifEquals role "designer"}}
+## 디자인 규칙
+- 디자인 토큰 기반 작업
+- 접근성 기준 준수 (WCAG 2.1 AA)
+- 반응형 브레이크포인트 일관성 유지
+- 컴포넌트 네이밍 일관성 (BEM 또는 팀 컨벤션)
+
+## CSS 스타일
+- CSS 변수 활용
+- 단위 일관성 (rem/em 우선)
+- 미디어쿼리 모바일 퍼스트
+{{/ifEquals}}
+
+{{#ifEquals role "researcher"}}
+## 리서치 규칙
+- 데이터 수집 시 출처 필수 기록
+- 분석 결과는 재현 가능하도록 스크립트 유지
+- 개인정보 처리 시 주의
+- 결과 해석 시 한계점 명시
+{{/ifEquals}}
+
+{{#ifEquals role "content-creator"}}
+## 콘텐츠 작성 규칙
+- SEO 키워드 포함
+- 가독성 높은 문단 구조 (짧은 문단, 소제목 활용)
+- 이미지/미디어 ALT 텍스트 필수
+- CTA (Call to Action) 명확히
+{{/ifEquals}}
+
+{{#ifEquals role "student"}}
+## 학습 규칙
+- 이해가 안 되면 반드시 질문하기
+- 코드를 복사하지 말고 직접 따라 치기
+- 에러 메시지를 꼼꼼히 읽기
+- 작은 단위로 나눠서 실행하고 결과 확인하기
+{{/ifEquals}}

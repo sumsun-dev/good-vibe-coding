@@ -1,0 +1,28 @@
+{
+  "name": "good-vibe-coding",
+  "version": "1.0.0",
+  "displayName": "Good Vibe Coding - 한국어 온보딩",
+  "description": "모든 직군을 위한 한국어 Claude Code 인터랙티브 온보딩 플러그인",
+  "author": "",
+  "license": "MIT",
+  "categories": ["onboarding", "korean", "productivity"],
+  "commands": [
+    "commands/onboarding.md",
+    "commands/my-config.md",
+    "commands/learn.md",
+    "commands/add-skill.md",
+    "commands/add-agent.md",
+    "commands/preset.md",
+    "commands/reset.md"
+  ],
+  "agents": [
+    "agents/onboarding-guide.md",
+    "agents/mentor-kr.md"
+  ],
+  "skills": [
+    "skills/onboarding-wizard/SKILL.md",
+    "skills/config-generator/SKILL.md"
+  ],
+  "hooks": "hooks/hooks.json",
+  "minClaudeCodeVersion": "2.0.0"
+}

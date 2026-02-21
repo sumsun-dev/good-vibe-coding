@@ -1,0 +1,36 @@
+# Claude Code Configuration
+
+## Language
+- Always respond in **Korean** (keep code/technical terms in English)
+
+## 역할: {{roleName}}
+{{roleDescription}}
+
+## Workflow (MANDATORY)
+{{#each workflow}}
+{{@index}}. **{{this}}**
+{{/each}}
+
+{{#if skills}}
+## Skills
+{{#each skills}}
+- `{{this}}`
+{{/each}}
+{{/if}}
+
+{{#if agents}}
+## Agents
+{{#each agents}}
+- **{{name}}** ({{model}})
+{{/each}}
+{{/if}}
+
+{{#if commands}}
+## Commands
+{{#each commands}}
+- `/{{this}}`
+{{/each}}
+{{/if}}
+
+## Rules
+- See `~/.claude/rules/core.md`

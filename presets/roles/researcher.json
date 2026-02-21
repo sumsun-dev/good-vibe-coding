@@ -1,0 +1,24 @@
+{
+  "name": "researcher",
+  "displayName": "리서처 / 분석가",
+  "description": "UX 리서처, 데이터 분석가를 위한 Claude Code 설정",
+  "category": "role",
+  "agents": [
+    { "template": "data-analyst-kr", "config": { "model": "sonnet" } }
+  ],
+  "skills": ["data-collector", "report-writer"],
+  "commands": ["analyze-data"],
+  "rules": { "core": true, "research_standards": true },
+  "hooks": {},
+  "workflow": "research-cycle",
+  "guides": ["common", "researcher"],
+  "claudeMd": { "language": "korean" },
+  "workflowSteps": [
+    "문제 정의: 리서치 질문 설정",
+    "데이터 수집: 소스 확보 + 정리",
+    "분석: 데이터 처리 + 패턴 발견",
+    "해석: 인사이트 도출",
+    "보고: 리포트 작성 + 공유"
+  ],
+  "roleDescription": "사용자 리서치, 데이터 분석, 시장 조사, 리포트 작성"
+}

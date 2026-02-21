@@ -1,0 +1,24 @@
+{
+  "name": "pm",
+  "displayName": "PM / 기획자",
+  "description": "프로젝트 매니저, 기획자를 위한 Claude Code 설정",
+  "category": "role",
+  "agents": [
+    { "template": "doc-reviewer-kr", "config": { "model": "sonnet" } }
+  ],
+  "skills": ["prd-writer", "meeting-notes", "issue-tracker"],
+  "commands": ["daily-report", "write-prd"],
+  "rules": { "core": true, "doc_standards": true },
+  "hooks": { "doc_format": true, "checklist_auto": true },
+  "workflow": "pm-agile",
+  "guides": ["common", "pm"],
+  "claudeMd": { "language": "korean" },
+  "workflowSteps": [
+    "요구사항 분석: 사용자 스토리 정의",
+    "기획서 작성: PRD/기능 명세서 초안",
+    "검토: 문서 리뷰 + 피드백 반영",
+    "이슈 관리: 티켓 생성 + 우선순위 지정",
+    "추적: 진행 상황 모니터링 + 리포트"
+  ],
+  "roleDescription": "프로젝트 기획, 요구사항 관리, 이슈 추적, 문서 작성"
+}

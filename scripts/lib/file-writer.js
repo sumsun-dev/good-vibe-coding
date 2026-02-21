@@ -1,0 +1,81 @@
+import { writeFile as fsWriteFile, readFile, mkdir, copyFile, access } from 'fs/promises';
+import { resolve, dirname, basename } from 'path';
+
+/**
+ * 디렉토리가 없으면 생성한다.
+ * @param {string} dirPath - 생성할 디렉토리 경로
+ */
+export async function ensureDir(dirPath) {
+  await mkdir(dirPath, { recursive: true });
+}
+
+/**
+ * 파일이 존재하는지 확인한다.
+ * @param {string} filePath - 확인할 파일 경로
+ * @returns {Promise<boolean>}
+ */
+export async function fileExists(filePath) {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 기존 파일을 백업한다. (.backup 접미사)
+ * @param {string} filePath - 백업할 파일 경로
+ * @returns {Promise<string|null>} 백업 파일 경로 (없으면 null)
+ */
+export async function backupFile(filePath) {
+  if (!(await fileExists(filePath))) {
+    return null;
+  }
+  const backupPath = `${filePath}.backup`;
+  await copyFile(filePath, backupPath);
+  return backupPath;
+}
+
+/**
+ * 파일을 안전하게 쓴다. 기존 파일이 있으면 백업 후 쓰기.
+ * @param {string} filePath - 쓸 파일 경로
+ * @param {string} content - 파일 내용
+ * @param {object} options - 옵션
+ * @param {boolean} options.backup - 백업 여부 (기본: true)
+ * @param {boolean} options.overwrite - 덮어쓰기 허용 (기본: false)
+ * @returns {Promise<{written: boolean, backupPath: string|null}>}
+ */
+export async function safeWriteFile(filePath, content, options = {}) {
+  const { backup = true, overwrite = false } = options;
+
+  const exists = await fileExists(filePath);
+  if (exists && !overwrite) {
+    return { written: false, backupPath: null };
+  }
+
+  let backupPath = null;
+  if (exists && backup) {
+    backupPath = await backupFile(filePath);
+  }
+
+  await ensureDir(dirname(filePath));
+  await fsWriteFile(filePath, content, 'utf-8');
+
+  return { written: true, backupPath };
+}
+
+/**
+ * 여러 파일을 한번에 쓴다.
+ * @param {Array<{path: string, content: string}>} files - 파일 목록
+ * @param {object} options - safeWriteFile 옵션
+ * @returns {Promise<Array<{path: string, written: boolean, backupPath: string|null}>>}
+ */
+export async function writeFiles(files, options = {}) {
+  const results = [];
+  for (const file of files) {
+    const result = await safeWriteFile(file.path, file.content, options);
+    results.push({ path: file.path, ...result });
+  }
+  return results;
+}

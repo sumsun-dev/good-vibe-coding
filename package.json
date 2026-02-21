@@ -1,0 +1,30 @@
+{
+  "name": "good-vibe-coding",
+  "version": "1.0.0",
+  "description": "한국어 Claude Code 온보딩 플러그인 - 모든 직군을 위한 인터랙티브 설정 마법사",
+  "type": "module",
+  "main": "scripts/lib/config-generator.js",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "keywords": [
+    "claude-code",
+    "onboarding",
+    "korean",
+    "plugin",
+    "developer-tools"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "handlebars": "^4.7.8"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
