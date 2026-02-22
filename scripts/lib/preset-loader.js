@@ -116,4 +116,4 @@ export async function listPresets(category) {
   }
 }
 
-export { PRESETS_DIR };
+export { PRESETS_DIR, validatePreset };

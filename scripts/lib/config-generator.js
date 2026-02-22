@@ -9,18 +9,11 @@ import { homedir } from 'os';
 const CLAUDE_DIR = resolve(homedir(), '.claude');
 
 /**
- * 사용자 선택으로부터 전체 설정 파일을 생성한다.
+ * 프리셋을 로딩하고 병합한다.
  * @param {object} choices - 사용자 선택
- * @param {string} choices.role - 역할 (developer, pm, designer, researcher, content-creator, student)
- * @param {string[]} [choices.tasks] - 선택한 업무
- * @param {string} [choices.stack] - 기술 스택 (개발자용)
- * @param {string} [choices.workflowStyle] - 워크플로우 스타일
- * @param {object} [choices.options] - 추가 옵션
- * @param {string} [choices.targetDir] - 설정 생성 디렉토리 (기본: ~/.claude)
- * @returns {Promise<object>} 생성 결과
+ * @returns {Promise<{rolePreset: object, stackPreset: object|null, merged: object}>}
  */
-export async function generateConfig(choices) {
-  const targetDir = choices.targetDir || CLAUDE_DIR;
+async function loadAndMergePresets(choices) {
   const rolePreset = await loadPreset('roles', choices.role);
 
   let stackPreset = null;
@@ -33,6 +26,23 @@ export async function generateConfig(choices) {
   }
 
   const merged = mergePresets(rolePreset, stackPreset);
+  return { rolePreset, stackPreset, merged };
+}
+
+/**
+ * 사용자 선택으로부터 전체 설정 파일을 생성한다.
+ * @param {object} choices - 사용자 선택
+ * @param {string} choices.role - 역할 (developer, pm, designer, researcher, content-creator, student)
+ * @param {string[]} [choices.tasks] - 선택한 업무
+ * @param {string} [choices.stack] - 기술 스택 (개발자용)
+ * @param {string} [choices.workflowStyle] - 워크플로우 스타일
+ * @param {object} [choices.options] - 추가 옵션
+ * @param {string} [choices.targetDir] - 설정 생성 디렉토리 (기본: ~/.claude)
+ * @returns {Promise<object>} 생성 결과
+ */
+export async function generateConfig(choices) {
+  const targetDir = choices.targetDir || CLAUDE_DIR;
+  const { rolePreset, stackPreset, merged } = await loadAndMergePresets(choices);
   const files = await buildConfigFiles(merged, rolePreset, stackPreset, choices, targetDir);
 
   return {
@@ -150,58 +160,8 @@ function getAgentTools(agents, agentName) {
  */
 export async function generateAndWriteConfig(choices, options = {}) {
   const targetDir = choices.targetDir || CLAUDE_DIR;
-  const rolePreset = await loadPreset('roles', choices.role);
-
-  let stackPreset = null;
-  if (choices.stack) {
-    try {
-      stackPreset = await loadPreset('stacks', choices.stack);
-    } catch {
-      // 스택 프리셋이 없으면 무시
-    }
-  }
-
-  const merged = mergePresets(rolePreset, stackPreset);
-  const team = await buildAgentTeam(merged.agents, choices.personalities || {});
-  const instructions = await extractAllInstructions(merged.agents);
-  const orchestration = buildOrchestrationData(rolePreset.orchestration, team);
-
-  const templateData = {
-    roleName: rolePreset.displayName,
-    roleDescription: rolePreset.roleDescription || rolePreset.description,
-    role: rolePreset.name,
-    language: 'korean',
-    workflow: rolePreset.workflowSteps || [],
-    skills: merged.skills,
-    agents: merged.agents.map(a => ({ name: a.template, model: a.config?.model || 'sonnet' })),
-    team,
-    orchestration,
-    commands: merged.commands,
-    stackName: stackPreset?.displayName || null,
-    stackRules: merged.stackRules || [],
-  };
-
-  const claudeMd = await renderTemplate('claude-md.hbs', templateData);
-  const coreRules = await renderTemplate('rules/core.md.hbs', templateData);
-
-  const filesToWrite = [
-    { path: resolve(targetDir, 'CLAUDE.md'), content: claudeMd },
-    { path: resolve(targetDir, 'rules', 'core.md'), content: coreRules },
-  ];
-
-  // agents/*.md
-  for (const member of team) {
-    const tools = getAgentTools(merged.agents, member.agentName);
-    const agentContent = await renderTemplate('agent.md.hbs', {
-      ...member,
-      tools,
-      instructions: instructions[member.agentName] || '',
-    });
-    filesToWrite.push({
-      path: resolve(targetDir, 'agents', `${member.agentName}.md`),
-      content: agentContent,
-    });
-  }
+  const { rolePreset, stackPreset, merged } = await loadAndMergePresets(choices);
+  const filesToWrite = await buildConfigFiles(merged, rolePreset, stackPreset, choices, targetDir);
 
   const results = await writeFiles(
     filesToWrite,
@@ -214,4 +174,4 @@ export async function generateAndWriteConfig(choices, options = {}) {
   };
 }
 
-export { CLAUDE_DIR };
+export { CLAUDE_DIR, buildOrchestrationData, getAgentTools, loadAndMergePresets };

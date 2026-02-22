@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { loadPreset, mergePresets, listPresets } from '../scripts/lib/preset-loader.js';
+import { loadPreset, mergePresets, listPresets, validatePreset } from '../scripts/lib/preset-loader.js';
 
 describe('preset-loader', () => {
   describe('loadPreset', () => {
@@ -170,6 +170,24 @@ describe('preset-loader', () => {
     it('존재하지 않는 카테고리는 빈 배열을 반환한다', async () => {
       const names = await listPresets('nonexistent');
       expect(names).toEqual([]);
+    });
+  });
+
+  describe('validatePreset', () => {
+    it('name이 누락되면 에러를 발생시킨다', () => {
+      expect(() => validatePreset({ displayName: 'Test' }, 'stacks')).toThrow('name 필드');
+    });
+
+    it('displayName이 누락되면 에러를 발생시킨다', () => {
+      expect(() => validatePreset({ name: 'test' }, 'stacks')).toThrow('displayName 필드');
+    });
+
+    it('roles 카테고리에서 category가 누락되면 에러를 발생시킨다', () => {
+      expect(() => validatePreset({ name: 'test', displayName: 'Test' }, 'roles')).toThrow('category 필드');
+    });
+
+    it('stacks 카테고리는 category가 불필요하므로 통과한다', () => {
+      expect(() => validatePreset({ name: 'test', displayName: 'Test' }, 'stacks')).not.toThrow();
     });
   });
 });

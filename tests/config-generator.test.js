@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { generateConfig, generateAndWriteConfig } from '../scripts/lib/config-generator.js';
+import { generateConfig, generateAndWriteConfig, buildOrchestrationData, getAgentTools, loadAndMergePresets } from '../scripts/lib/config-generator.js';
 import { rm, mkdir, readFile } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -270,6 +270,98 @@ describe('config-generator', () => {
       expect(claudeMd).toContain('Your Team');
       expect(claudeMd).toContain('준영');
       expect(claudeMd).toContain('🔍');
+    });
+  });
+
+  describe('buildOrchestrationData', () => {
+    it('enabled=true일 때 team 정보를 병합한다', () => {
+      const orchestration = {
+        enabled: true,
+        steps: [
+          { agent: 'code-reviewer-kr', trigger: '코드 리뷰 요청 시' },
+        ],
+      };
+      const team = [
+        { agentName: 'code-reviewer-kr', displayName: '준영', role: '코드 리뷰어', emoji: '🔍' },
+      ];
+
+      const result = buildOrchestrationData(orchestration, team);
+
+      expect(result.enabled).toBe(true);
+      expect(result.steps).toHaveLength(1);
+      expect(result.steps[0].agentDisplayName).toBe('준영');
+      expect(result.steps[0].agentRole).toBe('코드 리뷰어');
+      expect(result.steps[0].agentEmoji).toBe('🔍');
+    });
+
+    it('enabled=false일 때 비활성 데이터를 반환한다', () => {
+      const result = buildOrchestrationData({ enabled: false }, []);
+      expect(result).toEqual({ enabled: false, steps: [] });
+    });
+
+    it('orchestration이 undefined이면 비활성 데이터를 반환한다', () => {
+      const result = buildOrchestrationData(undefined, []);
+      expect(result).toEqual({ enabled: false, steps: [] });
+    });
+
+    it('team에 없는 agent는 fallback 값을 사용한다', () => {
+      const orchestration = {
+        enabled: true,
+        steps: [{ agent: 'unknown-agent', trigger: 'test' }],
+      };
+      const team = [];
+
+      const result = buildOrchestrationData(orchestration, team);
+
+      expect(result.steps[0].agentDisplayName).toBe('unknown-agent');
+      expect(result.steps[0].agentRole).toBe('unknown-agent');
+      expect(result.steps[0].agentEmoji).toBe('🤖');
+    });
+  });
+
+  describe('getAgentTools', () => {
+    it('config.tools가 존재하면 해당 배열을 반환한다', () => {
+      const agents = [
+        { template: 'code-reviewer-kr', config: { tools: ['Read', 'Grep', 'Glob', 'Bash'] } },
+      ];
+      expect(getAgentTools(agents, 'code-reviewer-kr')).toEqual(['Read', 'Grep', 'Glob', 'Bash']);
+    });
+
+    it('config.tools가 없으면 기본값을 반환한다', () => {
+      const agents = [{ template: 'mentor-kr', config: { model: 'haiku' } }];
+      expect(getAgentTools(agents, 'mentor-kr')).toEqual(['Read', 'Grep', 'Glob']);
+    });
+
+    it('에이전트를 찾지 못하면 기본값을 반환한다', () => {
+      expect(getAgentTools([], 'nonexistent')).toEqual(['Read', 'Grep', 'Glob']);
+    });
+  });
+
+  describe('loadAndMergePresets', () => {
+    it('role만 지정하면 stackPreset=null이다', async () => {
+      const { rolePreset, stackPreset, merged } = await loadAndMergePresets({ role: 'developer' });
+      expect(rolePreset.name).toBe('developer');
+      expect(stackPreset).toBeNull();
+      expect(merged.agents.length).toBeGreaterThan(0);
+    });
+
+    it('role + stack을 병합한다', async () => {
+      const { rolePreset, stackPreset, merged } = await loadAndMergePresets({
+        role: 'developer',
+        stack: 'nextjs-supabase',
+      });
+      expect(rolePreset.name).toBe('developer');
+      expect(stackPreset.name).toBe('nextjs-supabase');
+      expect(merged.stackRules.length).toBeGreaterThan(0);
+    });
+
+    it('존재하지 않는 stack은 무시한다', async () => {
+      const { stackPreset, merged } = await loadAndMergePresets({
+        role: 'developer',
+        stack: 'nonexistent-stack',
+      });
+      expect(stackPreset).toBeNull();
+      expect(merged.stackRules).toEqual([]);
     });
   });
 });
