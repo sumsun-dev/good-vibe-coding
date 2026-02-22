@@ -11,6 +11,7 @@
 - **기획서 자동 생성**: 토론 결과를 정형화된 기획서로 산출
 - **두 가지 모드**: "기획만" (plan-only) / "기획+실행" (plan-execute)
 - **피드백 시스템**: 팀원 평가 및 누적 성과 관리
+- **성장 시스템**: 피드백 기반 팀원 성장 추적 (Lv.1~5) + 프롬프트 자동 주입
 - **한국어 완전 지원**: 모든 가이드, 프롬프트, 에이전트가 한국어
 - **v2 호환**: 기존 온보딩 마법사 (`/onboarding`) 그대로 사용 가능
 
@@ -85,6 +86,7 @@ CEO가 기획서를 검토하고 승인합니다. 승인 후 작업이 역할별
 | `/status` | 프로젝트 상태 대시보드 |
 | `/report` | 최종 보고서 생성 |
 | `/feedback` | 팀원 피드백 |
+| `/growth` | 팀원 성장 현황 조회 |
 | `/my-team` | 팀 현황 + 역할 카탈로그 |
 | `/projects` | 프로젝트 목록 |
 
@@ -140,7 +142,7 @@ good-vibe-coding/
 │   ├── team-backend.md          #   Backend 에이전트
 │   ├── team-*.md                #   (11개 팀 역할 에이전트)
 │   └── *.md                     #   (8개 기존 온보딩 에이전트)
-├── commands/                     # 커맨드 (16개: 9 프로젝트 + 7 온보딩)
+├── commands/                     # 커맨드 (17개: 10 프로젝트 + 7 온보딩)
 │   ├── new-project.md           #   프로젝트 생성
 │   ├── discuss.md               #   팀 토론
 │   ├── approve.md               #   기획서 승인
@@ -160,21 +162,23 @@ good-vibe-coding/
 │       ├── discussion-engine.js #     토론 프롬프트 생성
 │       ├── task-distributor.js  #     작업 분배
 │       ├── report-generator.js  #     보고서 생성
-│       ├── feedback-manager.js  #     피드백/성장
+│       ├── feedback-manager.js  #     피드백/성과
+│       ├── growth-manager.js   #     성장 시스템
 │       ├── config-generator.js  #     설정 생성 (v2)
 │       └── *.js                 #     (기존 8개 라이브러리)
 ├── templates/                    # Handlebars 템플릿
 ├── hooks/                        # 훅 정의
 ├── guides/                       # 학습 가이드
 ├── skills/                       # 스킬 (4개)
-└── tests/                        # Vitest 테스트 (199개)
-    ├── project-manager.test.js  #   20개 테스트
-    ├── team-builder.test.js     #   14개 테스트
-    ├── discussion-engine.test.js#   10개 테스트
-    ├── task-distributor.test.js #   11개 테스트
-    ├── report-generator.test.js #   8개 테스트
+└── tests/                        # Vitest 테스트 (258개)
+    ├── project-manager.test.js  #   23개 테스트
+    ├── team-builder.test.js     #   19개 테스트
+    ├── discussion-engine.test.js#   13개 테스트
+    ├── task-distributor.test.js #   23개 테스트
+    ├── report-generator.test.js #   13개 테스트
     ├── feedback-manager.test.js #   10개 테스트
-    ├── integration.test.js      #   5개 테스트
+    ├── growth-manager.test.js   #   27개 테스트
+    ├── integration.test.js      #   9개 테스트
     └── *.test.js                #   (기존 121개 테스트)
 ```
 
@@ -182,13 +186,13 @@ good-vibe-coding/
 
 - **Node.js 18+** (ESM)
 - **Handlebars** (템플릿 엔진)
-- **Vitest** (테스트 프레임워크, 199개 테스트)
+- **Vitest** (테스트 프레임워크, 258개 테스트)
 
 ## 개발
 
 ```bash
 npm install          # 의존성 설치
-npm test             # 전체 테스트 실행 (199개)
+npm test             # 전체 테스트 실행 (258개)
 npm run test:watch   # 테스트 감시 모드
 npm run test:coverage # 커버리지 리포트
 ```
@@ -233,9 +237,13 @@ node scripts/cli.js team-stats
 - [x] 11개 팀 에이전트
 - [x] CLI 브릿지 + 통합 테스트
 
-### Phase 4 (계획)
+### Phase 4 - 성장 시스템 (v3.1)
+- [x] 팀원 성장 시스템 (피드백 → 성장 레벨 → 프롬프트 자동 주입)
+- [x] `/growth` 커맨드 (성장 현황 조회)
+- [x] 토론/실행/보고서에 성장 컨텍스트 반영
+
+### Phase 5 (계획)
 - [ ] 마켓플레이스 등록
-- [ ] 팀원 성장 시스템 (피드백 기반 프롬프트 개선)
 - [ ] 프로젝트 템플릿 (boilerplate 연동)
 - [ ] 국제화 (일본어, 영어)
 

@@ -1,6 +1,7 @@
 import { readFile } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { getGrowthProfiles, buildGrowthContext } from './growth-manager.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '../..');
@@ -72,19 +73,27 @@ export async function recommendTeam(projectType) {
  * 역할 ID 배열과 페르소나 선택으로 팀을 빌드한다.
  * @param {string[]} roleIds - 역할 ID 배열
  * @param {object} personalityChoices - 역할별 페르소나 선택 (roleId → variant id)
+ * @param {object} options - 옵션
+ * @param {boolean} options.withGrowth - true이면 성장 컨텍스트를 병합
  * @returns {Promise<Array<object>>} 팀원 배열
  */
-export async function buildTeam(roleIds, personalityChoices = {}) {
+export async function buildTeam(roleIds, personalityChoices = {}, options = {}) {
   const catalog = await loadRoleCatalog();
   const personalities = await loadTeamPersonalities();
+
+  let growthProfiles = null;
+  if (options.withGrowth) {
+    growthProfiles = await getGrowthProfiles(roleIds);
+  }
 
   return roleIds
     .filter(id => catalog.roles[id])
     .map(id => {
       const role = catalog.roles[id];
       const persona = personalities[id];
+      let member;
       if (!persona) {
-        return {
+        member = {
           roleId: id,
           personalityVariant: 'default',
           displayName: role.displayName,
@@ -98,23 +107,30 @@ export async function buildTeam(roleIds, personalityChoices = {}) {
           skills: role.skills,
           tools: role.defaultTools,
         };
+      } else {
+        const chosenId = personalityChoices[id] || persona.default;
+        const variant = persona.variants.find(v => v.id === chosenId) || persona.variants[0];
+        member = {
+          roleId: id,
+          personalityVariant: variant.id,
+          displayName: variant.defaultName,
+          emoji: variant.emoji,
+          role: role.displayName,
+          trait: variant.trait,
+          description: variant.description,
+          speakingStyle: variant.speakingStyle,
+          greeting: variant.greeting,
+          model: role.model,
+          skills: role.skills,
+          tools: role.defaultTools,
+        };
       }
-      const chosenId = personalityChoices[id] || persona.default;
-      const variant = persona.variants.find(v => v.id === chosenId) || persona.variants[0];
-      return {
-        roleId: id,
-        personalityVariant: variant.id,
-        displayName: variant.defaultName,
-        emoji: variant.emoji,
-        role: role.displayName,
-        trait: variant.trait,
-        description: variant.description,
-        speakingStyle: variant.speakingStyle,
-        greeting: variant.greeting,
-        model: role.model,
-        skills: role.skills,
-        tools: role.defaultTools,
-      };
+
+      if (growthProfiles && growthProfiles.has(id)) {
+        member.growthContext = buildGrowthContext(growthProfiles.get(id));
+      }
+
+      return member;
     });
 }
 

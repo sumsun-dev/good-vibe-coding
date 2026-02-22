@@ -5,9 +5,11 @@
 /**
  * 전체 프로젝트 보고서를 생성한다.
  * @param {object} project - 프로젝트 전체 데이터
+ * @param {object} options - 옵션
+ * @param {Map<string, object>} options.growthProfiles - roleId → GrowthProfile Map
  * @returns {string} 보고서 마크다운
  */
-export function generateReport(project) {
+export function generateReport(project, options = {}) {
   const stats = generateProjectStats(project);
   const roleSummaries = project.team
     .map(member => {
@@ -16,7 +18,7 @@ export function generateReport(project) {
     })
     .join('\n\n');
 
-  return `# 프로젝트 보고서: ${project.name}
+  let report = `# 프로젝트 보고서: ${project.name}
 
 ## 개요
 - 프로젝트: ${project.name} (${project.type})
@@ -38,6 +40,12 @@ ${project.discussion.planDocument || '(기획서 없음)'}
 | 역할 | 작업 수 |
 |------|---------|
 ${Object.entries(stats.byRole).map(([role, count]) => `| ${role} | ${count} |`).join('\n')}`;
+
+  if (options.growthProfiles && options.growthProfiles.size > 0) {
+    report += '\n\n' + generateGrowthSection(project.team, options.growthProfiles);
+  }
+
+  return report;
 }
 
 /**
@@ -55,6 +63,29 @@ export function generateRoleSummary(teamMember, tasks) {
   return `### ${teamMember.emoji} ${teamMember.displayName} (${teamMember.role})
 - 담당 작업: ${tasks.length}개 (완료: ${completedCount})
 ${taskList}`;
+}
+
+/**
+ * 팀원 성장 분석 섹션을 생성한다.
+ * @param {Array<object>} team - 팀원 배열
+ * @param {Map<string, object>} growthProfiles - roleId → GrowthProfile Map
+ * @returns {string} 성장 분석 마크다운
+ */
+export function generateGrowthSection(team, growthProfiles) {
+  const header = '| 팀원 | 역할 | 레벨 | 평균 평점 | 강점 | 성장 목표 |\n|------|------|------|----------|------|----------|\n';
+
+  const rows = team
+    .map(member => {
+      const profile = growthProfiles.get(member.roleId);
+      if (!profile) return null;
+      const rating = profile.avgRating > 0 ? profile.avgRating.toFixed(1) : '-';
+      const strengths = profile.strengths.length > 0 ? profile.strengths.slice(0, 2).join(', ') : '-';
+      return `| ${member.emoji} ${member.displayName} | ${member.role} | Lv.${profile.level} ${profile.levelName} | ${rating} | ${strengths} | ${profile.growthGoal} |`;
+    })
+    .filter(Boolean)
+    .join('\n');
+
+  return `## 팀원 성장 분석\n\n${header}${rows}`;
 }
 
 /**

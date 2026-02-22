@@ -90,7 +90,7 @@ export function parseTaskList(rawOutput) {
  * @returns {string} 실행 프롬프트
  */
 export function buildExecutionPrompt(task, teamMember) {
-  return `당신은 ${teamMember.emoji} **${teamMember.displayName}** (${teamMember.role})입니다.
+  let prompt = `당신은 ${teamMember.emoji} **${teamMember.displayName}** (${teamMember.role})입니다.
 
 ## 당신의 성격
 - 특성: ${teamMember.trait}
@@ -105,6 +105,12 @@ export function buildExecutionPrompt(task, teamMember) {
 ## 지시사항
 위 작업을 당신의 역할과 성격에 맞게 수행하세요.
 결과를 명확하게 보고하세요.`;
+
+  if (teamMember.growthContext) {
+    prompt += `\n\n## 성장 컨텍스트\n${teamMember.growthContext}`;
+  }
+
+  return prompt;
 }
 
 /**

@@ -5,6 +5,7 @@ import { buildDiscussionPrompt, buildPlanDocument, parseDiscussionOutput } from 
 import { buildTaskDistributionPrompt, buildExecutionPrompt, buildExecutionPlan, parseTaskList } from './lib/task-distributor.js';
 import { generateReport } from './lib/report-generator.js';
 import { addFeedback, getTeamStats, getFeedbackHistory } from './lib/feedback-manager.js';
+import { analyzeGrowth, getGrowthProfiles, formatGrowthReport } from './lib/growth-manager.js';
 
 const [,, command, ...args] = process.argv;
 
@@ -158,6 +159,26 @@ const commands = {
   'team-stats': async () => {
     const stats = await getTeamStats();
     output(stats);
+  },
+
+  'growth': async () => {
+    const opts = parseArgs(args);
+    if (opts.role) {
+      const profile = await analyzeGrowth(opts.role);
+      output(profile);
+    } else {
+      const data = await readStdin().catch(() => ({}));
+      const roleIds = data.roleIds || [];
+      if (roleIds.length === 0) {
+        const stats = await getTeamStats();
+        const ids = stats.map(s => s.roleId);
+        const profiles = await getGrowthProfiles(ids);
+        output({ report: formatGrowthReport(profiles), profiles: Object.fromEntries(profiles) });
+      } else {
+        const profiles = await getGrowthProfiles(roleIds);
+        output({ report: formatGrowthReport(profiles), profiles: Object.fromEntries(profiles) });
+      }
+    }
   },
 };
 

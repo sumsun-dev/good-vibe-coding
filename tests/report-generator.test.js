@@ -3,6 +3,7 @@ import {
   generateReport,
   generateRoleSummary,
   generateProjectStats,
+  generateGrowthSection,
 } from '../scripts/lib/report-generator.js';
 
 const SAMPLE_PROJECT = {
@@ -90,5 +91,71 @@ describe('generateProjectStats', () => {
     const stats = generateProjectStats(project);
     expect(stats.totalTasks).toBe(0);
     expect(stats.completed).toBe(0);
+  });
+});
+
+describe('generateGrowthSection', () => {
+  const GROWTH_PROFILES = new Map([
+    ['cto', {
+      roleId: 'cto', level: 4, levelName: 'Advanced',
+      avgRating: 4.2, totalProjects: 5,
+      strengths: ['아키텍처', '리더십'], improvements: ['문서화'],
+      growthGoal: '문서화 강화', growthSummary: 'Lv.4 Advanced',
+    }],
+    ['backend', {
+      roleId: 'backend', level: 2, levelName: 'Growing',
+      avgRating: 2.5, totalProjects: 2,
+      strengths: ['API 설계'], improvements: ['테스트'],
+      growthGoal: '테스트 강화', growthSummary: 'Lv.2 Growing',
+    }],
+  ]);
+
+  it('성장 분석 테이블을 생성한다', () => {
+    const section = generateGrowthSection(SAMPLE_PROJECT.team, GROWTH_PROFILES);
+    expect(section).toContain('팀원 성장 분석');
+    expect(section).toContain('민준');
+    expect(section).toContain('Advanced');
+    expect(section).toContain('도윤');
+    expect(section).toContain('Growing');
+  });
+
+  it('프로필 없는 팀원은 건너뛴다', () => {
+    const section = generateGrowthSection(SAMPLE_PROJECT.team, GROWTH_PROFILES);
+    // qa의 프로필은 없으므로 지민이 테이블에 없어야 함
+    expect(section).not.toContain('지민');
+  });
+
+  it('강점이 없는 프로필도 처리한다', () => {
+    const profiles = new Map([
+      ['cto', {
+        roleId: 'cto', level: 1, levelName: 'Beginner',
+        avgRating: 0, totalProjects: 0,
+        strengths: [], improvements: [],
+        growthGoal: '첫 프로젝트', growthSummary: 'Lv.1 Beginner',
+      }],
+    ]);
+    const section = generateGrowthSection(SAMPLE_PROJECT.team, profiles);
+    expect(section).toContain('Beginner');
+    expect(section).toContain('-');
+  });
+});
+
+describe('generateReport with growthProfiles', () => {
+  it('growthProfiles 옵션이 있으면 성장 분석 섹션이 포함된다', () => {
+    const growthProfiles = new Map([
+      ['cto', {
+        roleId: 'cto', level: 3, levelName: 'Competent',
+        avgRating: 3.5, totalProjects: 3,
+        strengths: ['아키텍처'], improvements: [],
+        growthGoal: '심화', growthSummary: 'Lv.3',
+      }],
+    ]);
+    const report = generateReport(SAMPLE_PROJECT, { growthProfiles });
+    expect(report).toContain('팀원 성장 분석');
+  });
+
+  it('growthProfiles 없으면 기존과 동일하다', () => {
+    const report = generateReport(SAMPLE_PROJECT);
+    expect(report).not.toContain('팀원 성장 분석');
   });
 });

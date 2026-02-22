@@ -1,4 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { mkdir, rm } from 'fs/promises';
+import { resolve } from 'path';
 import {
   loadRoleCatalog,
   loadProjectTypes,
@@ -7,9 +9,18 @@ import {
   getTeamSummary,
   clearCaches,
 } from '../scripts/lib/team-builder.js';
+import { addFeedback, setFeedbackDir } from '../scripts/lib/feedback-manager.js';
 
-beforeEach(() => {
+const TMP_GROWTH_DIR = resolve('.tmp-test-team-growth');
+
+beforeEach(async () => {
   clearCaches();
+  await mkdir(TMP_GROWTH_DIR, { recursive: true });
+  setFeedbackDir(TMP_GROWTH_DIR);
+});
+
+afterEach(async () => {
+  await rm(TMP_GROWTH_DIR, { recursive: true, force: true });
 });
 
 describe('loadRoleCatalog', () => {
@@ -94,6 +105,26 @@ describe('buildTeam', () => {
     const team = await buildTeam(['cto', 'nonexistent']);
     expect(team.length).toBe(1);
   });
+
+  it('존재하지 않는 페르소나 variant는 첫 번째로 fallback한다', async () => {
+    const team = await buildTeam(['cto'], { cto: 'nonexistent-variant' });
+    expect(team[0].personalityVariant).toBe('visionary');
+  });
+
+  it('모든 11개 역할을 빌드할 수 있다', async () => {
+    const allRoles = ['cto', 'po', 'fullstack', 'frontend', 'backend', 'qa', 'uiux', 'devops', 'data', 'security', 'tech-writer'];
+    const team = await buildTeam(allRoles);
+    expect(team.length).toBe(11);
+    for (const member of team) {
+      expect(member.roleId).toBeTruthy();
+      expect(member.displayName).toBeTruthy();
+      expect(member.emoji).toBeTruthy();
+      expect(member.role).toBeTruthy();
+      expect(member.model).toBeTruthy();
+      expect(Array.isArray(member.skills)).toBe(true);
+      expect(Array.isArray(member.tools)).toBe(true);
+    }
+  });
 });
 
 describe('getTeamSummary', () => {
@@ -107,5 +138,28 @@ describe('getTeamSummary', () => {
   it('빈 팀은 빈 문자열을 반환한다', () => {
     const summary = getTeamSummary([]);
     expect(summary).toBe('');
+  });
+});
+
+describe('buildTeam with growth', () => {
+  it('withGrowth 옵션으로 growthContext를 병합한다', async () => {
+    await addFeedback('proj-1', 'cto', 5, '훌륭한 아키텍처 설계');
+    await addFeedback('proj-2', 'cto', 4, '좋은 기술 의사결정');
+
+    const team = await buildTeam(['cto', 'backend'], {}, { withGrowth: true });
+    expect(team[0].growthContext).toBeTruthy();
+    expect(team[0].growthContext).toContain('성장 이력');
+    expect(team[1].growthContext).toBeTruthy();
+  });
+
+  it('withGrowth 없으면 growthContext가 없다', async () => {
+    const team = await buildTeam(['cto', 'backend']);
+    expect(team[0].growthContext).toBeUndefined();
+  });
+
+  it('기존 호환: 2번째 인자만 전달해도 동작', async () => {
+    const team = await buildTeam(['cto'], { cto: 'pragmatic' });
+    expect(team[0].personalityVariant).toBe('pragmatic');
+    expect(team[0].growthContext).toBeUndefined();
   });
 });

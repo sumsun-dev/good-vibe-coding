@@ -22,7 +22,8 @@
     "commands/add-skill.md",
     "commands/add-agent.md",
     "commands/preset.md",
-    "commands/reset.md"
+    "commands/reset.md",
+    "commands/growth.md"
   ],
   "agents": [
     "agents/team-cto.md",

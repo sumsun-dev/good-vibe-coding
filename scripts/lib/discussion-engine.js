@@ -12,12 +12,18 @@
  */
 export function buildDiscussionPrompt(project, team, round) {
   const teamSection = team
-    .map((m, i) => [
-      `### ${i + 1}. ${m.emoji} ${m.displayName} (${m.role})`,
-      `- 성격: ${m.trait}`,
-      `- 말투: ${m.speakingStyle}`,
-      `- 전문 분야: ${(m.skills || []).join(', ')}`,
-    ].join('\n'))
+    .map((m, i) => {
+      const lines = [
+        `### ${i + 1}. ${m.emoji} ${m.displayName} (${m.role})`,
+        `- 성격: ${m.trait}`,
+        `- 말투: ${m.speakingStyle}`,
+        `- 전문 분야: ${(m.skills || []).join(', ')}`,
+      ];
+      if (m.growthContext) {
+        lines.push(`- 📈 성장 이력: ${m.growthContext.split('\n')[0].replace(/[*📈]/g, '').trim()}`);
+      }
+      return lines.join('\n');
+    })
     .join('\n\n');
 
   return `당신은 프로젝트 "${project.name}"의 팀 토론을 진행합니다.
