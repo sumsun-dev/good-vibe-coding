@@ -1,0 +1,60 @@
+{
+  "version": "1.0.0",
+  "types": {
+    "web-app": {
+      "displayName": "웹 애플리케이션",
+      "description": "풀스택 웹 앱 (SPA/SSR)",
+      "recommendedTeam": ["cto", "fullstack", "qa"],
+      "optionalRoles": ["uiux", "devops", "security"],
+      "suggestedStack": "nextjs-supabase"
+    },
+    "api-server": {
+      "displayName": "API 서버",
+      "description": "REST/GraphQL API 백엔드",
+      "recommendedTeam": ["cto", "backend", "qa"],
+      "optionalRoles": ["devops", "security", "tech-writer"]
+    },
+    "telegram-bot": {
+      "displayName": "텔레그램 봇",
+      "description": "텔레그램 메신저 봇",
+      "recommendedTeam": ["cto", "backend", "qa"],
+      "optionalRoles": ["po", "devops"]
+    },
+    "cli-tool": {
+      "displayName": "CLI 도구",
+      "description": "커맨드라인 유틸리티",
+      "recommendedTeam": ["cto", "backend", "qa"],
+      "optionalRoles": ["tech-writer"]
+    },
+    "mobile-app": {
+      "displayName": "모바일 앱",
+      "description": "React Native / Flutter 앱",
+      "recommendedTeam": ["cto", "fullstack", "uiux", "qa"],
+      "optionalRoles": ["backend", "devops"]
+    },
+    "chrome-extension": {
+      "displayName": "Chrome 확장",
+      "description": "브라우저 확장 프로그램",
+      "recommendedTeam": ["cto", "frontend", "qa"],
+      "optionalRoles": ["uiux", "backend"]
+    },
+    "data-pipeline": {
+      "displayName": "데이터 파이프라인",
+      "description": "ETL, 데이터 처리, 분석",
+      "recommendedTeam": ["cto", "data", "qa"],
+      "optionalRoles": ["devops", "backend"]
+    },
+    "library": {
+      "displayName": "라이브러리/패키지",
+      "description": "재사용 가능한 npm/pip 패키지",
+      "recommendedTeam": ["cto", "backend", "qa", "tech-writer"],
+      "optionalRoles": ["security"]
+    },
+    "custom": {
+      "displayName": "커스텀 프로젝트",
+      "description": "사용자 정의 프로젝트",
+      "recommendedTeam": ["cto"],
+      "optionalRoles": ["fullstack", "frontend", "backend", "qa", "uiux", "devops", "data", "security", "po", "tech-writer"]
+    }
+  }
+}

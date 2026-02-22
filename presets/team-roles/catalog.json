@@ -1,0 +1,126 @@
+{
+  "version": "1.0.0",
+  "roles": {
+    "cto": {
+      "id": "cto",
+      "displayName": "CTO",
+      "emoji": "🏗️",
+      "category": "leadership",
+      "description": "기술 아키텍처 설계, 기술 의사결정, 팀 기술 방향 설정",
+      "defaultTools": ["Read", "Grep", "Glob", "Bash"],
+      "model": "sonnet",
+      "discussionPriority": 1,
+      "skills": ["architecture", "tech-decision", "code-review"]
+    },
+    "po": {
+      "id": "po",
+      "displayName": "Product Owner",
+      "emoji": "📋",
+      "category": "leadership",
+      "description": "요구사항 정의, 우선순위 결정, 사용자 스토리 작성",
+      "defaultTools": ["Read", "Grep", "Glob"],
+      "model": "sonnet",
+      "discussionPriority": 2,
+      "skills": ["requirements", "user-story", "prioritization"]
+    },
+    "fullstack": {
+      "id": "fullstack",
+      "displayName": "Full-stack Developer",
+      "emoji": "⚡",
+      "category": "engineering",
+      "description": "프론트엔드 + 백엔드 전체 구현",
+      "defaultTools": ["Read", "Grep", "Glob", "Bash", "Edit", "Write"],
+      "model": "sonnet",
+      "discussionPriority": 3,
+      "skills": ["frontend", "backend", "database"]
+    },
+    "frontend": {
+      "id": "frontend",
+      "displayName": "Frontend Developer",
+      "emoji": "🎨",
+      "category": "engineering",
+      "description": "UI 구현, 컴포넌트 설계, 사용자 인터랙션",
+      "defaultTools": ["Read", "Grep", "Glob", "Bash", "Edit", "Write"],
+      "model": "sonnet",
+      "discussionPriority": 4,
+      "skills": ["react", "css", "accessibility"]
+    },
+    "backend": {
+      "id": "backend",
+      "displayName": "Backend Developer",
+      "emoji": "🔧",
+      "category": "engineering",
+      "description": "API 설계, 비즈니스 로직, 데이터베이스",
+      "defaultTools": ["Read", "Grep", "Glob", "Bash", "Edit", "Write"],
+      "model": "sonnet",
+      "discussionPriority": 4,
+      "skills": ["api", "database", "auth"]
+    },
+    "qa": {
+      "id": "qa",
+      "displayName": "QA Engineer",
+      "emoji": "🧪",
+      "category": "engineering",
+      "description": "테스트 전략, 테스트 코드 작성, 품질 보증",
+      "defaultTools": ["Read", "Grep", "Glob", "Bash"],
+      "model": "sonnet",
+      "discussionPriority": 6,
+      "skills": ["testing", "e2e", "tdd"]
+    },
+    "uiux": {
+      "id": "uiux",
+      "displayName": "UI/UX Designer",
+      "emoji": "🖌️",
+      "category": "design",
+      "description": "사용자 경험 설계, 인터페이스 디자인, 프로토타이핑",
+      "defaultTools": ["Read", "Grep", "Glob"],
+      "model": "sonnet",
+      "discussionPriority": 3,
+      "skills": ["wireframe", "user-flow", "design-system"]
+    },
+    "devops": {
+      "id": "devops",
+      "displayName": "DevOps Engineer",
+      "emoji": "🚀",
+      "category": "engineering",
+      "description": "CI/CD, 배포, 인프라 관리, 모니터링",
+      "defaultTools": ["Read", "Grep", "Glob", "Bash"],
+      "model": "sonnet",
+      "discussionPriority": 7,
+      "skills": ["ci-cd", "docker", "monitoring"]
+    },
+    "data": {
+      "id": "data",
+      "displayName": "Data Engineer",
+      "emoji": "📊",
+      "category": "engineering",
+      "description": "데이터 파이프라인, 분석, ML 모델 서빙",
+      "defaultTools": ["Read", "Grep", "Glob", "Bash", "Edit", "Write"],
+      "model": "sonnet",
+      "discussionPriority": 5,
+      "skills": ["data-pipeline", "analytics", "ml"]
+    },
+    "security": {
+      "id": "security",
+      "displayName": "Security Engineer",
+      "emoji": "🛡️",
+      "category": "engineering",
+      "description": "보안 검토, 취약점 분석, 보안 정책",
+      "defaultTools": ["Read", "Grep", "Glob", "Bash"],
+      "model": "sonnet",
+      "discussionPriority": 5,
+      "skills": ["security-audit", "owasp", "auth"]
+    },
+    "tech-writer": {
+      "id": "tech-writer",
+      "displayName": "Technical Writer",
+      "emoji": "📝",
+      "category": "support",
+      "description": "기술 문서 작성, API 문서, 사용자 가이드",
+      "defaultTools": ["Read", "Grep", "Glob"],
+      "model": "haiku",
+      "discussionPriority": 8,
+      "skills": ["documentation", "api-docs", "guide"]
+    }
+  }
+}

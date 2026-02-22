@@ -1,0 +1,197 @@
+import { readFile, writeFile, readdir } from 'fs/promises';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { ensureDir, fileExists } from './file-writer.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const DEFAULT_BASE_DIR = resolve(process.env.HOME || process.env.USERPROFILE, '.claude', 'good-vibe', 'projects');
+
+let baseDir = DEFAULT_BASE_DIR;
+
+const VALID_STATUSES = ['planning', 'approved', 'executing', 'completed'];
+const VALID_MODES = ['plan-only', 'plan-execute'];
+
+/**
+ * 테스트용 베이스 디렉토리를 설정한다.
+ * @param {string} dir - 새 베이스 디렉토리
+ */
+export function setBaseDir(dir) {
+  baseDir = dir;
+}
+
+/**
+ * 프로젝트 ID를 생성한다 (kebab-case + YYYY-MM).
+ * @param {string} name - 프로젝트 이름
+ * @returns {string} 프로젝트 ID
+ */
+export function generateProjectId(name) {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+  return `${slug}-${yyyy}-${mm}`;
+}
+
+/**
+ * 프로젝트 디렉토리 경로를 반환한다.
+ * @param {string} projectId - 프로젝트 ID
+ * @returns {string} 디렉토리 경로
+ */
+export function getProjectDir(projectId) {
+  return resolve(baseDir, projectId);
+}
+
+/**
+ * 프로젝트 파일 경로를 반환한다.
+ */
+function getProjectFilePath(projectId) {
+  return resolve(getProjectDir(projectId), 'project.json');
+}
+
+/**
+ * 프로젝트를 디스크에 저장한다.
+ */
+async function saveProject(project) {
+  const dir = getProjectDir(project.id);
+  await ensureDir(dir);
+  await writeFile(getProjectFilePath(project.id), JSON.stringify(project, null, 2), 'utf-8');
+  return project;
+}
+
+/**
+ * 프로젝트를 생성한다.
+ * @param {string} name - 프로젝트 이름
+ * @param {string} type - 프로젝트 타입
+ * @param {string} description - 설명
+ * @param {object} options - 옵션
+ * @returns {Promise<object>} 생성된 프로젝트
+ */
+export async function createProject(name, type, description, options = {}) {
+  if (!name || typeof name !== 'string') throw new Error('name 필드가 필요합니다');
+  if (!type || typeof type !== 'string') throw new Error('type 필드가 필요합니다');
+
+  const mode = options.mode || 'plan-only';
+  if (!VALID_MODES.includes(mode)) throw new Error(`유효하지 않은 모드: ${mode}`);
+
+  const project = {
+    id: generateProjectId(name),
+    name,
+    type,
+    description: description || '',
+    createdAt: new Date().toISOString(),
+    status: 'planning',
+    mode,
+    team: [],
+    discussion: { rounds: [], planDocument: '' },
+    tasks: [],
+    report: null,
+    feedback: [],
+  };
+
+  return saveProject(project);
+}
+
+/**
+ * 프로젝트를 조회한다.
+ * @param {string} projectId - 프로젝트 ID
+ * @returns {Promise<object|null>} 프로젝트 또는 null
+ */
+export async function getProject(projectId) {
+  const filePath = getProjectFilePath(projectId);
+  if (!(await fileExists(filePath))) return null;
+  const content = await readFile(filePath, 'utf-8');
+  return JSON.parse(content);
+}
+
+/**
+ * 모든 프로젝트를 조회한다.
+ * @returns {Promise<Array<object>>} 프로젝트 목록
+ */
+export async function listProjects() {
+  if (!(await fileExists(baseDir))) return [];
+  try {
+    const dirs = await readdir(baseDir, { withFileTypes: true });
+    const projects = [];
+    for (const dir of dirs) {
+      if (!dir.isDirectory()) continue;
+      const project = await getProject(dir.name);
+      if (project) projects.push(project);
+    }
+    return projects;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * 프로젝트 상태를 업데이트한다.
+ * @param {string} projectId - 프로젝트 ID
+ * @param {string} status - 새 상태
+ * @returns {Promise<object>} 업데이트된 프로젝트
+ */
+export async function updateProjectStatus(projectId, status) {
+  if (!VALID_STATUSES.includes(status)) {
+    throw new Error(`유효하지 않은 상태: ${status}. 가능한 값: ${VALID_STATUSES.join(', ')}`);
+  }
+  const project = await getProject(projectId);
+  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
+  project.status = status;
+  return saveProject(project);
+}
+
+/**
+ * 프로젝트 팀을 설정한다.
+ * @param {string} projectId - 프로젝트 ID
+ * @param {Array} team - 팀원 배열
+ * @returns {Promise<object>} 업데이트된 프로젝트
+ */
+export async function setProjectTeam(projectId, team) {
+  const project = await getProject(projectId);
+  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
+  project.team = team;
+  return saveProject(project);
+}
+
+/**
+ * 프로젝트 기획서를 설정한다.
+ * @param {string} projectId - 프로젝트 ID
+ * @param {string} planDocument - 기획서 마크다운
+ * @returns {Promise<object>} 업데이트된 프로젝트
+ */
+export async function setProjectPlan(projectId, planDocument) {
+  const project = await getProject(projectId);
+  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
+  project.discussion.planDocument = planDocument;
+  return saveProject(project);
+}
+
+/**
+ * 프로젝트에 작업을 추가한다.
+ * @param {string} projectId - 프로젝트 ID
+ * @param {Array} tasks - 작업 배열
+ * @returns {Promise<object>} 업데이트된 프로젝트
+ */
+export async function addProjectTasks(projectId, tasks) {
+  const project = await getProject(projectId);
+  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
+  project.tasks = [...project.tasks, ...tasks];
+  return saveProject(project);
+}
+
+/**
+ * 프로젝트 보고서를 설정한다.
+ * @param {string} projectId - 프로젝트 ID
+ * @param {string} report - 보고서 마크다운
+ * @returns {Promise<object>} 업데이트된 프로젝트
+ */
+export async function setProjectReport(projectId, report) {
+  const project = await getProject(projectId);
+  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
+  project.report = report;
+  return saveProject(project);
+}

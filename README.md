@@ -1,192 +1,242 @@
-# Good Vibe Coding
+# Good Vibe Coding v3.0
 
-**모든 직군을 위한 한국어 Claude Code 온보딩 플러그인**
+**Virtual AI Team Management Platform** — AI 팀을 구성하고 프로젝트를 관리하세요
 
-`/onboarding`을 실행하면 대화형으로 역할/업무/도구를 선택하고, 각자에게 맞는 Claude Code 설정을 자동 생성합니다.
+사용자가 **CEO**가 되어 프로젝트를 정의하면, AI 팀원들이 토론하고 기획하고 실행합니다.
 
 ## 핵심 특징
 
+- **가상 AI 팀**: 11개 역할 (CTO, Backend, QA, Frontend...) 각각 2개 페르소나 변형
+- **팀 토론 시뮬레이션**: 팀원들이 자신의 역할과 성격으로 프로젝트를 토론
+- **기획서 자동 생성**: 토론 결과를 정형화된 기획서로 산출
+- **두 가지 모드**: "기획만" (plan-only) / "기획+실행" (plan-execute)
+- **피드백 시스템**: 팀원 평가 및 누적 성과 관리
 - **한국어 완전 지원**: 모든 가이드, 프롬프트, 에이전트가 한국어
-- **모든 직군 지원**: 개발자, PM, 디자이너, 리서처, 마케터, 학생
-- **롤 플레잉 팀 빌딩**: 에이전트가 이름/성격/말투를 가진 팀원으로 변신
-- **인터랙티브 온보딩**: 대화형 설정 마법사 + 팀원 스타일 선택
-- **입문자 중심**: `/learn`으로 역할별 맞춤 학습 가이드
+- **v2 호환**: 기존 온보딩 마법사 (`/onboarding`) 그대로 사용 가능
 
 ## 설치
 
 ```bash
-# 플러그인 설치 (마켓플레이스 등록 후)
-/plugin install good-vibe-coding@marketplace
-
-# 또는 로컬 설치
 git clone https://github.com/your-repo/good-vibe-coding.git
 cd good-vibe-coding
 npm install
 ```
 
-## 사용법
+## 사용법: CEO 시나리오
 
-### 온보딩 시작
+### 1. 새 프로젝트 시작
+
 ```
-/onboarding
+/new-project
 ```
 
 대화형 마법사가 시작됩니다:
-1. 환경 감지
-2. 역할 선택 (개발/기획/디자인/리서치/콘텐츠/학습)
-3. 업무/도구 세부 선택
-4. 워크플로우 스타일 선택
-4A. **팀원 스타일 선택** — 각 에이전트의 성격 변형을 고릅니다
-5. 설정 파일 자동 생성
+1. 프로젝트 설명 입력 ("텔레그램 봇을 만들고 싶어")
+2. 프로젝트 타입 선택 (9개 중)
+3. 모드 선택 (기획만 / 기획+실행)
+4. 추천 팀 확인 및 수정
+5. 팀원 페르소나 선택
 
-### 학습
-```
-/learn          # 역할별 가이드 목차
-/learn 기초      # Claude Code 기초
-/learn 사용법    # 기본 사용법
-```
-
-### 설정 확인
-```
-/my-config       # 현재 설정 대시보드
-```
-
-## 팀 빌딩
-
-온보딩 중 각 에이전트의 성격 변형을 선택할 수 있습니다. 에이전트당 2개 변형이 제공되며, 각 팀원은 이름, 성격, 인사말을 가집니다.
-
-예시 (개발자 역할):
-```
-🎉 당신의 팀이 구성되었습니다!
-
-  준영 (꼼꼼한 검토자) 🔍 — 코드 리뷰어
-  "안녕하세요. 코드를 면밀히 검토하겠습니다."
-
-  하윤 (엄격한 코치) 🎯 — TDD 코치
-  "테스트부터 작성합시다."
-```
-
-생성된 `CLAUDE.md`에는 "Your Team" 섹션으로 팀원의 성격과 행동 지침이 포함됩니다.
-
-## 에이전트 오케스트레이션
-
-온보딩 시 `~/.claude/agents/` 디렉토리에 실제 Claude Code 에이전트 `.md` 파일이 생성됩니다. 각 파일에는 YAML frontmatter(name, tools, model)와 페르소나 정보, 기술 지시사항이 포함되어 Task 도구로 서브에이전트를 호출할 수 있습니다.
-
-`CLAUDE.md`에 자동 추가되는 "Team Orchestration" 섹션은 작업 단계별로 어떤 에이전트에게 위임할지를 정의합니다:
+### 2. 팀 토론
 
 ```
-## Team Orchestration
-
-| 단계 | 담당 | 트리거 | 호출 |
-|------|------|--------|------|
-| 테스트 설계 | 하윤 (TDD 코치) 🎯 | 기능 구현 요청 시 | Task: subagent_type="tdd-coach-kr" |
-| 코드 리뷰 | 준영 (코드 리뷰어) 🔍 | 구현 완료 후 | Task: subagent_type="code-reviewer-kr" |
+/discuss
 ```
 
-생성되는 에이전트 파일 예시 (`~/.claude/agents/code-reviewer-kr.md`):
-```yaml
----
-name: code-reviewer-kr
-description: 코드 리뷰어 - 준영 🔍. 분석적이고 체계적인 스타일.
-tools: Read, Grep, Glob, Bash
-model: sonnet
----
+팀원들이 각자의 역할과 성격으로 프로젝트를 토론합니다:
+- CTO가 아키텍처 방향 제시
+- Backend 개발자가 기술 세부사항 논의
+- QA가 테스트 전략 제안
+- 기획서 도출
+
+### 3. 기획서 승인
+
+```
+/approve
 ```
 
-## 지원 역할
+CEO가 기획서를 검토하고 승인합니다. 승인 후 작업이 역할별로 분배됩니다.
 
-| 역할 | 설명 | 에이전트 | 스킬 | 가이드 |
-|------|------|---------|------|--------|
-| 개발자 | 풀스택/프론트/백엔드 | 코드리뷰어, TDD코치 | side-impact, tdd-workflow, verify, code-review | TDD 워크플로우, 코드 리뷰 |
-| PM/기획자 | PM/PO/프로젝트 매니저 | 문서검토기 | prd-writer, meeting-notes, issue-tracker | PRD 작성법, 이슈 관리 |
-| 디자이너 | UI/UX/퍼블리셔 | 접근성체커 | design-system, css-helper | 접근성, 디자인 시스템 |
-| 리서처 | UX리서치/데이터분석 | 데이터분석도우미 | data-collector, report-writer | 공통 가이드 |
-| 콘텐츠 | 블로거/마케터/카피라이터 | 글편집기 | blog-writer, seo-checker | 공통 가이드 |
-| 학생 | 입문자/직무전환자 | 학습멘토 | beginner-guide | 공통 가이드 |
+### 4. 작업 실행 (plan-execute 모드)
 
-## 스택 프리셋
+```
+/execute
+```
 
-| 스택 | 설명 |
-|------|------|
-| Next.js + Supabase | 풀스택 웹 앱 개발 (App Router, RLS, Auth) |
-| React + Node.js | 프론트엔드/백엔드 분리 (Vite, Express/Fastify) |
+분배된 작업을 팀원(에이전트)들이 실행합니다.
+
+### 5. 보고서 & 피드백
+
+```
+/report     # 최종 보고서 생성
+/feedback   # 팀원별 피드백
+```
+
+## 전체 커맨드
+
+### v3 커맨드 (프로젝트 관리)
+
+| 커맨드 | 설명 |
+|--------|------|
+| `/new-project` | 새 프로젝트 생성 (메인 진입점) |
+| `/discuss` | 팀 토론 실행 |
+| `/approve` | 기획서 승인 + 작업 분배 |
+| `/execute` | 작업 실행 (plan-execute 모드) |
+| `/status` | 프로젝트 상태 대시보드 |
+| `/report` | 최종 보고서 생성 |
+| `/feedback` | 팀원 피드백 |
+| `/my-team` | 팀 현황 + 역할 카탈로그 |
+| `/projects` | 프로젝트 목록 |
+
+### v2 커맨드 (온보딩/설정)
+
+| 커맨드 | 설명 |
+|--------|------|
+| `/onboarding` | 역할 기반 온보딩 마법사 |
+| `/my-config` | 현재 설정 대시보드 |
+| `/learn` | 역할별 학습 가이드 |
+| `/add-skill` | 스킬 추가 |
+| `/add-agent` | 에이전트 추가 |
+| `/preset` | 프리셋 관리 |
+| `/reset` | 설정 초기화 |
+
+## 역할 카탈로그 (11개)
+
+| 역할 | 이모지 | 카테고리 | 설명 |
+|------|--------|----------|------|
+| CTO | 🏗️ | Leadership | 기술 아키텍처 설계, 기술 의사결정 |
+| Product Owner | 📋 | Leadership | 요구사항 정의, 우선순위 결정 |
+| Full-stack Developer | ⚡ | Engineering | 프론트엔드 + 백엔드 전체 구현 |
+| Frontend Developer | 🎨 | Engineering | UI 구현, 컴포넌트 설계 |
+| Backend Developer | 🔧 | Engineering | API 설계, 비즈니스 로직 |
+| QA Engineer | 🧪 | Engineering | 테스트 전략, 품질 보증 |
+| UI/UX Designer | 🖌️ | Design | 사용자 경험 설계 |
+| DevOps Engineer | 🚀 | Engineering | CI/CD, 배포, 인프라 |
+| Data Engineer | 📊 | Engineering | 데이터 파이프라인, 분석 |
+| Security Engineer | 🛡️ | Engineering | 보안 검토, 취약점 분석 |
+| Technical Writer | 📝 | Support | 기술 문서 작성 |
+
+## 프로젝트 타입 (9개)
+
+| 타입 | 추천 팀 |
+|------|---------|
+| 웹 애플리케이션 | CTO + Full-stack + QA |
+| API 서버 | CTO + Backend + QA |
+| 텔레그램 봇 | CTO + Backend + QA |
+| CLI 도구 | CTO + Backend + QA |
+| 모바일 앱 | CTO + Full-stack + UI/UX + QA |
+| Chrome 확장 | CTO + Frontend + QA |
+| 데이터 파이프라인 | CTO + Data + QA |
+| 라이브러리/패키지 | CTO + Backend + QA + Tech Writer |
+| 커스텀 | CTO + 자유 선택 |
 
 ## 프로젝트 구조
 
 ```
 good-vibe-coding/
-├── .claude-plugin/plugin.json    # 플러그인 매니페스트
-├── agents/                       # 직군별 에이전트 (8개)
-├── commands/                     # 커맨드 (7개)
-├── skills/                       # 스킬 (4개)
+├── .claude-plugin/plugin.json    # 플러그인 매니페스트 (v3.0.0)
+├── agents/                       # 에이전트 (19개: 11 팀 + 8 온보딩)
+│   ├── team-cto.md              #   CTO 에이전트
+│   ├── team-backend.md          #   Backend 에이전트
+│   ├── team-*.md                #   (11개 팀 역할 에이전트)
+│   └── *.md                     #   (8개 기존 온보딩 에이전트)
+├── commands/                     # 커맨드 (16개: 9 프로젝트 + 7 온보딩)
+│   ├── new-project.md           #   프로젝트 생성
+│   ├── discuss.md               #   팀 토론
+│   ├── approve.md               #   기획서 승인
+│   └── *.md                     #   ...
 ├── presets/
-│   ├── roles/                    # 역할 프리셋 (6개)
-│   └── stacks/                   # 스택 프리셋 (2개)
+│   ├── team-roles/catalog.json  #   11개 역할 카탈로그
+│   ├── project-types.json       #   9개 프로젝트 타입
+│   ├── team-personalities.json  #   22개 페르소나 (11역할 x 2변형)
+│   ├── personalities.json       #   기존 16개 페르소나
+│   ├── roles/                   #   6개 역할 프리셋
+│   └── stacks/                  #   2개 스택 프리셋
+├── scripts/
+│   ├── cli.js                   #   CLI 브릿지 (v3)
+│   └── lib/                     #   핵심 라이브러리 (14개)
+│       ├── project-manager.js   #     프로젝트 CRUD
+│       ├── team-builder.js      #     팀 추천/구성
+│       ├── discussion-engine.js #     토론 프롬프트 생성
+│       ├── task-distributor.js  #     작업 분배
+│       ├── report-generator.js  #     보고서 생성
+│       ├── feedback-manager.js  #     피드백/성장
+│       ├── config-generator.js  #     설정 생성 (v2)
+│       └── *.js                 #     (기존 8개 라이브러리)
 ├── templates/                    # Handlebars 템플릿
 ├── hooks/                        # 훅 정의
-├── guides/
-│   ├── common/                   # 공통 가이드 (5개)
-│   ├── developer/                # 개발자 심화 가이드
-│   ├── pm/                       # PM 심화 가이드
-│   └── designer/                 # 디자이너 심화 가이드
-├── scripts/lib/                  # 핵심 라이브러리
-│   ├── config-generator.js       #   설정 생성 엔진
-│   ├── personality-builder.js    #   팀원 페르소나 빌더
-│   ├── agent-instruction-extractor.js # 에이전트 지시사항 추출
-│   ├── template-engine.js        #   Handlebars 렌더링
-│   ├── preset-loader.js          #   프리셋 로딩/병합
-│   └── file-writer.js            #   안전한 파일 쓰기
-└── tests/                        # Vitest 테스트
+├── guides/                       # 학습 가이드
+├── skills/                       # 스킬 (4개)
+└── tests/                        # Vitest 테스트 (199개)
+    ├── project-manager.test.js  #   20개 테스트
+    ├── team-builder.test.js     #   14개 테스트
+    ├── discussion-engine.test.js#   10개 테스트
+    ├── task-distributor.test.js #   11개 테스트
+    ├── report-generator.test.js #   8개 테스트
+    ├── feedback-manager.test.js #   10개 테스트
+    ├── integration.test.js      #   5개 테스트
+    └── *.test.js                #   (기존 121개 테스트)
 ```
 
 ## 기술 스택
 
 - **Node.js 18+** (ESM)
 - **Handlebars** (템플릿 엔진)
-- **Vitest** (테스트 프레임워크)
+- **Vitest** (테스트 프레임워크, 199개 테스트)
 
 ## 개발
 
 ```bash
-# 의존성 설치
-npm install
+npm install          # 의존성 설치
+npm test             # 전체 테스트 실행 (199개)
+npm run test:watch   # 테스트 감시 모드
+npm run test:coverage # 커버리지 리포트
+```
 
-# 테스트 실행
-npm test
+## CLI 직접 사용
 
-# 테스트 감시 모드
-npm run test:watch
+커맨드에서 내부적으로 호출하는 CLI를 직접 사용할 수도 있습니다:
+
+```bash
+# 프로젝트 타입 조회
+node scripts/cli.js project-types
+
+# 팀 추천
+node scripts/cli.js recommend-team --type telegram-bot
+
+# 역할 카탈로그
+node scripts/cli.js role-catalog
+
+# 팀 통계
+node scripts/cli.js team-stats
 ```
 
 ## 로드맵
 
-### Phase 1 - MVP
+### Phase 1 - MVP (v1.0)
 - [x] 프로젝트 초기화 + 핵심 라이브러리
-- [x] 템플릿 엔진 + 프리셋 로더
 - [x] `/onboarding` 커맨드 + 온보딩 스킬
-- [x] 개발자/PM 프리셋
-- [x] `/learn`, `/my-config` 커맨드
-- [x] 한국어 기초 가이드 2개
 
-### Phase 2 - 확장
-- [x] 나머지 4개 직군 프리셋 완성
-- [x] 직군별 에이전트 활성화
-- [x] 직군별 심화 가이드
-- [x] `/add-skill`, `/add-agent`, `/preset` 구현
-- [x] 스택 프리셋 (nextjs-supabase, react-node)
-- [x] 롤 플레잉 팀 빌딩 (에이전트 페르소나 × 2 변형)
+### Phase 2 - 확장 (v2.0)
+- [x] 6개 직군 프리셋, 에이전트 페르소나
+- [x] 에이전트 오케스트레이션
+- [x] 설정 초기화/내보내기
 
-### Phase 2.7 - 에이전트 오케스트레이션
-- [x] Role Preset에 orchestration + config.tools 추가
-- [x] agent-instruction-extractor 모듈 (plugin agents/*.md → 지시사항 추출)
-- [x] agent.md.hbs 템플릿 (YAML frontmatter + persona + 기술 지시사항)
-- [x] 온보딩 시 실제 agent .md 파일 생성 (~/.claude/agents/)
-- [x] CLAUDE.md에 Team Orchestration 섹션 (자동 위임 워크플로우)
+### Phase 3 - AI 팀 관리 (v3.0) ← 현재
+- [x] 프로젝트 CRUD + 상태 관리
+- [x] 11개 역할 카탈로그 + 22개 페르소나
+- [x] 팀 추천/구성 시스템
+- [x] 팀 토론 시뮬레이션
+- [x] 작업 분배 + 에이전트 실행
+- [x] 보고서 생성 + 피드백 시스템
+- [x] 9개 프로젝트 관리 커맨드
+- [x] 11개 팀 에이전트
+- [x] CLI 브릿지 + 통합 테스트
 
-### Phase 3 (현재) - 고도화
-- [ ] `/reset` + 설정 내보내기/가져오기
+### Phase 4 (계획)
 - [ ] 마켓플레이스 등록
-- [ ] 커뮤니티 프리셋 공유
+- [ ] 팀원 성장 시스템 (피드백 기반 프롬프트 개선)
+- [ ] 프로젝트 템플릿 (boilerplate 연동)
 - [ ] 국제화 (일본어, 영어)
 
 ## 라이선스

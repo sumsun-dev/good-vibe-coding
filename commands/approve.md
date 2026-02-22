@@ -1,0 +1,63 @@
+# /approve — 기획서 승인
+
+CEO(사용자)가 기획서를 승인하면 작업을 분배합니다.
+
+## Step 1: 프로젝트 로드
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js list-projects
+```
+
+가장 최근 planning 상태의 프로젝트를 선택합니다.
+
+## Step 2: 기획서 표시
+
+프로젝트의 기획서(discussion.planDocument)를 표시하고 확인을 요청하세요.
+
+AskUserQuestion:
+- "이 기획서를 승인하시겠습니까?"
+- 옵션: "승인", "수정 요청", "재토론"
+
+## Step 3: 승인 처리
+
+승인 시:
+
+```bash
+echo '{"id":"{프로젝트ID}","status":"approved"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js update-status
+```
+
+## Step 4: 작업 분배
+
+작업 분배 프롬프트를 생성하고 실행하세요:
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js task-distribution-prompt --id {프로젝트ID}
+```
+
+생성된 프롬프트를 실행하여 작업 목록을 만드세요.
+작업 목록을 프로젝트에 저장하세요.
+
+## Step 5: 결과 표시
+
+작업 분배 결과를 표 형태로 보여주세요:
+
+| 작업 | 담당 | Phase | 의존성 |
+|------|------|-------|--------|
+
+## Step 6: 다음 단계
+
+프로젝트 모드에 따라 안내:
+
+**plan-only 모드**:
+```
+기획과 작업 분배가 완료되었습니다!
+- `/report` — 최종 보고서 생성
+- `/feedback` — 팀원 피드백
+```
+
+**plan-execute 모드**:
+```
+작업이 분배되었습니다!
+- `/execute` — 작업 실행 시작
+- `/status` — 진행 상태 확인
+```
