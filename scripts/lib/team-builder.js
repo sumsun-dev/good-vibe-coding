@@ -2,6 +2,7 @@ import { readFile } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { getGrowthProfiles, buildGrowthContext } from './growth-manager.js';
+import { getMergedRoleCatalog, getMergedPersonalities } from './persona-manager.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '../..');
@@ -28,8 +29,12 @@ export function clearCaches() {
  */
 export async function loadRoleCatalog() {
   if (cachedCatalog) return cachedCatalog;
-  const content = await readFile(CATALOG_PATH, 'utf-8');
-  cachedCatalog = JSON.parse(content);
+  try {
+    cachedCatalog = await getMergedRoleCatalog();
+  } catch {
+    const content = await readFile(CATALOG_PATH, 'utf-8');
+    cachedCatalog = JSON.parse(content);
+  }
   return cachedCatalog;
 }
 
@@ -50,8 +55,12 @@ export async function loadProjectTypes() {
  */
 async function loadTeamPersonalities() {
   if (cachedPersonalities) return cachedPersonalities;
-  const content = await readFile(PERSONALITIES_PATH, 'utf-8');
-  cachedPersonalities = JSON.parse(content);
+  try {
+    cachedPersonalities = await getMergedPersonalities();
+  } catch {
+    const content = await readFile(PERSONALITIES_PATH, 'utf-8');
+    cachedPersonalities = JSON.parse(content);
+  }
   return cachedPersonalities;
 }
 

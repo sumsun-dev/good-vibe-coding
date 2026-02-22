@@ -6,6 +6,11 @@ import { buildTaskDistributionPrompt, buildExecutionPrompt, buildExecutionPlan, 
 import { generateReport } from './lib/report-generator.js';
 import { addFeedback, getTeamStats, getFeedbackHistory } from './lib/feedback-manager.js';
 import { analyzeGrowth, getGrowthProfiles, formatGrowthReport } from './lib/growth-manager.js';
+import {
+  createCustomRole, getCustomRole, listCustomRoles, updateCustomRole, deleteCustomRole,
+  addCustomVariant, getCustomVariants, updateCustomVariant, deleteCustomVariant,
+  setOverride, getOverrides, removeOverride, getAvailableVariants,
+} from './lib/persona-manager.js';
 
 const [,, command, ...args] = process.argv;
 
@@ -159,6 +164,82 @@ const commands = {
   'team-stats': async () => {
     const stats = await getTeamStats();
     output(stats);
+  },
+
+  'create-custom-role': async () => {
+    const data = await readStdin();
+    const role = await createCustomRole(data);
+    output(role);
+  },
+
+  'get-custom-role': async () => {
+    const opts = parseArgs(args);
+    const role = await getCustomRole(opts.id);
+    output(role);
+  },
+
+  'list-custom-roles': async () => {
+    const roles = await listCustomRoles();
+    output(roles);
+  },
+
+  'update-custom-role': async () => {
+    const data = await readStdin();
+    const role = await updateCustomRole(data.id, data.patch);
+    output(role);
+  },
+
+  'delete-custom-role': async () => {
+    const data = await readStdin();
+    await deleteCustomRole(data.id);
+    output({ success: true, id: data.id });
+  },
+
+  'add-custom-variant': async () => {
+    const data = await readStdin();
+    const variant = await addCustomVariant(data.roleId, data.variant);
+    output(variant);
+  },
+
+  'get-custom-variants': async () => {
+    const opts = parseArgs(args);
+    const variants = await getCustomVariants(opts.role);
+    output(variants);
+  },
+
+  'update-custom-variant': async () => {
+    const data = await readStdin();
+    const variant = await updateCustomVariant(data.roleId, data.variantId, data.patch);
+    output(variant);
+  },
+
+  'delete-custom-variant': async () => {
+    const data = await readStdin();
+    await deleteCustomVariant(data.roleId, data.variantId);
+    output({ success: true, roleId: data.roleId, variantId: data.variantId });
+  },
+
+  'set-override': async () => {
+    const data = await readStdin();
+    await setOverride(data.roleId, data.variantId, data.patch);
+    output({ success: true });
+  },
+
+  'get-overrides': async () => {
+    const overrides = await getOverrides();
+    output(overrides);
+  },
+
+  'remove-override': async () => {
+    const data = await readStdin();
+    await removeOverride(data.roleId, data.variantId);
+    output({ success: true });
+  },
+
+  'available-variants': async () => {
+    const opts = parseArgs(args);
+    const variants = await getAvailableVariants(opts.role);
+    output(variants);
   },
 
   'growth': async () => {

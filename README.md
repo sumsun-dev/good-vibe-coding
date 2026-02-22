@@ -6,7 +6,7 @@
 
 ## 핵심 특징
 
-- **가상 AI 팀**: 11개 역할 (CTO, Backend, QA, Frontend...) 각각 2개 페르소나 변형
+- **가상 AI 팀**: 11개 역할 (CTO, Backend, QA, Frontend...) 각각 2개 페르소나 변형 + 커스텀 확장
 - **팀 토론 시뮬레이션**: 팀원들이 자신의 역할과 성격으로 프로젝트를 토론
 - **기획서 자동 생성**: 토론 결과를 정형화된 기획서로 산출
 - **두 가지 모드**: "기획만" (plan-only) / "기획+실행" (plan-execute)
@@ -88,6 +88,8 @@ CEO가 기획서를 검토하고 승인합니다. 승인 후 작업이 역할별
 | `/feedback` | 팀원 피드백 |
 | `/growth` | 팀원 성장 현황 조회 |
 | `/my-team` | 팀 현황 + 역할 카탈로그 |
+| `/persona` | 커스텀 페르소나 관리 (역할/변형 CRUD) |
+| `/edit-persona` | 페르소나 빠른 수정/오버라이드 |
 | `/projects` | 프로젝트 목록 |
 
 ### v2 커맨드 (온보딩/설정)
@@ -142,7 +144,7 @@ good-vibe-coding/
 │   ├── team-backend.md          #   Backend 에이전트
 │   ├── team-*.md                #   (11개 팀 역할 에이전트)
 │   └── *.md                     #   (8개 기존 온보딩 에이전트)
-├── commands/                     # 커맨드 (17개: 10 프로젝트 + 7 온보딩)
+├── commands/                     # 커맨드 (19개: 12 프로젝트 + 7 온보딩)
 │   ├── new-project.md           #   프로젝트 생성
 │   ├── discuss.md               #   팀 토론
 │   ├── approve.md               #   기획서 승인
@@ -156,9 +158,10 @@ good-vibe-coding/
 │   └── stacks/                  #   2개 스택 프리셋
 ├── scripts/
 │   ├── cli.js                   #   CLI 브릿지 (v3)
-│   └── lib/                     #   핵심 라이브러리 (14개)
+│   └── lib/                     #   핵심 라이브러리 (15개)
 │       ├── project-manager.js   #     프로젝트 CRUD
 │       ├── team-builder.js      #     팀 추천/구성
+│       ├── persona-manager.js   #     커스텀 페르소나 CRUD/Merge
 │       ├── discussion-engine.js #     토론 프롬프트 생성
 │       ├── task-distributor.js  #     작업 분배
 │       ├── report-generator.js  #     보고서 생성
@@ -170,15 +173,16 @@ good-vibe-coding/
 ├── hooks/                        # 훅 정의
 ├── guides/                       # 학습 가이드
 ├── skills/                       # 스킬 (4개)
-└── tests/                        # Vitest 테스트 (258개)
+└── tests/                        # Vitest 테스트 (316개)
     ├── project-manager.test.js  #   23개 테스트
-    ├── team-builder.test.js     #   19개 테스트
+    ├── team-builder.test.js     #   24개 테스트
+    ├── persona-manager.test.js  #   50개 테스트
     ├── discussion-engine.test.js#   13개 테스트
     ├── task-distributor.test.js #   23개 테스트
     ├── report-generator.test.js #   13개 테스트
     ├── feedback-manager.test.js #   10개 테스트
     ├── growth-manager.test.js   #   27개 테스트
-    ├── integration.test.js      #   9개 테스트
+    ├── integration.test.js      #   12개 테스트
     └── *.test.js                #   (기존 121개 테스트)
 ```
 
@@ -186,13 +190,13 @@ good-vibe-coding/
 
 - **Node.js 18+** (ESM)
 - **Handlebars** (템플릿 엔진)
-- **Vitest** (테스트 프레임워크, 258개 테스트)
+- **Vitest** (테스트 프레임워크, 316개 테스트)
 
 ## 개발
 
 ```bash
 npm install          # 의존성 설치
-npm test             # 전체 테스트 실행 (258개)
+npm test             # 전체 테스트 실행 (316개)
 npm run test:watch   # 테스트 감시 모드
 npm run test:coverage # 커버리지 리포트
 ```
@@ -241,6 +245,14 @@ node scripts/cli.js team-stats
 - [x] 팀원 성장 시스템 (피드백 → 성장 레벨 → 프롬프트 자동 주입)
 - [x] `/growth` 커맨드 (성장 현황 조회)
 - [x] 토론/실행/보고서에 성장 컨텍스트 반영
+
+### Phase 5-1 - 커스텀 페르소나 (v3.2)
+- [x] 커스텀 역할 CRUD (`persona-manager.js`)
+- [x] 커스텀 변형 추가/수정/삭제
+- [x] 내장 페르소나 오버라이드 (원본 보존)
+- [x] Merge 로직 (내장 + 커스텀 통합)
+- [x] `/persona`, `/edit-persona` 커맨드
+- [x] team-builder 통합 (기존 호환 유지)
 
 ### Phase 5 (계획)
 - [ ] 마켓플레이스 등록

@@ -10,6 +10,7 @@ import {
   clearCaches,
 } from '../scripts/lib/team-builder.js';
 import { addFeedback, setFeedbackDir } from '../scripts/lib/feedback-manager.js';
+import { setCustomPersonaDir, createCustomRole, addCustomVariant, setOverride } from '../scripts/lib/persona-manager.js';
 
 const TMP_GROWTH_DIR = resolve('.tmp-test-team-growth');
 
@@ -17,6 +18,7 @@ beforeEach(async () => {
   clearCaches();
   await mkdir(TMP_GROWTH_DIR, { recursive: true });
   setFeedbackDir(TMP_GROWTH_DIR);
+  setCustomPersonaDir(TMP_GROWTH_DIR);
 });
 
 afterEach(async () => {
@@ -138,6 +140,89 @@ describe('getTeamSummary', () => {
   it('빈 팀은 빈 문자열을 반환한다', () => {
     const summary = getTeamSummary([]);
     expect(summary).toBe('');
+  });
+});
+
+describe('buildTeam with custom personas', () => {
+  it('커스텀 역할로 팀을 빌드할 수 있다', async () => {
+    await createCustomRole({
+      id: 'ai-engineer',
+      displayName: 'AI Engineer',
+      emoji: '🤖',
+      category: 'engineering',
+      description: 'AI 파이프라인 구축',
+      defaultTools: ['Read', 'Grep'],
+      model: 'sonnet',
+      discussionPriority: 5,
+      skills: ['llm'],
+    });
+    await addCustomVariant('ai-engineer', {
+      id: 'creative-ai',
+      name: '창의적 AI 빌더',
+      emoji: '🤖',
+      defaultName: '재현',
+      trait: '창의적인',
+      description: 'AI 파이프라인을 창의적으로 구축',
+      speakingStyle: '실험적 스타일',
+      greeting: 'AI로 만들어봅시다!',
+    });
+    clearCaches();
+    const team = await buildTeam(['cto', 'ai-engineer']);
+    expect(team.length).toBe(2);
+    expect(team[1].roleId).toBe('ai-engineer');
+    expect(team[1].displayName).toBe('재현');
+    expect(team[1].trait).toBe('창의적인');
+  });
+
+  it('오버라이드된 내장 페르소나로 팀을 빌드한다', async () => {
+    await setOverride('cto', 'visionary', { trait: '수정된 CTO trait' });
+    clearCaches();
+    const team = await buildTeam(['cto']);
+    expect(team[0].trait).toBe('수정된 CTO trait');
+    expect(team[0].displayName).toBe('민준');
+  });
+
+  it('내장 역할에 추가된 커스텀 variant를 선택할 수 있다', async () => {
+    await addCustomVariant('cto', {
+      id: 'startup-cto',
+      name: '스타트업 CTO',
+      emoji: '🏗️',
+      defaultName: '태호',
+      trait: '빠른 실행력의',
+      description: '스타트업 환경에서 빠르게 결정',
+      speakingStyle: '간결하고 빠른 스타일',
+      greeting: '빠르게 갑시다!',
+    });
+    clearCaches();
+    const team = await buildTeam(['cto'], { cto: 'startup-cto' });
+    expect(team[0].personalityVariant).toBe('startup-cto');
+    expect(team[0].displayName).toBe('태호');
+  });
+
+  it('기존 11개 역할 카운트는 커스텀 추가 후에도 내장+커스텀 합산', async () => {
+    await createCustomRole({
+      id: 'ai-engineer',
+      displayName: 'AI Engineer',
+      emoji: '🤖',
+      category: 'engineering',
+      description: 'AI',
+      defaultTools: ['Read'],
+      model: 'sonnet',
+      discussionPriority: 5,
+      skills: ['llm'],
+    });
+    clearCaches();
+    const catalog = await loadRoleCatalog();
+    expect(Object.keys(catalog.roles).length).toBe(12);
+    expect(catalog.roles['ai-engineer'].isCustom).toBe(true);
+    expect(catalog.roles.cto.isCustom).toBeUndefined();
+  });
+
+  it('커스텀 페르소나 없으면 기존과 동일하게 동작 (fallback)', async () => {
+    const catalog = await loadRoleCatalog();
+    expect(Object.keys(catalog.roles).length).toBe(11);
+    const team = await buildTeam(['cto']);
+    expect(team[0].personalityVariant).toBe('visionary');
   });
 });
 

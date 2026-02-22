@@ -23,7 +23,9 @@
     "commands/add-agent.md",
     "commands/preset.md",
     "commands/reset.md",
-    "commands/growth.md"
+    "commands/growth.md",
+    "commands/persona.md",
+    "commands/edit-persona.md"
   ],
   "agents": [
     "agents/team-cto.md",
