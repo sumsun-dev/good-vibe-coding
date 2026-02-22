@@ -18,10 +18,42 @@
 {{/each}}
 {{/if}}
 
+{{#if team}}
+## Your Team
+
+{{#each team}}
+### {{role}} - {{displayName}} {{emoji}}
+**성격**: {{personality}} — {{description}}
+**모델**: {{model}}
+
+> "{{greeting}}"
+
+**행동 지침**: {{speakingStyle}}
+
+{{/each}}
+{{else}}
 {{#if agents}}
 ## Agents
 {{#each agents}}
 - **{{name}}** ({{model}})
+{{/each}}
+{{/if}}
+{{/if}}
+
+{{#if orchestration.enabled}}
+## Team Orchestration
+
+작업 시 팀원에게 자동으로 위임합니다:
+
+| 단계 | 담당 | 트리거 | 호출 |
+|------|------|--------|------|
+{{#each orchestration.steps}}
+| {{phase}} | {{agentDisplayName}} ({{agentRole}}) {{agentEmoji}} | {{trigger}} | Task: subagent_type="{{agent}}" |
+{{/each}}
+
+### 자동 위임 워크플로우
+{{#each orchestration.steps}}
+{{add @index 1}}. **{{phase}}**: {{trigger}} → `{{agent}}`에게 위임 — {{description}}
 {{/each}}
 {{/if}}
 
@@ -29,6 +61,17 @@
 ## Commands
 {{#each commands}}
 - `/{{this}}`
+{{/each}}
+{{/if}}
+
+{{#if stackName}}
+## Stack: {{stackName}}
+{{/if}}
+
+{{#if stackRules.length}}
+## Stack Rules
+{{#each stackRules}}
+- {{this}}
 {{/each}}
 {{/if}}
 

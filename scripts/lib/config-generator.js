@@ -1,4 +1,6 @@
 import { loadPreset, mergePresets } from './preset-loader.js';
+import { buildAgentTeam } from './personality-builder.js';
+import { extractAllInstructions } from './agent-instruction-extractor.js';
 import { renderTemplate } from './template-engine.js';
 import { safeWriteFile, writeFiles } from './file-writer.js';
 import { resolve } from 'path';
@@ -31,7 +33,7 @@ export async function generateConfig(choices) {
   }
 
   const merged = mergePresets(rolePreset, stackPreset);
-  const files = await buildConfigFiles(merged, rolePreset, choices, targetDir);
+  const files = await buildConfigFiles(merged, rolePreset, stackPreset, choices, targetDir);
 
   return {
     role: rolePreset.displayName,
@@ -44,11 +46,16 @@ export async function generateConfig(choices) {
  * 병합된 프리셋으로부터 설정 파일 목록을 빌드한다.
  * @param {object} merged - 병합된 프리셋
  * @param {object} rolePreset - 역할 프리셋 원본
+ * @param {object|null} stackPreset - 스택 프리셋
  * @param {object} choices - 사용자 선택
  * @param {string} targetDir - 대상 디렉토리
  * @returns {Promise<Array<{path: string, content: string}>>}
  */
-async function buildConfigFiles(merged, rolePreset, choices, targetDir) {
+async function buildConfigFiles(merged, rolePreset, stackPreset, choices, targetDir) {
+  const team = await buildAgentTeam(merged.agents, choices.personalities || {});
+  const instructions = await extractAllInstructions(merged.agents);
+  const orchestration = buildOrchestrationData(rolePreset.orchestration, team);
+
   const templateData = {
     roleName: rolePreset.displayName,
     roleDescription: rolePreset.roleDescription || rolePreset.description,
@@ -57,9 +64,13 @@ async function buildConfigFiles(merged, rolePreset, choices, targetDir) {
     workflow: rolePreset.workflowSteps || [],
     skills: merged.skills,
     agents: merged.agents.map(a => ({ name: a.template, model: a.config?.model || 'sonnet' })),
+    team,
+    orchestration,
     commands: merged.commands,
     tasks: choices.tasks || [],
     options: choices.options || {},
+    stackName: stackPreset?.displayName || null,
+    stackRules: merged.stackRules || [],
   };
 
   const files = [];
@@ -72,7 +83,61 @@ async function buildConfigFiles(merged, rolePreset, choices, targetDir) {
   const coreRules = await renderTemplate('rules/core.md.hbs', templateData);
   files.push({ path: resolve(targetDir, 'rules', 'core.md'), content: coreRules });
 
+  // agents/*.md
+  for (const member of team) {
+    const tools = getAgentTools(merged.agents, member.agentName);
+    const agentContent = await renderTemplate('agent.md.hbs', {
+      ...member,
+      tools,
+      instructions: instructions[member.agentName] || '',
+    });
+    files.push({
+      path: resolve(targetDir, 'agents', `${member.agentName}.md`),
+      content: agentContent,
+    });
+  }
+
   return files;
+}
+
+/**
+ * orchestration 데이터에 팀원 persona 정보를 병합한다.
+ * @param {object|undefined} orchestration - rolePreset의 orchestration 필드
+ * @param {Array<object>} team - 빌드된 팀원 배열
+ * @returns {object} 렌더링용 orchestration 데이터
+ */
+function buildOrchestrationData(orchestration, team) {
+  if (!orchestration || !orchestration.enabled) {
+    return { enabled: false, steps: [] };
+  }
+
+  const teamMap = {};
+  for (const member of team) {
+    teamMap[member.agentName] = member;
+  }
+
+  const steps = orchestration.steps.map(step => {
+    const member = teamMap[step.agent];
+    return {
+      ...step,
+      agentDisplayName: member?.displayName || step.agent,
+      agentRole: member?.role || step.agent,
+      agentEmoji: member?.emoji || '🤖',
+    };
+  });
+
+  return { enabled: true, steps };
+}
+
+/**
+ * 에이전트의 tools 설정을 조회한다.
+ * @param {Array<{template: string, config: object}>} agents - 프리셋 에이전트 배열
+ * @param {string} agentName - 에이전트 이름
+ * @returns {string[]} tools 배열
+ */
+function getAgentTools(agents, agentName) {
+  const agent = agents.find(a => a.template === agentName);
+  return agent?.config?.tools || ['Read', 'Grep', 'Glob'];
 }
 
 /**
@@ -84,19 +149,22 @@ async function buildConfigFiles(merged, rolePreset, choices, targetDir) {
  * @returns {Promise<object>} 생성 결과 + 파일 쓰기 결과
  */
 export async function generateAndWriteConfig(choices, options = {}) {
-  const config = await generateConfig(choices);
-
-  const filesToWrite = config.filesGenerated.map((path, i) => ({
-    path,
-    content: '', // placeholder
-  }));
-
-  // 실제로는 generateConfig 내부에서 content를 포함한 리스트를 반환해야 함
-  // 여기서는 generateConfig를 재구성
-
   const targetDir = choices.targetDir || CLAUDE_DIR;
   const rolePreset = await loadPreset('roles', choices.role);
-  const merged = mergePresets(rolePreset);
+
+  let stackPreset = null;
+  if (choices.stack) {
+    try {
+      stackPreset = await loadPreset('stacks', choices.stack);
+    } catch {
+      // 스택 프리셋이 없으면 무시
+    }
+  }
+
+  const merged = mergePresets(rolePreset, stackPreset);
+  const team = await buildAgentTeam(merged.agents, choices.personalities || {});
+  const instructions = await extractAllInstructions(merged.agents);
+  const orchestration = buildOrchestrationData(rolePreset.orchestration, team);
 
   const templateData = {
     roleName: rolePreset.displayName,
@@ -106,17 +174,37 @@ export async function generateAndWriteConfig(choices, options = {}) {
     workflow: rolePreset.workflowSteps || [],
     skills: merged.skills,
     agents: merged.agents.map(a => ({ name: a.template, model: a.config?.model || 'sonnet' })),
+    team,
+    orchestration,
     commands: merged.commands,
+    stackName: stackPreset?.displayName || null,
+    stackRules: merged.stackRules || [],
   };
 
   const claudeMd = await renderTemplate('claude-md.hbs', templateData);
   const coreRules = await renderTemplate('rules/core.md.hbs', templateData);
 
+  const filesToWrite = [
+    { path: resolve(targetDir, 'CLAUDE.md'), content: claudeMd },
+    { path: resolve(targetDir, 'rules', 'core.md'), content: coreRules },
+  ];
+
+  // agents/*.md
+  for (const member of team) {
+    const tools = getAgentTools(merged.agents, member.agentName);
+    const agentContent = await renderTemplate('agent.md.hbs', {
+      ...member,
+      tools,
+      instructions: instructions[member.agentName] || '',
+    });
+    filesToWrite.push({
+      path: resolve(targetDir, 'agents', `${member.agentName}.md`),
+      content: agentContent,
+    });
+  }
+
   const results = await writeFiles(
-    [
-      { path: resolve(targetDir, 'CLAUDE.md'), content: claudeMd },
-      { path: resolve(targetDir, 'rules', 'core.md'), content: coreRules },
-    ],
+    filesToWrite,
     { overwrite: options.overwrite ?? false, backup: options.backup ?? true }
   );
 

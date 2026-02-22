@@ -4,8 +4,14 @@
   "description": "UX 리서처, 데이터 분석가를 위한 Claude Code 설정",
   "category": "role",
   "agents": [
-    { "template": "data-analyst-kr", "config": { "model": "sonnet" } }
+    { "template": "data-analyst-kr", "config": { "model": "sonnet", "tools": ["Read", "Grep", "Glob", "Bash"] } }
   ],
+  "orchestration": {
+    "enabled": true,
+    "steps": [
+      { "phase": "데이터 분석", "agent": "data-analyst-kr", "trigger": "데이터 수집 완료 후", "description": "데이터 품질 확인 + 패턴 분석 + 인사이트 도출합니다" }
+    ]
+  },
   "skills": ["data-collector", "report-writer"],
   "commands": ["analyze-data"],
   "rules": { "core": true, "research_standards": true },

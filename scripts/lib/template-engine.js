@@ -33,6 +33,10 @@ function createHandlebarsInstance() {
     return arr.map(item => `- ${item}`).join('\n');
   });
 
+  hbs.registerHelper('add', function (a, b) {
+    return a + b;
+  });
+
   return hbs;
 }
 

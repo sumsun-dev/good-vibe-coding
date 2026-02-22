@@ -4,8 +4,14 @@
   "description": "블로거, 마케터, 카피라이터를 위한 Claude Code 설정",
   "category": "role",
   "agents": [
-    { "template": "content-editor-kr", "config": { "model": "sonnet" } }
+    { "template": "content-editor-kr", "config": { "model": "sonnet", "tools": ["Read", "Grep", "Glob"] } }
   ],
+  "orchestration": {
+    "enabled": true,
+    "steps": [
+      { "phase": "콘텐츠 편집", "agent": "content-editor-kr", "trigger": "초안 작성 후", "description": "구조/가독성/SEO/톤앤매너를 검토합니다" }
+    ]
+  },
   "skills": ["blog-writer", "seo-checker", "content-calendar"],
   "commands": ["write-post", "check-seo"],
   "rules": { "core": true, "writing_standards": true },

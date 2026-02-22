@@ -4,9 +4,16 @@
   "description": "소프트웨어 개발자를 위한 Claude Code 설정",
   "category": "role",
   "agents": [
-    { "template": "code-reviewer-kr", "config": { "model": "sonnet" } },
-    { "template": "tdd-coach-kr", "config": { "model": "haiku" } }
+    { "template": "code-reviewer-kr", "config": { "model": "sonnet", "tools": ["Read", "Grep", "Glob", "Bash"] } },
+    { "template": "tdd-coach-kr", "config": { "model": "haiku", "tools": ["Read", "Grep", "Glob"] } }
   ],
+  "orchestration": {
+    "enabled": true,
+    "steps": [
+      { "phase": "테스트 설계", "agent": "tdd-coach-kr", "trigger": "기능 구현 요청 시", "description": "TDD 사이클에 따라 테스트를 먼저 설계합니다" },
+      { "phase": "코드 리뷰", "agent": "code-reviewer-kr", "trigger": "구현 완료 후", "description": "보안/성능/확장성 관점에서 리뷰합니다" }
+    ]
+  },
   "skills": ["side-impact", "verify", "tdd-workflow", "code-review"],
   "commands": ["start"],
   "rules": { "core": true, "languages": ["typescript"] },
