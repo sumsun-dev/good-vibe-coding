@@ -1,0 +1,24 @@
+{
+  "name": "nextjs-supabase",
+  "displayName": "Next.js + Supabase",
+  "description": "Next.js와 Supabase를 활용한 풀스택 웹 앱 개발 스택",
+  "category": "stack",
+  "stackRules": [
+    "Next.js App Router 사용 (app/ 디렉토리 구조)",
+    "서버 컴포넌트 기본, 클라이언트 컴포넌트는 'use client' 명시",
+    "Supabase RLS (Row Level Security) 정책 필수 설정",
+    "환경변수: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    "API 호출은 서버 액션 또는 Route Handler 사용",
+    "Supabase 마이그레이션 파일로 스키마 관리",
+    "인증: Supabase Auth + middleware.ts로 보호된 라우트 설정",
+    "타입 생성: supabase gen types typescript 활용"
+  ],
+  "skills": [],
+  "commands": [],
+  "agents": [],
+  "rules": {
+    "nextjs": true,
+    "supabase": true
+  },
+  "hooks": {}
+}

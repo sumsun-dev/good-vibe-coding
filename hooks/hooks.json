@@ -1,3 +1,60 @@
 {
-  "hooks": []
+  "hooks": [
+    {
+      "id": "consolelog_warning",
+      "name": "console.log 경고",
+      "description": "파일 편집 후 console.log가 남아있으면 경고합니다",
+      "event": "afterEdit",
+      "roles": ["developer"],
+      "command": "grep -n 'console.log' \"$FILE\" && echo '⚠️ console.log가 남아있습니다. 커밋 전에 제거하세요.' || true"
+    },
+    {
+      "id": "prettier_format",
+      "name": "Prettier 자동 포맷",
+      "description": "파일 편집 후 Prettier로 자동 포맷팅합니다",
+      "event": "afterEdit",
+      "roles": ["developer"],
+      "command": "npx prettier --write \"$FILE\" 2>/dev/null || true"
+    },
+    {
+      "id": "env_commit_block",
+      "name": ".env 커밋 차단",
+      "description": ".env 파일이 git add 되는 것을 방지합니다",
+      "event": "beforeCommit",
+      "roles": ["developer"],
+      "command": "git diff --cached --name-only | grep -q '\\.env' && echo '🚫 .env 파일은 커밋할 수 없습니다.' && exit 1 || true"
+    },
+    {
+      "id": "doc_format",
+      "name": "문서 포맷 검사",
+      "description": "마크다운 문서의 포맷 일관성을 검사합니다",
+      "event": "afterEdit",
+      "roles": ["pm"],
+      "command": "echo '📝 문서 포맷을 확인하세요: 제목 계층, 날짜 표기, 체크리스트 형식'"
+    },
+    {
+      "id": "checklist_auto",
+      "name": "체크리스트 자동 생성",
+      "description": "기획 문서 작성 시 체크리스트 포함 여부를 확인합니다",
+      "event": "afterEdit",
+      "roles": ["pm"],
+      "command": "grep -q '\\- \\[' \"$FILE\" || echo '💡 체크리스트(- [ ])를 추가하면 추적이 편리합니다.'"
+    },
+    {
+      "id": "css_format",
+      "name": "CSS 변수 검사",
+      "description": "CSS 파일에서 하드코딩된 색상값을 감지합니다",
+      "event": "afterEdit",
+      "roles": ["designer"],
+      "command": "grep -nE '#[0-9a-fA-F]{3,8}|rgb\\(' \"$FILE\" && echo '🎨 하드코딩된 색상값이 있습니다. CSS 변수 사용을 권장합니다.' || true"
+    },
+    {
+      "id": "spell_check",
+      "name": "맞춤법 알림",
+      "description": "콘텐츠 파일 편집 후 맞춤법 검사를 알립니다",
+      "event": "afterEdit",
+      "roles": ["content-creator"],
+      "command": "echo '✍️ 맞춤법 검사를 잊지 마세요. 한국어 맞춤법 검사기를 활용하세요.'"
+    }
+  ]
 }

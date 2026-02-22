@@ -51,6 +51,7 @@ export function mergePresets(...presets) {
     hooks: {},
     guides: [],
     claudeMd: {},
+    stackRules: [],
   };
 
   for (const preset of presets) {
@@ -76,6 +77,9 @@ export function mergePresets(...presets) {
     }
     if (preset.claudeMd) {
       result.claudeMd = { ...result.claudeMd, ...preset.claudeMd };
+    }
+    if (preset.stackRules) {
+      result.stackRules = [...result.stackRules, ...preset.stackRules];
     }
     if (preset.workflow) {
       result.workflow = preset.workflow;

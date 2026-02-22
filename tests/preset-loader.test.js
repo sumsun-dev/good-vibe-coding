@@ -18,6 +18,50 @@ describe('preset-loader', () => {
       expect(preset.displayName).toBe('PM / 기획자');
     });
 
+    it('designer 프리셋을 로딩한다', async () => {
+      const preset = await loadPreset('roles', 'designer');
+      expect(preset.name).toBe('designer');
+      expect(preset.displayName).toBe('디자이너');
+      expect(preset.category).toBe('role');
+      expect(preset.agents).toBeInstanceOf(Array);
+    });
+
+    it('researcher 프리셋을 로딩한다', async () => {
+      const preset = await loadPreset('roles', 'researcher');
+      expect(preset.name).toBe('researcher');
+      expect(preset.displayName).toBe('리서처 / 분석가');
+    });
+
+    it('content-creator 프리셋을 로딩한다', async () => {
+      const preset = await loadPreset('roles', 'content-creator');
+      expect(preset.name).toBe('content-creator');
+      expect(preset.displayName).toBe('콘텐츠 크리에이터');
+    });
+
+    it('student 프리셋을 로딩한다', async () => {
+      const preset = await loadPreset('roles', 'student');
+      expect(preset.name).toBe('student');
+      expect(preset.displayName).toBe('학생 / 입문자');
+    });
+
+    it('nextjs-supabase 스택 프리셋을 로딩한다', async () => {
+      const preset = await loadPreset('stacks', 'nextjs-supabase');
+      expect(preset.name).toBe('nextjs-supabase');
+      expect(preset.displayName).toBe('Next.js + Supabase');
+      expect(preset.category).toBe('stack');
+      expect(preset.stackRules).toBeInstanceOf(Array);
+      expect(preset.stackRules.length).toBeGreaterThan(0);
+    });
+
+    it('react-node 스택 프리셋을 로딩한다', async () => {
+      const preset = await loadPreset('stacks', 'react-node');
+      expect(preset.name).toBe('react-node');
+      expect(preset.displayName).toBe('React + Node.js');
+      expect(preset.category).toBe('stack');
+      expect(preset.stackRules).toBeInstanceOf(Array);
+      expect(preset.stackRules.length).toBeGreaterThan(0);
+    });
+
     it('존재하지 않는 프리셋은 에러를 발생시킨다', async () => {
       await expect(loadPreset('roles', 'nonexistent')).rejects.toThrow();
     });
@@ -60,6 +104,38 @@ describe('preset-loader', () => {
       expect(result.workflow).toBe('dev-tdd');
     });
 
+    it('stackRules를 병합한다', () => {
+      const rolePreset = {
+        name: 'developer',
+        displayName: '개발자',
+        agents: [],
+        skills: ['tdd'],
+      };
+      const stackPreset = {
+        name: 'nextjs-supabase',
+        displayName: 'Next.js + Supabase',
+        agents: [],
+        stackRules: [
+          'Next.js App Router 사용',
+          'Supabase RLS 정책 필수',
+        ],
+      };
+
+      const result = mergePresets(rolePreset, stackPreset);
+
+      expect(result.stackRules).toEqual([
+        'Next.js App Router 사용',
+        'Supabase RLS 정책 필수',
+      ]);
+      expect(result.skills).toEqual(['tdd']);
+    });
+
+    it('stackRules가 없는 프리셋 병합 시 빈 배열을 유지한다', () => {
+      const a = { agents: [], skills: [] };
+      const result = mergePresets(a);
+      expect(result.stackRules).toEqual([]);
+    });
+
     it('null 프리셋을 무시한다', () => {
       const a = { skills: ['a'], agents: [] };
       const result = mergePresets(a, null, undefined);
@@ -70,6 +146,7 @@ describe('preset-loader', () => {
       const result = mergePresets({}, {});
       expect(result.agents).toEqual([]);
       expect(result.skills).toEqual([]);
+      expect(result.stackRules).toEqual([]);
     });
   });
 
@@ -78,6 +155,16 @@ describe('preset-loader', () => {
       const names = await listPresets('roles');
       expect(names).toContain('developer');
       expect(names).toContain('pm');
+      expect(names).toContain('designer');
+      expect(names).toContain('researcher');
+      expect(names).toContain('content-creator');
+      expect(names).toContain('student');
+    });
+
+    it('stacks 카테고리의 프리셋을 나열한다', async () => {
+      const names = await listPresets('stacks');
+      expect(names).toContain('nextjs-supabase');
+      expect(names).toContain('react-node');
     });
 
     it('존재하지 않는 카테고리는 빈 배열을 반환한다', async () => {

@@ -93,3 +93,10 @@
 - 에러 메시지를 꼼꼼히 읽기
 - 작은 단위로 나눠서 실행하고 결과 확인하기
 {{/ifEquals}}
+
+{{#if stackRules.length}}
+## Stack Rules
+{{#each stackRules}}
+- {{this}}
+{{/each}}
+{{/if}}

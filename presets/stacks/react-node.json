@@ -1,0 +1,24 @@
+{
+  "name": "react-node",
+  "displayName": "React + Node.js",
+  "description": "React 프론트엔드와 Node.js 백엔드를 분리한 개발 스택",
+  "category": "stack",
+  "stackRules": [
+    "프론트엔드/백엔드 디렉토리 분리 (client/, server/ 또는 frontend/, backend/)",
+    "React: 함수형 컴포넌트 + Hooks 사용, 클래스 컴포넌트 금지",
+    "상태 관리: 로컬 상태 useState, 전역 상태 Context 또는 Zustand",
+    "Node.js: Express 또는 Fastify 라우터 구조",
+    "API 통신: REST 기반, axios 또는 fetch 사용",
+    "CORS 설정 필수 (개발/프로덕션 환경별 분리)",
+    "환경변수: .env.development / .env.production 분리",
+    "빌드: Vite (프론트) + Node.js (백엔드) 독립 빌드"
+  ],
+  "skills": [],
+  "commands": [],
+  "agents": [],
+  "rules": {
+    "react": true,
+    "nodejs": true
+  },
+  "hooks": {}
+}
