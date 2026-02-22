@@ -1,0 +1,36 @@
+{
+  "name": "cli-app",
+  "displayName": "CLI Application",
+  "description": "Commander.js 기반 커맨드라인 도구",
+  "version": "1.0.0",
+  "projectType": "cli-tool",
+  "variables": {
+    "projectName": { "prompt": "프로젝트 이름", "default": "my-cli" },
+    "description": { "prompt": "프로젝트 설명", "default": "A CLI tool" },
+    "commandName": { "prompt": "CLI 커맨드 이름", "default": "mycli" }
+  },
+  "directories": ["src/commands"],
+  "files": [
+    {
+      "path": "package.json",
+      "content": "{\n  \"name\": \"{{projectName}}\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"description\": \"{{description}}\",\n  \"bin\": {\n    \"{{commandName}}\": \"./src/index.js\"\n  },\n  \"scripts\": {\n    \"start\": \"node src/index.js\"\n  },\n  \"dependencies\": {\n    \"commander\": \"^12.0.0\"\n  }\n}"
+    },
+    {
+      "path": "src/index.js",
+      "content": "#!/usr/bin/env node\nimport { program } from 'commander';\nimport { hello } from './commands/hello.js';\n\nprogram\n  .name('{{commandName}}')\n  .description('{{description}}')\n  .version('0.1.0');\n\nprogram\n  .command('hello')\n  .description('인사 메시지 출력')\n  .argument('[name]', '이름', 'World')\n  .action(hello);\n\nprogram.parse();"
+    },
+    {
+      "path": "src/commands/hello.js",
+      "content": "export function hello(name) {\n  console.log(`Hello, ${name}!`);\n}"
+    },
+    {
+      "path": ".gitignore",
+      "content": "node_modules/\n*.log"
+    },
+    {
+      "path": "README.md",
+      "content": "# {{projectName}}\n\n{{description}}\n\n## 설치\n\n```bash\nnpm install\nnpm link\n```\n\n## 사용법\n\n```bash\n{{commandName}} hello [name]\n```"
+    }
+  ],
+  "postScaffoldMessage": "`npm install && npm link`로 설치 후 `{{commandName}} hello`로 테스트하세요."
+}

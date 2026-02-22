@@ -15,6 +15,9 @@ import { generateGrowthSection } from '../scripts/lib/report-generator.js';
 import {
   setCustomPersonaDir, createCustomRole, addCustomVariant, setOverride, getAvailableVariants,
 } from '../scripts/lib/persona-manager.js';
+import {
+  scaffold, loadTemplate, listTemplates, validateTemplate, setCustomTemplatesDir,
+} from '../scripts/lib/template-scaffolder.js';
 
 const TMP_DIR = resolve('.tmp-test-integration');
 const FEEDBACK_DIR = resolve('.tmp-test-integration-feedback');
@@ -331,5 +334,83 @@ describe('통합 테스트: 전체 프로젝트 플로우', () => {
     const prompt = buildExecutionPrompt(task, team[0]);
     expect(prompt).toContain('## 성장 컨텍스트');
     expect(prompt).toContain('Competent');
+  });
+
+  it('템플릿 스캐폴딩: next-app 전체 스캐폴딩 검증', async () => {
+    const targetDir = resolve(TMP_DIR, 'scaffold-next');
+    const result = await scaffold('next-app', targetDir, {
+      projectName: 'my-web-app',
+      description: '통합 테스트용 웹앱',
+    });
+
+    expect(result.files.length).toBeGreaterThan(0);
+    expect(result.files.every(f => f.written)).toBe(true);
+    expect(result.postScaffoldMessage).toContain('npm install');
+
+    const { readFile } = await import('fs/promises');
+    const pkg = JSON.parse(await readFile(resolve(targetDir, 'package.json'), 'utf-8'));
+    expect(pkg.name).toBe('my-web-app');
+    expect(pkg.dependencies.next).toBeDefined();
+
+    const readme = await readFile(resolve(targetDir, 'README.md'), 'utf-8');
+    expect(readme).toContain('my-web-app');
+    expect(readme).toContain('통합 테스트용 웹앱');
+  });
+
+  it('템플릿 스캐폴딩: express-api 전체 스캐폴딩 검증', async () => {
+    const targetDir = resolve(TMP_DIR, 'scaffold-express');
+    const result = await scaffold('express-api', targetDir, {
+      projectName: 'my-api',
+      description: 'API 통합 테스트',
+      port: '8080',
+    });
+
+    expect(result.files.every(f => f.written)).toBe(true);
+
+    const { readFile } = await import('fs/promises');
+    const indexJs = await readFile(resolve(targetDir, 'src/index.js'), 'utf-8');
+    expect(indexJs).toContain('8080');
+    expect(indexJs).toContain('express');
+  });
+
+  it('템플릿 스캐폴딩: custom 템플릿 로딩 + 스캐폴딩', async () => {
+    const customDir = resolve(TMP_DIR, 'custom-templates');
+    await mkdir(customDir, { recursive: true });
+    setCustomTemplatesDir(customDir);
+
+    const customTemplate = {
+      name: 'my-custom',
+      displayName: 'Custom Template',
+      version: '1.0.0',
+      files: [
+        { path: 'index.js', content: 'export const name = "{{projectName}}";' },
+        { path: 'README.md', content: '# {{projectName}}' },
+      ],
+    };
+    const { writeFile } = await import('fs/promises');
+    await writeFile(resolve(customDir, 'my-custom.json'), JSON.stringify(customTemplate));
+
+    const template = await loadTemplate('my-custom');
+    expect(template.name).toBe('my-custom');
+
+    const targetDir = resolve(TMP_DIR, 'scaffold-custom');
+    const result = await scaffold('my-custom', targetDir, { projectName: 'custom-app' });
+    expect(result.files.length).toBe(2);
+
+    const { readFile } = await import('fs/promises');
+    const content = await readFile(resolve(targetDir, 'index.js'), 'utf-8');
+    expect(content).toContain('custom-app');
+  });
+
+  it('템플릿 스캐폴딩: 모든 built-in 템플릿 유효성 확인', async () => {
+    const templates = await listTemplates();
+    const builtinNames = ['next-app', 'express-api', 'cli-app', 'telegram-bot', 'npm-library'];
+    for (const name of builtinNames) {
+      const template = templates.find(t => t.name === name);
+      expect(template).toBeDefined();
+      const result = validateTemplate(template);
+      expect(result.valid).toBe(true);
+      expect(result.errors).toEqual([]);
+    }
   });
 });

@@ -6,25 +6,29 @@
       "description": "풀스택 웹 앱 (SPA/SSR)",
       "recommendedTeam": ["cto", "fullstack", "qa"],
       "optionalRoles": ["uiux", "devops", "security"],
-      "suggestedStack": "nextjs-supabase"
+      "suggestedStack": "nextjs-supabase",
+      "suggestedTemplate": "next-app"
     },
     "api-server": {
       "displayName": "API 서버",
       "description": "REST/GraphQL API 백엔드",
       "recommendedTeam": ["cto", "backend", "qa"],
-      "optionalRoles": ["devops", "security", "tech-writer"]
+      "optionalRoles": ["devops", "security", "tech-writer"],
+      "suggestedTemplate": "express-api"
     },
     "telegram-bot": {
       "displayName": "텔레그램 봇",
       "description": "텔레그램 메신저 봇",
       "recommendedTeam": ["cto", "backend", "qa"],
-      "optionalRoles": ["po", "devops"]
+      "optionalRoles": ["po", "devops"],
+      "suggestedTemplate": "telegram-bot"
     },
     "cli-tool": {
       "displayName": "CLI 도구",
       "description": "커맨드라인 유틸리티",
       "recommendedTeam": ["cto", "backend", "qa"],
-      "optionalRoles": ["tech-writer"]
+      "optionalRoles": ["tech-writer"],
+      "suggestedTemplate": "cli-app"
     },
     "mobile-app": {
       "displayName": "모바일 앱",
@@ -48,7 +52,8 @@
       "displayName": "라이브러리/패키지",
       "description": "재사용 가능한 npm/pip 패키지",
       "recommendedTeam": ["cto", "backend", "qa", "tech-writer"],
-      "optionalRoles": ["security"]
+      "optionalRoles": ["security"],
+      "suggestedTemplate": "npm-library"
     },
     "custom": {
       "displayName": "커스텀 프로젝트",

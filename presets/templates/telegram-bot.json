@@ -1,0 +1,35 @@
+{
+  "name": "telegram-bot",
+  "displayName": "Telegram Bot",
+  "description": "Telegraf 기반 텔레그램 봇",
+  "version": "1.0.0",
+  "projectType": "telegram-bot",
+  "variables": {
+    "projectName": { "prompt": "프로젝트 이름", "default": "my-bot" },
+    "description": { "prompt": "프로젝트 설명", "default": "" }
+  },
+  "directories": [],
+  "files": [
+    {
+      "path": "package.json",
+      "content": "{\n  \"name\": \"{{projectName}}\",\n  \"version\": \"0.1.0\",\n  \"private\": true,\n  \"type\": \"module\",\n  \"scripts\": {\n    \"start\": \"node src/bot.js\",\n    \"dev\": \"node --watch src/bot.js\"\n  },\n  \"dependencies\": {\n    \"telegraf\": \"^4.16.0\",\n    \"dotenv\": \"^16.0.0\"\n  }\n}"
+    },
+    {
+      "path": "src/bot.js",
+      "content": "import { Telegraf } from 'telegraf';\nimport 'dotenv/config';\n\nconst bot = new Telegraf(process.env.BOT_TOKEN);\n\nbot.start((ctx) => ctx.reply('{{projectName}}에 오신 것을 환영합니다!'));\nbot.help((ctx) => ctx.reply('도움말: /start - 시작, /help - 도움말'));\n\nbot.launch();\n\nprocess.once('SIGINT', () => bot.stop('SIGINT'));\nprocess.once('SIGTERM', () => bot.stop('SIGTERM'));"
+    },
+    {
+      "path": ".gitignore",
+      "content": "node_modules/\n.env\n*.log"
+    },
+    {
+      "path": ".env.example",
+      "content": "# {{projectName}} 환경 변수\nBOT_TOKEN=your_telegram_bot_token_here"
+    },
+    {
+      "path": "README.md",
+      "content": "# {{projectName}}\n\n{{description}}\n\n## 시작하기\n\n1. [@BotFather](https://t.me/BotFather)에서 봇 토큰을 발급받으세요.\n2. `.env` 파일을 설정하세요.\n\n```bash\nnpm install\ncp .env.example .env\n# .env 파일에 BOT_TOKEN 입력\nnpm run dev\n```"
+    }
+  ],
+  "postScaffoldMessage": "`npm install && cp .env.example .env`로 설정 후 BOT_TOKEN을 입력하고 `npm run dev`로 시작하세요."
+}

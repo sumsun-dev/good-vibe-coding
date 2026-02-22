@@ -90,6 +90,7 @@ CEO가 기획서를 검토하고 승인합니다. 승인 후 작업이 역할별
 | `/my-team` | 팀 현황 + 역할 카탈로그 |
 | `/persona` | 커스텀 페르소나 관리 (역할/변형 CRUD) |
 | `/edit-persona` | 페르소나 빠른 수정/오버라이드 |
+| `/scaffold` | 프로젝트 템플릿 스캐폴딩 |
 | `/projects` | 프로젝트 목록 |
 
 ### v2 커맨드 (온보딩/설정)
@@ -151,7 +152,8 @@ good-vibe-coding/
 │   └── *.md                     #   ...
 ├── presets/
 │   ├── team-roles/catalog.json  #   11개 역할 카탈로그
-│   ├── project-types.json       #   9개 프로젝트 타입
+│   ├── project-types.json       #   9개 프로젝트 타입 + suggestedTemplate
+│   ├── templates/               #   5개 프로젝트 템플릿 (JSON)
 │   ├── team-personalities.json  #   22개 페르소나 (11역할 x 2변형)
 │   ├── personalities.json       #   기존 16개 페르소나
 │   ├── roles/                   #   6개 역할 프리셋
@@ -166,14 +168,15 @@ good-vibe-coding/
 │       ├── task-distributor.js  #     작업 분배
 │       ├── report-generator.js  #     보고서 생성
 │       ├── feedback-manager.js  #     피드백/성과
-│       ├── growth-manager.js   #     성장 시스템
+│       ├── growth-manager.js    #     성장 시스템
+│       ├── template-scaffolder.js #  프로젝트 템플릿 스캐폴딩
 │       ├── config-generator.js  #     설정 생성 (v2)
 │       └── *.js                 #     (기존 8개 라이브러리)
 ├── templates/                    # Handlebars 템플릿
 ├── hooks/                        # 훅 정의
 ├── guides/                       # 학습 가이드
 ├── skills/                       # 스킬 (4개)
-└── tests/                        # Vitest 테스트 (316개)
+└── tests/                        # Vitest 테스트 (347개)
     ├── project-manager.test.js  #   23개 테스트
     ├── team-builder.test.js     #   24개 테스트
     ├── persona-manager.test.js  #   50개 테스트
@@ -182,7 +185,8 @@ good-vibe-coding/
     ├── report-generator.test.js #   13개 테스트
     ├── feedback-manager.test.js #   10개 테스트
     ├── growth-manager.test.js   #   27개 테스트
-    ├── integration.test.js      #   12개 테스트
+    ├── template-scaffolder.test.js # 27개 테스트
+    ├── integration.test.js      #   16개 테스트
     └── *.test.js                #   (기존 121개 테스트)
 ```
 
@@ -190,13 +194,13 @@ good-vibe-coding/
 
 - **Node.js 18+** (ESM)
 - **Handlebars** (템플릿 엔진)
-- **Vitest** (테스트 프레임워크, 316개 테스트)
+- **Vitest** (테스트 프레임워크, 347개 테스트)
 
 ## 개발
 
 ```bash
 npm install          # 의존성 설치
-npm test             # 전체 테스트 실행 (316개)
+npm test             # 전체 테스트 실행 (347개)
 npm run test:watch   # 테스트 감시 모드
 npm run test:coverage # 커버리지 리포트
 ```
@@ -217,6 +221,15 @@ node scripts/cli.js role-catalog
 
 # 팀 통계
 node scripts/cli.js team-stats
+
+# 템플릿 목록 조회
+node scripts/cli.js list-templates
+
+# 특정 타입의 템플릿 조회
+node scripts/cli.js list-templates --type web-app
+
+# 스캐폴딩 실행
+echo '{"template":"next-app","targetDir":"./my-app","variables":{"projectName":"my-app"}}' | node scripts/cli.js scaffold
 ```
 
 ## 로드맵
@@ -254,9 +267,15 @@ node scripts/cli.js team-stats
 - [x] `/persona`, `/edit-persona` 커맨드
 - [x] team-builder 통합 (기존 호환 유지)
 
-### Phase 5 (계획)
+### Phase 5-2 - 프로젝트 템플릿 스캐폴딩 (v3.3)
+- [x] 템플릿 시스템 (`template-scaffolder.js`)
+- [x] 5개 built-in 템플릿 (Next.js, Express, CLI, Telegram Bot, NPM Library)
+- [x] 커스텀 템플릿 지원 (`~/.claude/good-vibe/custom-templates/`)
+- [x] `/scaffold` 커맨드 + `/new-project` 연동
+- [x] CLI 커맨드: `list-templates`, `get-template`, `scaffold`
+
+### Phase 6 (계획)
 - [ ] 마켓플레이스 등록
-- [ ] 프로젝트 템플릿 (boilerplate 연동)
 - [ ] 국제화 (일본어, 영어)
 
 ## 라이선스

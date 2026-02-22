@@ -60,11 +60,30 @@ echo '{"name":"프로젝트명","type":"타입","description":"설명","mode":"p
 - 각 팀원의 이모지 + 이름 + 역할 + 인사말
 - "팀이 준비되었습니다!"
 
-## Step 5: 토론 안내
+## Step 5: 프로젝트 스캐폴딩 (선택)
+
+프로젝트 타입에 맞는 템플릿이 있는지 확인하세요:
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js list-templates --type {선택된타입}
+```
+
+템플릿이 있으면 AskUserQuestion으로 스캐폴딩 여부를 물어보세요:
+- "프로젝트 템플릿으로 초기 코드를 생성할까요?"
+- 옵션: 사용 가능한 템플릿 목록 (displayName) + "스킵"
+
+사용자가 템플릿을 선택하면 스캐폴딩을 실행합니다:
+
+```bash
+echo '{"template":"next-app","targetDir":"./프로젝트명","variables":{"projectName":"프로젝트명","description":"설명"}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js scaffold
+```
+
+## Step 6: 토론 안내
 
 ```
 팀이 준비되었습니다! 다음 단계:
 - `/discuss` — 팀 토론 시작 (기획서 작성)
 - `/status` — 프로젝트 상태 확인
 - `/my-team` — 팀원 정보 보기
+- `/scaffold` — 프로젝트 템플릿 스캐폴딩
 ```

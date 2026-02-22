@@ -25,7 +25,8 @@
     "commands/reset.md",
     "commands/growth.md",
     "commands/persona.md",
-    "commands/edit-persona.md"
+    "commands/edit-persona.md",
+    "commands/scaffold.md"
   ],
   "agents": [
     "agents/team-cto.md",

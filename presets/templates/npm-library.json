@@ -1,0 +1,40 @@
+{
+  "name": "npm-library",
+  "displayName": "NPM Library",
+  "description": "재사용 가능한 npm 패키지 라이브러리",
+  "version": "1.0.0",
+  "projectType": "library",
+  "variables": {
+    "projectName": { "prompt": "패키지 이름", "default": "my-lib" },
+    "description": { "prompt": "패키지 설명", "default": "" },
+    "author": { "prompt": "작성자", "default": "" }
+  },
+  "directories": ["src", "tests"],
+  "files": [
+    {
+      "path": "package.json",
+      "content": "{\n  \"name\": \"{{projectName}}\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"description\": \"{{description}}\",\n  \"main\": \"src/index.js\",\n  \"exports\": {\n    \".\": \"./src/index.js\"\n  },\n  \"scripts\": {\n    \"test\": \"vitest run\",\n    \"test:watch\": \"vitest\"\n  },\n  \"author\": \"{{author}}\",\n  \"license\": \"MIT\",\n  \"devDependencies\": {\n    \"vitest\": \"^3.0.0\"\n  }\n}"
+    },
+    {
+      "path": "src/index.js",
+      "content": "/**\n * {{projectName}} 메인 모듈\n */\n\nexport function greet(name) {\n  return `Hello, ${name}!`;\n}"
+    },
+    {
+      "path": "tests/index.test.js",
+      "content": "import { describe, it, expect } from 'vitest';\nimport { greet } from '../src/index.js';\n\ndescribe('{{projectName}}', () => {\n  it('인사 메시지를 반환한다', () => {\n    expect(greet('World')).toBe('Hello, World!');\n  });\n});"
+    },
+    {
+      "path": ".gitignore",
+      "content": "node_modules/\ncoverage/\n*.log"
+    },
+    {
+      "path": "LICENSE",
+      "content": "MIT License\n\nCopyright (c) {{author}}\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE."
+    },
+    {
+      "path": "README.md",
+      "content": "# {{projectName}}\n\n{{description}}\n\n## 설치\n\n```bash\nnpm install {{projectName}}\n```\n\n## 사용법\n\n```javascript\nimport { greet } from '{{projectName}}';\n\nconsole.log(greet('World'));\n```\n\n## 테스트\n\n```bash\nnpm test\n```\n\n## 라이선스\n\nMIT"
+    }
+  ],
+  "postScaffoldMessage": "`npm install && npm test`로 기본 테스트를 실행하세요."
+}

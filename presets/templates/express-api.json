@@ -1,0 +1,40 @@
+{
+  "name": "express-api",
+  "displayName": "Express API Server",
+  "description": "Express.js 기반 REST API 서버",
+  "version": "1.0.0",
+  "projectType": "api-server",
+  "variables": {
+    "projectName": { "prompt": "프로젝트 이름", "default": "my-api" },
+    "description": { "prompt": "프로젝트 설명", "default": "" },
+    "port": { "prompt": "서버 포트", "default": "3000" }
+  },
+  "directories": ["src/routes", "src/middleware"],
+  "files": [
+    {
+      "path": "package.json",
+      "content": "{\n  \"name\": \"{{projectName}}\",\n  \"version\": \"0.1.0\",\n  \"private\": true,\n  \"type\": \"module\",\n  \"scripts\": {\n    \"start\": \"node src/index.js\",\n    \"dev\": \"node --watch src/index.js\"\n  },\n  \"dependencies\": {\n    \"express\": \"^4.18.0\",\n    \"cors\": \"^2.8.5\",\n    \"dotenv\": \"^16.0.0\"\n  }\n}"
+    },
+    {
+      "path": "src/index.js",
+      "content": "import express from 'express';\nimport cors from 'cors';\nimport 'dotenv/config';\nimport router from './routes/index.js';\n\nconst app = express();\nconst PORT = process.env.PORT || {{port}};\n\napp.use(cors());\napp.use(express.json());\napp.use('/api', router);\n\napp.get('/health', (req, res) => {\n  res.json({ status: 'ok', timestamp: new Date().toISOString() });\n});\n\napp.listen(PORT, () => {\n  console.log(`Server running on port ${PORT}`);\n});"
+    },
+    {
+      "path": "src/routes/index.js",
+      "content": "import { Router } from 'express';\n\nconst router = Router();\n\nrouter.get('/', (req, res) => {\n  res.json({ message: 'Welcome to {{projectName}} API' });\n});\n\nexport default router;"
+    },
+    {
+      "path": ".gitignore",
+      "content": "node_modules/\n.env\n*.log"
+    },
+    {
+      "path": ".env.example",
+      "content": "# {{projectName}} 환경 변수\nPORT={{port}}\n# DATABASE_URL=postgresql://localhost:5432/mydb"
+    },
+    {
+      "path": "README.md",
+      "content": "# {{projectName}}\n\n{{description}}\n\n## 시작하기\n\n```bash\nnpm install\ncp .env.example .env\nnpm run dev\n```\n\n## API 엔드포인트\n\n- `GET /health` — 헬스 체크\n- `GET /api` — API 루트"
+    }
+  ],
+  "postScaffoldMessage": "`npm install && cp .env.example .env && npm run dev`로 시작하세요."
+}
