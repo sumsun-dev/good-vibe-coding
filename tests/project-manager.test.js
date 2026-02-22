@@ -82,6 +82,15 @@ describe('createProject', () => {
     await expect(createProject('', 'web-app', '설명')).rejects.toThrow('name');
     await expect(createProject('앱', '', '설명')).rejects.toThrow('type');
   });
+
+  it('유효하지 않은 모드로 생성하면 에러', async () => {
+    await expect(createProject('봇', 'telegram-bot', '설명', { mode: 'invalid' })).rejects.toThrow('유효하지 않은 모드');
+  });
+
+  it('description이 없으면 빈 문자열로 설정된다', async () => {
+    const project = await createProject('봇', 'telegram-bot', null);
+    expect(project.description).toBe('');
+  });
 });
 
 describe('getProject', () => {
@@ -112,6 +121,12 @@ describe('listProjects', () => {
     expect(list.length).toBe(2);
     expect(list.map(p => p.name)).toContain('프로젝트A');
     expect(list.map(p => p.name)).toContain('프로젝트B');
+  });
+
+  it('존재하지 않는 baseDir에서 빈 목록을 반환한다', async () => {
+    setBaseDir(resolve(TMP_DIR, 'nonexistent-sub-path'));
+    const list = await listProjects();
+    expect(list).toEqual([]);
   });
 });
 

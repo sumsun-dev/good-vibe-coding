@@ -1,7 +1,7 @@
 {
   "name": "good-vibe-coding",
-  "version": "1.0.0",
-  "description": "한국어 Claude Code 온보딩 플러그인 - 모든 직군을 위한 인터랙티브 설정 마법사",
+  "version": "3.0.0",
+  "description": "Virtual AI Team Management Platform — AI 팀을 구성하고 프로젝트를 관리하세요",
   "type": "module",
   "main": "scripts/lib/config-generator.js",
   "scripts": {
@@ -14,7 +14,11 @@
     "onboarding",
     "korean",
     "plugin",
-    "developer-tools"
+    "developer-tools",
+    "team-management",
+    "project-management",
+    "ai-team",
+    "virtual-team"
   ],
   "author": "",
   "license": "MIT",
