@@ -121,6 +121,50 @@
       "model": "haiku",
       "discussionPriority": 8,
       "skills": ["documentation", "api-docs", "guide"]
+    },
+    "market-researcher": {
+      "id": "market-researcher",
+      "displayName": "Market Researcher",
+      "emoji": "🔍",
+      "category": "research",
+      "description": "시장 규모 분석, 경쟁사 조사, 트렌드 파악, 수요 분석",
+      "defaultTools": ["WebSearch", "WebFetch", "Read", "Grep", "Glob"],
+      "model": "sonnet",
+      "discussionPriority": 2,
+      "skills": ["market-analysis", "competitor-research", "trend-analysis"]
+    },
+    "business-researcher": {
+      "id": "business-researcher",
+      "displayName": "Business Researcher",
+      "emoji": "📈",
+      "category": "research",
+      "description": "비즈니스 모델 분석, 수익화 전략, 성장 전략, ROI 분석",
+      "defaultTools": ["WebSearch", "WebFetch", "Read", "Grep", "Glob"],
+      "model": "sonnet",
+      "discussionPriority": 2,
+      "skills": ["business-model", "monetization", "growth-strategy"]
+    },
+    "tech-researcher": {
+      "id": "tech-researcher",
+      "displayName": "Tech Researcher",
+      "emoji": "🧬",
+      "category": "research",
+      "description": "기술 스택 비교, 벤치마크, 기술 동향, 오픈소스 분석",
+      "defaultTools": ["WebSearch", "WebFetch", "Read", "Grep", "Glob", "Bash"],
+      "model": "sonnet",
+      "discussionPriority": 5,
+      "skills": ["tech-comparison", "benchmark", "opensource-evaluation"]
+    },
+    "design-researcher": {
+      "id": "design-researcher",
+      "displayName": "Design Researcher",
+      "emoji": "🔬",
+      "category": "research",
+      "description": "사용자 리서치, UX 벤치마크, 접근성 분석, 경쟁 UI 분석",
+      "defaultTools": ["WebSearch", "WebFetch", "Read", "Grep", "Glob"],
+      "model": "sonnet",
+      "discussionPriority": 5,
+      "skills": ["user-research", "ux-benchmark", "accessibility-audit"]
     }
   }
 }

@@ -398,7 +398,7 @@ describe('getMergedRoleCatalog', () => {
   it('커스텀 역할이 없으면 내장 카탈로그를 그대로 반환한다', async () => {
     const catalog = await getMergedRoleCatalog();
     expect(catalog.roles.cto).toBeDefined();
-    expect(Object.keys(catalog.roles).length).toBe(11);
+    expect(Object.keys(catalog.roles).length).toBe(15);
   });
 
   it('커스텀 역할이 추가된 merged 카탈로그를 반환한다', async () => {
@@ -406,7 +406,7 @@ describe('getMergedRoleCatalog', () => {
     const catalog = await getMergedRoleCatalog();
     expect(catalog.roles['ai-engineer']).toBeDefined();
     expect(catalog.roles['ai-engineer'].isCustom).toBe(true);
-    expect(Object.keys(catalog.roles).length).toBe(12);
+    expect(Object.keys(catalog.roles).length).toBe(16);
   });
 
   it('내장 역할은 변경되지 않는다', async () => {

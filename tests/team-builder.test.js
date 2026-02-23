@@ -33,9 +33,9 @@ describe('loadRoleCatalog', () => {
     expect(catalog.roles).toBeDefined();
   });
 
-  it('11개 역할이 존재한다', async () => {
+  it('15개 역할이 존재한다', async () => {
     const catalog = await loadRoleCatalog();
-    expect(Object.keys(catalog.roles).length).toBe(11);
+    expect(Object.keys(catalog.roles).length).toBe(15);
   });
 
   it('각 역할에 필수 필드가 있다', async () => {
@@ -113,10 +113,10 @@ describe('buildTeam', () => {
     expect(team[0].personalityVariant).toBe('visionary');
   });
 
-  it('모든 11개 역할을 빌드할 수 있다', async () => {
-    const allRoles = ['cto', 'po', 'fullstack', 'frontend', 'backend', 'qa', 'uiux', 'devops', 'data', 'security', 'tech-writer'];
+  it('모든 15개 역할을 빌드할 수 있다', async () => {
+    const allRoles = ['cto', 'po', 'fullstack', 'frontend', 'backend', 'qa', 'uiux', 'devops', 'data', 'security', 'tech-writer', 'market-researcher', 'business-researcher', 'tech-researcher', 'design-researcher'];
     const team = await buildTeam(allRoles);
-    expect(team.length).toBe(11);
+    expect(team.length).toBe(15);
     for (const member of team) {
       expect(member.roleId).toBeTruthy();
       expect(member.displayName).toBeTruthy();
@@ -199,7 +199,7 @@ describe('buildTeam with custom personas', () => {
     expect(team[0].displayName).toBe('태호');
   });
 
-  it('기존 11개 역할 카운트는 커스텀 추가 후에도 내장+커스텀 합산', async () => {
+  it('기존 15개 역할 카운트는 커스텀 추가 후에도 내장+커스텀 합산', async () => {
     await createCustomRole({
       id: 'ai-engineer',
       displayName: 'AI Engineer',
@@ -213,14 +213,14 @@ describe('buildTeam with custom personas', () => {
     });
     clearCaches();
     const catalog = await loadRoleCatalog();
-    expect(Object.keys(catalog.roles).length).toBe(12);
+    expect(Object.keys(catalog.roles).length).toBe(16);
     expect(catalog.roles['ai-engineer'].isCustom).toBe(true);
     expect(catalog.roles.cto.isCustom).toBeUndefined();
   });
 
   it('커스텀 페르소나 없으면 기존과 동일하게 동작 (fallback)', async () => {
     const catalog = await loadRoleCatalog();
-    expect(Object.keys(catalog.roles).length).toBe(11);
+    expect(Object.keys(catalog.roles).length).toBe(15);
     const team = await buildTeam(['cto']);
     expect(team[0].personalityVariant).toBe('visionary');
   });

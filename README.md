@@ -6,7 +6,7 @@
 
 ## 핵심 특징
 
-- **가상 AI 팀**: 11개 역할 (CTO, Backend, QA, Frontend...) 각각 2개 페르소나 변형 + 커스텀 확장
+- **가상 AI 팀**: 15개 역할 (CTO, Backend, QA, Frontend, Researcher...) 각각 2개 페르소나 변형 + 커스텀 확장
 - **팀 토론 시뮬레이션**: 팀원들이 자신의 역할과 성격으로 프로젝트를 토론
 - **기획서 자동 생성**: 토론 결과를 정형화된 기획서로 산출
 - **두 가지 모드**: "기획만" (plan-only) / "기획+실행" (plan-execute)
@@ -105,7 +105,7 @@ CEO가 기획서를 검토하고 승인합니다. 승인 후 작업이 역할별
 | `/preset` | 프리셋 관리 |
 | `/reset` | 설정 초기화 |
 
-## 역할 카탈로그 (11개)
+## 역할 카탈로그 (15개)
 
 | 역할 | 이모지 | 카테고리 | 설명 |
 |------|--------|----------|------|
@@ -120,6 +120,10 @@ CEO가 기획서를 검토하고 승인합니다. 승인 후 작업이 역할별
 | Data Engineer | 📊 | Engineering | 데이터 파이프라인, 분석 |
 | Security Engineer | 🛡️ | Engineering | 보안 검토, 취약점 분석 |
 | Technical Writer | 📝 | Support | 기술 문서 작성 |
+| Market Researcher | 🔍 | Research | 시장 규모, 경쟁사, 트렌드 분석 |
+| Business Researcher | 📈 | Research | 비즈니스 모델, 수익화, 성장 전략 |
+| Tech Researcher | 🧬 | Research | 기술 스택 비교, 벤치마크, 오픈소스 |
+| Design Researcher | 🔬 | Research | 사용자 리서치, UX 벤치마크, 접근성 |
 
 ## 프로젝트 타입 (9개)
 
@@ -140,10 +144,10 @@ CEO가 기획서를 검토하고 승인합니다. 승인 후 작업이 역할별
 ```
 good-vibe-coding/
 ├── .claude-plugin/plugin.json    # 플러그인 매니페스트 (v3.0.0)
-├── agents/                       # 에이전트 (19개: 11 팀 + 8 온보딩)
+├── agents/                       # 에이전트 (23개: 15 팀 + 8 온보딩)
 │   ├── team-cto.md              #   CTO 에이전트
 │   ├── team-backend.md          #   Backend 에이전트
-│   ├── team-*.md                #   (11개 팀 역할 에이전트)
+│   ├── team-*.md                #   (15개 팀 역할 에이전트)
 │   └── *.md                     #   (8개 기존 온보딩 에이전트)
 ├── commands/                     # 커맨드 (19개: 12 프로젝트 + 7 온보딩)
 │   ├── new-project.md           #   프로젝트 생성
@@ -151,10 +155,10 @@ good-vibe-coding/
 │   ├── approve.md               #   기획서 승인
 │   └── *.md                     #   ...
 ├── presets/
-│   ├── team-roles/catalog.json  #   11개 역할 카탈로그
+│   ├── team-roles/catalog.json  #   15개 역할 카탈로그
 │   ├── project-types.json       #   9개 프로젝트 타입 + suggestedTemplate
 │   ├── templates/               #   5개 프로젝트 템플릿 (JSON)
-│   ├── team-personalities.json  #   22개 페르소나 (11역할 x 2변형)
+│   ├── team-personalities.json  #   30개 페르소나 (15역할 x 2변형)
 │   ├── personalities.json       #   기존 16개 페르소나
 │   ├── roles/                   #   6개 역할 프리셋
 │   └── stacks/                  #   2개 스택 프리셋
@@ -245,13 +249,13 @@ echo '{"template":"next-app","targetDir":"./my-app","variables":{"projectName":"
 
 ### Phase 3 - AI 팀 관리 (v3.0) ← 현재
 - [x] 프로젝트 CRUD + 상태 관리
-- [x] 11개 역할 카탈로그 + 22개 페르소나
+- [x] 15개 역할 카탈로그 + 30개 페르소나
 - [x] 팀 추천/구성 시스템
 - [x] 팀 토론 시뮬레이션
 - [x] 작업 분배 + 에이전트 실행
 - [x] 보고서 생성 + 피드백 시스템
 - [x] 9개 프로젝트 관리 커맨드
-- [x] 11개 팀 에이전트
+- [x] 15개 팀 에이전트
 - [x] CLI 브릿지 + 통합 테스트
 
 ### Phase 4 - 성장 시스템 (v3.1)
