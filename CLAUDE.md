@@ -1,29 +1,56 @@
-# Good Vibe Coding v3.0
+# Good Vibe Coding v4.0
 
 Virtual AI Team Management Platform — AI 팀을 구성하고 프로젝트를 관리하세요
 
 ## 아키텍처
 - **CEO 모드**: 사용자가 CEO로서 프로젝트 정의 → AI 팀원 토론 → 기획 → 실행 → 보고
-- **두 가지 모드**: plan-only / plan-execute
+- **세 가지 모드**: plan-only / plan-execute / quick-build
+- **멀티에이전트 오케스트레이션**: 각 역할을 독립 Task 에이전트로 병렬 디스패치, 결과 종합, 수렴까지 반복 (최대 3라운드)
+- **크로스 리뷰 시스템**: 작업 실행 후 다른 역할 에이전트가 결과물 리뷰, 품질 게이트 체크
+- **복잡도 기반 자동 모드 선택**: /start 커맨드로 프로젝트 복잡도 분석 → 적합한 모드 추천
 - **15개 역할 × 30 페르소나 + 커스텀 확장**: CTO, PO, Full-stack, Frontend, Backend, QA, UI/UX, DevOps, Data, Security, Tech Writer, Market Researcher, Business Researcher, Tech Researcher, Design Researcher
 - **v2 호환**: 기존 온보딩 마법사 (`/onboarding`) 유지
 
 ## 기술 스택
 - Node.js 18+ (ESM)
 - Handlebars (템플릿 엔진)
-- Vitest (테스트, 347개)
+- Vitest (테스트)
 
 ## 핵심 모듈
-- `project-manager.js` — 프로젝트 CRUD + 상태 관리
+- `project-manager.js` — 프로젝트 CRUD + 상태 관리 (reviewing 상태, 토론 라운드, 태스크 리뷰 포함)
 - `team-builder.js` — 팀 추천/구성 (커스텀 페르소나 통합)
 - `persona-manager.js` — 커스텀 페르소나 CRUD/Merge (원본 JSON 보존)
-- `discussion-engine.js` — 팀 토론 프롬프트 생성
-- `task-distributor.js` — 작업 분배 + 실행 계획
+- `discussion-engine.js` — 팀 토론 프롬프트 생성 (단일 에이전트 프롬프트 추가)
+- `task-distributor.js` — 작업 분배 + 실행 계획 (리뷰 페이즈 포함)
+- `orchestrator.js` — **v4.0** 멀티에이전트 오케스트레이션 (tier별 병렬 디스패치, 수렴 확인)
+- `review-engine.js` — **v4.0** 크로스 리뷰 시스템 (리뷰어 선정, 품질 게이트)
+- `complexity-analyzer.js` — **v4.0** 프로젝트 복잡도 분석 (모드/팀 규모 추천)
 - `report-generator.js` — 보고서 생성
 - `feedback-manager.js` — 피드백/성과
 - `growth-manager.js` — 성장 시스템 (레벨/프롬프트 주입)
 - `template-scaffolder.js` — 프로젝트 템플릿 스캐폴딩 (5개 built-in + custom)
 - `cli.js` — CLI 브릿지 (커맨드 → 라이브러리)
+
+## 멀티에이전트 토론 플로우 (v4.0)
+```
+Round N:
+  [병렬] Tier 1 에이전트 독립 분석 (CTO, PO, Researchers)
+  [병렬] Tier 2 에이전트 분석 (Tier 1 결과 포함)
+  [병렬] Tier 3-4 에이전트 분석
+  → 전체 분석 결과 종합 (기획서)
+  [병렬] 전체 에이전트 리뷰
+  → 80% 이상 승인 시 수렴, 미수렴 시 다음 라운드 (최대 3회)
+```
+
+## 크로스 리뷰 플로우 (v4.0)
+```
+Phase N 태스크 실행 (병렬)
+  → 리뷰어 자동 선정 (최소 2명)
+  → 리뷰 (병렬)
+  → Quality Gate (critical 0개)
+  → 실패 시 수정 루프 (최대 2회)
+  → 2회 초과 시 CEO 에스컬레이션
+```
 
 ## 프로젝트 규칙
 - 모든 import에 `.js` 확장자 필수 (Windows ESM 호환)

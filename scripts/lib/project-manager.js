@@ -8,8 +8,8 @@ const DEFAULT_BASE_DIR = resolve(process.env.HOME || process.env.USERPROFILE, '.
 
 let baseDir = DEFAULT_BASE_DIR;
 
-const VALID_STATUSES = ['planning', 'approved', 'executing', 'completed'];
-const VALID_MODES = ['plan-only', 'plan-execute'];
+const VALID_STATUSES = ['planning', 'approved', 'executing', 'reviewing', 'completed'];
+const VALID_MODES = ['plan-only', 'plan-execute', 'quick-build'];
 
 /**
  * 테스트용 베이스 디렉토리를 설정한다.
@@ -193,5 +193,60 @@ export async function setProjectReport(projectId, report) {
   const project = await getProject(projectId);
   if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
   project.report = report;
+  return saveProject(project);
+}
+
+/**
+ * 멀티에이전트 토론 라운드 데이터를 프로젝트에 추가한다.
+ * @param {string} projectId - 프로젝트 ID
+ * @param {object} roundData - 라운드 데이터
+ * @param {number} roundData.round - 라운드 번호
+ * @param {Array} roundData.agentOutputs - 에이전트 분석 결과
+ * @param {string} roundData.synthesis - 종합 기획서
+ * @param {Array} roundData.reviews - 리뷰 결과
+ * @param {boolean} roundData.converged - 수렴 여부
+ * @returns {Promise<object>} 업데이트된 프로젝트
+ */
+export async function addDiscussionRound(projectId, roundData) {
+  const project = await getProject(projectId);
+  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
+  if (!project.discussion.rounds) project.discussion.rounds = [];
+  project.discussion.rounds.push(roundData);
+  if (roundData.synthesis) {
+    project.discussion.planDocument = roundData.synthesis;
+  }
+  return saveProject(project);
+}
+
+/**
+ * 태스크에 리뷰 결과를 추가한다.
+ * @param {string} projectId - 프로젝트 ID
+ * @param {string} taskId - 태스크 ID
+ * @param {Array} reviews - 리뷰 결과 배열
+ * @returns {Promise<object>} 업데이트된 프로젝트
+ */
+export async function addTaskReviews(projectId, taskId, reviews) {
+  const project = await getProject(projectId);
+  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
+  const task = project.tasks.find(t => t.id === taskId);
+  if (!task) throw new Error(`태스크를 찾을 수 없습니다: ${taskId}`);
+  if (!task.reviews) task.reviews = [];
+  task.reviews.push(...reviews);
+  return saveProject(project);
+}
+
+/**
+ * 태스크 상태를 업데이트한다.
+ * @param {string} projectId - 프로젝트 ID
+ * @param {string} taskId - 태스크 ID
+ * @param {string} status - 새 상태
+ * @returns {Promise<object>} 업데이트된 프로젝트
+ */
+export async function updateTaskStatus(projectId, taskId, status) {
+  const project = await getProject(projectId);
+  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
+  const task = project.tasks.find(t => t.id === taskId);
+  if (!task) throw new Error(`태스크를 찾을 수 없습니다: ${taskId}`);
+  task.status = status;
   return saveProject(project);
 }

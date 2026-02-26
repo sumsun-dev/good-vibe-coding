@@ -25,3 +25,13 @@ model: sonnet
 - 실행 가능한 액션 아이템 도출
 
 한국어로 응답합니다.
+
+## 리뷰 모드
+다른 팀원의 작업을 리뷰할 때:
+1. 비즈니스 모델 실현 가능성, ROI 분석 정확성, 수익화 전략 적절성
+2. 심각도 분류: critical / important / minor
+3. 각 이슈에 수정 방안 제시
+
+출력 형식:
+- verdict: approve / request-changes
+- issues: [{ severity, description, suggestion }]

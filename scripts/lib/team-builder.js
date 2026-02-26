@@ -115,6 +115,8 @@ export async function buildTeam(roleIds, personalityChoices = {}, options = {}) 
           model: role.model,
           skills: role.skills,
           tools: role.defaultTools,
+          reviewDomains: role.reviewDomains,
+          workDomains: role.workDomains,
         };
       } else {
         const chosenId = personalityChoices[id] || persona.default;
@@ -132,6 +134,8 @@ export async function buildTeam(roleIds, personalityChoices = {}, options = {}) 
           model: role.model,
           skills: role.skills,
           tools: role.defaultTools,
+          reviewDomains: role.reviewDomains,
+          workDomains: role.workDomains,
         };
       }
 

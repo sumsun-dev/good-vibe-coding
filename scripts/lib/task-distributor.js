@@ -119,6 +119,32 @@ export function buildExecutionPrompt(task, teamMember) {
  * @param {Array<object>} team - 팀원 배열
  * @returns {{ phases: Array<{phase: number, tasks: Array}>, dependencies: object }}
  */
+/**
+ * 실행 계획에 리뷰 페이즈를 추가한다.
+ * 각 실행 phase 뒤에 리뷰 phase를 삽입한다.
+ * @param {Array<object>} tasks - 작업 배열
+ * @param {Array<object>} team - 팀원 배열
+ * @returns {{ phases: Array<{type: string, phase: number, tasks: Array}>, dependencies: object }}
+ */
+export function buildExecutionPlanWithReviews(tasks, team) {
+  const basePlan = buildExecutionPlan(tasks, team);
+  const phasesWithReviews = [];
+
+  for (const phase of basePlan.phases) {
+    phasesWithReviews.push({ type: 'execute', phase: phase.phase, tasks: phase.tasks });
+    phasesWithReviews.push({
+      type: 'review',
+      phase: phase.phase,
+      tasks: phase.tasks.map(t => ({
+        ...t,
+        reviewType: 'cross-review',
+      })),
+    });
+  }
+
+  return { phases: phasesWithReviews, dependencies: basePlan.dependencies };
+}
+
 export function buildExecutionPlan(tasks, team) {
   const phaseMap = new Map();
   const dependencies = {};

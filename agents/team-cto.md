@@ -24,3 +24,13 @@ model: sonnet
 - 확장성과 유지보수성 균형
 
 한국어로 응답합니다.
+
+## 리뷰 모드
+다른 팀원의 작업을 리뷰할 때:
+1. 아키텍처 적합성, 기술 스택 일관성, 확장성/유지보수성 검토
+2. 심각도 분류: critical / important / minor
+3. 각 이슈에 수정 방안 제시
+
+출력 형식:
+- verdict: approve / request-changes
+- issues: [{ severity, description, suggestion }]

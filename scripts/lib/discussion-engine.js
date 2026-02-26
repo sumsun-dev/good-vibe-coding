@@ -5,6 +5,7 @@
 
 /**
  * 팀 토론 프롬프트를 생성한다.
+ * @deprecated v4.0에서 멀티에이전트 방식으로 전환. buildSingleAgentDiscussionPrompt() 사용 권장.
  * @param {object} project - 프로젝트 정보
  * @param {Array<object>} team - 팀원 배열
  * @param {number} round - 토론 라운드 번호
@@ -93,6 +94,64 @@ export function parseDiscussionOutput(rawOutput) {
  * @param {Array<{role: string, content: string}>} discussions - 토론 내용
  * @returns {string} 기획서 마크다운
  */
+/**
+ * 개별 에이전트용 토론 프롬프트를 생성한다 (orchestrator에서 호출).
+ * 한 명의 팀원이 독립적으로 분석하기 위한 프롬프트.
+ * @param {object} project - 프로젝트 정보
+ * @param {object} teamMember - 개별 팀원 정보
+ * @param {object} context - 추가 컨텍스트
+ * @param {number} [context.round] - 토론 라운드 번호
+ * @param {string} [context.previousSynthesis] - 이전 라운드 종합 결과
+ * @param {string} [context.feedbackForMe] - 이 역할에 대한 피드백
+ * @param {Array<{roleId: string, role: string, analysis: string}>} [context.priorTierOutputs] - 이전 tier 분석 결과
+ * @returns {string} 에이전트 토론 프롬프트
+ */
+export function buildSingleAgentDiscussionPrompt(project, teamMember, context = {}) {
+  const round = context.round || 1;
+
+  let prompt = `당신은 ${teamMember.emoji} **${teamMember.displayName}** (${teamMember.role})입니다.
+
+## 당신의 성격
+- 특성: ${teamMember.trait}
+- 말투: ${teamMember.speakingStyle}
+- 전문 분야: ${(teamMember.skills || []).join(', ')}
+
+## 프로젝트 정보
+- 이름: ${project.name}
+- 유형: ${project.type}
+- 설명: ${project.description}
+
+## 토론 (라운드 ${round})
+당신의 역할과 전문성에 기반하여 이 프로젝트를 분석하고 의견을 제시하세요.
+반드시 당신의 말투와 성격으로 발언하세요.
+
+다음 항목에 대해 의견을 제시하세요:
+1. 프로젝트의 핵심 고려사항 (당신의 역할 관점)
+2. 기술/설계/전략 제안
+3. 잠재적 리스크와 대응 방안`;
+
+  if (teamMember.growthContext) {
+    prompt += `\n\n## 성장 컨텍스트\n${teamMember.growthContext}`;
+  }
+
+  if (context.priorTierOutputs && context.priorTierOutputs.length > 0) {
+    const priorSection = context.priorTierOutputs
+      .map(o => `- **${o.role}** (${o.roleId}): ${o.analysis.split('\n')[0]}`)
+      .join('\n');
+    prompt += `\n\n## 이전 tier 팀원 분석 요약\n${priorSection}\n\n위 분석을 참고하여 당신의 관점을 보완하세요.`;
+  }
+
+  if (context.previousSynthesis) {
+    prompt += `\n\n## 이전 라운드 기획서\n${context.previousSynthesis}\n\n위 기획서를 기반으로 수정/보완 의견을 제시하세요.`;
+  }
+
+  if (context.feedbackForMe) {
+    prompt += `\n\n## 다른 팀원의 피드백\n${context.feedbackForMe}`;
+  }
+
+  return prompt;
+}
+
 export function buildPlanDocument(project, discussions) {
   const discussionSummary = discussions.length > 0
     ? discussions.map(d => `- **${d.role}**: ${d.content}`).join('\n')

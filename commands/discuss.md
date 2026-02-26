@@ -1,6 +1,7 @@
-# /discuss — 팀 토론
+# /discuss — 팀 토론 (멀티에이전트)
 
-팀원들이 각자의 역할과 성격으로 프로젝트를 토론하고 기획서를 작성합니다.
+팀원들이 각자 독립적으로 프로젝트를 분석하고, 결과를 종합하여 기획서를 작성합니다.
+에이전트들이 서로의 작업을 리뷰하고, 결과가 수렴될 때까지 반복합니다 (최대 3라운드).
 
 ## Step 1: 프로젝트 로드
 
@@ -18,43 +19,79 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js list-projects
 node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js discussion-prompt --id {프로젝트ID} --round 1
 ```
 
-## Step 3: 토론 실행
+## Step 3: 에이전트 tier 분류
 
-생성된 프롬프트에 따라 **각 팀원의 관점에서** 토론을 시뮬레이션하세요:
+팀원을 priority tier별로 그룹화합니다:
 
-1. 각 팀원이 discussionPriority 순서대로 발언합니다
-2. 각 팀원은 자신의 **이름, 이모지, 말투**로 발언합니다
-3. 발언 형식: `{emoji} **{이름}** ({역할}): "{발언 내용}"`
-4. 의견이 충돌하면 건설적으로 토론합니다
-5. 마지막에 합의된 기획서를 작성합니다
-
-## Step 4: 기획서 작성
-
-토론 결과를 바탕으로 아래 형식의 기획서를 작성하세요:
-
-```markdown
-# 기획서: {프로젝트명}
-
-## 프로젝트 개요
-## 기술 스택
-## 아키텍처
-## 역할별 작업 분배
-## 일정 (마일스톤)
-## 리스크 및 대응
+```bash
+echo '{"team": [프로젝트팀]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js group-agents
 ```
 
-## Step 5: 기획서 저장
+- Tier 1 (priority 1-2): CTO, PO, Researchers — 전략/요구사항 먼저
+- Tier 2 (priority 3-4): Fullstack, UI/UX, Frontend, Backend — 구현 관점
+- Tier 3 (priority 5-7): QA, Security, DevOps, Data — 검증 관점
+- Tier 4 (priority 8+): Tech Writer — 부가 분석
+
+## Step 4: Tier별 병렬 에이전트 디스패치
+
+각 tier를 순서대로, tier 내 에이전트를 **Task tool로 병렬 디스패치**합니다.
+
+각 에이전트에게 전달할 프롬프트:
+
+```bash
+echo '{"project": {...}, "teamMember": {...}, "context": {"round": 1}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js agent-analysis-prompt
+```
+
+1. **Tier 1** 에이전트를 각각 Task tool로 병렬 디스패치
+2. Tier 1 결과 수집
+3. **Tier 2** 에이전트 디스패치 (Tier 1 결과를 context.priorTierOutputs에 포함)
+4. **Tier 3-4** 에이전트 디스패치 (Tier 1+2 결과 포함)
+
+각 에이전트 호출 시:
+```
+{emoji} {이름}이(가) 프로젝트를 분석 중입니다...
+```
+
+## Step 5: 결과 종합 (Synthesis)
+
+모든 에이전트 분석 결과를 종합합니다:
+
+```bash
+echo '{"project": {...}, "agentOutputs": [...], "round": 1}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js synthesis-prompt
+```
+
+생성된 프롬프트를 실행하여 통합 기획서를 작성하세요.
+
+## Step 6: 리뷰 (전체 에이전트 병렬)
+
+종합 기획서를 전체 에이전트가 리뷰합니다 (Task tool 병렬):
+
+```bash
+echo '{"teamMember": {...}, "synthesizedPlan": "...", "round": 1}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js review-prompt
+```
+
+## Step 7: 수렴 확인
+
+```bash
+echo '{"reviews": [...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js check-convergence
+```
+
+- **수렴 (80% 이상 승인)** → Step 8로 진행
+- **미수렴** → Round 2로 (Step 4로 돌아감, 각 에이전트에게 이전 기획서 + 피드백 전달)
+- **최대 3라운드**: 3라운드까지 미수렴 시 강제 수렴. 미해결 이견은 "미합의 사항"으로 기록
+
+## Step 8: 기획서 저장
+
+기획서를 project.json에 저장하세요:
 
 ```bash
 echo '{"id":"{프로젝트ID}","status":"planning"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js update-status
 ```
 
-기획서를 project.json에 저장하세요 (setProjectPlan CLI 호출).
-
-## Step 6: 다음 단계 안내
+## Step 9: 다음 단계 안내
 
 ```
-기획서가 완성되었습니다!
+기획서가 완성되었습니다! (라운드 {N}에서 수렴, 승인율 {X}%)
 - `/approve` — 기획서를 승인하고 작업 분배
 - `/discuss` — 재토론 (다른 관점에서)
 - `/status` — 현재 상태 확인

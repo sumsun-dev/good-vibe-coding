@@ -10,7 +10,9 @@
       "defaultTools": ["Read", "Grep", "Glob", "Bash"],
       "model": "sonnet",
       "discussionPriority": 1,
-      "skills": ["architecture", "tech-decision", "code-review"]
+      "skills": ["architecture", "tech-decision", "code-review"],
+      "workDomains": ["architecture", "tech-decision", "code-review"],
+      "reviewDomains": ["architecture", "tech-decision", "code-review"]
     },
     "po": {
       "id": "po",
@@ -21,7 +23,9 @@
       "defaultTools": ["Read", "Grep", "Glob"],
       "model": "sonnet",
       "discussionPriority": 2,
-      "skills": ["requirements", "user-story", "prioritization"]
+      "skills": ["requirements", "user-story", "prioritization"],
+      "workDomains": ["requirements", "user-story", "prioritization"],
+      "reviewDomains": ["requirements", "user-story", "prioritization"]
     },
     "fullstack": {
       "id": "fullstack",
@@ -32,7 +36,9 @@
       "defaultTools": ["Read", "Grep", "Glob", "Bash", "Edit", "Write"],
       "model": "sonnet",
       "discussionPriority": 3,
-      "skills": ["frontend", "backend", "database"]
+      "skills": ["frontend", "backend", "database"],
+      "workDomains": ["frontend", "backend", "database", "api"],
+      "reviewDomains": ["frontend", "backend", "code-quality"]
     },
     "frontend": {
       "id": "frontend",
@@ -43,7 +49,9 @@
       "defaultTools": ["Read", "Grep", "Glob", "Bash", "Edit", "Write"],
       "model": "sonnet",
       "discussionPriority": 4,
-      "skills": ["react", "css", "accessibility"]
+      "skills": ["react", "css", "accessibility"],
+      "workDomains": ["frontend", "user-flow", "accessibility"],
+      "reviewDomains": ["user-flow", "accessibility", "code-quality"]
     },
     "backend": {
       "id": "backend",
@@ -54,7 +62,9 @@
       "defaultTools": ["Read", "Grep", "Glob", "Bash", "Edit", "Write"],
       "model": "sonnet",
       "discussionPriority": 4,
-      "skills": ["api", "database", "auth"]
+      "skills": ["api", "database", "auth"],
+      "workDomains": ["api", "database", "auth", "backend"],
+      "reviewDomains": ["api", "database", "auth", "code-quality"]
     },
     "qa": {
       "id": "qa",
@@ -65,7 +75,9 @@
       "defaultTools": ["Read", "Grep", "Glob", "Bash"],
       "model": "sonnet",
       "discussionPriority": 6,
-      "skills": ["testing", "e2e", "tdd"]
+      "skills": ["testing", "e2e", "tdd"],
+      "workDomains": ["testing", "code-quality", "e2e"],
+      "reviewDomains": ["testing", "code-quality", "e2e"]
     },
     "uiux": {
       "id": "uiux",
@@ -76,7 +88,9 @@
       "defaultTools": ["Read", "Grep", "Glob"],
       "model": "sonnet",
       "discussionPriority": 3,
-      "skills": ["wireframe", "user-flow", "design-system"]
+      "skills": ["wireframe", "user-flow", "design-system"],
+      "workDomains": ["user-flow", "design-system", "accessibility"],
+      "reviewDomains": ["user-flow", "accessibility", "design-system"]
     },
     "devops": {
       "id": "devops",
@@ -87,7 +101,9 @@
       "defaultTools": ["Read", "Grep", "Glob", "Bash"],
       "model": "sonnet",
       "discussionPriority": 7,
-      "skills": ["ci-cd", "docker", "monitoring"]
+      "skills": ["ci-cd", "docker", "monitoring"],
+      "workDomains": ["ci-cd", "monitoring", "architecture"],
+      "reviewDomains": ["ci-cd", "monitoring", "architecture"]
     },
     "data": {
       "id": "data",
@@ -98,7 +114,9 @@
       "defaultTools": ["Read", "Grep", "Glob", "Bash", "Edit", "Write"],
       "model": "sonnet",
       "discussionPriority": 5,
-      "skills": ["data-pipeline", "analytics", "ml"]
+      "skills": ["data-pipeline", "analytics", "ml"],
+      "workDomains": ["data-pipeline", "analytics", "database"],
+      "reviewDomains": ["data-pipeline", "analytics", "code-quality"]
     },
     "security": {
       "id": "security",
@@ -109,7 +127,9 @@
       "defaultTools": ["Read", "Grep", "Glob", "Bash"],
       "model": "sonnet",
       "discussionPriority": 5,
-      "skills": ["security-audit", "owasp", "auth"]
+      "skills": ["security-audit", "owasp", "auth"],
+      "workDomains": ["security", "auth", "owasp"],
+      "reviewDomains": ["security", "auth", "owasp"]
     },
     "tech-writer": {
       "id": "tech-writer",
@@ -120,7 +140,9 @@
       "defaultTools": ["Read", "Grep", "Glob"],
       "model": "haiku",
       "discussionPriority": 8,
-      "skills": ["documentation", "api-docs", "guide"]
+      "skills": ["documentation", "api-docs", "guide"],
+      "workDomains": ["documentation", "api-docs"],
+      "reviewDomains": ["documentation", "api-docs", "code-quality"]
     },
     "market-researcher": {
       "id": "market-researcher",
@@ -131,7 +153,9 @@
       "defaultTools": ["WebSearch", "WebFetch", "Read", "Grep", "Glob"],
       "model": "sonnet",
       "discussionPriority": 2,
-      "skills": ["market-analysis", "competitor-research", "trend-analysis"]
+      "skills": ["market-analysis", "competitor-research", "trend-analysis"],
+      "workDomains": ["market-analysis", "requirements"],
+      "reviewDomains": ["market-analysis", "requirements", "user-flow"]
     },
     "business-researcher": {
       "id": "business-researcher",
@@ -142,7 +166,9 @@
       "defaultTools": ["WebSearch", "WebFetch", "Read", "Grep", "Glob"],
       "model": "sonnet",
       "discussionPriority": 2,
-      "skills": ["business-model", "monetization", "growth-strategy"]
+      "skills": ["business-model", "monetization", "growth-strategy"],
+      "workDomains": ["business-model", "requirements", "growth-strategy"],
+      "reviewDomains": ["business-model", "requirements", "growth-strategy"]
     },
     "tech-researcher": {
       "id": "tech-researcher",
@@ -153,7 +179,9 @@
       "defaultTools": ["WebSearch", "WebFetch", "Read", "Grep", "Glob", "Bash"],
       "model": "sonnet",
       "discussionPriority": 5,
-      "skills": ["tech-comparison", "benchmark", "opensource-evaluation"]
+      "skills": ["tech-comparison", "benchmark", "opensource-evaluation"],
+      "workDomains": ["tech-decision", "architecture", "benchmark"],
+      "reviewDomains": ["tech-decision", "architecture", "benchmark"]
     },
     "design-researcher": {
       "id": "design-researcher",
@@ -164,7 +192,9 @@
       "defaultTools": ["WebSearch", "WebFetch", "Read", "Grep", "Glob"],
       "model": "sonnet",
       "discussionPriority": 5,
-      "skills": ["user-research", "ux-benchmark", "accessibility-audit"]
+      "skills": ["user-research", "ux-benchmark", "accessibility-audit"],
+      "workDomains": ["user-flow", "accessibility", "user-research"],
+      "reviewDomains": ["user-flow", "accessibility", "user-research"]
     }
   }
 }
