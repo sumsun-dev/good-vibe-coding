@@ -9,7 +9,6 @@ import {
   getTeamSummary,
   clearCaches,
 } from '../scripts/lib/team-builder.js';
-import { addFeedback, setFeedbackDir } from '../scripts/lib/feedback-manager.js';
 import { setCustomPersonaDir, createCustomRole, addCustomVariant, setOverride } from '../scripts/lib/persona-manager.js';
 
 const TMP_GROWTH_DIR = resolve('.tmp-test-team-growth');
@@ -17,7 +16,6 @@ const TMP_GROWTH_DIR = resolve('.tmp-test-team-growth');
 beforeEach(async () => {
   clearCaches();
   await mkdir(TMP_GROWTH_DIR, { recursive: true });
-  setFeedbackDir(TMP_GROWTH_DIR);
   setCustomPersonaDir(TMP_GROWTH_DIR);
 });
 
@@ -226,25 +224,3 @@ describe('buildTeam with custom personas', () => {
   });
 });
 
-describe('buildTeam with growth', () => {
-  it('withGrowth 옵션으로 growthContext를 병합한다', async () => {
-    await addFeedback('proj-1', 'cto', 5, '훌륭한 아키텍처 설계');
-    await addFeedback('proj-2', 'cto', 4, '좋은 기술 의사결정');
-
-    const team = await buildTeam(['cto', 'backend'], {}, { withGrowth: true });
-    expect(team[0].growthContext).toBeTruthy();
-    expect(team[0].growthContext).toContain('성장 이력');
-    expect(team[1].growthContext).toBeTruthy();
-  });
-
-  it('withGrowth 없으면 growthContext가 없다', async () => {
-    const team = await buildTeam(['cto', 'backend']);
-    expect(team[0].growthContext).toBeUndefined();
-  });
-
-  it('기존 호환: 2번째 인자만 전달해도 동작', async () => {
-    const team = await buildTeam(['cto'], { cto: 'pragmatic' });
-    expect(team[0].personalityVariant).toBe('pragmatic');
-    expect(team[0].growthContext).toBeUndefined();
-  });
-});

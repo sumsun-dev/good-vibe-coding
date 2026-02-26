@@ -158,6 +158,5 @@ echo '{"id":"{프로젝트ID}","status":"completed"}' | node ${CLAUDE_PLUGIN_ROO
 프로젝트가 완료되었습니다!
 - `/report` — 최종 보고서 생성
 - `/feedback` — 팀원 피드백
-- `/growth` — 팀원 성장 현황
 - `/status` — 프로젝트 상태 확인
 ```

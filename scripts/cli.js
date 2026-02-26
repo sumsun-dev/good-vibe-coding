@@ -19,8 +19,10 @@ import {
 import { verifyExecution } from './lib/execution-verifier.js';
 import { buildComplexityAnalysisPrompt, parseComplexityAnalysis, getDefaultsForComplexity } from './lib/complexity-analyzer.js';
 import { generateReport } from './lib/report-generator.js';
-import { addFeedback, getTeamStats, getFeedbackHistory } from './lib/feedback-manager.js';
-import { analyzeGrowth, getGrowthProfiles, formatGrowthReport } from './lib/growth-manager.js';
+import {
+  extractAgentPerformance, buildImprovementPrompt, parseImprovementSuggestions,
+  saveAgentOverride, loadAgentOverride, listAgentOverrides, mergeAgentWithOverride,
+} from './lib/agent-feedback.js';
 import {
   createCustomRole, getCustomRole, listCustomRoles, updateCustomRole, deleteCustomRole,
   addCustomVariant, getCustomVariants, updateCustomVariant, deleteCustomVariant,
@@ -184,17 +186,6 @@ const commands = {
     if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
     const report = generateReport(project);
     output({ report });
-  },
-
-  'add-feedback': async () => {
-    const data = await readStdin();
-    const feedback = await addFeedback(data.projectId, data.roleId, data.rating, data.comment);
-    output(feedback);
-  },
-
-  'team-stats': async () => {
-    const stats = await getTeamStats();
-    output(stats);
   },
 
   'create-custom-role': async () => {
@@ -550,24 +541,53 @@ const commands = {
     output({ reviewer: data.reviewer, provider: 'gemini', model: response.model, review, tokenCount: response.tokenCount });
   },
 
-  'growth': async () => {
+  // --- Agent feedback commands ---
+
+  'extract-performance': async () => {
     const opts = parseArgs(args);
-    if (opts.role) {
-      const profile = await analyzeGrowth(opts.role);
-      output(profile);
-    } else {
-      const data = await readStdin().catch(() => ({}));
-      const roleIds = data.roleIds || [];
-      if (roleIds.length === 0) {
-        const stats = await getTeamStats();
-        const ids = stats.map(s => s.roleId);
-        const profiles = await getGrowthProfiles(ids);
-        output({ report: formatGrowthReport(profiles), profiles: Object.fromEntries(profiles) });
-      } else {
-        const profiles = await getGrowthProfiles(roleIds);
-        output({ report: formatGrowthReport(profiles), profiles: Object.fromEntries(profiles) });
-      }
-    }
+    const project = await getProject(opts.id);
+    if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
+    const performances = extractAgentPerformance(project);
+    output(performances);
+  },
+
+  'improvement-prompt': async () => {
+    const data = await readStdin();
+    if (!data.roleId) throw new Error('roleId 필드가 필요합니다');
+    const prompt = buildImprovementPrompt(data.roleId, data.performance || {}, data.agentMd || '');
+    output({ prompt });
+  },
+
+  'parse-suggestions': async () => {
+    const data = await readStdin();
+    const suggestions = parseImprovementSuggestions(data.analysisText || '');
+    output(suggestions);
+  },
+
+  'save-agent-override': async () => {
+    const data = await readStdin();
+    if (!data.roleId) throw new Error('roleId 필드가 필요합니다');
+    if (!data.content) throw new Error('content 필드가 필요합니다');
+    await saveAgentOverride(data.roleId, data.content);
+    output({ success: true, roleId: data.roleId });
+  },
+
+  'load-agent-override': async () => {
+    const opts = parseArgs(args);
+    if (!opts.role) throw new Error('--role 옵션이 필요합니다');
+    const content = await loadAgentOverride(opts.role);
+    output({ roleId: opts.role, content });
+  },
+
+  'list-agent-overrides': async () => {
+    const overrides = await listAgentOverrides();
+    output(overrides);
+  },
+
+  'merge-agent-override': async () => {
+    const data = await readStdin();
+    const merged = mergeAgentWithOverride(data.baseMd, data.overrideMd);
+    output({ merged });
   },
 };
 

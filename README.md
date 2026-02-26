@@ -10,8 +10,7 @@
 - **팀 토론 시뮬레이션**: 팀원들이 자신의 역할과 성격으로 프로젝트를 토론
 - **기획서 자동 생성**: 토론 결과를 정형화된 기획서로 산출
 - **두 가지 모드**: "기획만" (plan-only) / "기획+실행" (plan-execute)
-- **피드백 시스템**: 팀원 평가 및 누적 성과 관리
-- **성장 시스템**: 피드백 기반 팀원 성장 추적 (Lv.1~5) + 프롬프트 자동 주입
+- **에이전트 피드백**: 프로젝트 결과 분석 → 에이전트 .md 수정안 자동 제안 → 오버라이드 저장
 - **한국어 완전 지원**: 모든 가이드, 프롬프트, 에이전트가 한국어
 - **v2 호환**: 기존 온보딩 마법사 (`/onboarding`) 그대로 사용 가능
 
@@ -85,8 +84,7 @@ CEO가 기획서를 검토하고 승인합니다. 승인 후 작업이 역할별
 | `/execute` | 작업 실행 (plan-execute 모드) |
 | `/status` | 프로젝트 상태 대시보드 |
 | `/report` | 최종 보고서 생성 |
-| `/feedback` | 팀원 피드백 |
-| `/growth` | 팀원 성장 현황 조회 |
+| `/feedback` | 에이전트 피드백 (프로젝트 결과 기반 개선) |
 | `/my-team` | 팀 현황 + 역할 카탈로그 |
 | `/persona` | 커스텀 페르소나 관리 (역할/변형 CRUD) |
 | `/edit-persona` | 페르소나 빠른 수정/오버라이드 |
@@ -171,8 +169,7 @@ good-vibe-coding/
 │       ├── discussion-engine.js #     토론 프롬프트 생성
 │       ├── task-distributor.js  #     작업 분배
 │       ├── report-generator.js  #     보고서 생성
-│       ├── feedback-manager.js  #     피드백/성과
-│       ├── growth-manager.js    #     성장 시스템
+│       ├── agent-feedback.js    #     에이전트 피드백 (오버라이드 관리)
 │       ├── template-scaffolder.js #  프로젝트 템플릿 스캐폴딩
 │       ├── config-generator.js  #     설정 생성 (v2)
 │       └── *.js                 #     (기존 8개 라이브러리)
@@ -187,8 +184,7 @@ good-vibe-coding/
     ├── discussion-engine.test.js#   13개 테스트
     ├── task-distributor.test.js #   23개 테스트
     ├── report-generator.test.js #   13개 테스트
-    ├── feedback-manager.test.js #   10개 테스트
-    ├── growth-manager.test.js   #   27개 테스트
+    ├── agent-feedback.test.js   #   22개 테스트
     ├── template-scaffolder.test.js # 27개 테스트
     ├── integration.test.js      #   16개 테스트
     └── *.test.js                #   (기존 121개 테스트)
@@ -257,11 +253,6 @@ echo '{"template":"next-app","targetDir":"./my-app","variables":{"projectName":"
 - [x] 9개 프로젝트 관리 커맨드
 - [x] 15개 팀 에이전트
 - [x] CLI 브릿지 + 통합 테스트
-
-### Phase 4 - 성장 시스템 (v3.1)
-- [x] 팀원 성장 시스템 (피드백 → 성장 레벨 → 프롬프트 자동 주입)
-- [x] `/growth` 커맨드 (성장 현황 조회)
-- [x] 토론/실행/보고서에 성장 컨텍스트 반영
 
 ### Phase 5-1 - 커스텀 페르소나 (v3.2)
 - [x] 커스텀 역할 CRUD (`persona-manager.js`)

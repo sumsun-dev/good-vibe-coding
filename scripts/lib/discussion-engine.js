@@ -20,9 +20,6 @@ export function buildDiscussionPrompt(project, team, round) {
         `- 말투: ${m.speakingStyle}`,
         `- 전문 분야: ${(m.skills || []).join(', ')}`,
       ];
-      if (m.growthContext) {
-        lines.push(`- 📈 성장 이력: ${m.growthContext.split('\n')[0].replace(/[*📈]/g, '').trim()}`);
-      }
       return lines.join('\n');
     })
     .join('\n\n');
@@ -129,10 +126,6 @@ export function buildSingleAgentDiscussionPrompt(project, teamMember, context = 
 1. 프로젝트의 핵심 고려사항 (당신의 역할 관점)
 2. 기술/설계/전략 제안
 3. 잠재적 리스크와 대응 방안`;
-
-  if (teamMember.growthContext) {
-    prompt += `\n\n## 성장 컨텍스트\n${teamMember.growthContext}`;
-  }
 
   if (context.priorTierOutputs && context.priorTierOutputs.length > 0) {
     const priorSection = context.priorTierOutputs

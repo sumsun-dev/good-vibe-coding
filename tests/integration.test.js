@@ -9,9 +9,6 @@ import { recommendTeam, buildTeam, getTeamSummary, clearCaches } from '../script
 import { buildDiscussionPrompt, buildPlanDocument } from '../scripts/lib/discussion-engine.js';
 import { buildTaskDistributionPrompt, buildExecutionPlan } from '../scripts/lib/task-distributor.js';
 import { generateReport, generateProjectStats } from '../scripts/lib/report-generator.js';
-import { addFeedback, getTeamStats, setFeedbackDir } from '../scripts/lib/feedback-manager.js';
-import { analyzeGrowth, getGrowthProfiles, formatGrowthReport } from '../scripts/lib/growth-manager.js';
-import { generateGrowthSection } from '../scripts/lib/report-generator.js';
 import {
   setCustomPersonaDir, createCustomRole, addCustomVariant, setOverride, getAvailableVariants,
 } from '../scripts/lib/persona-manager.js';
@@ -20,22 +17,18 @@ import {
 } from '../scripts/lib/template-scaffolder.js';
 
 const TMP_DIR = resolve('.tmp-test-integration');
-const FEEDBACK_DIR = resolve('.tmp-test-integration-feedback');
 const PERSONA_DIR = resolve('.tmp-test-integration-persona');
 
 beforeEach(async () => {
   await mkdir(TMP_DIR, { recursive: true });
-  await mkdir(FEEDBACK_DIR, { recursive: true });
   await mkdir(PERSONA_DIR, { recursive: true });
   setBaseDir(TMP_DIR);
-  setFeedbackDir(FEEDBACK_DIR);
   setCustomPersonaDir(PERSONA_DIR);
   clearCaches();
 });
 
 afterEach(async () => {
   await rm(TMP_DIR, { recursive: true, force: true });
-  await rm(FEEDBACK_DIR, { recursive: true, force: true });
   await rm(PERSONA_DIR, { recursive: true, force: true });
 });
 
@@ -108,21 +101,6 @@ describe('통합 테스트: 전체 프로젝트 플로우', () => {
     expect(report).toContain('plan-execute');
   });
 
-  it('피드백 플로우: 피드백 추가 → 통계 확인', async () => {
-    const project = await createProject('봇', 'telegram-bot', '설명');
-
-    // 피드백 추가
-    await addFeedback(project.id, 'cto', 5, '아키텍처 설계 훌륭');
-    await addFeedback(project.id, 'backend', 4, 'API 깔끔');
-    await addFeedback(project.id, 'qa', 3, '테스트 커버리지 부족');
-
-    // 통계 확인
-    const stats = await getTeamStats();
-    expect(stats.length).toBe(3);
-    const ctoStat = stats.find(s => s.roleId === 'cto');
-    expect(ctoStat.avgRating).toBe(5);
-  });
-
   it('다수 프로젝트 관리', async () => {
     await createProject('프로젝트A', 'web-app', 'A');
     await createProject('프로젝트B', 'cli-tool', 'B');
@@ -143,81 +121,6 @@ describe('통합 테스트: 전체 프로젝트 플로우', () => {
     expect(plan.phases.length).toBe(2);
     expect(plan.phases[0].tasks.length).toBe(2);
     expect(plan.dependencies['task-3']).toEqual(['task-1', 'task-2']);
-  });
-
-  it('성장 시스템: 피드백 → 성장 분석 → 프롬프트 반영', async () => {
-    // 1. 피드백 누적
-    await addFeedback('proj-1', 'cto', 5, '아키텍처 설계가 훌륭합니다');
-    await addFeedback('proj-2', 'cto', 4, '좋은 기술 의사결정');
-    await addFeedback('proj-3', 'cto', 5, '리더십이 뛰어남');
-    await addFeedback('proj-1', 'backend', 3, 'API 깔끔하지만 테스트 부족');
-    await addFeedback('proj-2', 'backend', 4, '안정적인 코드');
-
-    // 2. 성장 분석
-    const ctoProfile = await analyzeGrowth('cto');
-    expect(ctoProfile.level).toBe(3);
-    expect(ctoProfile.levelName).toBe('Competent');
-    expect(ctoProfile.avgRating).toBeCloseTo(4.67, 1);
-
-    const backendProfile = await analyzeGrowth('backend');
-    expect(backendProfile.level).toBe(2);
-    expect(backendProfile.levelName).toBe('Growing');
-
-    // 3. 성장 프로필로 팀 빌드 (withGrowth)
-    const team = await buildTeam(['cto', 'backend', 'qa'], {}, { withGrowth: true });
-    expect(team[0].growthContext).toContain('Competent');
-    expect(team[1].growthContext).toContain('Growing');
-    expect(team[2].growthContext).toContain('Beginner');
-
-    // 4. 토론 프롬프트에 성장 이력 반영
-    const project = await createProject('테스트앱', 'web-app', '테스트');
-    const prompt = buildDiscussionPrompt(project, team, 1);
-    expect(prompt).toContain('성장 이력');
-
-    // 5. 성장 리포트 생성
-    const profiles = await getGrowthProfiles(['cto', 'backend', 'qa']);
-    const growthReport = formatGrowthReport(profiles);
-    expect(growthReport).toContain('Competent');
-    expect(growthReport).toContain('Growing');
-    expect(growthReport).toContain('Beginner');
-  });
-
-  it('성장 시스템: 보고서에 성장 분석 섹션 포함', async () => {
-    // 피드백 추가
-    await addFeedback('proj-1', 'cto', 4, '아키텍처 우수');
-    await addFeedback('proj-2', 'cto', 5, '리더십 훌륭');
-    await addFeedback('proj-1', 'backend', 3, '코드 안정적');
-
-    // 프로젝트 + 보고서
-    const project = await createProject('성장테스트', 'web-app', '테스트');
-    const team = await buildTeam(['cto', 'backend'], {}, { withGrowth: true });
-    const teamData = team.map(m => ({ roleId: m.roleId, displayName: m.displayName, emoji: m.emoji, role: m.role }));
-    await setProjectTeam(project.id, teamData);
-
-    const tasks = [
-      { id: 'task-1', title: '설계', assignee: 'cto', status: 'completed' },
-      { id: 'task-2', title: '구현', assignee: 'backend', status: 'pending' },
-    ];
-    await addProjectTasks(project.id, tasks);
-
-    const finalProject = await getProject(project.id);
-    finalProject.team = teamData;
-
-    const growthProfiles = await getGrowthProfiles(['cto', 'backend']);
-    const report = generateReport(finalProject, { growthProfiles });
-    expect(report).toContain('팀원 성장 분석');
-    expect(report).toContain('성장테스트');
-  });
-
-  it('성장 시스템: 피드백 없는 상태에서도 안전하게 동작', async () => {
-    const profiles = await getGrowthProfiles(['cto', 'backend', 'qa']);
-    expect(profiles.size).toBe(3);
-    for (const [, profile] of profiles) {
-      expect(profile.level).toBe(1);
-      expect(profile.levelName).toBe('Beginner');
-    }
-    const report = formatGrowthReport(profiles);
-    expect(report).toContain('Beginner');
   });
 
   it('커스텀 페르소나: 역할 생성 → 변형 추가 → 팀 빌드 → 프로젝트 생성', async () => {
@@ -321,19 +224,6 @@ describe('통합 테스트: 전체 프로젝트 플로우', () => {
     const report = generateReport(finalProject);
     expect(report).toContain('API 서버');
     expect(report).toContain('도윤');
-  });
-
-  it('성장 시스템: 실행 프롬프트에 성장 컨텍스트 반영', async () => {
-    await addFeedback('proj-1', 'backend', 4, 'API 설계가 좋습니다');
-    await addFeedback('proj-2', 'backend', 3, '테스트가 부족합니다');
-    await addFeedback('proj-3', 'backend', 4, '안정적');
-
-    const team = await buildTeam(['backend'], {}, { withGrowth: true });
-    const task = { id: 'task-1', title: 'API 구현', description: 'REST API', assignee: 'backend' };
-    const { buildExecutionPrompt } = await import('../scripts/lib/task-distributor.js');
-    const prompt = buildExecutionPrompt(task, team[0]);
-    expect(prompt).toContain('## 성장 컨텍스트');
-    expect(prompt).toContain('Competent');
   });
 
   it('템플릿 스캐폴딩: next-app 전체 스캐폴딩 검증', async () => {

@@ -79,35 +79,6 @@ describe('buildDiscussionPrompt', () => {
     expect(prompt).toContain('2');
   });
 
-  it('growthContext가 있으면 성장 이력을 포함한다', () => {
-    const teamWithGrowth = [
-      { ...SAMPLE_TEAM[0], growthContext: '📈 **성장 이력** (Lv.3 Competent)\n- 평균 평점: 3.5/5' },
-      SAMPLE_TEAM[1],
-    ];
-    const prompt = buildDiscussionPrompt(SAMPLE_PROJECT, teamWithGrowth, 1);
-    expect(prompt).toContain('성장 이력');
-  });
-
-  it('growthContext가 없으면 기존과 동일하다', () => {
-    const prompt = buildDiscussionPrompt(SAMPLE_PROJECT, SAMPLE_TEAM, 1);
-    expect(prompt).not.toContain('성장 이력');
-  });
-
-  it('일부 팀원만 growthContext가 있어도 동작한다', () => {
-    const teamMixed = [
-      { ...SAMPLE_TEAM[0], growthContext: '📈 **성장 이력** (Lv.4 Advanced)' },
-      SAMPLE_TEAM[1],
-      { ...SAMPLE_TEAM[2], growthContext: '📈 **성장 이력** (Lv.2 Growing)' },
-    ];
-    const prompt = buildDiscussionPrompt(SAMPLE_PROJECT, teamMixed, 1);
-    // 민준(cto)과 지민(qa)은 성장 이력이 있고, 도윤(backend)은 없다
-    expect(prompt).toContain('민준');
-    expect(prompt).toContain('도윤');
-    expect(prompt).toContain('지민');
-    // 도윤 섹션에는 성장 이력이 없어야 한다
-    const doYunSection = prompt.split('도윤')[1].split('###')[0];
-    expect(doYunSection).not.toContain('성장 이력');
-  });
 });
 
 describe('parseDiscussionOutput', () => {

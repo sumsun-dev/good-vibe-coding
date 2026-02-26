@@ -144,26 +144,6 @@ describe('buildExecutionPrompt', () => {
     expect(prompt).toContain('도윤');
   });
 
-  it('growthContext가 있으면 성장 컨텍스트 섹션을 추가한다', () => {
-    const member = { ...SAMPLE_TEAM_MEMBER, growthContext: '📈 **성장 이력** (Lv.3 Competent)\n- 강점: API 설계' };
-    const task = { id: 'task-1', title: 'API 설계', description: '설명', assignee: 'backend' };
-    const prompt = buildExecutionPrompt(task, member);
-    expect(prompt).toContain('## 성장 컨텍스트');
-    expect(prompt).toContain('Lv.3 Competent');
-  });
-
-  it('growthContext가 없으면 성장 컨텍스트 섹션이 없다', () => {
-    const task = { id: 'task-1', title: 'API 설계', description: '설명', assignee: 'backend' };
-    const prompt = buildExecutionPrompt(task, SAMPLE_TEAM_MEMBER);
-    expect(prompt).not.toContain('## 성장 컨텍스트');
-  });
-
-  it('growthContext가 빈 문자열이면 섹션 미추가', () => {
-    const member = { ...SAMPLE_TEAM_MEMBER, growthContext: '' };
-    const task = { id: 'task-1', title: 'A', description: 'B', assignee: 'backend' };
-    const prompt = buildExecutionPrompt(task, member);
-    expect(prompt).not.toContain('## 성장 컨텍스트');
-  });
 });
 
 describe('buildExecutionPlan', () => {

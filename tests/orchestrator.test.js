@@ -122,17 +122,6 @@ describe('buildAgentAnalysisPrompt', () => {
     expect(prompt).toContain('테스트 전략이 부족합니다');
   });
 
-  it('growthContext가 있으면 성장 컨텍스트를 포함한다', () => {
-    const member = { ...SAMPLE_TEAM[0], growthContext: '📈 Lv.3 Competent\n- 강점: 아키텍처' };
-    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, member);
-    expect(prompt).toContain('성장 컨텍스트');
-    expect(prompt).toContain('Lv.3 Competent');
-  });
-
-  it('growthContext가 없으면 성장 섹션 미포함', () => {
-    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0]);
-    expect(prompt).not.toContain('성장 컨텍스트');
-  });
 
   it('skills가 없는 팀원도 처리한다', () => {
     const member = { ...SAMPLE_TEAM[0], skills: undefined };

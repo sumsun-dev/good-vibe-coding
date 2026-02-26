@@ -40,10 +40,6 @@ export function buildAgentAnalysisPrompt(project, teamMember, context = {}) {
 3. 잠재적 리스크와 대응 방안
 4. 다른 역할과의 협업 포인트`;
 
-  if (teamMember.growthContext) {
-    prompt += `\n\n## 성장 컨텍스트\n${teamMember.growthContext}`;
-  }
-
   if (context.previousSynthesis) {
     prompt += `\n\n## 이전 라운드 기획서\n다음은 이전 라운드에서 종합된 기획서입니다. 이를 기반으로 수정/보완 의견을 제시하세요.\n\n${context.previousSynthesis}`;
   }

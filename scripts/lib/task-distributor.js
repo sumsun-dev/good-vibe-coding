@@ -106,10 +106,6 @@ export function buildExecutionPrompt(task, teamMember) {
 위 작업을 당신의 역할과 성격에 맞게 수행하세요.
 결과를 명확하게 보고하세요.`;
 
-  if (teamMember.growthContext) {
-    prompt += `\n\n## 성장 컨텍스트\n${teamMember.growthContext}`;
-  }
-
   return prompt;
 }
 
