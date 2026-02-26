@@ -1,6 +1,6 @@
 {
   "name": "good-vibe-coding",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "displayName": "Good Vibe Coding - Virtual AI Team Management Platform",
   "description": "AI 팀을 구성하고 프로젝트를 관리하세요. CEO가 되어 가상 AI 팀원들과 기획부터 실행까지.",
   "author": "",
@@ -23,11 +23,12 @@
     "commands/add-agent.md",
     "commands/preset.md",
     "commands/reset.md",
-    "commands/growth.md",
+
     "commands/persona.md",
     "commands/edit-persona.md",
     "commands/scaffold.md",
-    "commands/start.md"
+    "commands/new.md",
+    "commands/hello.md"
   ],
   "agents": [
     "agents/team-cto.md",
@@ -58,7 +59,8 @@
     "skills/onboarding-wizard/SKILL.md",
     "skills/config-generator/SKILL.md",
     "skills/korean-workflow/SKILL.md",
-    "skills/beginner-guide/SKILL.md"
+    "skills/beginner-guide/SKILL.md",
+    "skills/project-setup/SKILL.md"
   ],
   "hooks": "hooks/hooks.json",
   "minClaudeCodeVersion": "2.0.0"

@@ -1,4 +1,4 @@
-# Good Vibe Coding v3.0
+# Good Vibe Coding v4.0
 
 **Virtual AI Team Management Platform** — AI 팀을 구성하고 프로젝트를 관리하세요
 
@@ -7,9 +7,10 @@
 ## 핵심 특징
 
 - **가상 AI 팀**: 15개 역할 (CTO, Backend, QA, Frontend, Researcher...) 각각 2개 페르소나 변형 + 커스텀 확장
-- **팀 토론 시뮬레이션**: 팀원들이 자신의 역할과 성격으로 프로젝트를 토론
-- **기획서 자동 생성**: 토론 결과를 정형화된 기획서로 산출
-- **두 가지 모드**: "기획만" (plan-only) / "기획+실행" (plan-execute)
+- **멀티에이전트 오케스트레이션**: 역할별 병렬 분석 → 종합 → 수렴까지 자동 반복 (최대 3라운드)
+- **크로스 리뷰 시스템**: 작업 실행 후 다른 역할 에이전트가 결과물 리뷰, 품질 게이트 체크
+- **복잡도 기반 자동 모드 선택**: 프로젝트 복잡도 분석 → 적합한 모드 자동 추천
+- **세 가지 모드**: quick-build / plan-execute / plan-only
 - **에이전트 피드백**: 프로젝트 결과 분석 → 에이전트 .md 수정안 자동 제안 → 오버라이드 저장
 - **한국어 완전 지원**: 모든 가이드, 프롬프트, 에이전트가 한국어
 - **v2 호환**: 기존 온보딩 마법사 (`/onboarding`) 그대로 사용 가능
@@ -22,20 +23,53 @@ cd good-vibe-coding
 npm install
 ```
 
+## 3분 퀵스타트 (처음 사용자)
+
+6개 커맨드로 프로젝트를 완성하세요:
+
+```
+/hello → /new → /discuss → /approve → /execute → /report
+```
+
+| 단계 | 커맨드 | 하는 일 | 소요시간 |
+|------|--------|---------|----------|
+| 1 | `/hello` | 프로젝트 폴더 + GitHub 저장소 생성 | 2-3분 |
+| 2 | `/new` | 아이디어 입력 + 팀 자동 구성 | 1-2분 |
+| 3 | `/discuss` | 팀 토론 → 기획서 작성 | 3-10분 |
+| 4 | `/approve` | 기획서 확인 + 승인 | 1-2분 |
+| 5 | `/execute` | 작업 실행 + 리뷰 | 5-15분 |
+| 6 | `/report` | 보고서 생성 | 1분 |
+
+**처음이라면 `/hello`부터 입력하세요.** 나머지는 단계별로 안내해드립니다.
+
+> 자세한 가이드: [3분 퀵스타트](guides/common/00-quick-start.md)
+
 ## 사용법: CEO 시나리오
 
-### 1. 새 프로젝트 시작
+### 0. 프로젝트 인프라 셋업
 
 ```
-/new-project
+/hello
 ```
 
-대화형 마법사가 시작됩니다:
+프로젝트 폴더, CLAUDE.md, README.md를 만들고 GitHub 저장소를 생성합니다:
+1. 프로젝트 이름, 설명, 기술 스택 입력
+2. GitHub 연동 여부 선택 (gh CLI 자동 감지)
+3. 프로젝트 폴더 + 초기 파일 생성
+
+### 1. 프로젝트 시작
+
+```
+/new
+```
+
+복잡도를 자동 분석하고 적합한 모드를 추천합니다:
 1. 프로젝트 설명 입력 ("텔레그램 봇을 만들고 싶어")
-2. 프로젝트 타입 선택 (9개 중)
-3. 모드 선택 (기획만 / 기획+실행)
-4. 추천 팀 확인 및 수정
-5. 팀원 페르소나 선택
+2. 복잡도 분석 → 모드 자동 추천 (quick-build / plan-execute / plan-only)
+3. 추천 팀 확인 및 수정
+4. 팀원 페르소나 선택
+
+> `/new-project`로 수동 설정도 가능합니다.
 
 ### 2. 팀 토론
 
@@ -43,11 +77,10 @@ npm install
 /discuss
 ```
 
-팀원들이 각자의 역할과 성격으로 프로젝트를 토론합니다:
-- CTO가 아키텍처 방향 제시
-- Backend 개발자가 기술 세부사항 논의
-- QA가 테스트 전략 제안
-- 기획서 도출
+팀원들이 Tier별로 병렬 분석합니다:
+- Tier 1: CTO, PO, Researcher (전략적 분석)
+- Tier 2-4: Frontend, Backend, QA 등 (실행 관점 분석)
+- 전체 결과 종합 → 80% 이상 승인 시 수렴 (최대 3라운드)
 
 ### 3. 기획서 승인
 
@@ -63,41 +96,52 @@ CEO가 기획서를 검토하고 승인합니다. 승인 후 작업이 역할별
 /execute
 ```
 
-분배된 작업을 팀원(에이전트)들이 실행합니다.
+분배된 작업을 팀원들이 실행합니다:
+- 팀원별 병렬 실행
+- 크로스 리뷰 (최소 2명이 결과물 검토)
+- Quality Gate: critical 이슈 0개 시 통과
+- 실패 시 수정 루프 (최대 2회) → 해결 불가 시 CEO 에스컬레이션
 
 ### 5. 보고서 & 피드백
 
 ```
 /report     # 최종 보고서 생성
-/feedback   # 팀원별 피드백
+/feedback   # 프로젝트 결과 분석 → 에이전트 개선 제안
 ```
 
 ## 전체 커맨드
 
-### v3 커맨드 (프로젝트 관리)
+### 필수 커맨드 (프로젝트 완성 플로우)
+
+| 커맨드 | 설명 | 언제 사용? |
+|--------|------|-----------|
+| `/hello` | 프로젝트 인프라 셋업 (폴더, GitHub) | 맨 처음 |
+| `/new` | 스마트 프로젝트 시작 (복잡도 분석 → 모드 추천) | /hello 후 |
+| `/discuss` | 멀티에이전트 팀 토론 → 기획서 작성 | /new 후 |
+| `/approve` | 기획서 승인 + 작업 분배 | /discuss 후 |
+| `/execute` | 작업 실행 + 크로스 리뷰 | /approve 후 |
+| `/report` | 최종 보고서 생성 | /execute 후 |
+
+### 보조 커맨드 (프로젝트 관리)
 
 | 커맨드 | 설명 |
 |--------|------|
-| `/new-project` | 새 프로젝트 생성 (메인 진입점) |
-| `/discuss` | 팀 토론 실행 |
-| `/approve` | 기획서 승인 + 작업 분배 |
-| `/execute` | 작업 실행 (plan-execute 모드) |
 | `/status` | 프로젝트 상태 대시보드 |
-| `/report` | 최종 보고서 생성 |
-| `/feedback` | 에이전트 피드백 (프로젝트 결과 기반 개선) |
+| `/feedback` | 에이전트 피드백 (결과 분석 → .md 개선) |
 | `/my-team` | 팀 현황 + 역할 카탈로그 |
-| `/persona` | 커스텀 페르소나 관리 (역할/변형 CRUD) |
-| `/edit-persona` | 페르소나 빠른 수정/오버라이드 |
-| `/scaffold` | 프로젝트 템플릿 스캐폴딩 |
-| `/projects` | 프로젝트 목록 |
+| `/learn` | 역할별 학습 가이드 |
 
-### v2 커맨드 (온보딩/설정)
+### 고급 커맨드 (커스터마이징)
 
 | 커맨드 | 설명 |
 |--------|------|
+| `/new-project` | 수동 프로젝트 생성 (타입/모드 직접 선택) |
+| `/projects` | 프로젝트 목록 |
 | `/onboarding` | 역할 기반 온보딩 마법사 |
 | `/my-config` | 현재 설정 대시보드 |
-| `/learn` | 역할별 학습 가이드 |
+| `/persona` | 커스텀 페르소나 관리 |
+| `/edit-persona` | 페르소나 빠른 수정/오버라이드 |
+| `/scaffold` | 프로젝트 템플릿 스캐폴딩 |
 | `/add-skill` | 스킬 추가 |
 | `/add-agent` | 에이전트 추가 |
 | `/preset` | 프리셋 관리 |
@@ -141,96 +185,74 @@ CEO가 기획서를 검토하고 승인합니다. 승인 후 작업이 역할별
 
 ```
 good-vibe-coding/
-├── .claude-plugin/plugin.json    # 플러그인 매니페스트 (v3.0.0)
-├── agents/                       # 에이전트 (23개: 15 팀 + 8 온보딩)
+├── .claude-plugin/plugin.json    # 플러그인 매니페스트 (v4.0.0)
+├── agents/                       # 에이전트 (23개: 15 팀 + 8 서포트)
 │   ├── team-cto.md              #   CTO 에이전트
 │   ├── team-backend.md          #   Backend 에이전트
 │   ├── team-*.md                #   (15개 팀 역할 에이전트)
-│   └── *.md                     #   (8개 기존 온보딩 에이전트)
-├── commands/                     # 커맨드 (19개: 12 프로젝트 + 7 온보딩)
-│   ├── new-project.md           #   프로젝트 생성
-│   ├── discuss.md               #   팀 토론
+│   └── *.md                     #   (8개 서포트 에이전트)
+├── commands/                     # 커맨드 (21개)
+│   ├── hello.md                 #   프로젝트 인프라 셋업
+│   ├── new.md                   #   스마트 프로젝트 시작 (v4.0)
+│   ├── new-project.md           #   수동 프로젝트 생성
+│   ├── discuss.md               #   멀티에이전트 토론
 │   ├── approve.md               #   기획서 승인
+│   ├── execute.md               #   작업 실행 + 크로스 리뷰
 │   └── *.md                     #   ...
 ├── presets/
 │   ├── team-roles/catalog.json  #   15개 역할 카탈로그
-│   ├── project-types.json       #   9개 프로젝트 타입 + suggestedTemplate
+│   ├── project-types.json       #   9개 프로젝트 타입
 │   ├── templates/               #   5개 프로젝트 템플릿 (JSON)
 │   ├── team-personalities.json  #   30개 페르소나 (15역할 x 2변형)
 │   ├── personalities.json       #   기존 16개 페르소나
 │   ├── roles/                   #   6개 역할 프리셋
 │   └── stacks/                  #   2개 스택 프리셋
 ├── scripts/
-│   ├── cli.js                   #   CLI 브릿지 (v3)
-│   └── lib/                     #   핵심 라이브러리 (15개)
-│       ├── project-manager.js   #     프로젝트 CRUD
+│   ├── cli.js                   #   CLI 브릿지 (79개 커맨드)
+│   └── lib/                     #   핵심 라이브러리 (28개 모듈)
+│       ├── project-scaffolder.js #     프로젝트 인프라 생성
+│       ├── github-manager.js   #     gh CLI 래퍼
+│       ├── project-manager.js   #     프로젝트 CRUD + 상태 관리
 │       ├── team-builder.js      #     팀 추천/구성
-│       ├── persona-manager.js   #     커스텀 페르소나 CRUD/Merge
 │       ├── discussion-engine.js #     토론 프롬프트 생성
+│       ├── orchestrator.js      #     멀티에이전트 오케스트레이션 (v4.0)
+│       ├── review-engine.js     #     크로스 리뷰 시스템 (v4.0)
+│       ├── complexity-analyzer.js #   복잡도 분석 (v4.0)
 │       ├── task-distributor.js  #     작업 분배
-│       ├── report-generator.js  #     보고서 생성
 │       ├── agent-feedback.js    #     에이전트 피드백 (오버라이드 관리)
-│       ├── template-scaffolder.js #  프로젝트 템플릿 스캐폴딩
-│       ├── config-generator.js  #     설정 생성 (v2)
-│       └── *.js                 #     (기존 8개 라이브러리)
+│       ├── persona-manager.js   #     커스텀 페르소나 CRUD/Merge
+│       ├── template-scaffolder.js #   프로젝트 템플릿 스캐폴딩
+│       └── *.js                 #     (기타 모듈)
 ├── templates/                    # Handlebars 템플릿
 ├── hooks/                        # 훅 정의
 ├── guides/                       # 학습 가이드
-├── skills/                       # 스킬 (4개)
-└── tests/                        # Vitest 테스트 (347개)
-    ├── project-manager.test.js  #   23개 테스트
-    ├── team-builder.test.js     #   24개 테스트
-    ├── persona-manager.test.js  #   50개 테스트
-    ├── discussion-engine.test.js#   13개 테스트
-    ├── task-distributor.test.js #   23개 테스트
-    ├── report-generator.test.js #   13개 테스트
-    ├── agent-feedback.test.js   #   22개 테스트
-    ├── template-scaffolder.test.js # 27개 테스트
-    ├── integration.test.js      #   16개 테스트
-    └── *.test.js                #   (기존 121개 테스트)
+├── skills/                       # 스킬 (5개)
+└── tests/                        # Vitest 테스트 (624개)
 ```
 
 ## 기술 스택
 
 - **Node.js 18+** (ESM)
 - **Handlebars** (템플릿 엔진)
-- **Vitest** (테스트 프레임워크, 347개 테스트)
+- **Vitest** (테스트 프레임워크, 624개 테스트)
 
 ## 개발
 
 ```bash
 npm install          # 의존성 설치
-npm test             # 전체 테스트 실행 (347개)
+npm test             # 전체 테스트 실행
 npm run test:watch   # 테스트 감시 모드
 npm run test:coverage # 커버리지 리포트
 ```
 
-## CLI 직접 사용
+## 데이터 저장 위치
 
-커맨드에서 내부적으로 호출하는 CLI를 직접 사용할 수도 있습니다:
-
-```bash
-# 프로젝트 타입 조회
-node scripts/cli.js project-types
-
-# 팀 추천
-node scripts/cli.js recommend-team --type telegram-bot
-
-# 역할 카탈로그
-node scripts/cli.js role-catalog
-
-# 팀 통계
-node scripts/cli.js team-stats
-
-# 템플릿 목록 조회
-node scripts/cli.js list-templates
-
-# 특정 타입의 템플릿 조회
-node scripts/cli.js list-templates --type web-app
-
-# 스캐폴딩 실행
-echo '{"template":"next-app","targetDir":"./my-app","variables":{"projectName":"my-app"}}' | node scripts/cli.js scaffold
-```
+| 데이터 | 경로 |
+|--------|------|
+| 프로젝트 | `~/.claude/good-vibe/projects/{id}/project.json` |
+| 에이전트 오버라이드 | `~/.claude/good-vibe/agent-overrides/{roleId}.md` |
+| 커스텀 페르소나 | `~/.claude/good-vibe/custom-personas/` |
+| 커스텀 템플릿 | `~/.claude/good-vibe/custom-templates/` |
 
 ## 로드맵
 
@@ -243,33 +265,24 @@ echo '{"template":"next-app","targetDir":"./my-app","variables":{"projectName":"
 - [x] 에이전트 오케스트레이션
 - [x] 설정 초기화/내보내기
 
-### Phase 3 - AI 팀 관리 (v3.0) ← 현재
+### Phase 3 - AI 팀 관리 (v3.0)
 - [x] 프로젝트 CRUD + 상태 관리
 - [x] 15개 역할 카탈로그 + 30개 페르소나
 - [x] 팀 추천/구성 시스템
 - [x] 팀 토론 시뮬레이션
 - [x] 작업 분배 + 에이전트 실행
 - [x] 보고서 생성 + 피드백 시스템
-- [x] 9개 프로젝트 관리 커맨드
-- [x] 15개 팀 에이전트
 - [x] CLI 브릿지 + 통합 테스트
 
-### Phase 5-1 - 커스텀 페르소나 (v3.2)
-- [x] 커스텀 역할 CRUD (`persona-manager.js`)
-- [x] 커스텀 변형 추가/수정/삭제
-- [x] 내장 페르소나 오버라이드 (원본 보존)
-- [x] Merge 로직 (내장 + 커스텀 통합)
-- [x] `/persona`, `/edit-persona` 커맨드
-- [x] team-builder 통합 (기존 호환 유지)
+### Phase 4 - 멀티에이전트 (v4.0) — 현재
+- [x] 멀티에이전트 오케스트레이션 (tier별 병렬 디스패치)
+- [x] 크로스 리뷰 시스템 (품질 게이트)
+- [x] 복잡도 기반 자동 모드 선택
+- [x] 에이전트 피드백 재설계 (결과 분석 → 오버라이드)
+- [x] 커스텀 페르소나 시스템
+- [x] 프로젝트 템플릿 스캐폴딩
 
-### Phase 5-2 - 프로젝트 템플릿 스캐폴딩 (v3.3)
-- [x] 템플릿 시스템 (`template-scaffolder.js`)
-- [x] 5개 built-in 템플릿 (Next.js, Express, CLI, Telegram Bot, NPM Library)
-- [x] 커스텀 템플릿 지원 (`~/.claude/good-vibe/custom-templates/`)
-- [x] `/scaffold` 커맨드 + `/new-project` 연동
-- [x] CLI 커맨드: `list-templates`, `get-template`, `scaffold`
-
-### Phase 6 (계획)
+### Phase 5 (계획)
 - [ ] 마켓플레이스 등록
 - [ ] 국제화 (일본어, 영어)
 

@@ -86,6 +86,8 @@ export async function createProject(name, type, description, options = {}) {
     createdAt: new Date().toISOString(),
     status: 'planning',
     mode,
+    infraPath: options.infraPath || null,
+    githubUrl: options.githubUrl || null,
     team: [],
     discussion: { rounds: [], planDocument: '' },
     tasks: [],
@@ -249,4 +251,38 @@ export async function updateTaskStatus(projectId, taskId, status) {
   if (!task) throw new Error(`태스크를 찾을 수 없습니다: ${taskId}`);
   task.status = status;
   return saveProject(project);
+}
+
+/**
+ * 프로젝트 실행 진행률을 계산한다.
+ * @param {object} project - 프로젝트 객체
+ * @returns {{totalTasks: number, completedTasks: number, currentPhase: number, totalPhases: number, percentage: number}}
+ */
+export function getExecutionProgress(project) {
+  const tasks = project.tasks || [];
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter(t => t.status === 'completed').length;
+
+  const phases = new Set(tasks.map(t => t.phase).filter(Boolean));
+  const totalPhases = phases.size || 1;
+
+  const completedPhases = new Set(
+    tasks
+      .filter(t => t.status === 'completed' && t.phase)
+      .map(t => t.phase)
+  );
+
+  const inProgressPhases = tasks
+    .filter(t => t.status !== 'completed' && t.phase)
+    .map(t => t.phase);
+
+  const currentPhase = inProgressPhases.length > 0
+    ? Math.min(...inProgressPhases)
+    : completedPhases.size > 0
+      ? Math.max(...completedPhases) + 1
+      : 1;
+
+  const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  return { totalTasks, completedTasks, currentPhase, totalPhases, percentage };
 }

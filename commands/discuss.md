@@ -1,5 +1,16 @@
 # /discuss — 팀 토론 (멀티에이전트)
 
+## 이 커맨드를 실행하면?
+
+AI 팀원들이 프로젝트를 각자 분석하고, 결과를 모아 **기획서**를 만듭니다.
+팀원들끼리 서로 리뷰하면서, 의견이 모일 때까지 반복합니다.
+
+- **소요시간:** 3-10분 (팀 규모와 프로젝트 복잡도에 따라)
+- **결과물:** 기획서 (프로젝트 분석 + 작업 계획)
+- **다음 단계:** `/approve` (기획서 승인)
+
+---
+
 팀원들이 각자 독립적으로 프로젝트를 분석하고, 결과를 종합하여 기획서를 작성합니다.
 에이전트들이 서로의 작업을 리뷰하고, 결과가 수렴될 때까지 반복합니다 (최대 3라운드).
 
@@ -87,6 +98,21 @@ echo '{"reviews": [...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js check-conv
 ```bash
 echo '{"id":"{프로젝트ID}","status":"planning"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js update-status
 ```
+
+## Step 8.5: CLAUDE.md 업데이트 (프로젝트에 CLAUDE.md가 있는 경우)
+
+프로젝트의 infraPath가 있으면, 기획서의 아키텍처 섹션을 CLAUDE.md에 추가합니다:
+
+```bash
+echo '{"claudeMdPath":"{infraPath}/CLAUDE.md","sectionName":"architecture-placeholder","content":"### 아키텍처\n{기획서에서 추출한 아키텍처 요약}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js append-claude-md
+```
+
+**추출할 내용:**
+- 기획서의 기술 아키텍처 섹션
+- 주요 컴포넌트/모듈 구조
+- 데이터 플로우
+
+이 단계는 프로젝트에 infraPath가 설정되어 있을 때만 실행합니다 (`/hello`를 통해 생성된 경우).
 
 ## Step 9: 다음 단계 안내
 

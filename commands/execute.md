@@ -1,6 +1,36 @@
 # /execute — 작업 실행 (크로스 리뷰 포함)
 
+## 이 커맨드를 실행하면?
+
+팀원들이 분배된 작업을 실행하고, 다른 팀원이 결과물을 리뷰합니다.
+문제가 발견되면 자동으로 수정하고, 해결이 안 되면 CEO(당신)에게 보고합니다.
+
+- **소요시간:** 5-15분 (작업량에 따라)
+- **결과물:** 완성된 작업 결과 (리뷰 통과)
+- **다음 단계:** `/report` (보고서 생성)
+
+---
+
 plan-execute 모드에서 분배된 작업을 팀원(에이전트)에게 위임하여 실행하고, 리뷰를 거칩니다.
+
+## Step 0: 실행 모드 선택
+
+```
+질문: "실행 모드를 선택하세요"
+header: "모드"
+options:
+  - label: "인터랙티브 (Recommended)"
+    description: "각 Phase 완료 후 진행 여부를 확인합니다"
+  - label: "자동 실행"
+    description: "에스컬레이션이 필요한 경우에만 중단합니다"
+```
+
+**자동 실행 모드 동작:**
+- Phase별 실행 → Quality Gate → 통과면 다음 Phase 자동 진행
+- 수정 루프도 자동 (최대 2회)
+- 에스컬레이션 조건 시에만 사용자에게 알림
+- 매 Phase 완료마다 project.json에 상태 저장 (중단 시 재개 가능)
+- `/status`로 진행률 확인 가능
 
 ## Step 1: 프로젝트 로드
 
@@ -114,6 +144,22 @@ Step 4를 모든 Phase에 대해 반복합니다.
 ```bash
 echo '{"id":"{프로젝트ID}","status":"completed"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js update-status
 ```
+
+## Step 6.5: CLAUDE.md 업데이트 (프로젝트에 CLAUDE.md가 있는 경우)
+
+실행 중 내린 기술 결정을 CLAUDE.md Decisions 섹션에 추가합니다:
+
+```bash
+echo '{"claudeMdPath":"{infraPath}/CLAUDE.md","sectionName":"decisions-placeholder","content":"### 기술 결정\n{실행 중 결정된 사항 요약}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js append-claude-md
+```
+
+**기록할 내용:**
+- 라이브러리/프레임워크 선택 이유
+- 아키텍처 변경 사항
+- 성능/보안 관련 결정
+- Phase별 주요 기술 결정
+
+이 단계는 프로젝트에 infraPath가 설정되어 있을 때만 실행합니다 (`/hello`를 통해 생성된 경우).
 
 ## Step 7: 다음 단계
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { createProject, getProject, listProjects, updateProjectStatus, setProjectTeam, setProjectPlan, addProjectTasks, setProjectReport, addDiscussionRound, addTaskReviews, updateTaskStatus } from './lib/project-manager.js';
+import { createProject, getProject, listProjects, updateProjectStatus, setProjectTeam, setProjectPlan, addProjectTasks, setProjectReport, addDiscussionRound, addTaskReviews, updateTaskStatus, getExecutionProgress } from './lib/project-manager.js';
 import { recommendTeam, buildTeam, loadRoleCatalog, loadProjectTypes, getTeamSummary } from './lib/team-builder.js';
 import { buildDiscussionPrompt, buildPlanDocument, parseDiscussionOutput, buildSingleAgentDiscussionPrompt } from './lib/discussion-engine.js';
 import { buildTaskDistributionPrompt, buildExecutionPrompt, buildExecutionPlan, parseTaskList, buildExecutionPlanWithReviews } from './lib/task-distributor.js';
@@ -44,6 +44,8 @@ import {
   summarizeCrossModelResults,
 } from './lib/cross-model-strategy.js';
 import { verifyConnection } from './lib/llm-provider.js';
+import { setupProjectInfra, appendToClaudeMd } from './lib/project-scaffolder.js';
+import { checkGhStatus, createGithubRepo, gitInitAndPush } from './lib/github-manager.js';
 
 const [,, command, ...args] = process.argv;
 
@@ -588,6 +590,53 @@ const commands = {
     const data = await readStdin();
     const merged = mergeAgentWithOverride(data.baseMd, data.overrideMd);
     output({ merged });
+  },
+
+  // --- Project setup commands (/hello) ---
+
+  'setup-project-infra': async () => {
+    const data = await readStdin();
+    const result = await setupProjectInfra({
+      name: data.name,
+      description: data.description,
+      techStack: data.techStack,
+      targetDir: data.targetDir,
+    });
+    output(result);
+  },
+
+  'check-gh-status': async () => {
+    const result = checkGhStatus();
+    output(result);
+  },
+
+  'create-github-repo': async () => {
+    const data = await readStdin();
+    const result = createGithubRepo(data.repoName, {
+      visibility: data.visibility,
+      description: data.description,
+    });
+    output(result);
+  },
+
+  'git-init-push': async () => {
+    const data = await readStdin();
+    const result = gitInitAndPush(data.projectDir, data.remoteUrl);
+    output(result);
+  },
+
+  'append-claude-md': async () => {
+    const data = await readStdin();
+    const result = await appendToClaudeMd(data.claudeMdPath, data.sectionName, data.content);
+    output(result);
+  },
+
+  'execution-progress': async () => {
+    const opts = parseArgs(args);
+    const project = await getProject(opts.id);
+    if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
+    const progress = getExecutionProgress(project);
+    output(progress);
   },
 };
 
