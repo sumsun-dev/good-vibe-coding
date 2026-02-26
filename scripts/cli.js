@@ -1,8 +1,23 @@
 #!/usr/bin/env node
-import { createProject, getProject, listProjects, updateProjectStatus, setProjectTeam, setProjectPlan, addProjectTasks, setProjectReport } from './lib/project-manager.js';
+import { createProject, getProject, listProjects, updateProjectStatus, setProjectTeam, setProjectPlan, addProjectTasks, setProjectReport, addDiscussionRound, addTaskReviews, updateTaskStatus } from './lib/project-manager.js';
 import { recommendTeam, buildTeam, loadRoleCatalog, loadProjectTypes, getTeamSummary } from './lib/team-builder.js';
-import { buildDiscussionPrompt, buildPlanDocument, parseDiscussionOutput } from './lib/discussion-engine.js';
-import { buildTaskDistributionPrompt, buildExecutionPrompt, buildExecutionPlan, parseTaskList } from './lib/task-distributor.js';
+import { buildDiscussionPrompt, buildPlanDocument, parseDiscussionOutput, buildSingleAgentDiscussionPrompt } from './lib/discussion-engine.js';
+import { buildTaskDistributionPrompt, buildExecutionPrompt, buildExecutionPlan, parseTaskList, buildExecutionPlanWithReviews } from './lib/task-distributor.js';
+import {
+  buildAgentAnalysisPrompt, buildSynthesisPrompt, buildReviewPrompt,
+  parseReviewOutput, checkConvergence, groupAgentsForParallelDispatch,
+  analyzeAgentEfficiency,
+} from './lib/orchestrator.js';
+import {
+  measureOutputSimilarity, detectRedundantAgents, trackRoleContribution,
+  recommendOptimalTeam, buildOptimizationReport,
+} from './lib/agent-optimizer.js';
+import {
+  selectReviewers, buildTaskReviewPrompt, parseTaskReview,
+  checkQualityGate, buildRevisionPrompt, checkEnhancedQualityGate,
+} from './lib/review-engine.js';
+import { verifyExecution } from './lib/execution-verifier.js';
+import { buildComplexityAnalysisPrompt, parseComplexityAnalysis, getDefaultsForComplexity } from './lib/complexity-analyzer.js';
 import { generateReport } from './lib/report-generator.js';
 import { addFeedback, getTeamStats, getFeedbackHistory } from './lib/feedback-manager.js';
 import { analyzeGrowth, getGrowthProfiles, formatGrowthReport } from './lib/growth-manager.js';
@@ -14,6 +29,20 @@ import {
 import {
   listTemplates, loadTemplate, scaffold, getTemplatesForProjectType,
 } from './lib/template-scaffolder.js';
+import {
+  createEvalSession, recordApproachResult, compareApproaches,
+  generateEvalReport, saveEvalSession, loadEvalSession, listEvalSessions,
+} from './lib/eval-engine.js';
+import {
+  connectWithApiKey, connectGeminiCli, removeAuth, listConnectedProviders,
+  loadProvidersConfig, setReviewStrategy, getProviderStatus,
+  buildOAuthUrl, exchangeOAuthCode,
+} from './lib/auth-manager.js';
+import {
+  resolveReviewAssignments, executeCrossModelReviews,
+  summarizeCrossModelResults,
+} from './lib/cross-model-strategy.js';
+import { verifyConnection } from './lib/llm-provider.js';
 
 const [,, command, ...args] = process.argv;
 
@@ -269,6 +298,269 @@ const commands = {
       backup: data.backup !== false,
     });
     output(result);
+  },
+
+  // --- Orchestrator commands (v4.0) ---
+
+  'agent-analysis-prompt': async () => {
+    const data = await readStdin();
+    const prompt = buildAgentAnalysisPrompt(data.project, data.teamMember, data.context || {});
+    output({ prompt });
+  },
+
+  'synthesis-prompt': async () => {
+    const data = await readStdin();
+    const prompt = buildSynthesisPrompt(data.project, data.agentOutputs, data.round || 1);
+    output({ prompt });
+  },
+
+  'review-prompt': async () => {
+    const data = await readStdin();
+    const prompt = buildReviewPrompt(data.teamMember, data.synthesizedPlan, data.round || 1);
+    output({ prompt });
+  },
+
+  'check-convergence': async () => {
+    const data = await readStdin();
+    const result = checkConvergence(data.reviews);
+    output(result);
+  },
+
+  'group-agents': async () => {
+    const data = await readStdin();
+    const tiers = groupAgentsForParallelDispatch(data.team);
+    output({ tiers });
+  },
+
+  'single-agent-discussion-prompt': async () => {
+    const data = await readStdin();
+    const prompt = buildSingleAgentDiscussionPrompt(data.project, data.teamMember, data.context || {});
+    output({ prompt });
+  },
+
+  // --- Review engine commands (v4.0) ---
+
+  'select-reviewers': async () => {
+    const data = await readStdin();
+    const reviewers = selectReviewers(data.task, data.team);
+    output({ reviewers });
+  },
+
+  'task-review-prompt': async () => {
+    const data = await readStdin();
+    const prompt = buildTaskReviewPrompt(data.reviewer, data.task, data.taskOutput);
+    output({ prompt });
+  },
+
+  'check-quality-gate': async () => {
+    const data = await readStdin();
+    const result = checkQualityGate(data.reviews);
+    output(result);
+  },
+
+  'revision-prompt': async () => {
+    const data = await readStdin();
+    const prompt = buildRevisionPrompt(data.task, data.implementer, data.reviews);
+    output({ prompt });
+  },
+
+  'execution-plan-with-reviews': async () => {
+    const data = await readStdin();
+    const plan = buildExecutionPlanWithReviews(data.tasks, data.team);
+    output(plan);
+  },
+
+  // --- Execution verification commands (v4.0) ---
+
+  'verify-execution': async () => {
+    const data = await readStdin();
+    const result = await verifyExecution(data.taskOutput, data.task);
+    output(result);
+  },
+
+  'enhanced-quality-gate': async () => {
+    const data = await readStdin();
+    const result = checkEnhancedQualityGate(data.reviews, data.executionResult);
+    output(result);
+  },
+
+  // --- Complexity analyzer commands (v4.0) ---
+
+  'complexity-analysis': async () => {
+    const data = await readStdin();
+    const prompt = buildComplexityAnalysisPrompt(data.description);
+    output({ prompt });
+  },
+
+  'parse-complexity': async () => {
+    const data = await readStdin();
+    const result = parseComplexityAnalysis(data.rawOutput);
+    output(result);
+  },
+
+  'complexity-defaults': async () => {
+    const opts = parseArgs(args);
+    const defaults = getDefaultsForComplexity(opts.level);
+    output(defaults);
+  },
+
+  // --- Project data extension commands (v4.0) ---
+
+  'add-discussion-round': async () => {
+    const data = await readStdin();
+    const project = await addDiscussionRound(data.id, data.roundData);
+    output(project);
+  },
+
+  'add-task-reviews': async () => {
+    const data = await readStdin();
+    const project = await addTaskReviews(data.id, data.taskId, data.reviews);
+    output(project);
+  },
+
+  'update-task-status': async () => {
+    const data = await readStdin();
+    const project = await updateTaskStatus(data.id, data.taskId, data.status);
+    output(project);
+  },
+
+  'analyze-efficiency': async () => {
+    const data = await readStdin();
+    const agentOutputs = data.agentOutputs || [];
+    const roleContributions = data.roleContributions || [];
+    const teamSize = data.teamSize;
+    const redundancies = detectRedundantAgents(agentOutputs);
+    const recommendations = recommendOptimalTeam(agentOutputs, roleContributions, teamSize);
+    const report = buildOptimizationReport(recommendations);
+    output({ redundancies, recommendations, report });
+  },
+
+  // --- Eval engine commands ---
+
+  'eval-create': async () => {
+    const data = await readStdin();
+    const session = createEvalSession(data.projectDescription, data.approaches);
+    output(session);
+  },
+
+  'eval-record': async () => {
+    const data = await readStdin();
+    const session = await loadEvalSession(data.sessionId);
+    const updated = recordApproachResult(session, data.approach, data.result);
+    await saveEvalSession(updated);
+    output(updated);
+  },
+
+  'eval-compare': async () => {
+    const opts = parseArgs(args);
+    const session = await loadEvalSession(opts['session-id']);
+    const comparison = compareApproaches(session);
+    output(comparison);
+  },
+
+  'eval-report': async () => {
+    const opts = parseArgs(args);
+    const session = await loadEvalSession(opts['session-id']);
+    const comparison = compareApproaches(session);
+    const report = generateEvalReport(session, comparison);
+    output({ report });
+  },
+
+  'eval-list': async () => {
+    const sessions = await listEvalSessions();
+    output(sessions);
+  },
+
+  // --- Multi-model provider commands ---
+
+  'connect': async () => {
+    const data = await readStdin();
+    const providerId = data.provider || args[0];
+    if (!providerId) throw new Error('프로바이더 ID가 필요합니다');
+
+    if (data.authType === 'oauth') {
+      const { url, state } = buildOAuthUrl(providerId, { clientId: data.clientId });
+      output({ url, state, message: '브라우저에서 인증을 완료하세요' });
+    } else if (data.authType === 'cli') {
+      if (providerId !== 'gemini') {
+        throw new Error('CLI 인증은 현재 gemini만 지원합니다');
+      }
+      const { isGeminiCliInstalled } = await import('./lib/gemini-bridge.js');
+      if (!isGeminiCliInstalled()) {
+        throw new Error('Gemini CLI가 설치되지 않았습니다. `npm install -g @google/gemini-cli` 로 설치하세요.');
+      }
+      const auth = await connectGeminiCli();
+      output({ success: true, providerId, type: auth.type });
+    } else {
+      const auth = await connectWithApiKey(providerId, data.apiKey);
+      output({ success: true, providerId, type: auth.type });
+    }
+  },
+
+  'exchange-oauth': async () => {
+    const data = await readStdin();
+    const auth = await exchangeOAuthCode(data.provider, data.code, {
+      clientId: data.clientId,
+      clientSecret: data.clientSecret,
+    });
+    output({ success: true, provider: data.provider, type: auth.type });
+  },
+
+  'disconnect': async () => {
+    const data = await readStdin();
+    const providerId = data.provider || args[0];
+    if (!providerId) throw new Error('프로바이더 ID가 필요합니다');
+    await removeAuth(providerId);
+    output({ success: true, providerId });
+  },
+
+  'providers': async () => {
+    const status = await getProviderStatus();
+    output(status);
+  },
+
+  'connected-providers': async () => {
+    const connected = await listConnectedProviders();
+    output(connected);
+  },
+
+  'set-review-strategy': async () => {
+    const data = await readStdin();
+    await setReviewStrategy(data.strategy);
+    output({ success: true, strategy: data.strategy });
+  },
+
+  'verify-provider': async () => {
+    const data = await readStdin();
+    const providerId = data.provider || args[0];
+    const result = await verifyConnection(providerId);
+    output(result);
+  },
+
+  'cross-model-review': async () => {
+    const data = await readStdin();
+    const config = data.providerConfig || await loadProvidersConfig();
+    const assignments = await resolveReviewAssignments(data.reviewers, config);
+    const results = await executeCrossModelReviews(assignments, data.task, data.taskOutput);
+    const summary = summarizeCrossModelResults(results);
+    output({ results, summary });
+  },
+
+  'resolve-review-assignments': async () => {
+    const data = await readStdin();
+    const config = data.providerConfig || await loadProvidersConfig();
+    const assignments = await resolveReviewAssignments(data.reviewers, config);
+    output({ assignments });
+  },
+
+  'gemini-review': async () => {
+    const data = await readStdin();
+    const { buildTaskReviewPrompt, parseTaskReview } = await import('./lib/review-engine.js');
+    const { callGeminiCli } = await import('./lib/gemini-bridge.js');
+    const prompt = buildTaskReviewPrompt(data.reviewer, data.task, data.taskOutput);
+    const response = callGeminiCli(prompt, { model: data.model });
+    const review = parseTaskReview(response.text);
+    output({ reviewer: data.reviewer, provider: 'gemini', model: response.model, review, tokenCount: response.tokenCount });
   },
 
   'growth': async () => {
