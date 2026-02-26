@@ -1,6 +1,6 @@
 {
   "name": "good-vibe-coding",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "description": "Virtual AI Team Management Platform — AI 팀을 구성하고 프로젝트를 관리하세요",
   "type": "module",
   "main": "scripts/lib/config-generator.js",

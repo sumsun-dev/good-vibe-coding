@@ -70,11 +70,6 @@ describe('buildAuthHeaders', () => {
     expect(headers['Authorization']).toBe('Bearer sk-test');
   });
 
-  it('Gemini OAuth 헤더를 생성한다', () => {
-    const headers = buildAuthHeaders('gemini', { type: 'oauth', accessToken: 'ya29-test' });
-    expect(headers['Authorization']).toBe('Bearer ya29-test');
-  });
-
   it('Gemini API Key 헤더를 생성한다', () => {
     const headers = buildAuthHeaders('gemini', { type: 'api-key', apiKey: 'AI-test' });
     expect(headers['x-goog-api-key']).toBe('AI-test');

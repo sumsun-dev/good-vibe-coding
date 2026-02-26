@@ -6,7 +6,7 @@
  * 프로바이더별 요청/응답 포맷 변환을 내부 처리.
  */
 
-import { loadAuth, isExpired, refreshOAuthToken } from './auth-manager.js';
+import { loadAuth } from './auth-manager.js';
 import { callGeminiCli } from './gemini-bridge.js';
 
 /** 프로바이더별 API 엔드포인트 */
@@ -47,11 +47,6 @@ export async function callLLM(providerId, prompt, options = {}) {
   if (providerId === 'gemini' && auth.type === 'cli') {
     const model = options.model || DEFAULT_MODELS.gemini;
     return callGeminiCli(prompt, { model, timeout: options.timeout });
-  }
-
-  // OAuth 토큰 만료 시 자동 갱신
-  if (auth.type === 'oauth' && auth.expiresAt && isExpired(auth.expiresAt)) {
-    auth = await refreshOAuthToken(providerId, auth);
   }
 
   const model = options.model || DEFAULT_MODELS[providerId];
@@ -133,9 +128,6 @@ export function buildAuthHeaders(providerId, auth) {
     case 'openai':
       return { 'Authorization': `Bearer ${auth.apiKey}` };
     case 'gemini':
-      if (auth.type === 'oauth') {
-        return { 'Authorization': `Bearer ${auth.accessToken}` };
-      }
       return { 'x-goog-api-key': auth.apiKey };
     default:
       return {};

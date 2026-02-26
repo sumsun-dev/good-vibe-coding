@@ -16,8 +16,6 @@ import {
   setProviderEnabled,
   setReviewStrategy,
   connectWithApiKey,
-  isExpired,
-  buildOAuthUrl,
   getProviderStatus,
 } from '../scripts/lib/auth-manager.js';
 
@@ -189,46 +187,6 @@ describe('connectWithApiKey', () => {
     await connectWithApiKey('claude', '  sk-trimmed  ');
     const auth = await loadAuth('claude');
     expect(auth.apiKey).toBe('sk-trimmed');
-  });
-});
-
-// --- OAuth ---
-
-describe('isExpired', () => {
-  it('만료된 토큰은 true를 반환한다', () => {
-    expect(isExpired('2020-01-01T00:00:00Z')).toBe(true);
-  });
-
-  it('유효한 토큰은 false를 반환한다', () => {
-    const future = new Date(Date.now() + 3600000).toISOString();
-    expect(isExpired(future)).toBe(false);
-  });
-
-  it('null/undefined는 true를 반환한다', () => {
-    expect(isExpired(null)).toBe(true);
-    expect(isExpired(undefined)).toBe(true);
-  });
-});
-
-describe('buildOAuthUrl', () => {
-  it('Gemini OAuth URL을 생성한다', () => {
-    const { url, state } = buildOAuthUrl('gemini', { clientId: 'test-client-id' });
-    expect(url).toContain('accounts.google.com');
-    expect(url).toContain('test-client-id');
-    expect(url).toContain('generative-language');
-    expect(url).toContain('access_type=offline');
-    expect(state).toBeTruthy();
-    expect(state.length).toBe(32); // 16 bytes hex
-  });
-
-  it('지원하지 않는 프로바이더는 에러를 던진다', () => {
-    expect(() => buildOAuthUrl('openai', { clientId: 'test' })).toThrow('OAuth 미지원');
-  });
-
-  it('매번 다른 state를 생성한다', () => {
-    const { state: state1 } = buildOAuthUrl('gemini', { clientId: 'test' });
-    const { state: state2 } = buildOAuthUrl('gemini', { clientId: 'test' });
-    expect(state1).not.toBe(state2);
   });
 });
 

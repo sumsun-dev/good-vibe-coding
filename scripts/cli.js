@@ -36,7 +36,6 @@ import {
 import {
   connectWithApiKey, connectGeminiCli, removeAuth, listConnectedProviders,
   loadProvidersConfig, setReviewStrategy, getProviderStatus,
-  buildOAuthUrl, exchangeOAuthCode,
 } from './lib/auth-manager.js';
 import {
   resolveReviewAssignments, executeCrossModelReviews,
@@ -478,10 +477,7 @@ const commands = {
     const providerId = data.provider || args[0];
     if (!providerId) throw new Error('프로바이더 ID가 필요합니다');
 
-    if (data.authType === 'oauth') {
-      const { url, state } = buildOAuthUrl(providerId, { clientId: data.clientId });
-      output({ url, state, message: '브라우저에서 인증을 완료하세요' });
-    } else if (data.authType === 'cli') {
+    if (data.authType === 'cli') {
       if (providerId !== 'gemini') {
         throw new Error('CLI 인증은 현재 gemini만 지원합니다');
       }
@@ -495,15 +491,6 @@ const commands = {
       const auth = await connectWithApiKey(providerId, data.apiKey);
       output({ success: true, providerId, type: auth.type });
     }
-  },
-
-  'exchange-oauth': async () => {
-    const data = await readStdin();
-    const auth = await exchangeOAuthCode(data.provider, data.code, {
-      clientId: data.clientId,
-      clientSecret: data.clientSecret,
-    });
-    output({ success: true, provider: data.provider, type: auth.type });
   },
 
   'disconnect': async () => {
