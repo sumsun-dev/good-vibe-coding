@@ -24,7 +24,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js list-projects
 프로젝트가 없으면:
 ```
 아직 프로젝트가 없습니다.
-`/new-project`로 첫 프로젝트를 시작하세요!
+`/new`로 첫 프로젝트를 시작하세요! (수동 설정: `/new-project`)
 ```
 
 ## Step 3: 프로젝트 선택
