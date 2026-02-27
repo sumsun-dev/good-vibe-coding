@@ -144,6 +144,8 @@ describe('materializeCode', () => {
       expect(result.totalBlocks).toBe(2);
       expect(result.materializedCount).toBe(0);
       expect(result.skippedCount).toBe(2);
+      expect(result.unmaterializableCount).toBe(2);
+      expect(result.failedCount).toBe(0);
     });
   });
 
@@ -190,7 +192,8 @@ describe('materializeCode', () => {
     const dir = createTempDir();
     const result = await materializeCode(SINGLE_FILE_OUTPUT, dir, { dryRun: true });
 
-    expect(result.materializedCount).toBe(1);
+    expect(result.materializedCount).toBe(0);
+    expect(result.dryRunCount).toBe(1);
     expect(result.files[0].written).toBe(false);
     expect(existsSync(join(dir, 'src/app.js'))).toBe(false);
   });
@@ -238,6 +241,8 @@ describe('materializeCode', () => {
     const result = await materializeCode(maliciousOutput, dir);
 
     expect(result.materializedCount).toBe(0);
+    expect(result.failedCount).toBe(1);
+    expect(result.unmaterializableCount).toBe(0);
     expect(result.files[0].written).toBe(false);
     expect(result.files[0].error).toBe('path traversal detected');
   });
@@ -249,10 +254,16 @@ describe('materializeCode', () => {
     expect(result).toHaveProperty('totalBlocks');
     expect(result).toHaveProperty('materializedCount');
     expect(result).toHaveProperty('skippedCount');
+    expect(result).toHaveProperty('unmaterializableCount');
+    expect(result).toHaveProperty('failedCount');
+    expect(result).toHaveProperty('dryRunCount');
     expect(result).toHaveProperty('files');
     expect(typeof result.totalBlocks).toBe('number');
     expect(typeof result.materializedCount).toBe('number');
     expect(typeof result.skippedCount).toBe('number');
+    expect(typeof result.unmaterializableCount).toBe('number');
+    expect(typeof result.failedCount).toBe('number');
+    expect(typeof result.dryRunCount).toBe('number');
     expect(Array.isArray(result.files)).toBe(true);
   });
 
@@ -309,6 +320,8 @@ describe('materializeBatch', () => {
 
     expect(result.results).toEqual([]);
     expect(result.totalFiles).toBe(0);
+    expect(result.totalDryRunFiles).toBe(0);
+    expect(result.errorCount).toBe(0);
   });
 
   it('텍스트 전용 출력이 포함되어도 정상 동작한다', async () => {
@@ -335,6 +348,8 @@ describe('materializeBatch', () => {
     const result = await materializeBatch(taskOutputs, dir, { dryRun: true });
 
     expect(result.results[0].result.files[0].written).toBe(false);
+    expect(result.totalFiles).toBe(0);
+    expect(result.totalDryRunFiles).toBe(1);
   });
 
   it('결과 형식이 올바르다', async () => {
@@ -347,7 +362,12 @@ describe('materializeBatch', () => {
 
     expect(result).toHaveProperty('results');
     expect(result).toHaveProperty('totalFiles');
+    expect(result).toHaveProperty('totalDryRunFiles');
+    expect(result).toHaveProperty('errorCount');
     expect(Array.isArray(result.results)).toBe(true);
     expect(typeof result.totalFiles).toBe('number');
+    expect(typeof result.totalDryRunFiles).toBe('number');
+    expect(typeof result.errorCount).toBe('number');
+    expect(result.errorCount).toBe(0);
   });
 });

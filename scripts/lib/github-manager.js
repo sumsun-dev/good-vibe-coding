@@ -1,4 +1,6 @@
 import { execSync, execFileSync } from 'child_process';
+import { existsSync, writeFileSync } from 'fs';
+import { join } from 'path';
 
 /**
  * gh CLI 설치 및 인증 상태를 확인한다.
@@ -87,6 +89,15 @@ export function createGithubRepo(repoName, options = {}) {
  * @param {string} [message] - 커밋 메시지 (선택)
  * @returns {{success: boolean, error: string|null}}
  */
+/** .gitignore가 없는 프로젝트에서 민감 파일 스테이징 방지를 위한 최소 패턴 */
+export const MINIMAL_GITIGNORE = `.env
+.env.*
+*.pem
+*.key
+node_modules/
+.DS_Store
+`;
+
 export function commitPhase(projectDir, phase, message) {
   if (!projectDir || typeof projectDir !== 'string') {
     return { success: false, error: 'projectDir이 필요합니다' };
@@ -99,6 +110,12 @@ export function commitPhase(projectDir, phase, message) {
 
   try {
     const opts = { cwd: projectDir, stdio: 'pipe', encoding: 'utf-8' };
+
+    // .gitignore 없으면 최소 패턴 자동 생성 (민감 파일 보호)
+    const gitignorePath = join(projectDir, '.gitignore');
+    if (!existsSync(gitignorePath)) {
+      writeFileSync(gitignorePath, MINIMAL_GITIGNORE, 'utf-8');
+    }
 
     execFileSync('git', ['add', '-A'], opts);
     execFileSync('git', ['commit', '-m', commitMessage, '--allow-empty'], opts);

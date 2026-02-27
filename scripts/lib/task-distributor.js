@@ -176,17 +176,28 @@ export function isCodeTask(task) {
     return true;
   }
 
-  const codeKeywords = [
-    '구현', '개발', '코딩',
-    'implement', 'develop', 'code', 'build', 'create',
-    'api', 'endpoint', 'component', 'function', 'module',
-    'class', 'service', 'controller', 'middleware', 'route',
-    'schema', 'migration', 'test', 'spec',
+  // 한국어: 단어 경계가 없으므로 includes() 유지
+  const koreanKeywords = ['구현', '개발', '코딩'];
+  // 영어: \b 단어 경계로 false positive 방지 (e.g. "classification" ≠ "class")
+  const englishKeywords = [
+    'implement', 'implements', 'implementation',
+    'develop', 'developer', 'code', 'coding',
+    'build', 'builds', 'create', 'creates',
+    'api', 'apis', 'endpoint', 'endpoints',
+    'component', 'components', 'function', 'functions',
+    'module', 'modules', 'class', 'classes',
+    'service', 'services', 'controller', 'controllers',
+    'middleware', 'route', 'routes', 'router',
+    'schema', 'schemas', 'migration', 'migrations',
+    'test', 'tests', 'testing', 'spec', 'specs',
   ];
 
   const searchText = `${task.title || ''} ${task.description || ''}`.toLowerCase();
 
-  return codeKeywords.some((keyword) => searchText.includes(keyword));
+  const koreanMatch = koreanKeywords.some((kw) => searchText.includes(kw));
+  if (koreanMatch) return true;
+
+  return englishKeywords.some((kw) => new RegExp(`\\b${kw}\\b`).test(searchText));
 }
 
 /**

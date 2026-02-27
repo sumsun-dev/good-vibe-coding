@@ -52,6 +52,9 @@ export async function materializeCode(taskOutput, projectDir, options = {}) {
       totalBlocks: 0,
       materializedCount: 0,
       skippedCount: 0,
+      unmaterializableCount: 0,
+      failedCount: 0,
+      dryRunCount: 0,
       files: [],
     };
   }
@@ -66,12 +69,16 @@ export async function materializeCode(taskOutput, projectDir, options = {}) {
   const totalBlocks = allBlocks.length;
   const classified = classifyCodeBlocks(allBlocks);
   const materializableBlocks = classified.filter(block => block.filename);
+  const unmaterializableCount = totalBlocks - materializableBlocks.length;
 
   if (materializableBlocks.length === 0) {
     return {
       totalBlocks,
       materializedCount: 0,
       skippedCount: totalBlocks,
+      unmaterializableCount,
+      failedCount: 0,
+      dryRunCount: 0,
       files: [],
     };
   }
@@ -82,6 +89,8 @@ export async function materializeCode(taskOutput, projectDir, options = {}) {
 
   const files = [];
   let materializedCount = 0;
+  let failedCount = 0;
+  let dryRunCount = 0;
 
   for (const block of materializableBlocks) {
     const fullPath = resolve(projectDir, block.filename);
@@ -98,13 +107,13 @@ export async function materializeCode(taskOutput, projectDir, options = {}) {
     if (!isPathSafe(fullPath, projectDir)) {
       fileRecord.error = 'path traversal detected';
       files.push(fileRecord);
+      failedCount++;
       continue;
     }
 
     if (dryRun) {
-      // dryRun: materializedCount는 "기록될 예정" 수를 의미
       files.push(fileRecord);
-      materializedCount++;
+      dryRunCount++;
       continue;
     }
 
@@ -123,31 +132,40 @@ export async function materializeCode(taskOutput, projectDir, options = {}) {
     } catch (error) {
       fileRecord.written = false;
       fileRecord.error = error.message;
+      failedCount++;
     }
 
     files.push(fileRecord);
   }
 
-  const skippedCount = totalBlocks - materializedCount;
+  const skippedCount = unmaterializableCount + failedCount;
 
   return {
     totalBlocks,
     materializedCount,
     skippedCount,
+    unmaterializableCount,
+    failedCount,
+    dryRunCount,
     files,
   };
 }
 
 /**
  * 여러 태스크 출력을 일괄 기록한다.
+ *
+ * 순차 실행을 유지한다 — 동일 projectDir에 대한 병렬 쓰기는
+ * 파일 수준 충돌 위험이 있으며, 충돌 감지 로직은 현재 복잡도 대비
+ * 이점이 부족하다.
+ *
  * @param {Array<{taskId: string, output: string}>} taskOutputs - 태스크 출력 배열
  * @param {string} projectDir - 대상 프로젝트 디렉토리
  * @param {object} options - materializeCode 옵션
- * @returns {Promise<{results: Array<{taskId: string, result: object}>, totalFiles: number}>}
+ * @returns {Promise<{results: Array<{taskId: string, result: object|null, error?: string}>, totalFiles: number, totalDryRunFiles: number, errorCount: number}>}
  */
 export async function materializeBatch(taskOutputs, projectDir, options = {}) {
   if (!Array.isArray(taskOutputs)) {
-    return { results: [], totalFiles: 0 };
+    return { results: [], totalFiles: 0, totalDryRunFiles: 0, errorCount: 0 };
   }
 
   if (!projectDir || typeof projectDir !== 'string') {
@@ -156,16 +174,23 @@ export async function materializeBatch(taskOutputs, projectDir, options = {}) {
 
   const results = [];
   let totalFiles = 0;
+  let totalDryRunFiles = 0;
+  let errorCount = 0;
 
   for (const item of taskOutputs) {
     const taskId = item.taskId || 'unknown';
     const output = item.output || '';
 
-    const result = await materializeCode(output, projectDir, options);
-
-    results.push({ taskId, result });
-    totalFiles += result.materializedCount;
+    try {
+      const result = await materializeCode(output, projectDir, options);
+      results.push({ taskId, result });
+      totalFiles += result.materializedCount;
+      totalDryRunFiles += result.dryRunCount;
+    } catch (error) {
+      results.push({ taskId, result: null, error: error.message });
+      errorCount++;
+    }
   }
 
-  return { results, totalFiles };
+  return { results, totalFiles, totalDryRunFiles, errorCount };
 }

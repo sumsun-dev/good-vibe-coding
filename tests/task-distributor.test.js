@@ -4,6 +4,7 @@ import {
   parseTaskList,
   buildExecutionPrompt,
   buildExecutionPlan,
+  isCodeTask,
 } from '../scripts/lib/task-distributor.js';
 
 const SAMPLE_PROJECT = {
@@ -190,5 +191,45 @@ describe('buildExecutionPlan', () => {
     ];
     const plan = buildExecutionPlan(tasks, []);
     expect(plan.dependencies).toEqual({});
+  });
+});
+
+describe('isCodeTask', () => {
+  it('엔지니어 역할 assignee는 true를 반환한다', () => {
+    expect(isCodeTask({ assignee: 'backend', title: '회의록 작성' })).toBe(true);
+    expect(isCodeTask({ assignee: 'frontend', title: '일정 조율' })).toBe(true);
+    expect(isCodeTask({ assignee: 'fullstack', title: '아무거나' })).toBe(true);
+  });
+
+  it('비엔지니어 역할 + 코드 키워드가 있으면 true를 반환한다', () => {
+    expect(isCodeTask({ assignee: 'cto', title: 'API endpoint 설계' })).toBe(true);
+    expect(isCodeTask({ assignee: 'qa', title: 'test 작성' })).toBe(true);
+  });
+
+  it('한국어 키워드 부분 매칭을 유지한다', () => {
+    expect(isCodeTask({ assignee: 'cto', title: '기능구현하기' })).toBe(true);
+    expect(isCodeTask({ assignee: 'cto', title: '앱개발' })).toBe(true);
+    expect(isCodeTask({ assignee: 'cto', title: '코딩 시작' })).toBe(true);
+  });
+
+  it('영어 false positive를 방지한다: "classification"은 "class"에 매칭되지 않는다', () => {
+    expect(isCodeTask({ assignee: 'cto', title: 'data classification report' })).toBe(false);
+  });
+
+  it('영어 false positive를 방지한다: "testament"은 "test"에 매칭되지 않는다', () => {
+    expect(isCodeTask({ assignee: 'cto', title: 'old testament analysis' })).toBe(false);
+  });
+
+  it('영어 false positive를 방지한다: "building permits"은 "build"에 매칭되지 않는다', () => {
+    expect(isCodeTask({ assignee: 'cto', title: 'building permits review' })).toBe(false);
+  });
+
+  it('null/undefined task는 false를 반환한다', () => {
+    expect(isCodeTask(null)).toBe(false);
+    expect(isCodeTask(undefined)).toBe(false);
+  });
+
+  it('키워드가 없고 비엔지니어면 false를 반환한다', () => {
+    expect(isCodeTask({ assignee: 'cto', title: '예산 검토', description: '분기별 예산 확인' })).toBe(false);
   });
 });

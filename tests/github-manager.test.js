@@ -1,9 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { checkGhStatus, createGithubRepo, gitInitAndPush } from '../scripts/lib/github-manager.js';
-import { execSync } from 'child_process';
+import { checkGhStatus, createGithubRepo, gitInitAndPush, commitPhase, MINIMAL_GITIGNORE } from '../scripts/lib/github-manager.js';
+import { execSync, execFileSync } from 'child_process';
+import { existsSync, writeFileSync } from 'fs';
 
 vi.mock('child_process', () => ({
   execSync: vi.fn(),
+  execFileSync: vi.fn(),
+}));
+
+vi.mock('fs', () => ({
+  existsSync: vi.fn(),
+  writeFileSync: vi.fn(),
 }));
 
 describe('github-manager', () => {
@@ -157,6 +164,79 @@ describe('github-manager', () => {
       });
 
       const result = gitInitAndPush('/tmp/fail', 'https://github.com/user/repo.git');
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('fatal');
+    });
+  });
+
+  describe('commitPhase', () => {
+    it('.gitignore가 없으면 자동 생성 후 커밋한다', () => {
+      existsSync.mockReturnValue(false);
+      execFileSync.mockReturnValue('');
+
+      const result = commitPhase('/tmp/project', 1);
+
+      expect(result.success).toBe(true);
+      expect(writeFileSync).toHaveBeenCalledWith(
+        '/tmp/project/.gitignore',
+        MINIMAL_GITIGNORE,
+        'utf-8'
+      );
+      expect(execFileSync).toHaveBeenCalledWith('git', ['add', '-A'], expect.any(Object));
+      expect(execFileSync).toHaveBeenCalledWith(
+        'git', ['commit', '-m', 'Phase 1 완료', '--allow-empty'], expect.any(Object)
+      );
+    });
+
+    it('.gitignore가 이미 있으면 건드리지 않는다', () => {
+      existsSync.mockReturnValue(true);
+      execFileSync.mockReturnValue('');
+
+      const result = commitPhase('/tmp/project', 2);
+
+      expect(result.success).toBe(true);
+      expect(writeFileSync).not.toHaveBeenCalled();
+    });
+
+    it('MINIMAL_GITIGNORE에 .env와 node_modules가 포함되어 있다', () => {
+      expect(MINIMAL_GITIGNORE).toContain('.env');
+      expect(MINIMAL_GITIGNORE).toContain('node_modules/');
+      expect(MINIMAL_GITIGNORE).toContain('*.pem');
+      expect(MINIMAL_GITIGNORE).toContain('*.key');
+    });
+
+    it('커스텀 커밋 메시지를 사용한다', () => {
+      existsSync.mockReturnValue(true);
+      execFileSync.mockReturnValue('');
+
+      commitPhase('/tmp/project', 1, 'Phase 1: API 구현');
+
+      expect(execFileSync).toHaveBeenCalledWith(
+        'git', ['commit', '-m', 'Phase 1: API 구현', '--allow-empty'], expect.any(Object)
+      );
+    });
+
+    it('projectDir이 없으면 에러를 반환한다', () => {
+      const result = commitPhase('', 1);
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('projectDir이 필요합니다');
+    });
+
+    it('phase가 없으면 에러를 반환한다', () => {
+      const result = commitPhase('/tmp/project');
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('phase가 필요합니다');
+    });
+
+    it('git 명령 실패 시 에러를 반환한다', () => {
+      existsSync.mockReturnValue(true);
+      execFileSync.mockImplementationOnce(() => {
+        const err = new Error('git failed');
+        err.stderr = Buffer.from('fatal: not a git repository');
+        throw err;
+      });
+
+      const result = commitPhase('/tmp/fail', 1);
       expect(result.success).toBe(false);
       expect(result.error).toContain('fatal');
     });

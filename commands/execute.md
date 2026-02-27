@@ -99,8 +99,9 @@ echo '{"task": {...}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js is-code-task
 echo '{"taskOutput": "...", "task": {...}, "projectDir": "/path/to/project"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js verify-and-materialize
 ```
 
-- **검증 성공** → 파일이 프로젝트에 기록됨
-- **검증 실패** → tempDir 보존 (디버깅용), 수정 루프 진행
+- **검증 성공** (`verified: true`) → 파일이 프로젝트에 기록됨
+- **검증 실패** (`verified: false`) → tempDir 보존 (디버깅용), 수정 루프 진행
+- **검증 불가** (`verified: null`, 코드 블록 없음) → Materialization 건너뛰기, 기존 품질 게이트만 적용
 
 ### Step 4.3: 강화된 품질 게이트
 
