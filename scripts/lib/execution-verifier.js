@@ -10,13 +10,142 @@ import { tmpdir } from 'os';
 import { join, dirname } from 'path';
 
 /** 실행 가능 언어 목록 */
-const EXECUTABLE_LANGUAGES = ['js', 'javascript', 'ts', 'typescript', 'py', 'python', 'sh', 'bash', 'shell'];
+const EXECUTABLE_LANGUAGES = [
+  'js', 'javascript', 'ts', 'typescript',
+  'py', 'python', 'sh', 'bash', 'shell',
+  'go', 'golang', 'java', 'kotlin', 'kt', 'rust', 'rs',
+];
 
 /** 설정 파일 언어 목록 */
 const CONFIG_LANGUAGES = ['json', 'yaml', 'yml', 'toml', 'ini', 'env'];
 
 /** 마크업 언어 목록 */
 const MARKUP_LANGUAGES = ['html', 'css', 'md', 'markdown', 'xml', 'svg'];
+
+/** 프로젝트 타입 → 빌드 전략 명시적 매핑 */
+const PROJECT_TYPE_STRATEGY_MAP = {
+  'web-app': 'node',
+  'api-server': 'node',
+  'cli-tool': 'node',
+  'library': 'node',
+  'mobile-app': 'node',
+  'chrome-extension': 'node',
+  'telegram-bot': 'node',
+  'data-pipeline': 'node',
+  'python-app': 'python',
+  'go-service': 'go',
+  'java-app': 'java',
+};
+
+/** 빌드 전략 맵 — 언어별 detect/build/test */
+export const BUILD_STRATEGIES = {
+  node: {
+    detect: (files) => files.some(f => f === 'package.json') ||
+      files.some(f => f.endsWith('.js') || f.endsWith('.ts')),
+    build: (tempDir) => {
+      if (existsSync(join(tempDir, 'package.json'))) {
+        const output = execSync('npm install --ignore-scripts && npm run build', {
+          cwd: tempDir, timeout: 30_000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+        });
+        return { success: true, output, exitCode: 0 };
+      }
+      // package.json 없으면 JS 파일 syntax check
+      const jsFiles = findFilesByExtension(tempDir, '.js');
+      if (jsFiles.length === 0) {
+        return { success: false, output: 'no .js files found', exitCode: 1 };
+      }
+      const checkCommands = jsFiles.map(f => `node --check "${f}"`).join(' && ');
+      const output = execSync(checkCommands, {
+        cwd: tempDir, timeout: 30_000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      return { success: true, output: output || 'syntax check passed', exitCode: 0 };
+    },
+    test: (tempDir) => {
+      if (!existsSync(join(tempDir, 'package.json'))) {
+        return { success: null, output: 'no package.json for test execution', exitCode: null };
+      }
+      const output = execSync('npm test', {
+        cwd: tempDir, timeout: 30_000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      return { success: true, output, exitCode: 0 };
+    },
+  },
+  python: {
+    detect: (files) => files.some(f => ['requirements.txt', 'pyproject.toml', 'setup.py'].includes(f)),
+    build: (tempDir) => {
+      const pyFiles = findFilesByExtension(tempDir, '.py');
+      if (pyFiles.length === 0) {
+        return { success: false, output: 'no .py files found', exitCode: 1 };
+      }
+      const checkCommands = pyFiles.map(f => `python3 -m py_compile "${f}"`).join(' && ');
+      const output = execSync(checkCommands, {
+        cwd: tempDir, timeout: 30_000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      return { success: true, output: output || 'python compile check passed', exitCode: 0 };
+    },
+    test: (tempDir) => {
+      const output = execSync('python3 -m pytest', {
+        cwd: tempDir, timeout: 30_000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      return { success: true, output, exitCode: 0 };
+    },
+  },
+  go: {
+    detect: (files) => files.some(f => f === 'go.mod'),
+    build: (tempDir) => {
+      const output = execSync('go build ./...', {
+        cwd: tempDir, timeout: 45_000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      return { success: true, output: output || 'go build passed', exitCode: 0 };
+    },
+    test: (tempDir) => {
+      const output = execSync('go test ./...', {
+        cwd: tempDir, timeout: 45_000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      return { success: true, output, exitCode: 0 };
+    },
+  },
+  java: {
+    detect: (files) => files.some(f => f === 'pom.xml'),
+    build: (tempDir) => {
+      const output = execSync('mvn compile -q', {
+        cwd: tempDir, timeout: 60_000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      return { success: true, output: output || 'mvn compile passed', exitCode: 0 };
+    },
+    test: (tempDir) => {
+      const output = execSync('mvn test -q', {
+        cwd: tempDir, timeout: 60_000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+      });
+      return { success: true, output, exitCode: 0 };
+    },
+  },
+};
+
+/**
+ * 빌드 전략을 감지한다.
+ * 명시적 타입 매핑 우선, 없으면 파일 기반 자동 감지.
+ *
+ * @param {string[]} files - 프로젝트 내 파일 목록
+ * @param {string} [projectType] - 프로젝트 타입
+ * @returns {{ strategyId: string, strategy: object } | null}
+ */
+export function detectBuildStrategy(files, projectType) {
+  // 1. 명시적 타입 매핑 우선
+  if (projectType && PROJECT_TYPE_STRATEGY_MAP[projectType]) {
+    const strategyId = PROJECT_TYPE_STRATEGY_MAP[projectType];
+    return { strategyId, strategy: BUILD_STRATEGIES[strategyId] };
+  }
+
+  // 2. 파일 기반 자동 감지
+  for (const [strategyId, strategy] of Object.entries(BUILD_STRATEGIES)) {
+    if (strategy.detect(files)) {
+      return { strategyId, strategy };
+    }
+  }
+
+  return null;
+}
 
 /**
  * 마크다운 출력에서 펜스드 코드 블록을 추출한다.
@@ -105,6 +234,10 @@ export function writeTemporaryProject(codeBlocks, projectType) {
     json: '.json', yaml: '.yml', yml: '.yml',
     toml: '.toml', html: '.html', css: '.css',
     md: '.md', markdown: '.md',
+    go: '.go', golang: '.go',
+    java: '.java',
+    kotlin: '.kt', kt: '.kt',
+    rust: '.rs', rs: '.rs',
   };
 
   codeBlocks.forEach((block, idx) => {
@@ -125,51 +258,27 @@ export function writeTemporaryProject(codeBlocks, projectType) {
 
 /**
  * 프로젝트 유형에 따라 빌드를 시도한다.
+ * BUILD_STRATEGIES 전략 패턴으로 위임한다.
  *
  * @param {string} tempDir - 임시 프로젝트 디렉토리
  * @param {string} projectType - 프로젝트 유형
  * @returns {{ success: boolean, output: string, exitCode: number }}
  */
 export function attemptBuild(tempDir, projectType) {
-  const timeout = 30_000;
+  const files = listTopLevelFiles(tempDir);
+  const detected = detectBuildStrategy(files, projectType);
+
+  if (!detected) {
+    return { success: false, output: `unsupported project type: ${projectType}`, exitCode: 1 };
+  }
 
   try {
-    if (projectType === 'web-app' || projectType === 'api-server') {
-      // package.json이 있어야 npm 명령 실행 가능
-      if (!existsSync(join(tempDir, 'package.json'))) {
-        return { success: false, output: 'package.json not found', exitCode: 1 };
-      }
-
-      const output = execSync('npm install --ignore-scripts && npm run build', {
-        cwd: tempDir,
-        timeout,
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-
-      return { success: true, output, exitCode: 0 };
-    }
-
-    if (projectType === 'cli-tool') {
-      // JS 파일에 대해 node --check 수행
-      const jsFiles = findFilesByExtension(tempDir, '.js');
-      if (jsFiles.length === 0) {
-        return { success: false, output: 'no .js files found', exitCode: 1 };
-      }
-
-      const checkCommands = jsFiles.map(f => `node --check "${f}"`).join(' && ');
-      const output = execSync(checkCommands, {
-        cwd: tempDir,
-        timeout,
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-
-      return { success: true, output: output || 'syntax check passed', exitCode: 0 };
-    }
-
-    return { success: false, output: `unsupported project type: ${projectType}`, exitCode: 1 };
+    return detected.strategy.build(tempDir);
   } catch (err) {
+    if (err.code === 'ENOENT') {
+      const cmd = err.path || 'runtime';
+      return { success: false, output: `${cmd} not found`, exitCode: 1 };
+    }
     return {
       success: false,
       output: err.stderr || err.stdout || err.message || 'build failed',
@@ -180,35 +289,33 @@ export function attemptBuild(tempDir, projectType) {
 
 /**
  * 테스트 파일이 존재하면 테스트를 시도한다.
+ * BUILD_STRATEGIES 전략 패턴으로 위임한다.
  *
  * @param {string} tempDir - 임시 프로젝트 디렉토리
  * @param {string} projectType - 프로젝트 유형
  * @returns {{ success: boolean|null, output: string, exitCode: number|null }}
  */
 export function attemptTests(tempDir, projectType) {
-  const timeout = 30_000;
-
-  // 테스트 파일 존재 확인
   const hasTestFiles = findTestFiles(tempDir).length > 0;
 
   if (!hasTestFiles) {
     return { success: null, output: 'no tests found', exitCode: null };
   }
 
-  if (!existsSync(join(tempDir, 'package.json'))) {
-    return { success: null, output: 'no package.json for test execution', exitCode: null };
+  const files = listTopLevelFiles(tempDir);
+  const detected = detectBuildStrategy(files, projectType);
+
+  if (!detected) {
+    return { success: null, output: 'no test strategy found', exitCode: null };
   }
 
   try {
-    const output = execSync('npm test', {
-      cwd: tempDir,
-      timeout,
-      encoding: 'utf-8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-
-    return { success: true, output, exitCode: 0 };
+    return detected.strategy.test(tempDir);
   } catch (err) {
+    if (err.code === 'ENOENT') {
+      const cmd = err.path || 'runtime';
+      return { success: false, output: `${cmd} not found`, exitCode: 1 };
+    }
     return {
       success: false,
       output: err.stderr || err.stdout || err.message || 'tests failed',
@@ -346,7 +453,26 @@ function findTestFiles(dir) {
     ...findFilesByExtension(dir, '.js'),
     ...findFilesByExtension(dir, '.ts'),
     ...findFilesByExtension(dir, '.py'),
+    ...findFilesByExtension(dir, '.go'),
+    ...findFilesByExtension(dir, '.java'),
   ];
 
-  return allFiles.filter(f => testPatterns.some(p => f.includes(p)));
+  return allFiles.filter(f =>
+    testPatterns.some(p => f.includes(p)) ||
+    f.endsWith('_test.go') ||
+    f.endsWith('Test.java')
+  );
+}
+
+/**
+ * 디렉토리의 최상위 파일/디렉토리명 목록을 반환한다.
+ * @param {string} dir - 검색 디렉토리
+ * @returns {string[]} 파일명 배열
+ */
+function listTopLevelFiles(dir) {
+  try {
+    return readdirSync(dir);
+  } catch {
+    return [];
+  }
 }

@@ -10,6 +10,10 @@ import {
   listAgentOverrides,
   mergeAgentWithOverride,
   setOverridesDir,
+  saveProjectOverride,
+  loadProjectOverride,
+  listProjectOverrides,
+  mergeAgentWithOverrides,
 } from '../scripts/lib/agent-feedback.js';
 
 const TMP_DIR = resolve('.tmp-test-agent-feedback');
@@ -260,5 +264,80 @@ describe('mergeAgentWithOverride', () => {
     const override = '- 개선사항';
     expect(mergeAgentWithOverride(null, override)).toBe(override);
     expect(mergeAgentWithOverride('', override)).toBe(override);
+  });
+});
+
+// --- 프로젝트 레벨 오버라이드 ---
+
+describe('saveProjectOverride / loadProjectOverride', () => {
+  it('프로젝트 레벨 오버라이드를 저장하고 로드한다', async () => {
+    await saveProjectOverride(TMP_DIR, 'backend', '# 프로젝트 레벨 개선\n- 에러 처리 강화');
+    const content = await loadProjectOverride(TMP_DIR, 'backend');
+    expect(content).toContain('프로젝트 레벨 개선');
+    expect(content).toContain('에러 처리 강화');
+  });
+
+  it('존재하지 않는 오버라이드는 null을 반환한다', async () => {
+    const content = await loadProjectOverride(TMP_DIR, 'nonexistent');
+    expect(content).toBeNull();
+  });
+
+  it('경로 순회 roleId를 거부한다', async () => {
+    await expect(saveProjectOverride(TMP_DIR, '../etc/passwd', 'x')).rejects.toThrow('유효하지 않은 roleId');
+    await expect(loadProjectOverride(TMP_DIR, '../../etc/passwd')).rejects.toThrow('유효하지 않은 roleId');
+  });
+});
+
+describe('listProjectOverrides', () => {
+  it('프로젝트 레벨 오버라이드 목록을 반환한다', async () => {
+    await saveProjectOverride(TMP_DIR, 'cto', '# CTO');
+    await saveProjectOverride(TMP_DIR, 'backend', '# Backend');
+    const list = await listProjectOverrides(TMP_DIR);
+    expect(list.length).toBe(2);
+    expect(list.map(l => l.roleId).sort()).toEqual(['backend', 'cto']);
+  });
+
+  it('디렉토리가 없으면 빈 배열을 반환한다', async () => {
+    const list = await listProjectOverrides(resolve(TMP_DIR, 'nonexistent'));
+    expect(list).toEqual([]);
+  });
+});
+
+describe('mergeAgentWithOverrides', () => {
+  it('다중 소스 오버라이드를 병합한다 (user → project 순서)', () => {
+    const base = '# Backend Developer';
+    const overrides = [
+      { source: 'user', content: '사용자 피드백' },
+      { source: 'project', content: '프로젝트 피드백' },
+    ];
+    const merged = mergeAgentWithOverrides(base, overrides);
+    expect(merged).toContain('Backend Developer');
+    expect(merged).toContain('사용자 피드백');
+    expect(merged).toContain('프로젝트 피드백');
+    // project가 user보다 뒤에 (높은 우선순위)
+    const userIdx = merged.indexOf('사용자 피드백');
+    const projectIdx = merged.indexOf('프로젝트 피드백');
+    expect(projectIdx).toBeGreaterThan(userIdx);
+  });
+
+  it('오버라이드가 없으면 기본 .md만 반환한다', () => {
+    expect(mergeAgentWithOverrides('# Base', [])).toBe('# Base');
+    expect(mergeAgentWithOverrides('# Base', null)).toBe('# Base');
+  });
+
+  it('기본 .md가 없어도 동작한다', () => {
+    const overrides = [{ source: 'project', content: '프로젝트 피드백' }];
+    const merged = mergeAgentWithOverrides(null, overrides);
+    expect(merged).toContain('프로젝트 피드백');
+  });
+
+  it('빈 content는 건너뛴다', () => {
+    const overrides = [
+      { source: 'user', content: '' },
+      { source: 'project', content: '유효한 피드백' },
+    ];
+    const merged = mergeAgentWithOverrides('# Base', overrides);
+    expect(merged).not.toContain('사용자');
+    expect(merged).toContain('유효한 피드백');
   });
 });

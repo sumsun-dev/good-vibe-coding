@@ -93,3 +93,36 @@ describe('generateProjectStats', () => {
   });
 });
 
+// --- 비용/성능 섹션 ---
+
+describe('generateReport (비용/성능)', () => {
+  it('메트릭스가 있으면 비용 섹션을 포함한다', () => {
+    const project = {
+      ...SAMPLE_PROJECT,
+      metrics: {
+        totalInputTokens: 5000,
+        totalOutputTokens: 2000,
+        totalCostUsd: 0.045,
+        agentCalls: [],
+        phaseMetrics: {},
+        byRole: {
+          cto: { callCount: 2, inputTokens: 2000, outputTokens: 1000, costUsd: 0.02 },
+          backend: { callCount: 3, inputTokens: 3000, outputTokens: 1000, costUsd: 0.025 },
+        },
+        byProvider: { claude: { callCount: 5, inputTokens: 5000, outputTokens: 2000, costUsd: 0.045 } },
+      },
+    };
+    const report = generateReport(project);
+    expect(report).toContain('비용/성능');
+    expect(report).toContain('총 비용');
+    expect(report).toContain('에이전트 기여도');
+  });
+
+  it('메트릭스가 없으면 비용 섹션을 포함하지 않는다', () => {
+    const project = { ...SAMPLE_PROJECT };
+    delete project.metrics;
+    const report = generateReport(project);
+    expect(report).not.toContain('비용/성능');
+  });
+});
+

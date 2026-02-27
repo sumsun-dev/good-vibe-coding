@@ -2,6 +2,7 @@ import { readFile, writeFile, readdir } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { ensureDir, fileExists } from './file-writer.js';
+import { createMetricsSnapshot, recordAgentCall, recordPhaseCompletion } from './project-metrics.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_BASE_DIR = resolve(process.env.HOME || process.env.USERPROFILE, '.claude', 'good-vibe', 'projects');
@@ -54,13 +55,30 @@ function getProjectFilePath(projectId) {
 }
 
 /**
- * 프로젝트를 디스크에 저장한다.
+ * In-process 쓰기 락 — 동일 프로젝트에 대한 동시 쓰기를 직렬화한다.
+ * @type {Map<string, Promise<void>>}
+ */
+const writeLocks = new Map();
+
+/**
+ * 프로젝트를 디스크에 저장한다 (동시 쓰기 보호).
  */
 async function saveProject(project) {
-  const dir = getProjectDir(project.id);
-  await ensureDir(dir);
-  await writeFile(getProjectFilePath(project.id), JSON.stringify(project, null, 2), 'utf-8');
-  return project;
+  const projectId = project.id;
+  const prev = writeLocks.get(projectId) || Promise.resolve();
+  let resolveLock;
+  const lockPromise = new Promise(r => { resolveLock = r; });
+  writeLocks.set(projectId, lockPromise);
+
+  await prev;
+  try {
+    const dir = getProjectDir(projectId);
+    await ensureDir(dir);
+    await writeFile(getProjectFilePath(projectId), JSON.stringify(project, null, 2), 'utf-8');
+    return project;
+  } finally {
+    resolveLock();
+  }
 }
 
 /**
@@ -93,6 +111,7 @@ export async function createProject(name, type, description, options = {}) {
     tasks: [],
     report: null,
     feedback: [],
+    metrics: createMetricsSnapshot(),
   };
 
   return saveProject(project);
@@ -125,8 +144,9 @@ export async function listProjects() {
       if (project) projects.push(project);
     }
     return projects;
-  } catch {
-    return [];
+  } catch (err) {
+    if (err.code === 'ENOENT') return [];
+    throw err;
   }
 }
 
@@ -274,6 +294,44 @@ export async function addTaskMaterializationResult(projectId, taskId, materializ
 }
 
 /**
+ * 태스크에 실행 출력을 저장한다.
+ * @param {string} projectId - 프로젝트 ID
+ * @param {string} taskId - 태스크 ID
+ * @param {string} taskOutput - 태스크 출력 텍스트
+ * @param {object} options - 옵션
+ * @param {number} [options.maxLines=200] - 최대 줄 수
+ * @returns {Promise<object>} 업데이트된 프로젝트
+ */
+export async function saveTaskOutput(projectId, taskId, taskOutput, options = {}) {
+  const project = await getProject(projectId);
+  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
+  const task = project.tasks.find(t => t.id === taskId);
+  if (!task) throw new Error(`태스크를 찾을 수 없습니다: ${taskId}`);
+
+  const output = taskOutput || '';
+  const maxLines = options.maxLines || 200;
+  const lines = output.split('\n');
+  task.taskOutput = lines.length > maxLines
+    ? lines.slice(0, maxLines).join('\n') + '\n...(truncated)'
+    : output;
+
+  return saveProject(project);
+}
+
+/**
+ * 프로젝트의 executionState를 업데이트한다.
+ * @param {string} projectId - 프로젝트 ID
+ * @param {object} executionState - 새 실행 상태
+ * @returns {Promise<object>} 업데이트된 프로젝트
+ */
+export async function updateExecutionState(projectId, executionState) {
+  const project = await getProject(projectId);
+  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
+  project.executionState = executionState;
+  return saveProject(project);
+}
+
+/**
  * 프로젝트 실행 진행률을 계산한다.
  * @param {object} project - 프로젝트 객체
  * @returns {{totalTasks: number, completedTasks: number, currentPhase: number, totalPhases: number, percentage: number}}
@@ -305,4 +363,29 @@ export function getExecutionProgress(project) {
   const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
   return { totalTasks, completedTasks, currentPhase, totalPhases, percentage };
+}
+
+/**
+ * 프로젝트에 메트릭스 이벤트를 기록한다.
+ * @param {string} projectId - 프로젝트 ID
+ * @param {object} event - 이벤트 데이터
+ * @param {string} event.type - 'agent-call' | 'phase-completion'
+ * @returns {Promise<object>} 업데이트된 프로젝트
+ */
+export async function recordMetrics(projectId, event) {
+  const project = await getProject(projectId);
+  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
+
+  // 하위 호환: 기존 프로젝트에 metrics가 없으면 생성
+  if (!project.metrics) {
+    project.metrics = createMetricsSnapshot();
+  }
+
+  if (event.type === 'agent-call') {
+    recordAgentCall(project.metrics, event);
+  } else if (event.type === 'phase-completion') {
+    recordPhaseCompletion(project.metrics, event);
+  }
+
+  return saveProject(project);
 }

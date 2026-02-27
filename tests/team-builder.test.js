@@ -1,26 +1,17 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdir, rm } from 'fs/promises';
-import { resolve } from 'path';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   loadRoleCatalog,
   loadProjectTypes,
   recommendTeam,
   buildTeam,
   getTeamSummary,
+  getOptimizedTeam,
+  resolveModel,
   clearCaches,
 } from '../scripts/lib/team-builder.js';
-import { setCustomPersonaDir, createCustomRole, addCustomVariant, setOverride } from '../scripts/lib/persona-manager.js';
 
-const TMP_GROWTH_DIR = resolve('.tmp-test-team-growth');
-
-beforeEach(async () => {
+beforeEach(() => {
   clearCaches();
-  await mkdir(TMP_GROWTH_DIR, { recursive: true });
-  setCustomPersonaDir(TMP_GROWTH_DIR);
-});
-
-afterEach(async () => {
-  await rm(TMP_GROWTH_DIR, { recursive: true, force: true });
 });
 
 describe('loadRoleCatalog', () => {
@@ -56,9 +47,9 @@ describe('loadProjectTypes', () => {
     expect(types.version).toBe('1.0.0');
   });
 
-  it('9개 타입이 존재한다', async () => {
+  it('12개 타입이 존재한다', async () => {
     const types = await loadProjectTypes();
-    expect(Object.keys(types.types).length).toBe(9);
+    expect(Object.keys(types.types).length).toBe(12);
   });
 });
 
@@ -72,6 +63,13 @@ describe('recommendTeam', () => {
   it('telegram-bot에 cto+backend+qa를 추천한다', async () => {
     const result = await recommendTeam('telegram-bot');
     expect(result.recommended).toEqual(['cto', 'backend', 'qa']);
+  });
+
+  it('library에 cto+backend+qa를 추천한다 (tech-writer는 optional)', async () => {
+    const result = await recommendTeam('library');
+    expect(result.recommended).toEqual(['cto', 'backend', 'qa']);
+    expect(result.recommended).not.toContain('tech-writer');
+    expect(result.optional).toContain('tech-writer');
   });
 
   it('존재하지 않는 타입은 custom으로 fallback', async () => {
@@ -141,86 +139,109 @@ describe('getTeamSummary', () => {
   });
 });
 
-describe('buildTeam with custom personas', () => {
-  it('커스텀 역할로 팀을 빌드할 수 있다', async () => {
-    await createCustomRole({
-      id: 'ai-engineer',
-      displayName: 'AI Engineer',
-      emoji: '🤖',
-      category: 'engineering',
-      description: 'AI 파이프라인 구축',
-      defaultTools: ['Read', 'Grep'],
-      model: 'sonnet',
-      discussionPriority: 5,
-      skills: ['llm'],
-    });
-    await addCustomVariant('ai-engineer', {
-      id: 'creative-ai',
-      name: '창의적 AI 빌더',
-      emoji: '🤖',
-      defaultName: '재현',
-      trait: '창의적인',
-      description: 'AI 파이프라인을 창의적으로 구축',
-      speakingStyle: '실험적 스타일',
-      greeting: 'AI로 만들어봅시다!',
-    });
-    clearCaches();
-    const team = await buildTeam(['cto', 'ai-engineer']);
-    expect(team.length).toBe(2);
-    expect(team[1].roleId).toBe('ai-engineer');
-    expect(team[1].displayName).toBe('재현');
-    expect(team[1].trait).toBe('창의적인');
+describe('getOptimizedTeam', () => {
+  it('web-app + medium → fullstack 제거, frontend+backend 유지', async () => {
+    const result = await getOptimizedTeam('web-app', 'medium');
+    expect(result.roles).not.toContain('fullstack');
+    expect(result.roles).toContain('frontend');
+    expect(result.roles).toContain('backend');
+    expect(result.roles).toContain('cto');
+    expect(result.roles).toContain('qa');
   });
 
-  it('오버라이드된 내장 페르소나로 팀을 빌드한다', async () => {
-    await setOverride('cto', 'visionary', { trait: '수정된 CTO trait' });
-    clearCaches();
-    const team = await buildTeam(['cto']);
-    expect(team[0].trait).toBe('수정된 CTO trait');
-    expect(team[0].displayName).toBe('민준');
+  it('mobile-app + simple → fullstack 유지, qa도 core에 포함', async () => {
+    const result = await getOptimizedTeam('mobile-app', 'simple');
+    expect(result.roles).toContain('fullstack');
+    // 우선순위 기반: cto(0) > fullstack(4) > qa(5) — uiux(7)보다 qa가 core
+    expect(result.roles).toContain('qa');
+    expect(result.roles.length).toBeLessThanOrEqual(3);
+    expect(result.optional).toContain('uiux');
   });
 
-  it('내장 역할에 추가된 커스텀 variant를 선택할 수 있다', async () => {
-    await addCustomVariant('cto', {
-      id: 'startup-cto',
-      name: '스타트업 CTO',
-      emoji: '🏗️',
-      defaultName: '태호',
-      trait: '빠른 실행력의',
-      description: '스타트업 환경에서 빠르게 결정',
-      speakingStyle: '간결하고 빠른 스타일',
-      greeting: '빠르게 갑시다!',
-    });
-    clearCaches();
-    const team = await buildTeam(['cto'], { cto: 'startup-cto' });
-    expect(team[0].personalityVariant).toBe('startup-cto');
-    expect(team[0].displayName).toBe('태호');
+  it('우선순위 순서대로 core에 배치된다', async () => {
+    const result = await getOptimizedTeam('web-app', 'complex');
+    // cto(0) < po(1) < backend(2) < frontend(3) < qa(5) < security(6)
+    const ctoIdx = result.roles.indexOf('cto');
+    const qaIdx = result.roles.indexOf('qa');
+    expect(ctoIdx).toBeLessThan(qaIdx);
+    expect(ctoIdx).toBe(0);
   });
 
-  it('기존 15개 역할 카운트는 커스텀 추가 후에도 내장+커스텀 합산', async () => {
-    await createCustomRole({
-      id: 'ai-engineer',
-      displayName: 'AI Engineer',
-      emoji: '🤖',
-      category: 'engineering',
-      description: 'AI',
-      defaultTools: ['Read'],
-      model: 'sonnet',
-      discussionPriority: 5,
-      skills: ['llm'],
-    });
-    clearCaches();
-    const catalog = await loadRoleCatalog();
-    expect(Object.keys(catalog.roles).length).toBe(16);
-    expect(catalog.roles['ai-engineer'].isCustom).toBe(true);
-    expect(catalog.roles.cto.isCustom).toBeUndefined();
+  it('max size를 초과하지 않는다', async () => {
+    const result = await getOptimizedTeam('web-app', 'simple');
+    expect(result.roles.length).toBeLessThanOrEqual(3);
   });
 
-  it('커스텀 페르소나 없으면 기존과 동일하게 동작 (fallback)', async () => {
-    const catalog = await loadRoleCatalog();
-    expect(Object.keys(catalog.roles).length).toBe(15);
-    const team = await buildTeam(['cto']);
-    expect(team[0].personalityVariant).toBe('visionary');
+  it('overflow된 역할이 optional에 포함된다', async () => {
+    const result = await getOptimizedTeam('web-app', 'simple');
+    // max 3인데 union이 3 초과 → 나머지는 optional
+    for (const r of result.optional) {
+      expect(result.roles).not.toContain(r);
+    }
   });
 });
 
+// --- resolveModel ---
+
+describe('resolveModel', () => {
+  it('complexity가 없으면 role.model을 그대로 반환한다', () => {
+    const role = { model: 'sonnet', category: 'engineering' };
+    expect(resolveModel(role)).toBe('sonnet');
+  });
+
+  it('simple + leadership → sonnet', () => {
+    const role = { model: 'sonnet', category: 'leadership' };
+    expect(resolveModel(role, 'simple')).toBe('sonnet');
+  });
+
+  it('simple + design → haiku', () => {
+    const role = { model: 'sonnet', category: 'design' };
+    expect(resolveModel(role, 'simple')).toBe('haiku');
+  });
+
+  it('complex + leadership → opus', () => {
+    const role = { model: 'sonnet', category: 'leadership' };
+    expect(resolveModel(role, 'complex')).toBe('opus');
+  });
+
+  it('complex + engineering → sonnet', () => {
+    const role = { model: 'sonnet', category: 'engineering' };
+    expect(resolveModel(role, 'complex')).toBe('sonnet');
+  });
+
+  it('medium + support → haiku', () => {
+    const role = { model: 'sonnet', category: 'support' };
+    expect(resolveModel(role, 'medium')).toBe('haiku');
+  });
+
+  it('architecture-review + complex → opus 업그레이드', () => {
+    const role = { model: 'sonnet', category: 'engineering' };
+    expect(resolveModel(role, 'complex', 'architecture-review')).toBe('opus');
+  });
+
+  it('architecture-review + simple → sonnet (업그레이드 없음)', () => {
+    const role = { model: 'sonnet', category: 'engineering' };
+    expect(resolveModel(role, 'simple', 'architecture-review')).toBe('sonnet');
+  });
+});
+
+// --- buildTeam with complexity ---
+
+describe('buildTeam with complexity', () => {
+  it('complexity 옵션으로 모델을 조정한다', async () => {
+    const team = await buildTeam(['cto'], {}, { complexity: 'complex' });
+    // CTO category: leadership, complex → opus
+    expect(team[0].model).toBe('opus');
+  });
+
+  it('complexity 없이 호출하면 카탈로그 기본 모델을 사용한다', async () => {
+    const team = await buildTeam(['cto']);
+    expect(team[0].model).toBeTruthy();
+  });
+
+  it('simple complexity에서 support 카테고리는 haiku를 사용한다', async () => {
+    // tech-writer는 support 카테고리
+    const team = await buildTeam(['tech-writer'], {}, { complexity: 'simple' });
+    expect(team[0].model).toBe('haiku');
+  });
+});

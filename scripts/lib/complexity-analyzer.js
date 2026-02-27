@@ -3,6 +3,8 @@
  * 프로젝트 설명을 분석하여 적절한 모드와 팀 규모를 추천한다.
  */
 
+import { parseJsonObject } from './json-parser.js';
+
 /**
  * 프로젝트 설명을 분석해 복잡도 판단 프롬프트를 생성한다.
  * @param {string} description - 프로젝트 설명
@@ -66,8 +68,8 @@ export function parseComplexityAnalysis(rawOutput) {
     return defaultResult;
   }
 
-  const parseJson = (str) => {
-    const parsed = JSON.parse(str);
+  const parsed = parseJsonObject(rawOutput);
+  if (parsed) {
     const validLevels = ['simple', 'medium', 'complex'];
     const validModes = ['quick-build', 'plan-execute', 'plan-only'];
 
@@ -76,33 +78,6 @@ export function parseComplexityAnalysis(rawOutput) {
       suggestedMode: validModes.includes(parsed.suggestedMode) ? parsed.suggestedMode : 'plan-execute',
       reasoning: parsed.reasoning || '',
     };
-  };
-
-  // JSON 직접 파싱
-  try {
-    return parseJson(rawOutput.trim());
-  } catch {
-    // fallthrough
-  }
-
-  // ```json ... ``` 블록
-  const jsonBlockMatch = rawOutput.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
-  if (jsonBlockMatch) {
-    try {
-      return parseJson(jsonBlockMatch[1].trim());
-    } catch {
-      // fallthrough
-    }
-  }
-
-  // { ... } 패턴
-  const objMatch = rawOutput.match(/\{[\s\S]*\}/);
-  if (objMatch) {
-    try {
-      return parseJson(objMatch[0]);
-    } catch {
-      // fallthrough
-    }
   }
 
   return defaultResult;
@@ -120,18 +95,39 @@ export function getDefaultsForComplexity(level) {
       discussionRounds: 0,
       reviewRounds: 1,
       suggestedRoles: ['cto', 'fullstack', 'qa'],
+      modelTiers: {
+        leadership: 'sonnet',
+        engineering: 'sonnet',
+        design: 'haiku',
+        research: 'haiku',
+        support: 'haiku',
+      },
     },
     medium: {
       teamSize: { min: 3, max: 5 },
       discussionRounds: 1,
       reviewRounds: 1,
-      suggestedRoles: ['cto', 'fullstack', 'frontend', 'backend', 'qa'],
+      suggestedRoles: ['cto', 'frontend', 'backend', 'qa'],
+      modelTiers: {
+        leadership: 'sonnet',
+        engineering: 'sonnet',
+        design: 'sonnet',
+        research: 'sonnet',
+        support: 'haiku',
+      },
     },
     complex: {
-      teamSize: { min: 5, max: 15 },
+      teamSize: { min: 5, max: 8 },
       discussionRounds: 3,
       reviewRounds: 2,
-      suggestedRoles: ['cto', 'po', 'fullstack', 'frontend', 'backend', 'qa', 'uiux', 'devops', 'security'],
+      suggestedRoles: ['cto', 'po', 'frontend', 'backend', 'qa', 'security'],
+      modelTiers: {
+        leadership: 'opus',
+        engineering: 'sonnet',
+        design: 'sonnet',
+        research: 'sonnet',
+        support: 'haiku',
+      },
     },
   };
 

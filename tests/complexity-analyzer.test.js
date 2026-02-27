@@ -98,20 +98,58 @@ describe('getDefaultsForComplexity', () => {
     expect(defaults.teamSize.min).toBe(3);
     expect(defaults.teamSize.max).toBe(5);
     expect(defaults.discussionRounds).toBe(1);
+    expect(defaults.suggestedRoles).toEqual(['cto', 'frontend', 'backend', 'qa']);
+    expect(defaults.suggestedRoles).not.toContain('fullstack');
   });
 
   it('complex 복잡도 기본값을 반환한다', () => {
     const defaults = getDefaultsForComplexity('complex');
     expect(defaults.teamSize.min).toBe(5);
-    expect(defaults.teamSize.max).toBe(15);
+    expect(defaults.teamSize.max).toBe(8);
     expect(defaults.discussionRounds).toBe(3);
     expect(defaults.reviewRounds).toBe(2);
-    expect(defaults.suggestedRoles.length).toBeGreaterThan(5);
+    expect(defaults.suggestedRoles).toEqual(['cto', 'po', 'frontend', 'backend', 'qa', 'security']);
+    expect(defaults.suggestedRoles).not.toContain('fullstack');
+    expect(defaults.suggestedRoles).not.toContain('uiux');
+    expect(defaults.suggestedRoles).not.toContain('devops');
   });
 
   it('알 수 없는 복잡도는 medium으로 처리한다', () => {
     const defaults = getDefaultsForComplexity('unknown');
     expect(defaults.teamSize.min).toBe(3);
     expect(defaults.discussionRounds).toBe(1);
+  });
+
+  it('모든 복잡도에 modelTiers가 포함된다', () => {
+    for (const level of ['simple', 'medium', 'complex']) {
+      const defaults = getDefaultsForComplexity(level);
+      expect(defaults.modelTiers).toBeDefined();
+      expect(defaults.modelTiers.leadership).toBeTruthy();
+      expect(defaults.modelTiers.engineering).toBeTruthy();
+      expect(defaults.modelTiers.design).toBeTruthy();
+      expect(defaults.modelTiers.research).toBeTruthy();
+      expect(defaults.modelTiers.support).toBeTruthy();
+    }
+  });
+
+  it('simple은 leadership=sonnet, design=haiku', () => {
+    const defaults = getDefaultsForComplexity('simple');
+    expect(defaults.modelTiers.leadership).toBe('sonnet');
+    expect(defaults.modelTiers.design).toBe('haiku');
+    expect(defaults.modelTiers.support).toBe('haiku');
+  });
+
+  it('medium은 engineering=sonnet, support=haiku', () => {
+    const defaults = getDefaultsForComplexity('medium');
+    expect(defaults.modelTiers.engineering).toBe('sonnet');
+    expect(defaults.modelTiers.design).toBe('sonnet');
+    expect(defaults.modelTiers.support).toBe('haiku');
+  });
+
+  it('complex는 leadership=opus, engineering=sonnet', () => {
+    const defaults = getDefaultsForComplexity('complex');
+    expect(defaults.modelTiers.leadership).toBe('opus');
+    expect(defaults.modelTiers.engineering).toBe('sonnet');
+    expect(defaults.modelTiers.support).toBe('haiku');
   });
 });

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   SUPPORTED_PROVIDERS,
   buildProviderRequest,
@@ -95,19 +95,23 @@ describe('parseProviderResponse', () => {
     expect(result.provider).toBe('claude');
     expect(result.model).toBe('claude-sonnet-4-6');
     expect(result.tokenCount).toBe(300);
+    expect(result.inputTokens).toBe(100);
+    expect(result.outputTokens).toBe(200);
   });
 
   it('OpenAI 응답을 파싱한다', () => {
     const data = {
       choices: [{ message: { role: 'assistant', content: '응답입니다' } }],
       model: 'gpt-4o-2025-01-01',
-      usage: { total_tokens: 500 },
+      usage: { total_tokens: 500, prompt_tokens: 150, completion_tokens: 350 },
     };
     const result = parseProviderResponse('openai', data, 'gpt-4o');
     expect(result.text).toBe('응답입니다');
     expect(result.provider).toBe('openai');
     expect(result.model).toBe('gpt-4o-2025-01-01');
     expect(result.tokenCount).toBe(500);
+    expect(result.inputTokens).toBe(150);
+    expect(result.outputTokens).toBe(350);
   });
 
   it('Gemini 응답을 파싱한다', () => {
@@ -120,6 +124,8 @@ describe('parseProviderResponse', () => {
     expect(result.provider).toBe('gemini');
     expect(result.model).toBe('gemini-2.0-flash');
     expect(result.tokenCount).toBe(150);
+    expect(result.inputTokens).toBe(50);
+    expect(result.outputTokens).toBe(100);
   });
 
   it('빈 응답을 처리한다 (Claude)', () => {
@@ -145,5 +151,173 @@ describe('parseProviderResponse', () => {
     expect(result.text).toBe('');
     expect(result.provider).toBe('unknown');
     expect(result.tokenCount).toBe(0);
+  });
+});
+
+// --- callLLM ---
+
+describe('callLLM', () => {
+  let callLLM;
+  let mockLoadAuth;
+  let mockCallGeminiCli;
+
+  beforeEach(async () => {
+    vi.resetModules();
+
+    mockLoadAuth = vi.fn();
+    mockCallGeminiCli = vi.fn();
+
+    vi.doMock('../scripts/lib/auth-manager.js', () => ({
+      loadAuth: mockLoadAuth,
+    }));
+    vi.doMock('../scripts/lib/gemini-bridge.js', () => ({
+      callGeminiCli: mockCallGeminiCli,
+    }));
+
+    const mod = await import('../scripts/lib/llm-provider.js');
+    callLLM = mod.callLLM;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('Claude 프로바이더로 성공적으로 호출한다', async () => {
+    mockLoadAuth.mockResolvedValue({ type: 'api-key', apiKey: 'sk-ant-test' });
+    const mockResponse = {
+      ok: true,
+      json: async () => ({
+        content: [{ type: 'text', text: '응답' }],
+        model: 'claude-sonnet-4-6',
+        usage: { input_tokens: 10, output_tokens: 20 },
+      }),
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockResponse));
+
+    const result = await callLLM('claude', '안녕하세요');
+    expect(result.text).toBe('응답');
+    expect(result.provider).toBe('claude');
+    expect(result.tokenCount).toBe(30);
+  });
+
+  it('OpenAI 프로바이더로 성공적으로 호출한다', async () => {
+    mockLoadAuth.mockResolvedValue({ type: 'api-key', apiKey: 'sk-test' });
+    const mockResponse = {
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: 'OpenAI 응답' } }],
+        model: 'gpt-4o',
+        usage: { total_tokens: 50 },
+      }),
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockResponse));
+
+    const result = await callLLM('openai', '안녕하세요');
+    expect(result.text).toBe('OpenAI 응답');
+    expect(result.provider).toBe('openai');
+    expect(result.tokenCount).toBe(50);
+  });
+
+  it('Gemini CLI 인증 시 callGeminiCli로 분기한다', async () => {
+    mockLoadAuth.mockResolvedValue({ type: 'cli' });
+    mockCallGeminiCli.mockResolvedValue({ text: 'Gemini 응답', model: 'gemini-2.0-flash', tokenCount: 40 });
+
+    const result = await callLLM('gemini', '안녕하세요');
+    expect(result.text).toBe('Gemini 응답');
+    expect(mockCallGeminiCli).toHaveBeenCalled();
+  });
+
+  it('지원하지 않는 프로바이더는 에러를 던진다', async () => {
+    await expect(callLLM('unknown', '안녕')).rejects.toThrow('지원하지 않는 프로바이더');
+  });
+
+  it('인증 정보가 없으면 에러를 던진다', async () => {
+    mockLoadAuth.mockResolvedValue(null);
+    await expect(callLLM('claude', '안녕')).rejects.toThrow('인증 정보가 없습니다');
+  });
+
+  it('HTTP 에러를 처리한다', async () => {
+    mockLoadAuth.mockResolvedValue({ type: 'api-key', apiKey: 'sk-ant-test' });
+    const mockResponse = {
+      ok: false,
+      status: 401,
+      text: async () => 'Unauthorized',
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockResponse));
+
+    await expect(callLLM('claude', '안녕')).rejects.toThrow('API 호출 실패 (401)');
+  });
+
+  it('타임아웃 옵션을 전달한다', async () => {
+    mockLoadAuth.mockResolvedValue({ type: 'api-key', apiKey: 'sk-ant-test' });
+    const mockResponse = {
+      ok: true,
+      json: async () => ({
+        content: [{ type: 'text', text: '응답' }],
+        model: 'claude-sonnet-4-6',
+        usage: { input_tokens: 5, output_tokens: 5 },
+      }),
+    };
+    const fetchMock = vi.fn().mockResolvedValue(mockResponse);
+    vi.stubGlobal('fetch', fetchMock);
+
+    await callLLM('claude', '안녕', { timeout: 5000 });
+    expect(fetchMock).toHaveBeenCalled();
+  });
+});
+
+// --- verifyConnection ---
+
+describe('verifyConnection', () => {
+  let verifyConnection;
+  let mockLoadAuth;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    mockLoadAuth = vi.fn();
+    vi.doMock('../scripts/lib/auth-manager.js', () => ({
+      loadAuth: mockLoadAuth,
+    }));
+    vi.doMock('../scripts/lib/gemini-bridge.js', () => ({
+      callGeminiCli: vi.fn().mockResolvedValue({ text: 'ok', model: 'gemini-2.0-flash', tokenCount: 5 }),
+    }));
+
+    const mod = await import('../scripts/lib/llm-provider.js');
+    verifyConnection = mod.verifyConnection;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('연결 성공 시 connected: true를 반환한다', async () => {
+    mockLoadAuth.mockResolvedValue({ type: 'api-key', apiKey: 'sk-ant-test' });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        content: [{ type: 'text', text: 'ok' }],
+        model: 'claude-sonnet-4-6',
+        usage: { input_tokens: 3, output_tokens: 1 },
+      }),
+    }));
+
+    const result = await verifyConnection('claude');
+    expect(result.connected).toBe(true);
+    expect(result.model).toBe('claude-sonnet-4-6');
+  });
+
+  it('연결 실패 시 connected: false를 반환한다', async () => {
+    mockLoadAuth.mockResolvedValue(null);
+    const result = await verifyConnection('claude');
+    expect(result.connected).toBe(false);
+    expect(result.error).toBeTruthy();
+  });
+
+  it('네트워크 에러 시 connected: false를 반환한다', async () => {
+    mockLoadAuth.mockResolvedValue({ type: 'api-key', apiKey: 'sk-ant-test' });
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network error')));
+    const result = await verifyConnection('claude');
+    expect(result.connected).toBe(false);
+    expect(result.error).toContain('network error');
   });
 });

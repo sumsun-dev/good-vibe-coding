@@ -11,6 +11,8 @@ import {
   verifyExecution,
   verifyAndMaterialize,
   cleanup,
+  BUILD_STRATEGIES,
+  detectBuildStrategy,
 } from '../scripts/lib/execution-verifier.js';
 
 // --- extractCodeBlocks ---
@@ -240,29 +242,27 @@ describe('attemptBuild', () => {
     tempDirs.length = 0;
   });
 
-  it('package.json이 없으면 실패를 반환한다 (web-app)', () => {
+  it('package.json이 없어도 JS 파일 syntax check로 빌드한다 (web-app)', () => {
     const blocks = [
-      { language: 'javascript', filename: 'index.js', content: 'const x = 1;' },
+      { language: 'javascript', filename: 'index.js', content: 'const x = 1;\n' },
     ];
     const { tempDir } = writeTemporaryProject(blocks, 'web-app');
     tempDirs.push(tempDir);
 
     const result = attemptBuild(tempDir, 'web-app');
-    expect(result.success).toBe(false);
-    expect(result.output).toContain('package.json not found');
-    expect(result.exitCode).toBe(1);
+    expect(result.success).toBe(true);
+    expect(result.exitCode).toBe(0);
   });
 
-  it('package.json이 없으면 실패를 반환한다 (api-server)', () => {
+  it('package.json이 없어도 JS 파일 syntax check로 빌드한다 (api-server)', () => {
     const blocks = [
-      { language: 'javascript', filename: 'server.js', content: 'const x = 1;' },
+      { language: 'javascript', filename: 'server.js', content: 'const x = 1;\n' },
     ];
     const { tempDir } = writeTemporaryProject(blocks, 'api-server');
     tempDirs.push(tempDir);
 
     const result = attemptBuild(tempDir, 'api-server');
-    expect(result.success).toBe(false);
-    expect(result.output).toContain('package.json not found');
+    expect(result.success).toBe(true);
   });
 
   it('올바른 JS 파일에 대해 syntax check를 통과한다 (cli-tool)', () => {
@@ -301,9 +301,20 @@ describe('attemptBuild', () => {
     expect(result.output).toContain('no .js files found');
   });
 
-  it('지원하지 않는 프로젝트 유형은 실패한다', () => {
+  it('지원하지 않는 프로젝트 유형이지만 JS 파일이 있으면 node 전략으로 빌드한다', () => {
     const blocks = [
       { language: 'javascript', filename: 'index.js', content: 'const x = 1;\n' },
+    ];
+    const { tempDir } = writeTemporaryProject(blocks, 'unknown-type');
+    tempDirs.push(tempDir);
+
+    const result = attemptBuild(tempDir, 'unknown-type');
+    expect(result.success).toBe(true);
+  });
+
+  it('감지할 수 없는 파일만 있으면 unsupported를 반환한다', () => {
+    const blocks = [
+      { language: 'xml', filename: 'data.xml', content: '<root/>' },
     ];
     const { tempDir } = writeTemporaryProject(blocks, 'unknown-type');
     tempDirs.push(tempDir);
@@ -602,5 +613,150 @@ describe('verifyAndMaterialize', () => {
     expect(result.materializeResult.materializedCount).toBe(2);
     expect(existsSync(join(dir, 'src/a.js'))).toBe(true);
     expect(existsSync(join(dir, 'src/b.js'))).toBe(true);
+  });
+});
+
+// --- BUILD_STRATEGIES ---
+
+describe('BUILD_STRATEGIES', () => {
+  it('4개 전략이 존재한다 (node, python, go, java)', () => {
+    expect(Object.keys(BUILD_STRATEGIES)).toEqual(['node', 'python', 'go', 'java']);
+  });
+
+  it('각 전략에 detect, build, test 메서드가 있다', () => {
+    for (const [, strategy] of Object.entries(BUILD_STRATEGIES)) {
+      expect(typeof strategy.detect).toBe('function');
+      expect(typeof strategy.build).toBe('function');
+      expect(typeof strategy.test).toBe('function');
+    }
+  });
+
+  it('node 전략이 package.json을 감지한다', () => {
+    expect(BUILD_STRATEGIES.node.detect(['package.json', 'index.js'])).toBe(true);
+    expect(BUILD_STRATEGIES.node.detect(['main.py'])).toBe(false);
+  });
+
+  it('node 전략이 .js 파일도 감지한다', () => {
+    expect(BUILD_STRATEGIES.node.detect(['index.js'])).toBe(true);
+  });
+
+  it('python 전략이 requirements.txt를 감지한다', () => {
+    expect(BUILD_STRATEGIES.python.detect(['requirements.txt', 'app.py'])).toBe(true);
+    expect(BUILD_STRATEGIES.python.detect(['package.json'])).toBe(false);
+  });
+
+  it('python 전략이 pyproject.toml을 감지한다', () => {
+    expect(BUILD_STRATEGIES.python.detect(['pyproject.toml'])).toBe(true);
+  });
+
+  it('python 전략이 setup.py를 감지한다', () => {
+    expect(BUILD_STRATEGIES.python.detect(['setup.py'])).toBe(true);
+  });
+
+  it('go 전략이 go.mod를 감지한다', () => {
+    expect(BUILD_STRATEGIES.go.detect(['go.mod', 'main.go'])).toBe(true);
+    expect(BUILD_STRATEGIES.go.detect(['package.json'])).toBe(false);
+  });
+
+  it('java 전략이 pom.xml을 감지한다', () => {
+    expect(BUILD_STRATEGIES.java.detect(['pom.xml', 'App.java'])).toBe(true);
+    expect(BUILD_STRATEGIES.java.detect(['go.mod'])).toBe(false);
+  });
+});
+
+// --- detectBuildStrategy ---
+
+describe('detectBuildStrategy', () => {
+  it('명시적 프로젝트 타입 매핑을 우선한다', () => {
+    const result = detectBuildStrategy(['go.mod'], 'web-app');
+    expect(result.strategyId).toBe('node');
+  });
+
+  it('python-app 타입은 python 전략으로 매핑한다', () => {
+    const result = detectBuildStrategy([], 'python-app');
+    expect(result.strategyId).toBe('python');
+  });
+
+  it('go-service 타입은 go 전략으로 매핑한다', () => {
+    const result = detectBuildStrategy([], 'go-service');
+    expect(result.strategyId).toBe('go');
+  });
+
+  it('java-app 타입은 java 전략으로 매핑한다', () => {
+    const result = detectBuildStrategy([], 'java-app');
+    expect(result.strategyId).toBe('java');
+  });
+
+  it('매핑이 없으면 파일 기반으로 자동 감지한다', () => {
+    const result = detectBuildStrategy(['go.mod', 'main.go'], undefined);
+    expect(result.strategyId).toBe('go');
+  });
+
+  it('파일 기반 감지도 실패하면 null을 반환한다', () => {
+    const result = detectBuildStrategy(['unknown.xyz'], 'unknown-type');
+    expect(result).toBeNull();
+  });
+
+  it('전략을 감지할 수 없으면 unsupported를 반환한다', () => {
+    const blocks = [{ language: 'xml', filename: 'data.xml', content: '<root/>' }];
+    const { tempDir } = writeTemporaryProject(blocks, 'custom');
+    const result = attemptBuild(tempDir, 'nonexistent-type-xyz');
+    expect(result.success).toBe(false);
+    expect(result.output).toContain('unsupported project type');
+    cleanup(tempDir);
+  });
+});
+
+// --- writeTemporaryProject langExtMap 확장 ---
+
+describe('writeTemporaryProject (다언어)', () => {
+  const tempDirs = [];
+
+  afterEach(() => {
+    for (const dir of tempDirs) cleanup(dir);
+    tempDirs.length = 0;
+  });
+
+  it('Go 파일을 올바른 확장자로 생성한다', () => {
+    const blocks = [{ language: 'go', filename: null, content: 'package main' }];
+    const { tempDir, files } = writeTemporaryProject(blocks, 'go-service');
+    tempDirs.push(tempDir);
+    expect(files[0]).toMatch(/\.go$/);
+  });
+
+  it('Java 파일을 올바른 확장자로 생성한다', () => {
+    const blocks = [{ language: 'java', filename: null, content: 'class App {}' }];
+    const { tempDir, files } = writeTemporaryProject(blocks, 'java-app');
+    tempDirs.push(tempDir);
+    expect(files[0]).toMatch(/\.java$/);
+  });
+
+  it('Kotlin 파일을 올바른 확장자로 생성한다', () => {
+    const blocks = [{ language: 'kotlin', filename: null, content: 'fun main() {}' }];
+    const { tempDir, files } = writeTemporaryProject(blocks, 'java-app');
+    tempDirs.push(tempDir);
+    expect(files[0]).toMatch(/\.kt$/);
+  });
+
+  it('Rust 파일을 올바른 확장자로 생성한다', () => {
+    const blocks = [{ language: 'rust', filename: null, content: 'fn main() {}' }];
+    const { tempDir, files } = writeTemporaryProject(blocks, 'custom');
+    tempDirs.push(tempDir);
+    expect(files[0]).toMatch(/\.rs$/);
+  });
+});
+
+// --- classifyCodeBlocks (다언어 확장) ---
+
+describe('classifyCodeBlocks (다언어)', () => {
+  it('Go, Java, Kotlin, Rust를 executable로 분류한다', () => {
+    const blocks = [
+      { language: 'go', filename: null, content: '' },
+      { language: 'java', filename: null, content: '' },
+      { language: 'kotlin', filename: null, content: '' },
+      { language: 'rust', filename: null, content: '' },
+    ];
+    const classified = classifyCodeBlocks(blocks);
+    expect(classified.every(b => b.type === 'executable')).toBe(true);
   });
 });

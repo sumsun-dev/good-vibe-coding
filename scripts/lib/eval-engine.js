@@ -7,6 +7,7 @@ import { readFile, writeFile, readdir } from 'fs/promises';
 import { resolve } from 'path';
 import crypto from 'crypto';
 import { ensureDir, fileExists } from './file-writer.js';
+import { COST_RATES } from './project-metrics.js';
 
 const DEFAULT_EVAL_DIR = resolve(process.env.HOME || process.env.USERPROFILE, '.claude', 'good-vibe', 'evaluations');
 let evalDir = DEFAULT_EVAL_DIR;
@@ -20,12 +21,12 @@ export function setEvalDir(dir) {
 }
 
 /**
- * 토큰당 비용 상수 (근사 입력 토큰 비용)
+ * 토큰당 비용 상수 (project-metrics.js의 COST_RATES에서 input 비용 사용)
  */
 const COST_PER_TOKEN = {
-  claude: 0.000003,
-  openai: 0.000005,
-  gemini: 0.000001,
+  claude: COST_RATES.claude.input,
+  openai: COST_RATES.openai.input,
+  gemini: COST_RATES.gemini.input,
 };
 
 /**

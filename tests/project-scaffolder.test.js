@@ -137,6 +137,7 @@ describe('project-scaffolder', () => {
       expect(writtenPaths.some(p => p.endsWith('.gitignore'))).toBe(true);
       expect(writtenPaths.some(p => p.includes('code-reviewer.md'))).toBe(true);
       expect(writtenPaths.some(p => p.includes('tdd-coach.md'))).toBe(true);
+      expect(writtenPaths.some(p => p.includes('.good-vibe') && p.endsWith('README.md'))).toBe(true);
     });
 
     it('CLAUDE.md 내용이 올바르다', async () => {

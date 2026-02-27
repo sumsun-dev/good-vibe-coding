@@ -51,9 +51,27 @@
     "library": {
       "displayName": "라이브러리/패키지",
       "description": "재사용 가능한 npm/pip 패키지",
-      "recommendedTeam": ["cto", "backend", "qa", "tech-writer"],
-      "optionalRoles": ["security", "tech-researcher"],
+      "recommendedTeam": ["cto", "backend", "qa"],
+      "optionalRoles": ["security", "tech-researcher", "tech-writer"],
       "suggestedTemplate": "npm-library"
+    },
+    "python-app": {
+      "displayName": "Python 애플리케이션",
+      "description": "Python 기반 앱 (FastAPI/Django/Flask)",
+      "recommendedTeam": ["cto", "backend", "qa"],
+      "optionalRoles": ["devops", "security"]
+    },
+    "go-service": {
+      "displayName": "Go 서비스",
+      "description": "Go 기반 마이크로서비스",
+      "recommendedTeam": ["cto", "backend", "qa"],
+      "optionalRoles": ["devops", "security"]
+    },
+    "java-app": {
+      "displayName": "Java 애플리케이션",
+      "description": "Java/Spring Boot 앱",
+      "recommendedTeam": ["cto", "backend", "qa"],
+      "optionalRoles": ["devops", "security"]
     },
     "custom": {
       "displayName": "커스텀 프로젝트",

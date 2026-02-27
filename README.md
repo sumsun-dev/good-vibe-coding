@@ -6,14 +6,41 @@
 
 ## 핵심 특징
 
-- **가상 AI 팀**: 15개 역할 (CTO, Backend, QA, Frontend, Researcher...) 각각 2개 페르소나 변형 + 커스텀 확장
-- **멀티에이전트 오케스트레이션**: 역할별 병렬 분석 → 종합 → 수렴까지 자동 반복 (최대 3라운드)
+- **구조화된 다관점 분석**: 15개 전문 역할이 독립적으로 분석 → 종합하여 단일 시점에서 놓치는 문제를 포착 (역할별 2개 페르소나 변형)
+- **멀티에이전트 오케스트레이션**: 역할별 병렬 분석 → 종합 → 수렴까지 자동 반복 (최대 3라운드), JSON 디스패치 계획으로 구조화
 - **크로스 리뷰 시스템**: 작업 실행 후 다른 역할 에이전트가 결과물 리뷰, 품질 게이트 체크
 - **복잡도 기반 자동 모드 선택**: 프로젝트 복잡도 분석 → 적합한 모드 자동 추천
+- **모델 다양성**: 복잡도 기반 opus/sonnet/haiku 자동 선택 (역할 카테고리별 최적 배분)
+- **관측성**: 비용/토큰 추적, 에이전트 기여도 분석, 대시보드
+- **팀 설정 공유**: 프로젝트 레벨 에이전트 오버라이드 (`.good-vibe/` 디렉토리로 git 공유)
 - **세 가지 모드**: quick-build / plan-execute / plan-only
 - **에이전트 피드백**: 프로젝트 결과 분석 → 에이전트 .md 수정안 자동 제안 → 오버라이드 저장
-- **한국어 완전 지원**: 모든 가이드, 프롬프트, 에이전트가 한국어
+- **한국어 지원**: 가이드, 프롬프트, 에이전트, 커맨드가 한국어 (CLI 출력 및 코드 주석은 영어)
 - **v2 호환**: 기존 온보딩 마법사 (`/onboarding`) 그대로 사용 가능
+
+## 아키텍처
+
+```
+┌─────────────────────────────────────────────┐
+│  User Layer     사용자는 6개 커맨드만 사용    │
+│  /hello → /new → /discuss → /approve →      │
+│  /execute → /report                          │
+├─────────────────────────────────────────────┤
+│  Agent Layer    15개 역할 × 30 페르소나        │
+│  CTO, PO, Backend, Frontend, QA, ...         │
+│  Tier별 병렬 디스패치 + 크로스 리뷰           │
+├─────────────────────────────────────────────┤
+│  Internal API   CLI-as-API (104개 커맨드)    │
+│  cli.js — 에이전트가 호출하는 내부 API        │
+│  사용자가 직접 호출하지 않음                   │
+├─────────────────────────────────────────────┤
+│  Core Library   32개 모듈                     │
+│  project-manager, orchestrator, review-      │
+│  engine, complexity-analyzer, ...            │
+└─────────────────────────────────────────────┘
+```
+
+**사용자는 6개 커맨드만 알면 됩니다.** 나머지는 에이전트들이 내부 API를 통해 자동으로 처리합니다.
 
 ## 설치
 
@@ -67,7 +94,7 @@ npm install
 1. 프로젝트 설명 입력 ("텔레그램 봇을 만들고 싶어")
 2. 복잡도 분석 → 모드 자동 추천 (quick-build / plan-execute / plan-only)
 3. 추천 팀 확인 및 수정
-4. 팀원 페르소나 선택
+4. 팀원 스타일 선택
 
 > `/new-project`로 수동 설정도 가능합니다.
 
@@ -126,7 +153,7 @@ CEO가 기획서를 검토하고 승인합니다. 승인 후 작업이 역할별
 
 | 커맨드 | 설명 |
 |--------|------|
-| `/status` | 프로젝트 상태 대시보드 |
+| `/status` | 현재 프로젝트 대시보드 (프로젝트 없으면 목록 표시) |
 | `/feedback` | 에이전트 피드백 (결과 분석 → .md 개선) |
 | `/my-team` | 팀 현황 + 역할 카탈로그 |
 | `/learn` | 역할별 학습 가이드 |
@@ -135,17 +162,16 @@ CEO가 기획서를 검토하고 승인합니다. 승인 후 작업이 역할별
 
 | 커맨드 | 설명 |
 |--------|------|
-| `/new-project` | 수동 프로젝트 생성 (타입/모드 직접 선택) |
-| `/projects` | 프로젝트 목록 |
-| `/onboarding` | 역할 기반 온보딩 마법사 |
+| `/new-project` | 수동 프로젝트 생성 (`/new`의 수동 버전) |
+| `/projects` | 전체 프로젝트 목록 (여러 프로젝트 관리 시) |
+| `/onboarding` | 사용자 환경 설정 (역할/워크플로우 — 1회성) |
 | `/my-config` | 현재 설정 대시보드 |
-| `/persona` | 커스텀 페르소나 관리 |
-| `/edit-persona` | 페르소나 빠른 수정/오버라이드 |
 | `/scaffold` | 프로젝트 템플릿 스캐폴딩 |
 | `/add-skill` | 스킬 추가 |
 | `/add-agent` | 에이전트 추가 |
 | `/preset` | 프리셋 관리 |
 | `/reset` | 설정 초기화 |
+| `/eval` | A/B 평가 (접근법 비교) |
 
 ## 역할 카탈로그 (15개)
 
@@ -167,7 +193,7 @@ CEO가 기획서를 검토하고 승인합니다. 승인 후 작업이 역할별
 | Tech Researcher | 🧬 | Research | 기술 스택 비교, 벤치마크, 오픈소스 |
 | Design Researcher | 🔬 | Research | 사용자 리서치, UX 벤치마크, 접근성 |
 
-## 프로젝트 타입 (9개)
+## 프로젝트 타입 (12개)
 
 | 타입 | 추천 팀 |
 |------|---------|
@@ -179,6 +205,9 @@ CEO가 기획서를 검토하고 승인합니다. 승인 후 작업이 역할별
 | Chrome 확장 | CTO + Frontend + QA |
 | 데이터 파이프라인 | CTO + Data + QA |
 | 라이브러리/패키지 | CTO + Backend + QA + Tech Writer |
+| Python 앱 | CTO + Backend + QA |
+| Go 서비스 | CTO + Backend + QA |
+| Java 앱 | CTO + Backend + QA |
 | 커스텀 | CTO + 자유 선택 |
 
 ## 프로젝트 구조
@@ -191,7 +220,7 @@ good-vibe-coding/
 │   ├── team-backend.md          #   Backend 에이전트
 │   ├── team-*.md                #   (15개 팀 역할 에이전트)
 │   └── *.md                     #   (8개 서포트 에이전트)
-├── commands/                     # 커맨드 (21개)
+├── commands/                     # 커맨드 (22개)
 │   ├── hello.md                 #   프로젝트 인프라 셋업
 │   ├── new.md                   #   스마트 프로젝트 시작 (v4.0)
 │   ├── new-project.md           #   수동 프로젝트 생성
@@ -201,15 +230,14 @@ good-vibe-coding/
 │   └── *.md                     #   ...
 ├── presets/
 │   ├── team-roles/catalog.json  #   15개 역할 카탈로그
-│   ├── project-types.json       #   9개 프로젝트 타입
+│   ├── project-types.json       #   12개 프로젝트 타입
 │   ├── templates/               #   5개 프로젝트 템플릿 (JSON)
 │   ├── team-personalities.json  #   30개 페르소나 (15역할 x 2변형)
-│   ├── personalities.json       #   기존 16개 페르소나
 │   ├── roles/                   #   6개 역할 프리셋
 │   └── stacks/                  #   2개 스택 프리셋
 ├── scripts/
-│   ├── cli.js                   #   CLI 브릿지 (79개 커맨드)
-│   └── lib/                     #   핵심 라이브러리 (28개 모듈)
+│   ├── cli.js                   #   CLI-as-API (에이전트용 내부 API, 104개 커맨드)
+│   └── lib/                     #   핵심 라이브러리 (32개 모듈)
 │       ├── project-scaffolder.js #     프로젝트 인프라 생성
 │       ├── github-manager.js   #     gh CLI 래퍼
 │       ├── project-manager.js   #     프로젝트 CRUD + 상태 관리
@@ -219,22 +247,25 @@ good-vibe-coding/
 │       ├── review-engine.js     #     크로스 리뷰 시스템 (v4.0)
 │       ├── complexity-analyzer.js #   복잡도 분석 (v4.0)
 │       ├── task-distributor.js  #     작업 분배
-│       ├── agent-feedback.js    #     에이전트 피드백 (오버라이드 관리)
-│       ├── persona-manager.js   #     커스텀 페르소나 CRUD/Merge
+│       ├── agent-feedback.js    #     에이전트 피드백 (사용자/프로젝트 레벨 오버라이드)
+│       ├── project-metrics.js  #     관측성 (비용/토큰 추적, 대시보드)
 │       ├── template-scaffolder.js #   프로젝트 템플릿 스캐폴딩
+│       ├── json-parser.js       #     LLM JSON 응답 파싱 (v4.2)
+│       ├── dispatch-plan-generator.js # JSON 디스패치 계획 생성 (v4.2)
+│       ├── execution-loop.js    #     실행 루프 (v4.2)
 │       └── *.js                 #     (기타 모듈)
 ├── templates/                    # Handlebars 템플릿
 ├── hooks/                        # 훅 정의
 ├── guides/                       # 학습 가이드
 ├── skills/                       # 스킬 (5개)
-└── tests/                        # Vitest 테스트 (624개)
+└── tests/                        # Vitest 테스트 (894개+)
 ```
 
 ## 기술 스택
 
 - **Node.js 18+** (ESM)
 - **Handlebars** (템플릿 엔진)
-- **Vitest** (테스트 프레임워크, 624개 테스트)
+- **Vitest** (테스트 프레임워크, 894개+ 테스트, 97%+ 커버리지)
 
 ## 개발
 
@@ -250,8 +281,8 @@ npm run test:coverage # 커버리지 리포트
 | 데이터 | 경로 |
 |--------|------|
 | 프로젝트 | `~/.claude/good-vibe/projects/{id}/project.json` |
-| 에이전트 오버라이드 | `~/.claude/good-vibe/agent-overrides/{roleId}.md` |
-| 커스텀 페르소나 | `~/.claude/good-vibe/custom-personas/` |
+| 에이전트 오버라이드 (사용자) | `~/.claude/good-vibe/agent-overrides/{roleId}.md` |
+| 에이전트 오버라이드 (프로젝트) | `{projectDir}/.good-vibe/agent-overrides/{roleId}.md` |
 | 커스텀 템플릿 | `~/.claude/good-vibe/custom-templates/` |
 
 ## 로드맵
@@ -279,8 +310,13 @@ npm run test:coverage # 커버리지 리포트
 - [x] 크로스 리뷰 시스템 (품질 게이트)
 - [x] 복잡도 기반 자동 모드 선택
 - [x] 에이전트 피드백 재설계 (결과 분석 → 오버라이드)
-- [x] 커스텀 페르소나 시스템
 - [x] 프로젝트 템플릿 스캐폴딩
+
+### Phase 4.3 - 강화 (v4.3) — 현재
+- [x] 다언어 빌드 검증 (Python, Go, Java)
+- [x] 모델 다양성 (복잡도 기반 opus/sonnet/haiku 자동 선택)
+- [x] 관측성 (비용/토큰 추적, 에이전트 기여도, 대시보드)
+- [x] 팀 설정 공유 (프로젝트 레벨 오버라이드, .good-vibe/ 디렉토리)
 
 ### Phase 5 (계획)
 - [ ] 마켓플레이스 등록

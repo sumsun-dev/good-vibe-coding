@@ -7,6 +7,7 @@
 import { readFile, writeFile, readdir, stat } from 'fs/promises';
 import { resolve } from 'path';
 import { ensureDir, fileExists } from './file-writer.js';
+import { parseJsonArray } from './json-parser.js';
 
 const DEFAULT_OVERRIDES_DIR = resolve(
   process.env.HOME || process.env.USERPROFILE,
@@ -139,38 +140,8 @@ ${issueSummary}
 export function parseImprovementSuggestions(analysisText) {
   if (!analysisText || analysisText.trim() === '') return [];
 
-  // JSON 직접 파싱
-  try {
-    const parsed = JSON.parse(analysisText.trim());
-    if (Array.isArray(parsed)) return normalizeSuggestions(parsed);
-  } catch {
-    // JSON 블록 추출 시도
-  }
-
-  // ```json ... ``` 블록 추출
-  const jsonBlockMatch = analysisText.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
-  if (jsonBlockMatch) {
-    try {
-      const parsed = JSON.parse(jsonBlockMatch[1].trim());
-      if (Array.isArray(parsed)) return normalizeSuggestions(parsed);
-    } catch {
-      // 파싱 실패
-    }
-  }
-
-  // [ ... ] 패턴 추출 (마지막 ] 에서 역방향 탐색)
-  const lastBracket = analysisText.lastIndexOf(']');
-  if (lastBracket !== -1) {
-    const firstBracket = analysisText.lastIndexOf('[', lastBracket);
-    if (firstBracket !== -1) {
-      try {
-        const parsed = JSON.parse(analysisText.slice(firstBracket, lastBracket + 1));
-        if (Array.isArray(parsed)) return normalizeSuggestions(parsed);
-      } catch {
-        // 파싱 실패
-      }
-    }
-  }
+  const parsed = parseJsonArray(analysisText);
+  if (parsed.length > 0) return normalizeSuggestions(parsed);
 
   return [];
 }
@@ -255,4 +226,88 @@ export function mergeAgentWithOverride(baseMd, overrideMd) {
 ## 오버라이드 (프로젝트 피드백 기반)
 
 ${overrideMd.trim()}`;
+}
+
+// --- 프로젝트 레벨 오버라이드 ---
+
+const PROJECT_OVERRIDES_SUBDIR = '.good-vibe/agent-overrides';
+
+/**
+ * 프로젝트 레벨 에이전트 오버라이드를 저장한다.
+ * @param {string} projectDir - 프로젝트 디렉토리 경로
+ * @param {string} roleId - 역할 ID
+ * @param {string} content - 오버라이드 마크다운 내용
+ */
+export async function saveProjectOverride(projectDir, roleId, content) {
+  validateRoleId(roleId);
+  const dir = resolve(projectDir, PROJECT_OVERRIDES_SUBDIR);
+  await ensureDir(dir);
+  const filePath = resolve(dir, `${roleId}.md`);
+  await writeFile(filePath, content, 'utf-8');
+}
+
+/**
+ * 프로젝트 레벨 에이전트 오버라이드를 로드한다.
+ * @param {string} projectDir - 프로젝트 디렉토리 경로
+ * @param {string} roleId - 역할 ID
+ * @returns {Promise<string|null>} 오버라이드 내용 (없으면 null)
+ */
+export async function loadProjectOverride(projectDir, roleId) {
+  validateRoleId(roleId);
+  const filePath = resolve(projectDir, PROJECT_OVERRIDES_SUBDIR, `${roleId}.md`);
+  if (!(await fileExists(filePath))) return null;
+  return readFile(filePath, 'utf-8');
+}
+
+/**
+ * 프로젝트 레벨 에이전트 오버라이드 목록을 반환한다.
+ * @param {string} projectDir - 프로젝트 디렉토리 경로
+ * @returns {Promise<Array<{roleId: string, updatedAt: string}>>}
+ */
+export async function listProjectOverrides(projectDir) {
+  const dir = resolve(projectDir, PROJECT_OVERRIDES_SUBDIR);
+  if (!(await fileExists(dir))) return [];
+
+  const files = await readdir(dir);
+  const results = [];
+
+  for (const file of files) {
+    if (!file.endsWith('.md')) continue;
+    const roleId = file.slice(0, -3);
+    const filePath = resolve(dir, file);
+    const fileStat = await stat(filePath);
+    results.push({
+      roleId,
+      updatedAt: fileStat.mtime.toISOString(),
+    });
+  }
+
+  return results;
+}
+
+/**
+ * 다중 소스 오버라이드를 병합한다 (user → project 순서, project가 더 높은 우선순위).
+ * @param {string} baseMd - 기본 에이전트 .md 내용
+ * @param {Array<{source: string, content: string}>} overrides - 오버라이드 배열
+ * @returns {string} 병합된 최종 .md 텍스트
+ */
+export function mergeAgentWithOverrides(baseMd, overrides) {
+  if (!overrides || overrides.length === 0) return baseMd || '';
+  if (!baseMd) baseMd = '';
+
+  let result = baseMd.trimEnd();
+
+  // user 오버라이드 먼저, project 오버라이드가 나중에 (더 높은 우선순위)
+  const sorted = [...overrides].sort((a, b) => {
+    const order = { user: 0, project: 1 };
+    return (order[a.source] ?? 0) - (order[b.source] ?? 0);
+  });
+
+  for (const override of sorted) {
+    if (!override.content) continue;
+    const label = override.source === 'project' ? '프로젝트' : '사용자';
+    result += `\n\n## 오버라이드 (${label} 피드백 기반)\n\n${override.content.trim()}`;
+  }
+
+  return result;
 }

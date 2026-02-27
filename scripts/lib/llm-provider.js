@@ -149,6 +149,8 @@ export function parseProviderResponse(providerId, data, model) {
         provider: 'claude',
         model: data.model || model,
         tokenCount: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0),
+        inputTokens: data.usage?.input_tokens || 0,
+        outputTokens: data.usage?.output_tokens || 0,
       };
     case 'openai':
       return {
@@ -156,6 +158,8 @@ export function parseProviderResponse(providerId, data, model) {
         provider: 'openai',
         model: data.model || model,
         tokenCount: data.usage?.total_tokens || 0,
+        inputTokens: data.usage?.prompt_tokens || 0,
+        outputTokens: data.usage?.completion_tokens || 0,
       };
     case 'gemini':
       return {
@@ -164,9 +168,11 @@ export function parseProviderResponse(providerId, data, model) {
         model: model,
         tokenCount: (data.usageMetadata?.promptTokenCount || 0) +
                     (data.usageMetadata?.candidatesTokenCount || 0),
+        inputTokens: data.usageMetadata?.promptTokenCount || 0,
+        outputTokens: data.usageMetadata?.candidatesTokenCount || 0,
       };
     default:
-      return { text: '', provider: providerId, model: model || '', tokenCount: 0 };
+      return { text: '', provider: providerId, model: model || '', tokenCount: 0, inputTokens: 0, outputTokens: 0 };
   }
 }
 

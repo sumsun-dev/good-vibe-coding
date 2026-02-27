@@ -2,6 +2,8 @@
  * report-generator — 프로젝트 보고서 생성 모듈
  */
 
+import { getCostSummary, getAgentPerformanceSummary } from './project-metrics.js';
+
 /**
  * 전체 프로젝트 보고서를 생성한다.
  * @param {object} project - 프로젝트 전체 데이터
@@ -38,6 +40,36 @@ ${project.discussion.planDocument || '(기획서 없음)'}
 | 역할 | 작업 수 |
 |------|---------|
 ${Object.entries(stats.byRole).map(([role, count]) => `| ${role} | ${count} |`).join('\n')}`;
+
+  // 비용/성능 섹션 (메트릭스가 있을 때만)
+  if (project.metrics) {
+    const costSummary = getCostSummary(project.metrics);
+    const contributions = {};
+    for (const member of project.team) {
+      const memberTasks = project.tasks.filter(t => t.assignee === member.roleId);
+      const completedRatio = memberTasks.length > 0
+        ? memberTasks.filter(t => t.status === 'completed').length / memberTasks.length
+        : 0;
+      contributions[member.roleId] = Math.round(completedRatio * 100) / 100;
+    }
+    const agentPerf = getAgentPerformanceSummary(project.metrics, contributions);
+
+    report += `\n\n## 비용/성능
+
+| 항목 | 값 |
+|------|-----|
+| 총 비용 | $${costSummary.totalCostUsd.toFixed(4)} |
+| 입력 토큰 | ${costSummary.totalInputTokens.toLocaleString()} |
+| 출력 토큰 | ${costSummary.totalOutputTokens.toLocaleString()} |`;
+
+    if (agentPerf.length > 0) {
+      report += '\n\n### 에이전트 기여도\n\n| 역할 | 호출 수 | 비용 | 기여도 |\n|------|---------|------|--------|\n';
+      report += agentPerf
+        .sort((a, b) => b.contributionScore - a.contributionScore)
+        .map(a => `| ${a.roleId} | ${a.callCount} | $${a.costUsd.toFixed(4)} | ${(a.contributionScore * 100).toFixed(0)}% |`)
+        .join('\n');
+    }
+  }
 
   return report;
 }

@@ -1,7 +1,7 @@
 import { readFile } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { getMergedRoleCatalog, getMergedPersonalities } from './persona-manager.js';
+import { getDefaultsForComplexity } from './complexity-analyzer.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '../..');
@@ -28,12 +28,8 @@ export function clearCaches() {
  */
 export async function loadRoleCatalog() {
   if (cachedCatalog) return cachedCatalog;
-  try {
-    cachedCatalog = await getMergedRoleCatalog();
-  } catch {
-    const content = await readFile(CATALOG_PATH, 'utf-8');
-    cachedCatalog = JSON.parse(content);
-  }
+  const content = await readFile(CATALOG_PATH, 'utf-8');
+  cachedCatalog = JSON.parse(content);
   return cachedCatalog;
 }
 
@@ -54,12 +50,8 @@ export async function loadProjectTypes() {
  */
 async function loadTeamPersonalities() {
   if (cachedPersonalities) return cachedPersonalities;
-  try {
-    cachedPersonalities = await getMergedPersonalities();
-  } catch {
-    const content = await readFile(PERSONALITIES_PATH, 'utf-8');
-    cachedPersonalities = JSON.parse(content);
-  }
+  const content = await readFile(PERSONALITIES_PATH, 'utf-8');
+  cachedPersonalities = JSON.parse(content);
   return cachedPersonalities;
 }
 
@@ -81,9 +73,11 @@ export async function recommendTeam(projectType) {
  * 역할 ID 배열과 페르소나 선택으로 팀을 빌드한다.
  * @param {string[]} roleIds - 역할 ID 배열
  * @param {object} personalityChoices - 역할별 페르소나 선택 (roleId → variant id)
+ * @param {object} [options={}] - 빌드 옵션
+ * @param {string} [options.complexity] - 복잡도 ('simple' | 'medium' | 'complex')
  * @returns {Promise<Array<object>>} 팀원 배열
  */
-export async function buildTeam(roleIds, personalityChoices = {}) {
+export async function buildTeam(roleIds, personalityChoices = {}, options = {}) {
   const catalog = await loadRoleCatalog();
   const personalities = await loadTeamPersonalities();
 
@@ -92,6 +86,7 @@ export async function buildTeam(roleIds, personalityChoices = {}) {
     .map(id => {
       const role = catalog.roles[id];
       const persona = personalities[id];
+      const model = resolveModel(role, options.complexity);
       let member;
       if (!persona) {
         member = {
@@ -104,7 +99,7 @@ export async function buildTeam(roleIds, personalityChoices = {}) {
           description: role.description,
           speakingStyle: '',
           greeting: '',
-          model: role.model,
+          model,
           skills: role.skills,
           tools: role.defaultTools,
           reviewDomains: role.reviewDomains,
@@ -123,7 +118,7 @@ export async function buildTeam(roleIds, personalityChoices = {}) {
           description: variant.description,
           speakingStyle: variant.speakingStyle,
           greeting: variant.greeting,
-          model: role.model,
+          model,
           skills: role.skills,
           tools: role.defaultTools,
           reviewDomains: role.reviewDomains,
@@ -136,6 +131,31 @@ export async function buildTeam(roleIds, personalityChoices = {}) {
 }
 
 /**
+ * 역할의 카테고리와 복잡도에 따라 적절한 모델을 결정한다.
+ * @param {object} role - 카탈로그 역할 정보 (role.model, role.category)
+ * @param {string} [complexity] - 복잡도 ('simple' | 'medium' | 'complex')
+ * @param {string} [taskType] - 태스크 유형 (예: 'architecture-review')
+ * @returns {string} 모델 이름
+ */
+export function resolveModel(role, complexity, taskType) {
+  if (!complexity) return role.model;
+
+  const defaults = getDefaultsForComplexity(complexity);
+  const modelTiers = defaults.modelTiers;
+  if (!modelTiers) return role.model;
+
+  const category = role.category || 'engineering';
+  let model = modelTiers[category] || role.model;
+
+  // architecture-review + complex → opus 업그레이드
+  if (taskType === 'architecture-review' && complexity === 'complex') {
+    model = 'opus';
+  }
+
+  return model;
+}
+
+/**
  * 팀 요약 문자열을 생성한다.
  * @param {Array<object>} team - 팀원 배열
  * @returns {string} 팀 요약 (표시용)
@@ -145,4 +165,46 @@ export function getTeamSummary(team) {
   return team
     .map(m => `${m.emoji} **${m.displayName}** (${m.role}) — "${m.greeting}"`)
     .join('\n');
+}
+
+// 역할 우선순위 — 낮을수록 core에 우선 배치
+const ROLE_PRIORITY = {
+  cto: 0, po: 1,
+  backend: 2, frontend: 3, fullstack: 4,
+  qa: 5, security: 6,
+  uiux: 7, devops: 8, data: 9,
+  'tech-writer': 10,
+  'market-researcher': 11, 'business-researcher': 12,
+  'tech-researcher': 13, 'design-researcher': 14,
+};
+
+/**
+ * 프로젝트 타입 + 복잡도를 결합하여 최적 팀을 생성한다.
+ * Rule 1: fullstack + frontend + backend 공존 시 fullstack 제거
+ * Rule 2: teamSize.max 초과 시 우선순위 기반으로 overflow → optional로 이동
+ * @param {string} projectType - 프로젝트 타입
+ * @param {string} complexity - 복잡도 ('simple' | 'medium' | 'complex')
+ * @returns {Promise<{roles: string[], optional: string[]}>}
+ */
+export async function getOptimizedTeam(projectType, complexity) {
+  const typeRec = await recommendTeam(projectType);
+  const defaults = getDefaultsForComplexity(complexity);
+  const baseRoles = new Set([...typeRec.recommended, ...defaults.suggestedRoles]);
+
+  // Rule 1: fullstack 중복 제거
+  if (baseRoles.has('fullstack') && baseRoles.has('frontend') && baseRoles.has('backend')) {
+    baseRoles.delete('fullstack');
+  }
+
+  // 우선순위 정렬 (낮을수록 core 우선)
+  const sorted = [...baseRoles].sort((a, b) =>
+    (ROLE_PRIORITY[a] ?? 99) - (ROLE_PRIORITY[b] ?? 99)
+  );
+
+  // Rule 2: max size 제한
+  const coreRoles = sorted.slice(0, defaults.teamSize.max);
+  const optionalSet = new Set([...typeRec.optional, ...sorted.slice(defaults.teamSize.max)]);
+  for (const r of coreRoles) optionalSet.delete(r);
+
+  return { roles: coreRoles, optional: [...optionalSet] };
 }

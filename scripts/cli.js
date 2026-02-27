@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-import { createProject, getProject, listProjects, updateProjectStatus, setProjectTeam, setProjectPlan, addProjectTasks, setProjectReport, addDiscussionRound, addTaskReviews, updateTaskStatus, getExecutionProgress, addTaskMaterializationResult } from './lib/project-manager.js';
-import { recommendTeam, buildTeam, loadRoleCatalog, loadProjectTypes, getTeamSummary } from './lib/team-builder.js';
+import { createProject, getProject, listProjects, updateProjectStatus, setProjectTeam, setProjectPlan, addProjectTasks, setProjectReport, addDiscussionRound, addTaskReviews, updateTaskStatus, getExecutionProgress, addTaskMaterializationResult, saveTaskOutput, recordMetrics } from './lib/project-manager.js';
+import { initExecution, getNextExecutionStep, advanceExecution, getExecutionSummary } from './lib/execution-loop.js';
+import { recommendTeam, buildTeam, loadRoleCatalog, loadProjectTypes, getTeamSummary, getOptimizedTeam } from './lib/team-builder.js';
 import { buildDiscussionPrompt, buildPlanDocument, parseDiscussionOutput, buildSingleAgentDiscussionPrompt } from './lib/discussion-engine.js';
-import { buildTaskDistributionPrompt, buildExecutionPrompt, buildExecutionPlan, parseTaskList, buildExecutionPlanWithReviews, buildTddExecutionPrompt, isCodeTask } from './lib/task-distributor.js';
+import { buildTaskDistributionPrompt, buildExecutionPrompt, buildExecutionPlan, parseTaskList, buildExecutionPlanWithReviews, buildTddExecutionPrompt, isCodeTask, buildPhaseContext } from './lib/task-distributor.js';
 import {
   buildAgentAnalysisPrompt, buildSynthesisPrompt, buildReviewPrompt,
   parseReviewOutput, checkConvergence, groupAgentsForParallelDispatch,
@@ -23,12 +24,8 @@ import { generateReport } from './lib/report-generator.js';
 import {
   extractAgentPerformance, buildImprovementPrompt, parseImprovementSuggestions,
   saveAgentOverride, loadAgentOverride, listAgentOverrides, mergeAgentWithOverride,
+  saveProjectOverride, loadProjectOverride, listProjectOverrides, mergeAgentWithOverrides,
 } from './lib/agent-feedback.js';
-import {
-  createCustomRole, getCustomRole, listCustomRoles, updateCustomRole, deleteCustomRole,
-  addCustomVariant, getCustomVariants, updateCustomVariant, deleteCustomVariant,
-  setOverride, getOverrides, removeOverride, getAvailableVariants,
-} from './lib/persona-manager.js';
 import {
   listTemplates, loadTemplate, scaffold, getTemplatesForProjectType,
 } from './lib/template-scaffolder.js';
@@ -46,7 +43,9 @@ import {
   summarizeCrossModelResults,
 } from './lib/cross-model-strategy.js';
 import { verifyConnection } from './lib/llm-provider.js';
+import { buildDiscussionDispatchPlan, buildExecutionDispatchPlan } from './lib/dispatch-plan-generator.js';
 import { setupProjectInfra, appendToClaudeMd } from './lib/project-scaffolder.js';
+import { getCostSummary, buildMetricsDashboard } from './lib/project-metrics.js';
 import { checkGhStatus, createGithubRepo, gitInitAndPush, commitPhase } from './lib/github-manager.js';
 
 const [,, command, ...args] = process.argv;
@@ -128,6 +127,12 @@ const commands = {
     output(result);
   },
 
+  'optimized-team': async () => {
+    const data = await readStdin();
+    const result = await getOptimizedTeam(data.projectType, data.complexity);
+    output(result);
+  },
+
   'build-team': async () => {
     const data = await readStdin();
     const team = await buildTeam(data.roleIds, data.personalityChoices);
@@ -174,7 +179,7 @@ const commands = {
 
   'execution-prompt': async () => {
     const data = await readStdin();
-    const prompt = buildExecutionPrompt(data.task, data.teamMember);
+    const prompt = buildExecutionPrompt(data.task, data.teamMember, data.context || {});
     output({ prompt });
   },
 
@@ -190,82 +195,6 @@ const commands = {
     if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
     const report = generateReport(project);
     output({ report });
-  },
-
-  'create-custom-role': async () => {
-    const data = await readStdin();
-    const role = await createCustomRole(data);
-    output(role);
-  },
-
-  'get-custom-role': async () => {
-    const opts = parseArgs(args);
-    const role = await getCustomRole(opts.id);
-    output(role);
-  },
-
-  'list-custom-roles': async () => {
-    const roles = await listCustomRoles();
-    output(roles);
-  },
-
-  'update-custom-role': async () => {
-    const data = await readStdin();
-    const role = await updateCustomRole(data.id, data.patch);
-    output(role);
-  },
-
-  'delete-custom-role': async () => {
-    const data = await readStdin();
-    await deleteCustomRole(data.id);
-    output({ success: true, id: data.id });
-  },
-
-  'add-custom-variant': async () => {
-    const data = await readStdin();
-    const variant = await addCustomVariant(data.roleId, data.variant);
-    output(variant);
-  },
-
-  'get-custom-variants': async () => {
-    const opts = parseArgs(args);
-    const variants = await getCustomVariants(opts.role);
-    output(variants);
-  },
-
-  'update-custom-variant': async () => {
-    const data = await readStdin();
-    const variant = await updateCustomVariant(data.roleId, data.variantId, data.patch);
-    output(variant);
-  },
-
-  'delete-custom-variant': async () => {
-    const data = await readStdin();
-    await deleteCustomVariant(data.roleId, data.variantId);
-    output({ success: true, roleId: data.roleId, variantId: data.variantId });
-  },
-
-  'set-override': async () => {
-    const data = await readStdin();
-    await setOverride(data.roleId, data.variantId, data.patch);
-    output({ success: true });
-  },
-
-  'get-overrides': async () => {
-    const overrides = await getOverrides();
-    output(overrides);
-  },
-
-  'remove-override': async () => {
-    const data = await readStdin();
-    await removeOverride(data.roleId, data.variantId);
-    output({ success: true });
-  },
-
-  'available-variants': async () => {
-    const opts = parseArgs(args);
-    const variants = await getAvailableVariants(opts.role);
-    output(variants);
   },
 
   'list-templates': async () => {
@@ -472,6 +401,18 @@ const commands = {
     const data = await readStdin();
     const project = await updateTaskStatus(data.id, data.taskId, data.status);
     output(project);
+  },
+
+  'save-task-output': async () => {
+    const data = await readStdin();
+    const project = await saveTaskOutput(data.id, data.taskId, data.output, { maxLines: data.maxLines });
+    output(project);
+  },
+
+  'build-phase-context': async () => {
+    const data = await readStdin();
+    const context = buildPhaseContext(data.completedTasks, { maxLinesPerTask: data.maxLinesPerTask });
+    output({ phaseContext: context });
   },
 
   'analyze-efficiency': async () => {
@@ -701,6 +642,109 @@ const commands = {
     if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
     const progress = getExecutionProgress(project);
     output(progress);
+  },
+
+  // --- Execution loop commands ---
+
+  'init-execution': async () => {
+    const data = await readStdin();
+    const result = await initExecution(data.id, { mode: data.mode, resume: data.resume });
+    output(result);
+  },
+
+  'next-step': async () => {
+    const opts = parseArgs(args);
+    const project = await getProject(opts.id);
+    if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
+    output(getNextExecutionStep(project));
+  },
+
+  'advance-execution': async () => {
+    const data = await readStdin();
+    const result = await advanceExecution(data.id, data.stepResult);
+    output(result);
+  },
+
+  'execution-summary': async () => {
+    const opts = parseArgs(args);
+    const project = await getProject(opts.id);
+    if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
+    output(getExecutionSummary(project));
+  },
+
+  // --- Dispatch plan commands ---
+
+  'discussion-dispatch-plan': async () => {
+    const data = await readStdin();
+    const project = data.project || (data.id ? await getProject(data.id) : null);
+    if (!project) throw new Error('프로젝트 정보가 필요합니다');
+    const plan = buildDiscussionDispatchPlan(project, data.team || project.team, data.context || {});
+    output(plan);
+  },
+
+  'execution-dispatch-plan': async () => {
+    const data = await readStdin();
+    const project = data.project || (data.id ? await getProject(data.id) : null);
+    if (!project) throw new Error('프로젝트 정보가 필요합니다');
+    const plan = buildExecutionDispatchPlan(project, data.tasks || project.tasks, data.team || project.team, data.context || {});
+    output(plan);
+  },
+
+  'record-metrics': async () => {
+    const data = await readStdin();
+    if (!data.id) throw new Error('--id가 필요합니다');
+    const updated = await recordMetrics(data.id, data);
+    output({ success: true, metrics: updated.metrics });
+  },
+
+  'project-metrics': async () => {
+    const parsed = parseArgs(args);
+    if (!parsed.id) throw new Error('--id가 필요합니다');
+    const project = await getProject(parsed.id);
+    if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${parsed.id}`);
+    const dashboard = buildMetricsDashboard(project);
+    output({ dashboard, metrics: project.metrics || null });
+  },
+
+  'cost-summary': async () => {
+    const parsed = parseArgs(args);
+    if (!parsed.id) throw new Error('--id가 필요합니다');
+    const project = await getProject(parsed.id);
+    if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${parsed.id}`);
+    const summary = getCostSummary(project.metrics);
+    output(summary);
+  },
+
+  'save-project-override': async () => {
+    const data = await readStdin();
+    if (!data.projectDir) throw new Error('projectDir가 필요합니다');
+    if (!data.roleId) throw new Error('roleId가 필요합니다');
+    if (!data.content) throw new Error('content가 필요합니다');
+    await saveProjectOverride(data.projectDir, data.roleId, data.content);
+    output({ success: true });
+  },
+
+  'load-project-override': async () => {
+    const data = await readStdin();
+    if (!data.projectDir) throw new Error('projectDir가 필요합니다');
+    if (!data.roleId) throw new Error('roleId가 필요합니다');
+    const content = await loadProjectOverride(data.projectDir, data.roleId);
+    output({ content });
+  },
+
+  'list-project-overrides': async () => {
+    const data = await readStdin();
+    if (!data.projectDir) throw new Error('projectDir가 필요합니다');
+    const overrides = await listProjectOverrides(data.projectDir);
+    output(overrides);
+  },
+
+  'merge-all-overrides': async () => {
+    const data = await readStdin();
+    if (!data.baseMd && data.baseMd !== '') throw new Error('baseMd가 필요합니다');
+    const overrides = data.overrides || [];
+    const result = mergeAgentWithOverrides(data.baseMd, overrides);
+    output({ result });
   },
 };
 

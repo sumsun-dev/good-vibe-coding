@@ -159,10 +159,25 @@ export async function setupProjectInfra(options) {
   const gitignore = buildGitignore(techStack);
   const agents = buildProjectAgents(techStack);
 
+  const goodVibeReadme = `# .good-vibe/
+
+이 디렉토리는 팀 공유 설정을 저장합니다.
+
+## 구조
+
+- \`agent-overrides/\` — 프로젝트 레벨 에이전트 오버라이드 (.md 파일)
+
+## 사용법
+
+에이전트 오버라이드를 프로젝트 레벨에 저장하면 팀원 모두가 동일한 설정을 공유합니다.
+이 디렉토리를 git에 커밋하여 팀과 공유하세요.
+`;
+
   const filesToWrite = [
     { path: resolve(projectDir, 'CLAUDE.md'), content: claudeMd },
     { path: resolve(projectDir, 'README.md'), content: readme },
     { path: resolve(projectDir, '.gitignore'), content: gitignore },
+    { path: resolve(projectDir, '.good-vibe', 'README.md'), content: goodVibeReadme },
     ...agents.map(a => ({ path: resolve(projectDir, a.path), content: a.content })),
   ];
 

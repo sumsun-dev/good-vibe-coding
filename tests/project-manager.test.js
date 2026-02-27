@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdir, rm, readFile } from 'fs/promises';
 import { resolve } from 'path';
 import {
@@ -13,6 +13,14 @@ import {
   getProjectDir,
   generateProjectId,
   setBaseDir,
+  saveTaskOutput,
+  addTaskReviews,
+  updateTaskStatus,
+  addTaskMaterializationResult,
+  getExecutionProgress,
+  addDiscussionRound,
+  updateExecutionState,
+  recordMetrics,
 } from '../scripts/lib/project-manager.js';
 
 const TMP_DIR = resolve('.tmp-test-project-manager');
@@ -67,6 +75,17 @@ describe('createProject', () => {
   it('mode 옵션을 설정할 수 있다', async () => {
     const project = await createProject('앱', 'web-app', '설명', { mode: 'plan-execute' });
     expect(project.mode).toBe('plan-execute');
+  });
+
+  it('metrics 필드가 초기화된다', async () => {
+    const project = await createProject('메트릭스 테스트', 'cli-tool', '설명');
+    expect(project.metrics).toBeDefined();
+    expect(project.metrics.totalInputTokens).toBe(0);
+    expect(project.metrics.totalOutputTokens).toBe(0);
+    expect(project.metrics.totalCostUsd).toBe(0);
+    expect(project.metrics.agentCalls).toEqual([]);
+    expect(project.metrics.byRole).toEqual({});
+    expect(project.metrics.byProvider).toEqual({});
   });
 
   it('프로젝트 파일이 디스크에 저장된다', async () => {
@@ -194,5 +213,277 @@ describe('setProjectReport', () => {
     const report = '# 보고서\n완료';
     const updated = await setProjectReport(project.id, report);
     expect(updated.report).toBe(report);
+  });
+});
+
+describe('saveTaskOutput', () => {
+  it('태스크에 출력을 저장한다', async () => {
+    const project = await createProject('봇', 'telegram-bot', '설명');
+    await addProjectTasks(project.id, [
+      { id: 'task-1', title: 'API 설계', assignee: 'backend', status: 'pending' },
+    ]);
+    const updated = await saveTaskOutput(project.id, 'task-1', '결과 출력입니다');
+    expect(updated.tasks[0].taskOutput).toBe('결과 출력입니다');
+  });
+
+  it('maxLines 초과 시 truncate한다', async () => {
+    const project = await createProject('봇', 'telegram-bot', '설명');
+    await addProjectTasks(project.id, [
+      { id: 'task-1', title: 'API 설계', assignee: 'backend', status: 'pending' },
+    ]);
+    const longOutput = Array.from({ length: 10 }, (_, i) => `line ${i + 1}`).join('\n');
+    const updated = await saveTaskOutput(project.id, 'task-1', longOutput, { maxLines: 3 });
+    expect(updated.tasks[0].taskOutput).toContain('line 1');
+    expect(updated.tasks[0].taskOutput).toContain('line 3');
+    expect(updated.tasks[0].taskOutput).toContain('...(truncated)');
+    expect(updated.tasks[0].taskOutput).not.toContain('line 4');
+  });
+
+  it('존재하지 않는 프로젝트는 에러', async () => {
+    await expect(saveTaskOutput('no-exist', 'task-1', '출력')).rejects.toThrow('프로젝트를 찾을 수 없습니다');
+  });
+
+  it('존재하지 않는 태스크는 에러', async () => {
+    const project = await createProject('봇', 'telegram-bot', '설명');
+    await expect(saveTaskOutput(project.id, 'no-task', '출력')).rejects.toThrow('태스크를 찾을 수 없습니다');
+  });
+
+  it('null/undefined taskOutput은 빈 문자열로 저장된다', async () => {
+    const project = await createProject('봇', 'telegram-bot', '설명');
+    await addProjectTasks(project.id, [
+      { id: 'task-1', title: 'API 설계', assignee: 'backend', status: 'pending' },
+    ]);
+    const updated = await saveTaskOutput(project.id, 'task-1', null);
+    expect(updated.tasks[0].taskOutput).toBe('');
+  });
+});
+
+describe('addTaskReviews', () => {
+  it('태스크에 리뷰를 추가한다', async () => {
+    const project = await createProject('봇', 'telegram-bot', '설명');
+    await addProjectTasks(project.id, [
+      { id: 'task-1', title: 'API 설계', assignee: 'backend', status: 'pending' },
+    ]);
+    const reviews = [{ verdict: 'approve', issues: [] }];
+    const updated = await addTaskReviews(project.id, 'task-1', reviews);
+    expect(updated.tasks[0].reviews).toHaveLength(1);
+    expect(updated.tasks[0].reviews[0].verdict).toBe('approve');
+  });
+
+  it('기존 리뷰에 추가한다', async () => {
+    const project = await createProject('봇', 'telegram-bot', '설명');
+    await addProjectTasks(project.id, [
+      { id: 'task-1', title: 'API 설계', assignee: 'backend', status: 'pending' },
+    ]);
+    await addTaskReviews(project.id, 'task-1', [{ verdict: 'approve', issues: [] }]);
+    const updated = await addTaskReviews(project.id, 'task-1', [{ verdict: 'request-changes', issues: [{ severity: 'critical' }] }]);
+    expect(updated.tasks[0].reviews).toHaveLength(2);
+  });
+
+  it('존재하지 않는 프로젝트는 에러', async () => {
+    await expect(addTaskReviews('no-exist', 'task-1', [])).rejects.toThrow('프로젝트를 찾을 수 없습니다');
+  });
+
+  it('존재하지 않는 태스크는 에러', async () => {
+    const project = await createProject('봇', 'telegram-bot', '설명');
+    await expect(addTaskReviews(project.id, 'no-task', [])).rejects.toThrow('태스크를 찾을 수 없습니다');
+  });
+});
+
+describe('updateTaskStatus', () => {
+  it('태스크 상태를 업데이트한다', async () => {
+    const project = await createProject('봇', 'telegram-bot', '설명');
+    await addProjectTasks(project.id, [
+      { id: 'task-1', title: 'API 설계', assignee: 'backend', status: 'pending' },
+    ]);
+    const updated = await updateTaskStatus(project.id, 'task-1', 'completed');
+    expect(updated.tasks[0].status).toBe('completed');
+  });
+
+  it('존재하지 않는 프로젝트는 에러', async () => {
+    await expect(updateTaskStatus('no-exist', 'task-1', 'completed')).rejects.toThrow('프로젝트를 찾을 수 없습니다');
+  });
+
+  it('존재하지 않는 태스크는 에러', async () => {
+    const project = await createProject('봇', 'telegram-bot', '설명');
+    await expect(updateTaskStatus(project.id, 'no-task', 'completed')).rejects.toThrow('태스크를 찾을 수 없습니다');
+  });
+});
+
+describe('addTaskMaterializationResult', () => {
+  it('태스크에 materialization 결과를 추가한다', async () => {
+    const project = await createProject('봇', 'telegram-bot', '설명');
+    await addProjectTasks(project.id, [
+      { id: 'task-1', title: 'API 설계', assignee: 'backend', status: 'pending' },
+    ]);
+    const materializeResult = { totalBlocks: 2, materializedCount: 2 };
+    const updated = await addTaskMaterializationResult(project.id, 'task-1', materializeResult);
+    expect(updated.tasks[0].materialization).toHaveLength(1);
+    expect(updated.tasks[0].materialization[0].totalBlocks).toBe(2);
+    expect(updated.tasks[0].materialization[0].timestamp).toBeTruthy();
+  });
+
+  it('여러 번 추가할 수 있다', async () => {
+    const project = await createProject('봇', 'telegram-bot', '설명');
+    await addProjectTasks(project.id, [
+      { id: 'task-1', title: 'API 설계', assignee: 'backend', status: 'pending' },
+    ]);
+    await addTaskMaterializationResult(project.id, 'task-1', { totalBlocks: 1 });
+    const updated = await addTaskMaterializationResult(project.id, 'task-1', { totalBlocks: 3 });
+    expect(updated.tasks[0].materialization).toHaveLength(2);
+  });
+
+  it('존재하지 않는 프로젝트는 에러', async () => {
+    await expect(addTaskMaterializationResult('no-exist', 'task-1', {})).rejects.toThrow('프로젝트를 찾을 수 없습니다');
+  });
+
+  it('존재하지 않는 태스크는 에러', async () => {
+    const project = await createProject('봇', 'telegram-bot', '설명');
+    await expect(addTaskMaterializationResult(project.id, 'no-task', {})).rejects.toThrow('태스크를 찾을 수 없습니다');
+  });
+});
+
+describe('getExecutionProgress', () => {
+  it('빈 프로젝트는 0%를 반환한다', () => {
+    const progress = getExecutionProgress({ tasks: [] });
+    expect(progress.totalTasks).toBe(0);
+    expect(progress.completedTasks).toBe(0);
+    expect(progress.percentage).toBe(0);
+  });
+
+  it('모든 태스크 완료 시 100%를 반환한다', () => {
+    const progress = getExecutionProgress({
+      tasks: [
+        { id: 't1', status: 'completed', phase: 1 },
+        { id: 't2', status: 'completed', phase: 1 },
+      ],
+    });
+    expect(progress.totalTasks).toBe(2);
+    expect(progress.completedTasks).toBe(2);
+    expect(progress.percentage).toBe(100);
+  });
+
+  it('부분 완료 시 올바른 퍼센트를 반환한다', () => {
+    const progress = getExecutionProgress({
+      tasks: [
+        { id: 't1', status: 'completed', phase: 1 },
+        { id: 't2', status: 'pending', phase: 2 },
+        { id: 't3', status: 'pending', phase: 2 },
+        { id: 't4', status: 'pending', phase: 3 },
+      ],
+    });
+    expect(progress.totalTasks).toBe(4);
+    expect(progress.completedTasks).toBe(1);
+    expect(progress.percentage).toBe(25);
+    expect(progress.currentPhase).toBe(2);
+    expect(progress.totalPhases).toBe(3);
+  });
+
+  it('phase가 없는 태스크도 처리한다', () => {
+    const progress = getExecutionProgress({
+      tasks: [
+        { id: 't1', status: 'completed' },
+        { id: 't2', status: 'pending' },
+      ],
+    });
+    expect(progress.totalTasks).toBe(2);
+    expect(progress.completedTasks).toBe(1);
+    expect(progress.percentage).toBe(50);
+    expect(progress.totalPhases).toBe(1);
+  });
+
+  it('tasks가 undefined이면 0을 반환한다', () => {
+    const progress = getExecutionProgress({});
+    expect(progress.totalTasks).toBe(0);
+    expect(progress.percentage).toBe(0);
+  });
+
+  it('currentPhase가 올바르게 계산된다', () => {
+    const progress = getExecutionProgress({
+      tasks: [
+        { id: 't1', status: 'completed', phase: 1 },
+        { id: 't2', status: 'completed', phase: 1 },
+        { id: 't3', status: 'pending', phase: 2 },
+      ],
+    });
+    expect(progress.currentPhase).toBe(2);
+  });
+});
+
+describe('saveProject concurrency', () => {
+  it('동시 쓰기가 직렬화되어 마지막 값이 보존된다', async () => {
+    const project = await createProject('봇', 'telegram-bot', '설명');
+    const updates = Array.from({ length: 5 }, (_, i) =>
+      setProjectPlan(project.id, `plan-${i}`)
+    );
+    const results = await Promise.all(updates);
+    const final = await getProject(project.id);
+    // All promises should resolve without error
+    expect(results).toHaveLength(5);
+    // The last write wins (serialized order matches dispatch order)
+    expect(final.discussion.planDocument).toBe('plan-4');
+  });
+
+  it('쓰기 실패 후 다음 쓰기가 정상 동작한다', async () => {
+    const project = await createProject('봇', 'telegram-bot', '설명');
+    // Force a failure by updating a non-existent project
+    await expect(setProjectPlan('no-exist-id', 'plan')).rejects.toThrow();
+    // Next write to the valid project should still work
+    const updated = await setProjectPlan(project.id, '정상 기획서');
+    expect(updated.discussion.planDocument).toBe('정상 기획서');
+  });
+});
+
+describe('addDiscussionRound', () => {
+  it('토론 라운드를 추가한다', async () => {
+    const project = await createProject('봇', 'telegram-bot', '설명');
+    const roundData = { round: 1, agentOutputs: [], synthesis: '기획서', reviews: [], converged: false };
+    const updated = await addDiscussionRound(project.id, roundData);
+    expect(updated.discussion.rounds).toHaveLength(1);
+    expect(updated.discussion.planDocument).toBe('기획서');
+  });
+
+  it('여러 라운드를 추가할 수 있다', async () => {
+    const project = await createProject('봇', 'telegram-bot', '설명');
+    await addDiscussionRound(project.id, { round: 1, synthesis: 'v1' });
+    const updated = await addDiscussionRound(project.id, { round: 2, synthesis: 'v2' });
+    expect(updated.discussion.rounds).toHaveLength(2);
+    expect(updated.discussion.planDocument).toBe('v2');
+  });
+});
+
+// --- recordMetrics ---
+
+describe('recordMetrics', () => {
+  it('에이전트 호출 이벤트를 기록한다', async () => {
+    const project = await createProject('메트릭스', 'cli-tool', '설명');
+    const updated = await recordMetrics(project.id, {
+      type: 'agent-call',
+      roleId: 'cto',
+      provider: 'claude',
+      inputTokens: 1000,
+      outputTokens: 500,
+    });
+    expect(updated.metrics.totalInputTokens).toBe(1000);
+    expect(updated.metrics.totalOutputTokens).toBe(500);
+    expect(updated.metrics.totalCostUsd).toBeGreaterThan(0);
+    expect(updated.metrics.byRole.cto.callCount).toBe(1);
+  });
+
+  it('페이즈 완료 이벤트를 기록한다', async () => {
+    const project = await createProject('메트릭스2', 'cli-tool', '설명');
+    const updated = await recordMetrics(project.id, {
+      type: 'phase-completion',
+      phase: 1,
+      durationMs: 5000,
+      taskCount: 3,
+    });
+    expect(updated.metrics.phaseMetrics['phase-1']).toBeDefined();
+    expect(updated.metrics.phaseMetrics['phase-1'].taskCount).toBe(3);
+  });
+
+  it('존재하지 않는 프로젝트는 에러를 던진다', async () => {
+    await expect(recordMetrics('nonexistent', { type: 'agent-call' }))
+      .rejects.toThrow('프로젝트를 찾을 수 없습니다');
   });
 });
