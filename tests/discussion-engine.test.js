@@ -3,6 +3,7 @@ import {
   buildDiscussionPrompt,
   parseDiscussionOutput,
   buildPlanDocument,
+  buildSingleAgentDiscussionPrompt,
 } from '../scripts/lib/discussion-engine.js';
 
 const SAMPLE_PROJECT = {
@@ -121,5 +122,52 @@ describe('buildPlanDocument', () => {
     for (const section of sections) {
       expect(doc).toContain(section);
     }
+  });
+});
+
+describe('buildSingleAgentDiscussionPrompt - tier cascade', () => {
+  it('priorTierOutputs의 비어있지 않은 첫 5줄을 포함한다', () => {
+    const teamMember = SAMPLE_TEAM[0]; // CTO
+    const prompt = buildSingleAgentDiscussionPrompt(SAMPLE_PROJECT, teamMember, {
+      round: 1,
+      priorTierOutputs: [{
+        roleId: 'backend',
+        role: 'Backend Developer',
+        analysis: 'line1\nline2\nline3\nline4\nline5\nline6\nline7',
+      }],
+    });
+    expect(prompt).toContain('line1');
+    expect(prompt).toContain('line5');
+    expect(prompt).not.toContain('line6');
+    expect(prompt).toContain('이전 tier 팀원 분석 요약');
+  });
+
+  it('빈 줄을 필터링하고 유효한 줄만 포함한다', () => {
+    const teamMember = SAMPLE_TEAM[0];
+    const prompt = buildSingleAgentDiscussionPrompt(SAMPLE_PROJECT, teamMember, {
+      round: 1,
+      priorTierOutputs: [{
+        roleId: 'qa',
+        role: 'QA Engineer',
+        analysis: 'first\n\n\nsecond\n\nthird',
+      }],
+    });
+    expect(prompt).toContain('first');
+    expect(prompt).toContain('second');
+    expect(prompt).toContain('third');
+  });
+
+  it('null/undefined analysis에서 크래시하지 않는다', () => {
+    const teamMember = SAMPLE_TEAM[0];
+    const prompt = buildSingleAgentDiscussionPrompt(SAMPLE_PROJECT, teamMember, {
+      round: 1,
+      priorTierOutputs: [
+        { roleId: 'backend', role: 'Backend Developer', analysis: null },
+        { roleId: 'qa', role: 'QA Engineer', analysis: undefined },
+        { roleId: 'cto', role: 'CTO', analysis: '정상 분석' },
+      ],
+    });
+    expect(prompt).toContain('이전 tier 팀원 분석 요약');
+    expect(prompt).toContain('정상 분석');
   });
 });

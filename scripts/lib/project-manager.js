@@ -3,9 +3,10 @@ import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { ensureDir, fileExists } from './file-writer.js';
 import { createMetricsSnapshot, recordAgentCall, recordPhaseCompletion } from './project-metrics.js';
+import { projectsDir } from './app-paths.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const DEFAULT_BASE_DIR = resolve(process.env.HOME || process.env.USERPROFILE, '.claude', 'good-vibe', 'projects');
+const DEFAULT_BASE_DIR = projectsDir();
 
 let baseDir = DEFAULT_BASE_DIR;
 

@@ -7,6 +7,8 @@
  * fallback: workDomains → reviewDomains → skills.
  */
 
+import { parseJsonObject } from './json-parser.js';
+
 /** 범용 리뷰 역할: 어떤 작업이든 리뷰 가치가 높은 역할 */
 const UNIVERSAL_REVIEWER_ROLES = ['qa', 'security', 'cto'];
 
@@ -112,8 +114,8 @@ export function parseTaskReview(rawReview) {
     return { verdict: 'request-changes', issues: [] };
   }
 
-  const parseJson = (str) => {
-    const parsed = JSON.parse(str);
+  const parsed = parseJsonObject(rawReview);
+  if (parsed) {
     return {
       verdict: parsed.verdict === 'approve' ? 'approve' : 'request-changes',
       issues: Array.isArray(parsed.issues)
@@ -124,33 +126,6 @@ export function parseTaskReview(rawReview) {
           }))
         : [],
     };
-  };
-
-  // JSON 직접 파싱
-  try {
-    return parseJson(rawReview.trim());
-  } catch {
-    // fallthrough
-  }
-
-  // ```json ... ``` 블록 추출
-  const jsonBlockMatch = rawReview.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
-  if (jsonBlockMatch) {
-    try {
-      return parseJson(jsonBlockMatch[1].trim());
-    } catch {
-      // fallthrough
-    }
-  }
-
-  // { ... } 패턴 추출
-  const objMatch = rawReview.match(/\{[\s\S]*\}/);
-  if (objMatch) {
-    try {
-      return parseJson(objMatch[0]);
-    } catch {
-      // fallthrough
-    }
   }
 
   return { verdict: 'request-changes', issues: [] };

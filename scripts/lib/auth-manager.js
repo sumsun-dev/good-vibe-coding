@@ -9,9 +9,9 @@
 
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { resolve } from 'path';
-import { homedir } from 'os';
+import { authDir as getAuthDir } from './app-paths.js';
 
-const DEFAULT_AUTH_DIR = resolve(homedir(), '.claude', 'good-vibe');
+const DEFAULT_AUTH_DIR = getAuthDir();
 const DEFAULT_PROVIDERS_DIR = DEFAULT_AUTH_DIR;
 
 let authDir = DEFAULT_AUTH_DIR;

@@ -175,15 +175,15 @@ describe('preset-loader', () => {
 
   describe('validatePreset', () => {
     it('name이 누락되면 에러를 발생시킨다', () => {
-      expect(() => validatePreset({ displayName: 'Test' }, 'stacks')).toThrow('name 필드');
+      expect(() => validatePreset({ displayName: 'Test' }, 'stacks')).toThrow('프리셋 name');
     });
 
     it('displayName이 누락되면 에러를 발생시킨다', () => {
-      expect(() => validatePreset({ name: 'test' }, 'stacks')).toThrow('displayName 필드');
+      expect(() => validatePreset({ name: 'test' }, 'stacks')).toThrow('프리셋 displayName');
     });
 
     it('roles 카테고리에서 category가 누락되면 에러를 발생시킨다', () => {
-      expect(() => validatePreset({ name: 'test', displayName: 'Test' }, 'roles')).toThrow('category 필드');
+      expect(() => validatePreset({ name: 'test', displayName: 'Test' }, 'roles')).toThrow('역할 프리셋 category');
     });
 
     it('stacks 카테고리는 category가 불필요하므로 통과한다', () => {

@@ -2,6 +2,8 @@
  * task-distributor — 작업 분배 및 에이전트 실행 프롬프트 생성 모듈
  */
 
+import { parseJsonArray } from './json-parser.js';
+
 /**
  * 기획서를 분석하여 작업 목록을 추출하는 프롬프트를 생성한다.
  * @param {object} project - 프로젝트 정보
@@ -48,48 +50,19 @@ JSON 배열로 출력하세요. 각 작업 객체:
  * @returns {Array<object>} 작업 배열
  */
 export function parseTaskList(rawOutput) {
-  if (!rawOutput || rawOutput.trim() === '') return [];
-
-  // JSON 직접 파싱 시도
-  try {
-    const parsed = JSON.parse(rawOutput.trim());
-    if (Array.isArray(parsed)) return parsed;
-  } catch {
-    // JSON 블록 추출 시도
-  }
-
-  // ```json ... ``` 블록 추출
-  const jsonBlockMatch = rawOutput.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
-  if (jsonBlockMatch) {
-    try {
-      const parsed = JSON.parse(jsonBlockMatch[1].trim());
-      if (Array.isArray(parsed)) return parsed;
-    } catch {
-      // 파싱 실패
-    }
-  }
-
-  // [ ... ] 패턴 추출
-  const arrayMatch = rawOutput.match(/\[[\s\S]*\]/);
-  if (arrayMatch) {
-    try {
-      const parsed = JSON.parse(arrayMatch[0]);
-      if (Array.isArray(parsed)) return parsed;
-    } catch {
-      // 파싱 실패
-    }
-  }
-
-  return [];
+  return parseJsonArray(rawOutput);
 }
 
 /**
  * 개별 작업 실행 프롬프트를 생성한다.
  * @param {object} task - 작업 객체
  * @param {object} teamMember - 담당 팀원 정보
+ * @param {object} [context={}] - 추가 컨텍스트
+ * @param {string} [context.planExcerpt] - 기획 결정사항
+ * @param {string} [context.phaseContext] - 이전 Phase 결과 요약
  * @returns {string} 실행 프롬프트
  */
-export function buildExecutionPrompt(task, teamMember) {
+export function buildExecutionPrompt(task, teamMember, context = {}) {
   let prompt = `당신은 ${teamMember.emoji} **${teamMember.displayName}** (${teamMember.role})입니다.
 
 ## 당신의 성격
@@ -105,6 +78,14 @@ export function buildExecutionPrompt(task, teamMember) {
 ## 지시사항
 위 작업을 당신의 역할과 성격에 맞게 수행하세요.
 결과를 명확하게 보고하세요.`;
+
+  if (context.planExcerpt) {
+    prompt += `\n\n## 기획 결정사항\n${context.planExcerpt}`;
+  }
+
+  if (context.phaseContext) {
+    prompt += `\n\n## 이전 Phase 결과\n${context.phaseContext}`;
+  }
 
   return prompt;
 }
@@ -205,9 +186,11 @@ export function isCodeTask(task) {
  * RED → GREEN → REFACTOR 사이클을 지시한다.
  * @param {object} task - 태스크 객체
  * @param {object} teamMember - 담당 팀원 정보
- * @param {object} context - 추가 컨텍스트
+ * @param {object} [context={}] - 추가 컨텍스트
  * @param {string} [context.projectType] - 프로젝트 유형
  * @param {string} [context.testFramework] - 테스트 프레임워크 (기본: 'vitest')
+ * @param {string} [context.planExcerpt] - 기획 결정사항
+ * @param {string} [context.phaseContext] - 이전 Phase 결과 요약
  * @returns {string} TDD 실행 프롬프트
  */
 export function buildTddExecutionPrompt(task, teamMember, context = {}) {
@@ -252,5 +235,37 @@ export function buildTddExecutionPrompt(task, teamMember, context = {}) {
     prompt += `\n\n## 프로젝트 힌트\n- 프로젝트 유형: ${context.projectType}`;
   }
 
+  if (context.planExcerpt) {
+    prompt += `\n\n## 기획 결정사항\n${context.planExcerpt}`;
+  }
+
+  if (context.phaseContext) {
+    prompt += `\n\n## 이전 Phase 결과\n${context.phaseContext}`;
+  }
+
   return prompt;
+}
+
+/**
+ * 완료된 태스크 목록에서 Phase 컨텍스트를 생성한다.
+ * 다음 Phase 에이전트에게 이전 결과를 전달하기 위한 요약 텍스트.
+ * @param {Array<object>} completedTasks - taskOutput이 포함된 완료 태스크 배열
+ * @param {object} options - 옵션
+ * @param {number} [options.maxLinesPerTask=15] - 태스크당 최대 줄 수
+ * @returns {string} Phase 컨텍스트 텍스트
+ */
+export function buildPhaseContext(completedTasks, options = {}) {
+  if (!completedTasks || completedTasks.length === 0) return '';
+  const maxLines = options.maxLinesPerTask || 15;
+
+  return completedTasks
+    .filter(t => t.taskOutput && t.taskOutput.trim())
+    .map(t => {
+      const lines = t.taskOutput.split('\n').filter(l => l.trim());
+      const truncated = lines.length > maxLines
+        ? lines.slice(0, maxLines).join('\n') + '\n...(truncated)'
+        : lines.join('\n');
+      return `### ${t.id}: ${t.title} (${t.assignee})\n${truncated}`;
+    })
+    .join('\n\n');
 }

@@ -116,7 +116,7 @@ AskUserQuestion 도구를 사용하여 역할을 묻습니다:
 
 **진행 방식:**
 1. 역할 프리셋에 포함된 에이전트 목록을 가져옵니다
-2. `personality-builder`의 `getPersonalityVariants()`로 각 에이전트의 변형을 조회합니다
+2. `team-personalities.json`에서 각 에이전트의 변형을 조회합니다
 3. AskUserQuestion으로 각 에이전트의 스타일을 묻습니다:
 
 예시 (개발자 역할):
@@ -145,7 +145,7 @@ options:
 ### Step 5: 설정 생성 확인
 생성할 파일 목록을 보여주고 확인을 받습니다.
 
-확인 후 `config-generator` 스킬을 사용하여 설정 파일을 생성합니다.
+확인 후 설정 파일을 직접 생성합니다 (CLAUDE.md, rules 등).
 
 완료 메시지:
 ```

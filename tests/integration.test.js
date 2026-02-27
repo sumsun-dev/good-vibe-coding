@@ -10,26 +10,19 @@ import { buildDiscussionPrompt, buildPlanDocument } from '../scripts/lib/discuss
 import { buildTaskDistributionPrompt, buildExecutionPlan } from '../scripts/lib/task-distributor.js';
 import { generateReport, generateProjectStats } from '../scripts/lib/report-generator.js';
 import {
-  setCustomPersonaDir, createCustomRole, addCustomVariant, setOverride, getAvailableVariants,
-} from '../scripts/lib/persona-manager.js';
-import {
   scaffold, loadTemplate, listTemplates, validateTemplate, setCustomTemplatesDir,
 } from '../scripts/lib/template-scaffolder.js';
 
 const TMP_DIR = resolve('.tmp-test-integration');
-const PERSONA_DIR = resolve('.tmp-test-integration-persona');
 
 beforeEach(async () => {
   await mkdir(TMP_DIR, { recursive: true });
-  await mkdir(PERSONA_DIR, { recursive: true });
   setBaseDir(TMP_DIR);
-  setCustomPersonaDir(PERSONA_DIR);
   clearCaches();
 });
 
 afterEach(async () => {
   await rm(TMP_DIR, { recursive: true, force: true });
-  await rm(PERSONA_DIR, { recursive: true, force: true });
 });
 
 describe('통합 테스트: 전체 프로젝트 플로우', () => {
@@ -121,109 +114,6 @@ describe('통합 테스트: 전체 프로젝트 플로우', () => {
     expect(plan.phases.length).toBe(2);
     expect(plan.phases[0].tasks.length).toBe(2);
     expect(plan.dependencies['task-3']).toEqual(['task-1', 'task-2']);
-  });
-
-  it('커스텀 페르소나: 역할 생성 → 변형 추가 → 팀 빌드 → 프로젝트 생성', async () => {
-    // 1. 커스텀 역할 생성
-    await createCustomRole({
-      id: 'ai-engineer',
-      displayName: 'AI Engineer',
-      emoji: '🤖',
-      category: 'engineering',
-      description: 'AI 파이프라인 구축',
-      defaultTools: ['Read', 'Grep', 'Glob', 'Bash'],
-      model: 'sonnet',
-      discussionPriority: 5,
-      skills: ['llm', 'rag'],
-    });
-
-    // 2. 변형 추가
-    await addCustomVariant('ai-engineer', {
-      id: 'creative-ai',
-      name: '창의적 AI 빌더',
-      emoji: '🤖',
-      defaultName: '재현',
-      trait: '창의적이고 실험적인',
-      description: 'AI 파이프라인을 창의적으로 구축합니다',
-      speakingStyle: '자유롭고 실험적인 스타일',
-      greeting: 'AI로 새로운 걸 만들어봅시다!',
-    });
-
-    // 3. 내장 역할에 커스텀 오버라이드
-    await setOverride('cto', 'visionary', { trait: '전략적이지만 실행력도 갖춘' });
-
-    // 4. 팀 빌드 (커스텀 + 내장)
-    clearCaches();
-    const team = await buildTeam(['cto', 'ai-engineer', 'qa']);
-    expect(team.length).toBe(3);
-    expect(team[0].trait).toBe('전략적이지만 실행력도 갖춘');
-    expect(team[1].roleId).toBe('ai-engineer');
-    expect(team[1].displayName).toBe('재현');
-    expect(team[2].roleId).toBe('qa');
-
-    // 5. 프로젝트 생성 + 팀 설정
-    const project = await createProject('AI 챗봇', 'web-app', 'RAG 기반 챗봇');
-    const teamData = team.map(m => ({
-      roleId: m.roleId, personalityVariant: m.personalityVariant,
-      displayName: m.displayName, emoji: m.emoji,
-    }));
-    await setProjectTeam(project.id, teamData);
-
-    // 6. 토론 프롬프트에 커스텀 역할 포함
-    const updatedProject = await getProject(project.id);
-    const prompt = buildDiscussionPrompt(updatedProject, team, 1);
-    expect(prompt).toContain('AI 챗봇');
-    expect(prompt).toContain('재현');
-  });
-
-  it('커스텀 페르소나: 내장 역할에 변형 추가 후 선택', async () => {
-    // 1. CTO에 스타트업 변형 추가
-    await addCustomVariant('cto', {
-      id: 'startup-cto',
-      name: '스타트업 CTO',
-      emoji: '🏗️',
-      defaultName: '태호',
-      trait: '빠른 실행력의',
-      description: '스타트업 환경에서 빠르게 결정합니다',
-      speakingStyle: '간결하고 빠른 스타일',
-      greeting: '빠르게 갑시다!',
-    });
-
-    // 2. 선택 가능한 variant 확인
-    const variants = await getAvailableVariants('cto');
-    expect(variants.length).toBe(3); // visionary + pragmatic + startup-cto
-
-    // 3. 새 variant로 팀 빌드
-    clearCaches();
-    const team = await buildTeam(['cto'], { cto: 'startup-cto' });
-    expect(team[0].personalityVariant).toBe('startup-cto');
-    expect(team[0].displayName).toBe('태호');
-    expect(team[0].greeting).toBe('빠르게 갑시다!');
-  });
-
-  it('커스텀 페르소나: 오버라이드 적용 후 보고서 생성', async () => {
-    await setOverride('backend', 'architect', { trait: '체계적이면서도 빠른' });
-    clearCaches();
-
-    const project = await createProject('API 서버', 'api-server', 'REST API');
-    const team = await buildTeam(['cto', 'backend', 'qa']);
-    expect(team[1].trait).toBe('체계적이면서도 빠른');
-
-    const teamData = team.map(m => ({
-      roleId: m.roleId, displayName: m.displayName, emoji: m.emoji, role: m.role,
-    }));
-    await setProjectTeam(project.id, teamData);
-
-    const tasks = [
-      { id: 'task-1', title: 'API 설계', assignee: 'backend', status: 'completed' },
-    ];
-    await addProjectTasks(project.id, tasks);
-
-    const finalProject = await getProject(project.id);
-    finalProject.team = teamData;
-    const report = generateReport(finalProject);
-    expect(report).toContain('API 서버');
-    expect(report).toContain('도윤');
   });
 
   it('템플릿 스캐폴딩: next-app 전체 스캐폴딩 검증', async () => {

@@ -26,7 +26,7 @@
    📋          🔍              🔴🟢        💻          ✅          👀
 ```
 - 1단계: Plan Mode로 구현 계획 → 사용자 승인
-- 2단계: `/side-impact`으로 영향 범위 분석
+- 2단계: 영향 범위 분석 (변경 대상 파일, 의존성 파악)
 - 3단계: 테스트 먼저 작성 (RED → GREEN → REFACTOR)
 - 4단계: 코드 구현 + 리팩토링
 - 5단계: build, lint, typecheck, test 전체 통과

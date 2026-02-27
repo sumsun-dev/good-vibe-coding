@@ -8,11 +8,11 @@ import { readFile, writeFile, readdir, stat } from 'fs/promises';
 import { resolve } from 'path';
 import { ensureDir, fileExists } from './file-writer.js';
 import { parseJsonArray } from './json-parser.js';
+import { validateRoleId } from './validators.js';
+import { agentOverridesDir } from './app-paths.js';
+import { buildSectioned, toMarkdownList } from './prompt-builder.js';
 
-const DEFAULT_OVERRIDES_DIR = resolve(
-  process.env.HOME || process.env.USERPROFILE,
-  '.claude', 'good-vibe', 'agent-overrides'
-);
+const DEFAULT_OVERRIDES_DIR = agentOverridesDir();
 let overridesDir = DEFAULT_OVERRIDES_DIR;
 
 /**
@@ -21,21 +21,6 @@ let overridesDir = DEFAULT_OVERRIDES_DIR;
  */
 export function setOverridesDir(dir) {
   overridesDir = dir;
-}
-
-/**
- * roleId를 검증한다 (경로 순회 방지).
- * @param {string} roleId - 역할 ID
- * @returns {string} 검증된 roleId
- */
-function validateRoleId(roleId) {
-  if (!roleId || typeof roleId !== 'string') {
-    throw new Error('roleId는 비어있지 않은 문자열이어야 합니다');
-  }
-  if (/[\/\\]/.test(roleId) || roleId.includes('..')) {
-    throw new Error(`유효하지 않은 roleId: ${roleId}`);
-  }
-  return roleId;
 }
 
 /**
@@ -77,44 +62,28 @@ export function extractAgentPerformance(project) {
  * @returns {string} 개선 분석 프롬프트
  */
 export function buildImprovementPrompt(roleId, performance, currentAgentMd) {
-  const taskSummary = performance.tasks.length > 0
-    ? performance.tasks.map(t => `- ${t.title} (${t.status})`).join('\n')
-    : '- (담당 작업 없음)';
+  const taskList = toMarkdownList(
+    performance.tasks,
+    t => `${t.title} (${t.status})`,
+  ).replace('- (없음)', '- (담당 작업 없음)');
 
-  const issueSummary = performance.issues.length > 0
-    ? performance.issues.map(i => `- [${i.severity}] ${i.description}`).join('\n')
-    : '- (이슈 없음)';
+  const issueList = toMarkdownList(
+    performance.issues,
+    i => `[${i.severity}] ${i.description}`,
+  ).replace('- (없음)', '- (이슈 없음)');
 
-  const reviewSummary = performance.reviews.length > 0
-    ? performance.reviews.map(r => {
-        const verdict = r.approved ? '승인' : '수정 요청';
-        const feedback = r.feedback || '';
-        return `- ${verdict}: ${feedback}`;
-      }).join('\n')
-    : '- (리뷰 없음)';
+  const reviewList = toMarkdownList(
+    performance.reviews,
+    r => `${r.approved ? '승인' : '수정 요청'}: ${r.feedback || ''}`,
+  ).replace('- (없음)', '- (리뷰 없음)');
 
-  return `다음은 "${roleId}" 에이전트의 프로젝트 수행 결과입니다.
-이 결과를 바탕으로 에이전트의 .md 파일을 어떻게 개선하면 좋을지 제안해주세요.
+  const intro = `다음은 "${roleId}" 에이전트의 프로젝트 수행 결과입니다.
+이 결과를 바탕으로 에이전트의 .md 파일을 어떻게 개선하면 좋을지 제안해주세요.`;
 
-## 현재 에이전트 설정
-\`\`\`markdown
-${currentAgentMd}
-\`\`\`
-
-## 프로젝트 수행 결과
-
-### 담당 작업
-${taskSummary}
-
-### 리뷰 결과
-${reviewSummary}
-
-### 발견된 이슈
-${issueSummary}
-
-## 제안 형식
-
-반드시 아래 JSON 배열 형식으로 응답하세요:
+  return buildSectioned(intro, [
+    { title: '현재 에이전트 설정', content: `\`\`\`markdown\n${currentAgentMd}\n\`\`\`` },
+    { title: '프로젝트 수행 결과', content: `### 담당 작업\n${taskList}\n\n### 리뷰 결과\n${reviewList}\n\n### 발견된 이슈\n${issueList}` },
+    { title: '제안 형식', content: `반드시 아래 JSON 배열 형식으로 응답하세요:
 \`\`\`json
 [
   {
@@ -129,7 +98,8 @@ ${issueSummary}
 규칙:
 - 프로젝트 결과에서 드러난 구체적 문제점만 다루세요
 - 이슈가 없다면 빈 배열을 반환하세요
-- 제안은 에이전트의 행동을 직접 개선하는 것이어야 합니다`;
+- 제안은 에이전트의 행동을 직접 개선하는 것이어야 합니다` },
+  ]);
 }
 
 /**

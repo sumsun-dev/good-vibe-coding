@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { vi, describe, it, expect, afterEach } from 'vitest';
 import { mkdtempSync, existsSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -283,6 +283,20 @@ describe('materializeCode', () => {
     expect(file).toHaveProperty('backupPath');
     expect(file).toHaveProperty('language');
     expect(file).toHaveProperty('type');
+  });
+
+  it('deeply nested path traversal을 방지한다', async () => {
+    const dir = createTempDir();
+    const maliciousOutput = '```javascript ../../../../../../tmp/evil.js\nconst hack = true;\n```';
+    const result = await materializeCode(maliciousOutput, dir);
+    expect(result.failedCount).toBe(1);
+    expect(result.materializedCount).toBe(0);
+  });
+
+  it('쓰기 에러 시 에러를 던진다', async () => {
+    const dir = '/nonexistent-readonly-dir-test-12345';
+    // materializeCode propagates file system errors when the base directory cannot be created
+    await expect(materializeCode(SINGLE_FILE_OUTPUT, dir)).rejects.toThrow();
   });
 });
 

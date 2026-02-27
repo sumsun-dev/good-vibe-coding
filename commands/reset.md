@@ -8,7 +8,7 @@ good-vibe-coding으로 생성된 설정을 초기화합니다.
 ## 진행 절차
 
 ### 1단계: 설정 스캔
-`config-scanner.js`의 `scanConfigFiles()`를 사용하여 `~/.claude/` 디렉토리를 스캔합니다.
+`~/.claude/` 디렉토리를 직접 스캔하여 good-vibe-coding이 생성한 파일을 확인합니다.
 
 ```
 📋 현재 설정 파일 목록
@@ -28,14 +28,13 @@ AskUserQuestion으로 사용자에게 묻습니다:
 
 - **전체 초기화**: 모든 설정 파일을 백업 후 삭제
 - **선택적 초기화**: 파일 번호를 선택하여 일부만 삭제
-- **내보내기 후 초기화**: `exportConfig()`로 현재 설정을 JSON 번들로 저장한 뒤 전체 초기화
+- **내보내기 후 초기화**: 현재 설정을 JSON 파일로 저장한 뒤 전체 초기화
 - **취소**: 아무 작업도 하지 않음
 
 ### 3단계: 선택적 초기화 (해당 시)
 "선택적 초기화"를 선택하면 삭제할 파일 번호를 입력받습니다.
 
 ### 4단계: 초기화 실행
-`config-scanner.js`의 `resetConfigFiles()`를 호출합니다.
 - 기본적으로 모든 파일을 `.backup` 접미사로 백업합니다.
 - 백업 완료 후 원본 파일을 삭제합니다.
 
@@ -52,10 +51,6 @@ AskUserQuestion으로 사용자에게 묻습니다:
 💡 새로운 설정을 시작하려면 `/onboarding`을 실행하세요.
 💡 이전 설정을 복원하려면 .backup 파일을 사용하세요.
 ```
-
-## 사용되는 모듈
-- `scripts/lib/config-scanner.js` — `scanConfigFiles()`, `resetConfigFiles()`, `summarizeConfigFiles()`
-- `scripts/lib/config-exporter.js` — `exportConfig()` (내보내기 후 초기화 선택 시)
 
 ## 주의사항
 - 초기화 전 반드시 백업을 생성합니다 (기본 동작).

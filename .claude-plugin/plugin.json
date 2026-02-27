@@ -24,11 +24,10 @@
     "commands/preset.md",
     "commands/reset.md",
 
-    "commands/persona.md",
-    "commands/edit-persona.md",
     "commands/scaffold.md",
     "commands/new.md",
-    "commands/hello.md"
+    "commands/hello.md",
+    "commands/eval.md"
   ],
   "agents": [
     "agents/team-cto.md",
@@ -57,7 +56,6 @@
   ],
   "skills": [
     "skills/onboarding-wizard/SKILL.md",
-    "skills/config-generator/SKILL.md",
     "skills/korean-workflow/SKILL.md",
     "skills/beginner-guide/SKILL.md",
     "skills/project-setup/SKILL.md"

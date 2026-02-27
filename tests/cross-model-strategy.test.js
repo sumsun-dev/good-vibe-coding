@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   getEnabledProviders,
   assignReviewProviders,
@@ -182,5 +182,115 @@ describe('summarizeCrossModelResults', () => {
     expect(Object.keys(summary.providerBreakdown)).toHaveLength(3);
     expect(summary.providerBreakdown.openai.issues).toBe(1);
     expect(summary.providerBreakdown.gemini.issues).toBe(2);
+  });
+});
+
+// --- executeCrossModelReviews ---
+
+describe('executeCrossModelReviews', () => {
+  let executeCrossModelReviews;
+  let mockCallLLM;
+
+  beforeEach(async () => {
+    vi.resetModules();
+
+    mockCallLLM = vi.fn();
+
+    vi.doMock('../scripts/lib/llm-provider.js', () => ({
+      callLLM: mockCallLLM,
+    }));
+
+    // review-engine uses json-parser, so let it load naturally
+    const mod = await import('../scripts/lib/cross-model-strategy.js');
+    executeCrossModelReviews = mod.executeCrossModelReviews;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('빈 assignments에 빈 배열을 반환한다', async () => {
+    expect(await executeCrossModelReviews([], {}, '')).toEqual([]);
+    expect(await executeCrossModelReviews(null, {}, '')).toEqual([]);
+  });
+
+  it('단일 리뷰어로 성공적으로 실행한다', async () => {
+    mockCallLLM.mockResolvedValue({
+      text: '{"verdict": "approve", "issues": []}',
+      model: 'gpt-4o',
+      tokenCount: 200,
+    });
+
+    const assignments = [{ reviewer: SAMPLE_REVIEWERS[0], provider: 'openai' }];
+    const task = { id: 'task-1', title: '테스트', assignee: 'backend' };
+    const results = await executeCrossModelReviews(assignments, task, '구현 결과');
+
+    expect(results).toHaveLength(1);
+    expect(results[0].provider).toBe('openai');
+    expect(results[0].review.verdict).toBe('approve');
+    expect(results[0].tokenCount).toBe(200);
+  });
+
+  it('다중 리뷰어로 병렬 실행한다', async () => {
+    mockCallLLM
+      .mockResolvedValueOnce({
+        text: '{"verdict": "approve", "issues": []}',
+        model: 'gpt-4o',
+        tokenCount: 200,
+      })
+      .mockResolvedValueOnce({
+        text: '{"verdict": "request-changes", "issues": [{"severity": "critical", "description": "보안 문제"}]}',
+        model: 'gemini-2.0-flash',
+        tokenCount: 300,
+      });
+
+    const assignments = [
+      { reviewer: SAMPLE_REVIEWERS[0], provider: 'openai' },
+      { reviewer: SAMPLE_REVIEWERS[1], provider: 'gemini' },
+    ];
+    const task = { id: 'task-1', title: '테스트', assignee: 'backend' };
+    const results = await executeCrossModelReviews(assignments, task, '구현 결과');
+
+    expect(results).toHaveLength(2);
+    expect(results[0].review.verdict).toBe('approve');
+    expect(results[1].review.verdict).toBe('request-changes');
+    expect(results[1].review.issues).toHaveLength(1);
+  });
+
+  it('부분 실패 시 실패한 리뷰어에 request-changes를 반환한다', async () => {
+    mockCallLLM
+      .mockResolvedValueOnce({
+        text: '{"verdict": "approve", "issues": []}',
+        model: 'gpt-4o',
+        tokenCount: 200,
+      })
+      .mockRejectedValueOnce(new Error('API timeout'));
+
+    const assignments = [
+      { reviewer: SAMPLE_REVIEWERS[0], provider: 'openai' },
+      { reviewer: SAMPLE_REVIEWERS[1], provider: 'gemini' },
+    ];
+    const task = { id: 'task-1', title: '테스트', assignee: 'backend' };
+    const results = await executeCrossModelReviews(assignments, task, '구현 결과');
+
+    expect(results).toHaveLength(2);
+    expect(results[0].review.verdict).toBe('approve');
+    expect(results[1].review.verdict).toBe('request-changes');
+    expect(results[1].review.issues[0].description).toContain('API 호출 실패');
+    expect(results[1].tokenCount).toBe(0);
+  });
+
+  it('전체 실패 시 모든 리뷰가 request-changes를 반환한다', async () => {
+    mockCallLLM.mockRejectedValue(new Error('Network error'));
+
+    const assignments = [
+      { reviewer: SAMPLE_REVIEWERS[0], provider: 'openai' },
+      { reviewer: SAMPLE_REVIEWERS[1], provider: 'gemini' },
+    ];
+    const task = { id: 'task-1', title: '테스트', assignee: 'backend' };
+    const results = await executeCrossModelReviews(assignments, task, '구현 결과');
+
+    expect(results).toHaveLength(2);
+    expect(results.every(r => r.review.verdict === 'request-changes')).toBe(true);
   });
 });

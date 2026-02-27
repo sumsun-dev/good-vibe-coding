@@ -237,7 +237,7 @@ good-vibe-coding/
 │   └── stacks/                  #   2개 스택 프리셋
 ├── scripts/
 │   ├── cli.js                   #   CLI-as-API (에이전트용 내부 API, 104개 커맨드)
-│   └── lib/                     #   핵심 라이브러리 (32개 모듈)
+│   └── lib/                     #   핵심 라이브러리 (37개 모듈)
 │       ├── project-scaffolder.js #     프로젝트 인프라 생성
 │       ├── github-manager.js   #     gh CLI 래퍼
 │       ├── project-manager.js   #     프로젝트 CRUD + 상태 관리
@@ -253,19 +253,24 @@ good-vibe-coding/
 │       ├── json-parser.js       #     LLM JSON 응답 파싱 (v4.2)
 │       ├── dispatch-plan-generator.js # JSON 디스패치 계획 생성 (v4.2)
 │       ├── execution-loop.js    #     실행 루프 (v4.2)
+│       ├── domain-parsers.js    #     도메인별 JSON 응답 파서 (v4.4)
+│       ├── validators.js        #     공통 입력 검증 + AppError (v4.4)
+│       ├── app-paths.js         #     애플리케이션 경로 중앙 관리 (v4.4)
+│       ├── prompt-builder.js    #     프롬프트 구성 유틸리티 (v4.4)
+│       ├── cache.js             #     지연 로딩 캐시 유틸리티 (v4.4)
 │       └── *.js                 #     (기타 모듈)
 ├── templates/                    # Handlebars 템플릿
 ├── hooks/                        # 훅 정의
 ├── guides/                       # 학습 가이드
 ├── skills/                       # 스킬 (5개)
-└── tests/                        # Vitest 테스트 (894개+)
+└── tests/                        # Vitest 테스트 (908개+)
 ```
 
 ## 기술 스택
 
 - **Node.js 18+** (ESM)
 - **Handlebars** (템플릿 엔진)
-- **Vitest** (테스트 프레임워크, 894개+ 테스트, 97%+ 커버리지)
+- **Vitest** (테스트 프레임워크, 908개+ 테스트, 97%+ 커버리지)
 
 ## 개발
 
@@ -317,6 +322,17 @@ npm run test:coverage # 커버리지 리포트
 - [x] 모델 다양성 (복잡도 기반 opus/sonnet/haiku 자동 선택)
 - [x] 관측성 (비용/토큰 추적, 에이전트 기여도, 대시보드)
 - [x] 팀 설정 공유 (프로젝트 레벨 오버라이드, .good-vibe/ 디렉토리)
+
+### Phase 4.4 - 코드 품질 최적화 (v4.4) — 현재
+- [x] 입력 검증 중앙화 (validators.js + AppError 클래스)
+- [x] 경로 관리 중앙화 (app-paths.js — 5개 모듈 통합)
+- [x] CLI 응답 표준화 (outputOk 패턴)
+- [x] 에러 처리 구조화 (코드별 exit code)
+- [x] 프롬프트 빌더 패턴 (prompt-builder.js)
+- [x] 캐시 유틸리티 표준화 (cache.js — LazyCache)
+- [x] CLI 퍼지 커맨드 제안 (Levenshtein distance)
+- [x] 실행 파이프라인 상태 머신 (PHASE_TRANSITIONS)
+- [x] 도메인 파서 추출 (domain-parsers.js)
 
 ### Phase 5 (계획)
 - [ ] 마켓플레이스 등록

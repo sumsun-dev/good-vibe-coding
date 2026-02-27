@@ -27,6 +27,32 @@ const VALID_PHASE_STEPS = ['execute-tasks', 'materialize', 'review', 'quality-ga
 const MAX_FIX_ATTEMPTS = 2;
 
 /**
+ * 유효한 phaseStep 전이 맵.
+ * 각 단계에서 이동할 수 있는 다음 단계를 정의한다.
+ */
+export const PHASE_TRANSITIONS = {
+  'execute-tasks': ['materialize'],
+  'materialize': ['review'],
+  'review': ['quality-gate'],
+  'quality-gate': ['commit', 'fix', 'escalated'],   // passed → commit, failed → fix/escalated
+  'fix': ['materialize'],                              // 수정 후 materialize로 재진입
+  'commit': ['build-context'],
+  'build-context': ['execute-tasks', 'completed'],     // 다음 phase 또는 완료
+};
+
+/**
+ * phaseStep 전이가 유효한지 검증한다.
+ * @param {string} from - 현재 단계
+ * @param {string} to - 다음 단계
+ * @returns {boolean}
+ */
+export function isValidTransition(from, to) {
+  const allowed = PHASE_TRANSITIONS[from];
+  if (!allowed) return false;
+  return allowed.includes(to);
+}
+
+/**
  * 초기 실행 상태 객체를 생성한다 (pure).
  * @param {'interactive'|'auto'} [mode='interactive'] - 실행 모드
  * @returns {object} 초기 ExecutionState

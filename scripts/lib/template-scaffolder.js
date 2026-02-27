@@ -8,10 +8,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '../..');
 const BUILTIN_TEMPLATES_DIR = resolve(PROJECT_ROOT, 'presets/templates');
 
-let customTemplatesDir = resolve(
-  process.env.HOME || process.env.USERPROFILE || '~',
-  '.claude/good-vibe/custom-templates',
-);
+import { customTemplatesDir as defaultCustomTemplatesDir } from './app-paths.js';
+
+let customTemplatesDir = defaultCustomTemplatesDir();
 
 /**
  * 테스트용 커스텀 템플릿 디렉토리 변경

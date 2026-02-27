@@ -1,0 +1,155 @@
+import { describe, it, expect } from 'vitest';
+import {
+  requireString,
+  requireArray,
+  requireOneOf,
+  requireDefined,
+  requireFields,
+  validateRoleId,
+  AppError,
+  inputError,
+  notFoundError,
+} from '../scripts/lib/validators.js';
+
+describe('requireString', () => {
+  it('유효한 문자열을 반환한다', () => {
+    expect(requireString('hello', 'name')).toBe('hello');
+  });
+
+  it('빈 문자열이면 에러를 던진다', () => {
+    expect(() => requireString('', 'name')).toThrow('name는 비어있지 않은 문자열');
+  });
+
+  it('null이면 에러를 던진다', () => {
+    expect(() => requireString(null, 'name')).toThrow('name는 비어있지 않은 문자열');
+  });
+
+  it('undefined이면 에러를 던진다', () => {
+    expect(() => requireString(undefined, 'name')).toThrow('name는 비어있지 않은 문자열');
+  });
+
+  it('숫자이면 에러를 던진다', () => {
+    expect(() => requireString(123, 'name')).toThrow('name는 비어있지 않은 문자열');
+  });
+});
+
+describe('requireArray', () => {
+  it('유효한 배열을 반환한다', () => {
+    expect(requireArray([1, 2], 'items')).toEqual([1, 2]);
+  });
+
+  it('빈 배열도 허용한다', () => {
+    expect(requireArray([], 'items')).toEqual([]);
+  });
+
+  it('null이면 에러를 던진다', () => {
+    expect(() => requireArray(null, 'items')).toThrow('items는 배열');
+  });
+
+  it('객체이면 에러를 던진다', () => {
+    expect(() => requireArray({}, 'items')).toThrow('items는 배열');
+  });
+
+  it('문자열이면 에러를 던진다', () => {
+    expect(() => requireArray('hello', 'items')).toThrow('items는 배열');
+  });
+});
+
+describe('requireOneOf', () => {
+  it('허용된 값을 반환한다', () => {
+    expect(requireOneOf('a', ['a', 'b', 'c'], 'choice')).toBe('a');
+  });
+
+  it('허용되지 않은 값이면 에러를 던진다', () => {
+    expect(() => requireOneOf('d', ['a', 'b', 'c'], 'choice')).toThrow('choice는 다음 중 하나');
+  });
+});
+
+describe('requireDefined', () => {
+  it('유효한 값을 반환한다', () => {
+    expect(requireDefined('hello', 'field')).toBe('hello');
+    expect(requireDefined(0, 'field')).toBe(0);
+    expect(requireDefined(false, 'field')).toBe(false);
+  });
+
+  it('null이면 에러를 던진다', () => {
+    expect(() => requireDefined(null, 'field')).toThrow('field가 필요합니다');
+  });
+
+  it('undefined이면 에러를 던진다', () => {
+    expect(() => requireDefined(undefined, 'field')).toThrow('field가 필요합니다');
+  });
+});
+
+describe('requireFields', () => {
+  it('모든 필수 필드가 있으면 data를 반환한다', () => {
+    const data = { a: 1, b: 'hello', c: [] };
+    expect(requireFields(data, ['a', 'b'])).toBe(data);
+  });
+
+  it('필드가 없으면 에러를 던진다', () => {
+    expect(() => requireFields({ a: 1 }, ['a', 'b'])).toThrow('b 필드가 필요합니다');
+  });
+
+  it('필드가 null이면 에러를 던진다', () => {
+    expect(() => requireFields({ a: null }, ['a'])).toThrow('a 필드가 필요합니다');
+  });
+
+  it('빈 배열 필드는 허용한다', () => {
+    expect(requireFields({ items: [] }, ['items'])).toEqual({ items: [] });
+  });
+
+  it('0과 false 값은 허용한다', () => {
+    expect(requireFields({ count: 0, flag: false }, ['count', 'flag'])).toEqual({ count: 0, flag: false });
+  });
+});
+
+describe('AppError', () => {
+  it('code와 message를 가진다', () => {
+    const err = new AppError('test', 'INPUT_ERROR');
+    expect(err.message).toBe('test');
+    expect(err.code).toBe('INPUT_ERROR');
+    expect(err.name).toBe('AppError');
+    expect(err instanceof Error).toBe(true);
+  });
+
+  it('기본 코드는 SYSTEM_ERROR이다', () => {
+    const err = new AppError('test');
+    expect(err.code).toBe('SYSTEM_ERROR');
+  });
+});
+
+describe('inputError / notFoundError', () => {
+  it('inputError는 INPUT_ERROR 코드를 가진다', () => {
+    const err = inputError('필드 누락');
+    expect(err.code).toBe('INPUT_ERROR');
+    expect(err.message).toBe('필드 누락');
+  });
+
+  it('notFoundError는 NOT_FOUND 코드를 가진다', () => {
+    const err = notFoundError('프로젝트 없음');
+    expect(err.code).toBe('NOT_FOUND');
+    expect(err.message).toBe('프로젝트 없음');
+  });
+});
+
+describe('validateRoleId', () => {
+  it('유효한 roleId를 반환한다', () => {
+    expect(validateRoleId('backend')).toBe('backend');
+    expect(validateRoleId('cto')).toBe('cto');
+  });
+
+  it('경로 순회를 거부한다', () => {
+    expect(() => validateRoleId('../etc/passwd')).toThrow('유효하지 않은 roleId');
+    expect(() => validateRoleId('foo/bar')).toThrow('유효하지 않은 roleId');
+    expect(() => validateRoleId('foo\\bar')).toThrow('유효하지 않은 roleId');
+  });
+
+  it('빈 문자열을 거부한다', () => {
+    expect(() => validateRoleId('')).toThrow('비어있지 않은 문자열');
+  });
+
+  it('null을 거부한다', () => {
+    expect(() => validateRoleId(null)).toThrow('비어있지 않은 문자열');
+  });
+});

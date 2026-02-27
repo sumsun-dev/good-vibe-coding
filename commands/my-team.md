@@ -26,7 +26,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js role-catalog
 전체 역할을 카테고리별로 보여주세요:
 
 ```
-📖 역할 카탈로그 (11개)
+📖 역할 카탈로그 (15개)
 ━━━━━━━━━━━━━━━━━━━━━━
 
 🎯 Leadership
@@ -47,6 +47,12 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js role-catalog
 
 📚 Support
   📝 Technical Writer — 기술 문서 작성
+
+🔍 Research
+  🔍 Market Researcher — 시장 규모, 경쟁사, 트렌드 분석
+  📈 Business Researcher — 비즈니스 모델, 수익화, 성장 전략
+  🧬 Tech Researcher — 기술 스택 비교, 벤치마크, 오픈소스
+  🔬 Design Researcher — 사용자 리서치, UX 벤치마크, 접근성
 ```
 
 ## Step 3: 팀 성과 통계

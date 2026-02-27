@@ -78,7 +78,7 @@ options:
 
 ### Step 5: 프리셋 적용
 
-확인 후 `config-generator` 스킬을 호출하여 설정 파일을 재생성합니다.
+확인 후 설정 파일을 직접 재생성합니다 (CLAUDE.md, rules 등).
 
 완료 메시지:
 ```

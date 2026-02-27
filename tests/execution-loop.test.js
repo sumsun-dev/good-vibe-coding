@@ -8,6 +8,8 @@ import {
   advanceExecution,
   initExecution,
   getExecutionSummary,
+  PHASE_TRANSITIONS,
+  isValidTransition,
 } from '../scripts/lib/execution-loop.js';
 import {
   createProject,
@@ -675,5 +677,40 @@ describe('initExecution - edge cases', () => {
     await expect(
       initExecution(project.id, { mode: 'interactive', resume: true })
     ).rejects.toThrow('기존 실행 상태가 손상되었습니다');
+  });
+});
+
+describe('PHASE_TRANSITIONS', () => {
+  it('모든 유효한 phaseStep에 대한 전이가 정의되어 있다', () => {
+    const steps = ['execute-tasks', 'materialize', 'review', 'quality-gate', 'fix', 'commit', 'build-context'];
+    for (const step of steps) {
+      expect(PHASE_TRANSITIONS[step]).toBeDefined();
+      expect(Array.isArray(PHASE_TRANSITIONS[step])).toBe(true);
+    }
+  });
+
+  it('execute-tasks → materialize 전이가 유효하다', () => {
+    expect(isValidTransition('execute-tasks', 'materialize')).toBe(true);
+    expect(isValidTransition('execute-tasks', 'commit')).toBe(false);
+  });
+
+  it('quality-gate는 commit, fix, escalated로 분기한다', () => {
+    expect(isValidTransition('quality-gate', 'commit')).toBe(true);
+    expect(isValidTransition('quality-gate', 'fix')).toBe(true);
+    expect(isValidTransition('quality-gate', 'escalated')).toBe(true);
+    expect(isValidTransition('quality-gate', 'review')).toBe(false);
+  });
+
+  it('fix → materialize 재진입이 유효하다', () => {
+    expect(isValidTransition('fix', 'materialize')).toBe(true);
+  });
+
+  it('build-context → execute-tasks 또는 completed로 분기한다', () => {
+    expect(isValidTransition('build-context', 'execute-tasks')).toBe(true);
+    expect(isValidTransition('build-context', 'completed')).toBe(true);
+  });
+
+  it('존재하지 않는 단계는 false를 반환한다', () => {
+    expect(isValidTransition('unknown', 'commit')).toBe(false);
   });
 });

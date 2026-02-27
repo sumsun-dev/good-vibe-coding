@@ -4,6 +4,8 @@ import {
   parseTaskList,
   buildExecutionPrompt,
   buildExecutionPlan,
+  buildTddExecutionPrompt,
+  buildPhaseContext,
   isCodeTask,
 } from '../scripts/lib/task-distributor.js';
 
@@ -231,5 +233,101 @@ describe('isCodeTask', () => {
 
   it('키워드가 없고 비엔지니어면 false를 반환한다', () => {
     expect(isCodeTask({ assignee: 'cto', title: '예산 검토', description: '분기별 예산 확인' })).toBe(false);
+  });
+});
+
+describe('buildExecutionPrompt with context', () => {
+  it('phaseContext를 포함한다', () => {
+    const task = { id: 'task-1', title: 'API 구현', description: '설명', assignee: 'backend' };
+    const prompt = buildExecutionPrompt(task, SAMPLE_TEAM_MEMBER, {
+      phaseContext: '### task-0: 아키텍처 설계 (cto)\nREST API 설계 완료',
+    });
+    expect(prompt).toContain('## 이전 Phase 결과');
+    expect(prompt).toContain('아키텍처 설계');
+  });
+
+  it('planExcerpt를 포함한다', () => {
+    const task = { id: 'task-1', title: 'API 구현', description: '설명', assignee: 'backend' };
+    const prompt = buildExecutionPrompt(task, SAMPLE_TEAM_MEMBER, {
+      planExcerpt: 'Next.js + Supabase 사용 결정',
+    });
+    expect(prompt).toContain('## 기획 결정사항');
+    expect(prompt).toContain('Next.js + Supabase');
+  });
+
+  it('context 없이 기존 동작을 유지한다', () => {
+    const task = { id: 'task-1', title: 'API 구현', description: '설명', assignee: 'backend' };
+    const prompt = buildExecutionPrompt(task, SAMPLE_TEAM_MEMBER);
+    expect(prompt).not.toContain('## 이전 Phase 결과');
+    expect(prompt).not.toContain('## 기획 결정사항');
+    expect(prompt).toContain('도윤');
+  });
+});
+
+describe('buildTddExecutionPrompt with context', () => {
+  it('phaseContext와 planExcerpt를 포함한다', () => {
+    const task = { id: 'task-2', title: 'API 구현', description: '설명', assignee: 'backend' };
+    const prompt = buildTddExecutionPrompt(task, SAMPLE_TEAM_MEMBER, {
+      phaseContext: '### task-1: 설계 (cto)\n완료',
+      planExcerpt: 'Express + PostgreSQL',
+    });
+    expect(prompt).toContain('## 이전 Phase 결과');
+    expect(prompt).toContain('## 기획 결정사항');
+    expect(prompt).toContain('TDD 실행 지침');
+  });
+});
+
+describe('buildPhaseContext', () => {
+  it('완료된 태스크의 컨텍스트를 생성한다', () => {
+    const tasks = [
+      { id: 'task-1', title: '아키텍처 설계', assignee: 'cto', taskOutput: '설계 완료\nREST API 구조' },
+      { id: 'task-2', title: 'DB 설계', assignee: 'backend', taskOutput: 'PostgreSQL\n테이블 3개' },
+    ];
+    const context = buildPhaseContext(tasks);
+    expect(context).toContain('### task-1: 아키텍처 설계 (cto)');
+    expect(context).toContain('설계 완료');
+    expect(context).toContain('### task-2: DB 설계 (backend)');
+    expect(context).toContain('PostgreSQL');
+  });
+
+  it('빈 배열은 빈 문자열을 반환한다', () => {
+    expect(buildPhaseContext([])).toBe('');
+    expect(buildPhaseContext(null)).toBe('');
+    expect(buildPhaseContext(undefined)).toBe('');
+  });
+
+  it('taskOutput이 없는 태스크는 건너뛴다', () => {
+    const tasks = [
+      { id: 'task-1', title: 'A', assignee: 'cto', taskOutput: '결과' },
+      { id: 'task-2', title: 'B', assignee: 'backend' },
+    ];
+    const context = buildPhaseContext(tasks);
+    expect(context).toContain('task-1');
+    expect(context).not.toContain('task-2');
+  });
+
+  it('maxLinesPerTask로 줄 수를 제한한다', () => {
+    const tasks = [{
+      id: 'task-1',
+      title: 'A',
+      assignee: 'cto',
+      taskOutput: 'line1\nline2\nline3\nline4\nline5',
+    }];
+    const context = buildPhaseContext(tasks, { maxLinesPerTask: 2 });
+    expect(context).toContain('line1');
+    expect(context).toContain('line2');
+    expect(context).toContain('...(truncated)');
+    expect(context).not.toContain('line3');
+  });
+
+  it('whitespace-only taskOutput은 건너뛴다', () => {
+    const tasks = [
+      { id: 'task-1', title: 'A', assignee: 'cto', taskOutput: '   \n  \n  ' },
+      { id: 'task-2', title: 'B', assignee: 'backend', taskOutput: '실제 결과' },
+    ];
+    const context = buildPhaseContext(tasks);
+    expect(context).not.toContain('task-1');
+    expect(context).toContain('task-2');
+    expect(context).toContain('실제 결과');
   });
 });

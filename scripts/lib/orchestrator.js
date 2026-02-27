@@ -4,6 +4,7 @@
  */
 
 import { detectRedundantAgents } from './agent-optimizer.js';
+import { parseJsonObject } from './json-parser.js';
 
 /**
  * 개별 에이전트 분석 프롬프트를 생성한다 (역할별 독립 분석).
@@ -164,35 +165,8 @@ export function parseReviewOutput(rawOutput) {
     return { approved: false, feedback: '', issues: [] };
   }
 
-  // JSON 직접 파싱
-  try {
-    const parsed = JSON.parse(rawOutput.trim());
-    return normalizeReviewResult(parsed);
-  } catch {
-    // JSON 블록 추출
-  }
-
-  // ```json ... ``` 블록 추출
-  const jsonBlockMatch = rawOutput.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
-  if (jsonBlockMatch) {
-    try {
-      const parsed = JSON.parse(jsonBlockMatch[1].trim());
-      return normalizeReviewResult(parsed);
-    } catch {
-      // 파싱 실패
-    }
-  }
-
-  // { ... } 패턴 추출
-  const objMatch = rawOutput.match(/\{[\s\S]*\}/);
-  if (objMatch) {
-    try {
-      const parsed = JSON.parse(objMatch[0]);
-      return normalizeReviewResult(parsed);
-    } catch {
-      // 파싱 실패
-    }
-  }
+  const parsed = parseJsonObject(rawOutput);
+  if (parsed) return normalizeReviewResult(parsed);
 
   return { approved: false, feedback: rawOutput.trim(), issues: [] };
 }

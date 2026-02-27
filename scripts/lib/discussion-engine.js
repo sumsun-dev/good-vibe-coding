@@ -129,8 +129,8 @@ export function buildSingleAgentDiscussionPrompt(project, teamMember, context = 
 
   if (context.priorTierOutputs && context.priorTierOutputs.length > 0) {
     const priorSection = context.priorTierOutputs
-      .map(o => `- **${o.role}** (${o.roleId}): ${o.analysis.split('\n')[0]}`)
-      .join('\n');
+      .map(o => `- **${o.role}** (${o.roleId}):\n${(o.analysis || '').split('\n').filter(l => l.trim()).slice(0, 5).join('\n')}`)
+      .join('\n\n');
     prompt += `\n\n## 이전 tier 팀원 분석 요약\n${priorSection}\n\n위 분석을 참고하여 당신의 관점을 보완하세요.`;
   }
 

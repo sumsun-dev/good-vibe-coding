@@ -2,6 +2,7 @@ import { readFile } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { getDefaultsForComplexity } from './complexity-analyzer.js';
+import { LazyCache } from './cache.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '../..');
@@ -9,17 +10,17 @@ const CATALOG_PATH = resolve(PROJECT_ROOT, 'presets', 'team-roles', 'catalog.jso
 const PROJECT_TYPES_PATH = resolve(PROJECT_ROOT, 'presets', 'project-types.json');
 const PERSONALITIES_PATH = resolve(PROJECT_ROOT, 'presets', 'team-personalities.json');
 
-let cachedCatalog = null;
-let cachedProjectTypes = null;
-let cachedPersonalities = null;
+const catalogCache = new LazyCache(async () => JSON.parse(await readFile(CATALOG_PATH, 'utf-8')));
+const projectTypesCache = new LazyCache(async () => JSON.parse(await readFile(PROJECT_TYPES_PATH, 'utf-8')));
+const personalitiesCache = new LazyCache(async () => JSON.parse(await readFile(PERSONALITIES_PATH, 'utf-8')));
 
 /**
  * 캐시를 초기화한다 (테스트용).
  */
 export function clearCaches() {
-  cachedCatalog = null;
-  cachedProjectTypes = null;
-  cachedPersonalities = null;
+  catalogCache.clear();
+  projectTypesCache.clear();
+  personalitiesCache.clear();
 }
 
 /**
@@ -27,10 +28,7 @@ export function clearCaches() {
  * @returns {Promise<object>} 카탈로그 데이터
  */
 export async function loadRoleCatalog() {
-  if (cachedCatalog) return cachedCatalog;
-  const content = await readFile(CATALOG_PATH, 'utf-8');
-  cachedCatalog = JSON.parse(content);
-  return cachedCatalog;
+  return catalogCache.get();
 }
 
 /**
@@ -38,10 +36,7 @@ export async function loadRoleCatalog() {
  * @returns {Promise<object>} 프로젝트 타입 데이터
  */
 export async function loadProjectTypes() {
-  if (cachedProjectTypes) return cachedProjectTypes;
-  const content = await readFile(PROJECT_TYPES_PATH, 'utf-8');
-  cachedProjectTypes = JSON.parse(content);
-  return cachedProjectTypes;
+  return projectTypesCache.get();
 }
 
 /**
@@ -49,10 +44,7 @@ export async function loadProjectTypes() {
  * @returns {Promise<object>} 페르소나 데이터
  */
 async function loadTeamPersonalities() {
-  if (cachedPersonalities) return cachedPersonalities;
-  const content = await readFile(PERSONALITIES_PATH, 'utf-8');
-  cachedPersonalities = JSON.parse(content);
-  return cachedPersonalities;
+  return personalitiesCache.get();
 }
 
 /**

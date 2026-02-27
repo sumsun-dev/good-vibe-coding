@@ -47,6 +47,7 @@ import { buildDiscussionDispatchPlan, buildExecutionDispatchPlan } from './lib/d
 import { setupProjectInfra, appendToClaudeMd } from './lib/project-scaffolder.js';
 import { getCostSummary, buildMetricsDashboard } from './lib/project-metrics.js';
 import { checkGhStatus, createGithubRepo, gitInitAndPush, commitPhase } from './lib/github-manager.js';
+import { requireFields, AppError } from './lib/validators.js';
 
 const [,, command, ...args] = process.argv;
 
@@ -67,6 +68,14 @@ async function readStdin() {
  */
 function output(data) {
   process.stdout.write(JSON.stringify(data, null, 2) + '\n');
+}
+
+/**
+ * 성공 응답을 표준 형식으로 출력한다.
+ * @param {object} data - 응답 데이터
+ */
+function outputOk(data = {}) {
+  output({ success: true, ...data });
 }
 
 /**
@@ -94,6 +103,7 @@ function parseArgs(args) {
 const commands = {
   'create-project': async () => {
     const data = await readStdin();
+    requireFields(data, ['name', 'type']);
     const project = await createProject(data.name, data.type, data.description, { mode: data.mode });
     output(project);
   },
@@ -111,12 +121,14 @@ const commands = {
 
   'update-status': async () => {
     const data = await readStdin();
+    requireFields(data, ['id', 'status']);
     const project = await updateProjectStatus(data.id, data.status);
     output(project);
   },
 
   'set-team': async () => {
     const data = await readStdin();
+    requireFields(data, ['id', 'team']);
     const project = await setProjectTeam(data.id, data.team);
     output(project);
   },
@@ -135,6 +147,7 @@ const commands = {
 
   'build-team': async () => {
     const data = await readStdin();
+    requireFields(data, ['roleIds']);
     const team = await buildTeam(data.roleIds, data.personalityChoices);
     output(team);
   },
@@ -387,24 +400,28 @@ const commands = {
 
   'add-discussion-round': async () => {
     const data = await readStdin();
+    requireFields(data, ['id', 'roundData']);
     const project = await addDiscussionRound(data.id, data.roundData);
     output(project);
   },
 
   'add-task-reviews': async () => {
     const data = await readStdin();
+    requireFields(data, ['id', 'taskId', 'reviews']);
     const project = await addTaskReviews(data.id, data.taskId, data.reviews);
     output(project);
   },
 
   'update-task-status': async () => {
     const data = await readStdin();
+    requireFields(data, ['id', 'taskId', 'status']);
     const project = await updateTaskStatus(data.id, data.taskId, data.status);
     output(project);
   },
 
   'save-task-output': async () => {
     const data = await readStdin();
+    requireFields(data, ['id', 'taskId']);
     const project = await saveTaskOutput(data.id, data.taskId, data.output, { maxLines: data.maxLines });
     output(project);
   },
@@ -484,10 +501,10 @@ const commands = {
         throw new Error('Gemini CLI가 설치되지 않았습니다. `npm install -g @google/gemini-cli` 로 설치하세요.');
       }
       const auth = await connectGeminiCli();
-      output({ success: true, providerId, type: auth.type });
+      outputOk({ providerId, type: auth.type });
     } else {
       const auth = await connectWithApiKey(providerId, data.apiKey);
-      output({ success: true, providerId, type: auth.type });
+      outputOk({ providerId, type: auth.type });
     }
   },
 
@@ -496,7 +513,7 @@ const commands = {
     const providerId = data.provider || args[0];
     if (!providerId) throw new Error('프로바이더 ID가 필요합니다');
     await removeAuth(providerId);
-    output({ success: true, providerId });
+    outputOk({ providerId });
   },
 
   'providers': async () => {
@@ -512,7 +529,7 @@ const commands = {
   'set-review-strategy': async () => {
     const data = await readStdin();
     await setReviewStrategy(data.strategy);
-    output({ success: true, strategy: data.strategy });
+    outputOk({ strategy: data.strategy });
   },
 
   'verify-provider': async () => {
@@ -576,7 +593,7 @@ const commands = {
     if (!data.roleId) throw new Error('roleId 필드가 필요합니다');
     if (!data.content) throw new Error('content 필드가 필요합니다');
     await saveAgentOverride(data.roleId, data.content);
-    output({ success: true, roleId: data.roleId });
+    outputOk({ roleId: data.roleId });
   },
 
   'load-agent-override': async () => {
@@ -694,7 +711,7 @@ const commands = {
     const data = await readStdin();
     if (!data.id) throw new Error('--id가 필요합니다');
     const updated = await recordMetrics(data.id, data);
-    output({ success: true, metrics: updated.metrics });
+    outputOk({ metrics: updated.metrics });
   },
 
   'project-metrics': async () => {
@@ -721,7 +738,7 @@ const commands = {
     if (!data.roleId) throw new Error('roleId가 필요합니다');
     if (!data.content) throw new Error('content가 필요합니다');
     await saveProjectOverride(data.projectDir, data.roleId, data.content);
-    output({ success: true });
+    outputOk();
   },
 
   'load-project-override': async () => {
@@ -748,18 +765,61 @@ const commands = {
   },
 };
 
+/**
+ * 유사한 커맨드를 제안한다 (Levenshtein distance 기반).
+ * @param {string} input - 사용자가 입력한 커맨드
+ * @param {string[]} candidates - 후보 목록
+ * @returns {string[]} 유사 커맨드 (최대 3개)
+ */
+function suggestSimilar(input, candidates) {
+  return candidates
+    .map(c => ({ name: c, dist: levenshtein(input, c) }))
+    .filter(c => c.dist <= 3)
+    .sort((a, b) => a.dist - b.dist)
+    .slice(0, 3)
+    .map(c => c.name);
+}
+
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, (_, i) => {
+    const row = new Array(n + 1);
+    row[0] = i;
+    return row;
+  });
+  for (let j = 1; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+
 async function main() {
+  const available = Object.keys(commands);
+
   if (!command || !commands[command]) {
-    const available = Object.keys(commands).join(', ');
-    process.stderr.write(`사용법: cli.js <command>\n사용 가능한 명령: ${available}\n`);
+    let msg = `사용법: cli.js <command>\n사용 가능한 명령 (${available.length}개): ${available.join(', ')}\n`;
+    if (command) {
+      const similar = suggestSimilar(command, available);
+      if (similar.length > 0) {
+        msg += `\n혹시 이 커맨드를 찾으셨나요? ${similar.join(', ')}\n`;
+      }
+    }
+    process.stderr.write(msg);
     process.exit(1);
   }
 
   try {
     await commands[command]();
   } catch (err) {
-    process.stderr.write(`오류: ${err.message}\n`);
-    process.exit(1);
+    const code = err instanceof AppError ? err.code : 'SYSTEM_ERROR';
+    const exitCode = code === 'INPUT_ERROR' ? 2 : code === 'NOT_FOUND' ? 3 : 1;
+    process.stderr.write(`오류 [${code}]: ${err.message}\n`);
+    process.exit(exitCode);
   }
 }
 

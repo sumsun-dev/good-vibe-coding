@@ -1,6 +1,7 @@
 import { readFile } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { requireString } from './validators.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '../..');
@@ -26,14 +27,10 @@ export async function loadPreset(category, name) {
  * @param {string} category - 카테고리
  */
 function validatePreset(preset, category) {
-  if (!preset.name || typeof preset.name !== 'string') {
-    throw new Error('프리셋에 name 필드가 필요합니다');
-  }
-  if (!preset.displayName || typeof preset.displayName !== 'string') {
-    throw new Error('프리셋에 displayName 필드가 필요합니다');
-  }
-  if (category === 'roles' && !preset.category) {
-    throw new Error('역할 프리셋에 category 필드가 필요합니다');
+  requireString(preset.name, '프리셋 name');
+  requireString(preset.displayName, '프리셋 displayName');
+  if (category === 'roles') {
+    requireString(preset.category, '역할 프리셋 category');
   }
 }
 

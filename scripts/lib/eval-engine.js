@@ -8,8 +8,9 @@ import { resolve } from 'path';
 import crypto from 'crypto';
 import { ensureDir, fileExists } from './file-writer.js';
 import { COST_RATES } from './project-metrics.js';
+import { evaluationsDir } from './app-paths.js';
 
-const DEFAULT_EVAL_DIR = resolve(process.env.HOME || process.env.USERPROFILE, '.claude', 'good-vibe', 'evaluations');
+const DEFAULT_EVAL_DIR = evaluationsDir();
 let evalDir = DEFAULT_EVAL_DIR;
 
 /**
