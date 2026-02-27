@@ -254,6 +254,26 @@ export async function updateTaskStatus(projectId, taskId, status) {
 }
 
 /**
+ * 태스크에 materialization 결과를 저장한다.
+ * @param {string} projectId - 프로젝트 ID
+ * @param {string} taskId - 태스크 ID
+ * @param {object} materializeResult - materializeCode 결과
+ * @returns {Promise<object>} 업데이트된 프로젝트
+ */
+export async function addTaskMaterializationResult(projectId, taskId, materializeResult) {
+  const project = await getProject(projectId);
+  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
+  const task = project.tasks.find(t => t.id === taskId);
+  if (!task) throw new Error(`태스크를 찾을 수 없습니다: ${taskId}`);
+  if (!task.materialization) task.materialization = [];
+  task.materialization.push({
+    ...materializeResult,
+    timestamp: new Date().toISOString(),
+  });
+  return saveProject(project);
+}
+
+/**
  * 프로젝트 실행 진행률을 계산한다.
  * @param {object} project - 프로젝트 객체
  * @returns {{totalTasks: number, completedTasks: number, currentPhase: number, totalPhases: number, percentage: number}}

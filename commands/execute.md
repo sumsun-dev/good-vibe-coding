@@ -85,6 +85,34 @@ Phase 2 (리뷰):
 {emoji} {이름}이(가) "{작업제목}" 작업을 수행 중입니다...
 ```
 
+### Step 4.2: 코드 Materialization (코드 태스크만)
+
+코드 태스크인지 확인 후, 검증+기록을 수행합니다:
+
+```bash
+echo '{"task": {...}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js is-code-task
+```
+
+코드 태스크인 경우:
+
+```bash
+echo '{"taskOutput": "...", "task": {...}, "projectDir": "/path/to/project"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js verify-and-materialize
+```
+
+- **검증 성공** → 파일이 프로젝트에 기록됨
+- **검증 실패** → tempDir 보존 (디버깅용), 수정 루프 진행
+
+### Step 4.3: 강화된 품질 게이트
+
+리뷰 결과와 실행 검증 결과를 통합하여 품질을 확인합니다:
+
+```bash
+echo '{"reviews": [...], "executionResult": {...}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js enhanced-quality-gate
+```
+
+- **passed: true** → 리뷰 approve + 검증 통과
+- **passed: false** → 리뷰 reject 또는 검증 실패 → 수정 루프
+
 ### Step 4.5: 리뷰 상태 전환 + 리뷰어 선정 + 크로스 모델 리뷰
 
 ```bash
@@ -132,6 +160,16 @@ echo '{"reviews": [...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js check-qual
 수정 루프 2회 초과 시 CEO(사용자)에게 에스컬레이션:
 - 미해결 critical 이슈 목록 표시
 - AskUserQuestion으로 진행 여부 확인
+
+### Step 4.8: Phase 커밋
+
+현재 Phase의 모든 작업이 완료되면 git commit을 수행합니다:
+
+```bash
+echo '{"projectDir": "/path/to/project", "phase": 1, "message": "Phase 1: 아키텍처 설계 + API 구현 완료"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js commit-phase
+```
+
+이 단계는 프로젝트에 infraPath가 설정되어 있고 git이 초기화된 경우에만 실행합니다.
 
 ## Step 5: 다음 Phase 반복
 

@@ -1,5 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, mkdtempSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
 import {
   extractCodeBlocks,
   classifyCodeBlocks,
@@ -7,6 +9,7 @@ import {
   attemptBuild,
   attemptTests,
   verifyExecution,
+  verifyAndMaterialize,
   cleanup,
 } from '../scripts/lib/execution-verifier.js';
 
@@ -412,16 +415,28 @@ describe('verifyExecution', () => {
     expect(result).toHaveProperty('codeBlockCount');
   });
 
-  it('임시 디렉토리를 정리한다', async () => {
+  it('검증 성공 시 임시 디렉토리를 정리한다', async () => {
     const md = '```javascript\nconst x = 1;\n```';
     const task = { id: 'task-1', projectType: 'cli-tool' };
     const result = await verifyExecution(md, task);
 
-    // verifyExecution이 finally 블록에서 cleanup을 호출하므로
-    // tempDir는 결과에 포함되지만 이미 삭제되었어야 한다
+    expect(result.verified).toBe(true);
     if (result.tempDir) {
       expect(existsSync(result.tempDir)).toBe(false);
     }
+  });
+
+  it('검증 실패 시 임시 디렉토리를 보존한다 (디버깅용)', async () => {
+    const md = '결과:\n```javascript\nconst x = {{\n```';
+    const task = { id: 'task-1', projectType: 'cli-tool' };
+    const result = await verifyExecution(md, task);
+
+    expect(result.verified).toBe(false);
+    expect(result.tempDir).toBeTruthy();
+    expect(existsSync(result.tempDir)).toBe(true);
+
+    // cleanup
+    cleanup(result.tempDir);
   });
 
   it('task가 없으면 기본 projectType을 사용한다', async () => {
@@ -457,5 +472,135 @@ describe('cleanup', () => {
 
   it('빈 문자열에 대해 오류를 발생시키지 않는다', () => {
     expect(() => cleanup('')).not.toThrow();
+  });
+});
+
+// --- verifyAndMaterialize ---
+
+describe('verifyAndMaterialize', () => {
+  const tempDirs = [];
+
+  afterEach(() => {
+    for (const dir of tempDirs) {
+      cleanup(dir);
+    }
+    tempDirs.length = 0;
+  });
+
+  function createTempDir() {
+    const dir = mkdtempSync(join(tmpdir(), 'gvc-vam-test-'));
+    tempDirs.push(dir);
+    return dir;
+  }
+
+  it('검증 성공 시 프로젝트에 파일을 기록한다', async () => {
+    const dir = createTempDir();
+    const md = '결과:\n```javascript src/app.js\nconst x = 1;\n```';
+    const task = { id: 'task-1', projectType: 'cli-tool' };
+
+    const result = await verifyAndMaterialize(md, task, dir);
+
+    expect(result.verified).toBe(true);
+    expect(result.buildResult.success).toBe(true);
+    expect(result.materializeResult).toBeDefined();
+    expect(result.materializeResult.materializedCount).toBe(1);
+    expect(existsSync(join(dir, 'src/app.js'))).toBe(true);
+  });
+
+  it('검증 실패 시 프로젝트에 파일을 기록하지 않는다', async () => {
+    const dir = createTempDir();
+    const md = '결과:\n```javascript src/broken.js\nconst x = {{\n```';
+    const task = { id: 'task-1', projectType: 'cli-tool' };
+
+    const result = await verifyAndMaterialize(md, task, dir);
+
+    expect(result.verified).toBe(false);
+    expect(result.materializeResult).toBeUndefined();
+    expect(existsSync(join(dir, 'src/broken.js'))).toBe(false);
+
+    // 실패 시 tempDir 보존 확인
+    if (result.tempDir) {
+      expect(existsSync(result.tempDir)).toBe(true);
+      cleanup(result.tempDir);
+    }
+  });
+
+  it('코드 블록이 없으면 null verified를 반환한다', async () => {
+    const dir = createTempDir();
+    const result = await verifyAndMaterialize('텍스트만', { id: 'task-1' }, dir);
+
+    expect(result.verified).toBeNull();
+    expect(result.reason).toBe('no-code-blocks');
+    expect(result.materializeResult).toBeUndefined();
+  });
+
+  it('codeBlockCount를 올바르게 보고한다', async () => {
+    const dir = createTempDir();
+    const md = '```javascript src/a.js\nconst a = 1;\n```\n```javascript src/b.js\nconst b = 2;\n```';
+    const task = { id: 'task-1', projectType: 'cli-tool' };
+
+    const result = await verifyAndMaterialize(md, task, dir);
+
+    expect(result.codeBlockCount).toBe(2);
+  });
+
+  it('검증 성공 시 buildResult와 testResult를 포함한다', async () => {
+    const dir = createTempDir();
+    const md = '```javascript src/x.js\nconst x = 1;\n```';
+    const task = { id: 'task-1', projectType: 'cli-tool' };
+
+    const result = await verifyAndMaterialize(md, task, dir);
+
+    expect(result.buildResult).toBeDefined();
+    expect(result.testResult).toBeDefined();
+  });
+
+  it('검증 실패 시 buildResult를 포함한다', async () => {
+    const dir = createTempDir();
+    const md = '```javascript src/err.js\nconst x = {{\n```';
+    const task = { id: 'task-1', projectType: 'cli-tool' };
+
+    const result = await verifyAndMaterialize(md, task, dir);
+
+    expect(result.verified).toBe(false);
+    expect(result.buildResult).toBeDefined();
+    expect(result.buildResult.success).toBe(false);
+
+    if (result.tempDir) cleanup(result.tempDir);
+  });
+
+  it('materialize 옵션을 전달한다', async () => {
+    const dir = createTempDir();
+    const md = '```javascript src/f.js\nconst f = 1;\n```';
+    const task = { id: 'task-1', projectType: 'cli-tool' };
+
+    const result = await verifyAndMaterialize(md, task, dir, { dryRun: true });
+
+    expect(result.verified).toBe(true);
+    expect(result.materializeResult.files[0].written).toBe(false);
+    expect(existsSync(join(dir, 'src/f.js'))).toBe(false);
+  });
+
+  it('task가 null이어도 동작한다', async () => {
+    const dir = createTempDir();
+    const md = '```javascript src/g.js\nconst g = 1;\n```';
+
+    const result = await verifyAndMaterialize(md, null, dir);
+
+    expect(result.verified).toBe(true);
+    expect(result.materializeResult.materializedCount).toBe(1);
+  });
+
+  it('다중 파일 검증+기록', async () => {
+    const dir = createTempDir();
+    const md = '```javascript src/a.js\nconst a = 1;\n```\n```javascript src/b.js\nconst b = 2;\n```';
+    const task = { id: 'task-1', projectType: 'cli-tool' };
+
+    const result = await verifyAndMaterialize(md, task, dir);
+
+    expect(result.verified).toBe(true);
+    expect(result.materializeResult.materializedCount).toBe(2);
+    expect(existsSync(join(dir, 'src/a.js'))).toBe(true);
+    expect(existsSync(join(dir, 'src/b.js'))).toBe(true);
   });
 });

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-import { createProject, getProject, listProjects, updateProjectStatus, setProjectTeam, setProjectPlan, addProjectTasks, setProjectReport, addDiscussionRound, addTaskReviews, updateTaskStatus, getExecutionProgress } from './lib/project-manager.js';
+import { createProject, getProject, listProjects, updateProjectStatus, setProjectTeam, setProjectPlan, addProjectTasks, setProjectReport, addDiscussionRound, addTaskReviews, updateTaskStatus, getExecutionProgress, addTaskMaterializationResult } from './lib/project-manager.js';
 import { recommendTeam, buildTeam, loadRoleCatalog, loadProjectTypes, getTeamSummary } from './lib/team-builder.js';
 import { buildDiscussionPrompt, buildPlanDocument, parseDiscussionOutput, buildSingleAgentDiscussionPrompt } from './lib/discussion-engine.js';
-import { buildTaskDistributionPrompt, buildExecutionPrompt, buildExecutionPlan, parseTaskList, buildExecutionPlanWithReviews } from './lib/task-distributor.js';
+import { buildTaskDistributionPrompt, buildExecutionPrompt, buildExecutionPlan, parseTaskList, buildExecutionPlanWithReviews, buildTddExecutionPrompt, isCodeTask } from './lib/task-distributor.js';
 import {
   buildAgentAnalysisPrompt, buildSynthesisPrompt, buildReviewPrompt,
   parseReviewOutput, checkConvergence, groupAgentsForParallelDispatch,
@@ -16,7 +16,8 @@ import {
   selectReviewers, buildTaskReviewPrompt, parseTaskReview,
   checkQualityGate, buildRevisionPrompt, checkEnhancedQualityGate,
 } from './lib/review-engine.js';
-import { verifyExecution } from './lib/execution-verifier.js';
+import { verifyExecution, verifyAndMaterialize } from './lib/execution-verifier.js';
+import { materializeCode, materializeBatch, extractMaterializableBlocks } from './lib/code-materializer.js';
 import { buildComplexityAnalysisPrompt, parseComplexityAnalysis, getDefaultsForComplexity } from './lib/complexity-analyzer.js';
 import { generateReport } from './lib/report-generator.js';
 import {
@@ -45,7 +46,7 @@ import {
 } from './lib/cross-model-strategy.js';
 import { verifyConnection } from './lib/llm-provider.js';
 import { setupProjectInfra, appendToClaudeMd } from './lib/project-scaffolder.js';
-import { checkGhStatus, createGithubRepo, gitInitAndPush } from './lib/github-manager.js';
+import { checkGhStatus, createGithubRepo, gitInitAndPush, commitPhase } from './lib/github-manager.js';
 
 const [,, command, ...args] = process.argv;
 
@@ -374,6 +375,62 @@ const commands = {
     const data = await readStdin();
     const result = checkEnhancedQualityGate(data.reviews, data.executionResult);
     output(result);
+  },
+
+  // --- Code materialization commands ---
+
+  'materialize-code': async () => {
+    const data = await readStdin();
+    const result = await materializeCode(data.taskOutput, data.projectDir, data.options || {});
+    output(result);
+  },
+
+  'materialize-batch': async () => {
+    const data = await readStdin();
+    const result = await materializeBatch(data.taskOutputs, data.projectDir, data.options || {});
+    output(result);
+  },
+
+  'verify-and-materialize': async () => {
+    const data = await readStdin();
+    const result = await verifyAndMaterialize(data.taskOutput, data.task, data.projectDir, data.options || {});
+    output(result);
+  },
+
+  'extract-materializable-blocks': async () => {
+    const data = await readStdin();
+    const blocks = extractMaterializableBlocks(data.taskOutput);
+    output({ blocks });
+  },
+
+  // --- TDD execution commands ---
+
+  'tdd-execution-prompt': async () => {
+    const data = await readStdin();
+    const prompt = buildTddExecutionPrompt(data.task, data.teamMember, data.context || {});
+    output({ prompt });
+  },
+
+  'is-code-task': async () => {
+    const data = await readStdin();
+    const result = isCodeTask(data.task);
+    output({ isCodeTask: result });
+  },
+
+  // --- Phase commit command ---
+
+  'commit-phase': async () => {
+    const data = await readStdin();
+    const result = commitPhase(data.projectDir, data.phase, data.message);
+    output(result);
+  },
+
+  // --- Task materialization result ---
+
+  'add-task-materialization': async () => {
+    const data = await readStdin();
+    const project = await addTaskMaterializationResult(data.id, data.taskId, data.materializeResult);
+    output(project);
   },
 
   // --- Complexity analyzer commands (v4.0) ---

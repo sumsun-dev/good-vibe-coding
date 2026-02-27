@@ -235,27 +235,62 @@ export async function verifyExecution(taskOutput, task) {
   const projectType = task?.projectType || 'cli-tool';
   let tempDir = null;
 
-  try {
-    const writeResult = writeTemporaryProject(classified, projectType);
-    tempDir = writeResult.tempDir;
+  const writeResult = writeTemporaryProject(classified, projectType);
+  tempDir = writeResult.tempDir;
 
-    const buildResult = attemptBuild(tempDir, projectType);
-    const testResult = attemptTests(tempDir, projectType);
+  const buildResult = attemptBuild(tempDir, projectType);
+  const testResult = attemptTests(tempDir, projectType);
 
-    const verified = buildResult.success === true;
+  const verified = buildResult.success === true;
 
-    return {
-      verified,
-      buildResult,
-      testResult,
-      codeBlockCount: codeBlocks.length,
-      tempDir,
-    };
-  } finally {
-    if (tempDir) {
-      cleanup(tempDir);
-    }
+  // 검증 성공 시 임시 디렉토리 삭제, 실패 시 디버깅용 보존
+  if (verified) {
+    cleanup(tempDir);
   }
+
+  return {
+    verified,
+    buildResult,
+    testResult,
+    codeBlockCount: codeBlocks.length,
+    tempDir,
+  };
+}
+
+/**
+ * /tmp에서 빌드 검증 후, 성공 시 프로젝트 디렉토리에 파일을 기록한다.
+ *
+ * @param {string} taskOutput - 태스크 실행 결과물 (마크다운)
+ * @param {object} task - 태스크 정보
+ * @param {string} projectDir - 프로젝트 디렉토리 경로
+ * @param {object} options - materializeCode 옵션
+ * @returns {Promise<{verified: boolean|null, buildResult?: object, testResult?: object, codeBlockCount: number, tempDir?: string, materializeResult?: object}>}
+ */
+export async function verifyAndMaterialize(taskOutput, task, projectDir, options = {}) {
+  const verifyResult = await verifyExecution(taskOutput, task);
+
+  if (verifyResult.verified === null || verifyResult.verified === false) {
+    return {
+      verified: verifyResult.verified,
+      reason: verifyResult.reason,
+      buildResult: verifyResult.buildResult,
+      testResult: verifyResult.testResult,
+      codeBlockCount: verifyResult.codeBlockCount,
+      tempDir: verifyResult.tempDir,
+    };
+  }
+
+  // 검증 성공 → 프로젝트에 기록 (lazy import으로 순환 의존성 방지)
+  const { materializeCode } = await import('./code-materializer.js');
+  const materializeResult = await materializeCode(taskOutput, projectDir, options);
+
+  return {
+    verified: true,
+    buildResult: verifyResult.buildResult,
+    testResult: verifyResult.testResult,
+    codeBlockCount: verifyResult.codeBlockCount,
+    materializeResult,
+  };
 }
 
 /**

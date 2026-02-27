@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import { execSync, execFileSync } from 'child_process';
 
 /**
  * gh CLI 설치 및 인증 상태를 확인한다.
@@ -77,6 +77,36 @@ export function createGithubRepo(repoName, options = {}) {
   } catch (err) {
     const message = err.stderr ? err.stderr.toString() : err.message;
     return { success: false, url: null, error: message };
+  }
+}
+
+/**
+ * Phase 완료 후 git add + commit을 수행한다.
+ * @param {string} projectDir - 프로젝트 디렉토리 경로
+ * @param {number|string} phase - Phase 번호
+ * @param {string} [message] - 커밋 메시지 (선택)
+ * @returns {{success: boolean, error: string|null}}
+ */
+export function commitPhase(projectDir, phase, message) {
+  if (!projectDir || typeof projectDir !== 'string') {
+    return { success: false, error: 'projectDir이 필요합니다' };
+  }
+  if (phase === undefined || phase === null) {
+    return { success: false, error: 'phase가 필요합니다' };
+  }
+
+  const commitMessage = message || `Phase ${phase} 완료`;
+
+  try {
+    const opts = { cwd: projectDir, stdio: 'pipe', encoding: 'utf-8' };
+
+    execFileSync('git', ['add', '-A'], opts);
+    execFileSync('git', ['commit', '-m', commitMessage, '--allow-empty'], opts);
+
+    return { success: true, error: null };
+  } catch (err) {
+    const errMessage = err.stderr ? err.stderr.toString() : err.message;
+    return { success: false, error: errMessage };
   }
 }
 

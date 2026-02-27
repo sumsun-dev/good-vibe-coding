@@ -161,3 +161,85 @@ export function buildExecutionPlan(tasks, team) {
 
   return { phases, dependencies };
 }
+
+/**
+ * 태스크가 코드 출력이 필요한 태스크인지 판별한다.
+ * @param {object} task - 태스크 객체
+ * @returns {boolean}
+ */
+export function isCodeTask(task) {
+  if (!task) return false;
+
+  const engineerRoles = ['backend', 'frontend', 'fullstack', 'devops', 'data'];
+
+  if (task.assignee && engineerRoles.includes(task.assignee)) {
+    return true;
+  }
+
+  const codeKeywords = [
+    '구현', '개발', '코딩',
+    'implement', 'develop', 'code', 'build', 'create',
+    'api', 'endpoint', 'component', 'function', 'module',
+    'class', 'service', 'controller', 'middleware', 'route',
+    'schema', 'migration', 'test', 'spec',
+  ];
+
+  const searchText = `${task.title || ''} ${task.description || ''}`.toLowerCase();
+
+  return codeKeywords.some((keyword) => searchText.includes(keyword));
+}
+
+/**
+ * TDD 방식의 실행 프롬프트를 생성한다.
+ * RED → GREEN → REFACTOR 사이클을 지시한다.
+ * @param {object} task - 태스크 객체
+ * @param {object} teamMember - 담당 팀원 정보
+ * @param {object} context - 추가 컨텍스트
+ * @param {string} [context.projectType] - 프로젝트 유형
+ * @param {string} [context.testFramework] - 테스트 프레임워크 (기본: 'vitest')
+ * @returns {string} TDD 실행 프롬프트
+ */
+export function buildTddExecutionPrompt(task, teamMember, context = {}) {
+  const testFramework = context.testFramework || 'vitest';
+
+  let prompt = `당신은 ${teamMember.emoji} **${teamMember.displayName}** (${teamMember.role})입니다.
+
+## 당신의 성격
+- 특성: ${teamMember.trait}
+- 말투: ${teamMember.speakingStyle}
+- 전문 분야: ${(teamMember.skills || []).join(', ')}
+
+## 작업
+- ID: ${task.id}
+- 제목: ${task.title}
+- 설명: ${task.description || '(상세 설명 없음)'}
+
+## TDD 실행 지침
+
+### Phase 1: RED — 실패하는 테스트 작성
+- 먼저 기대하는 동작을 테스트로 작성하세요
+- 테스트 프레임워크: ${testFramework}
+- 테스트 파일은 반드시 \`.test.js\` 접미사를 사용하세요
+- 이 시점에서 테스트는 반드시 실패해야 합니다
+
+### Phase 2: GREEN — 최소 구현
+- 테스트를 통과하는 최소한의 코드만 작성하세요
+- 불필요한 기능을 추가하지 마세요 (YAGNI)
+
+### Phase 3: REFACTOR — 리팩토링
+- 코드 품질을 개선하세요
+- 테스트는 계속 통과해야 합니다
+
+## 출력 규칙 (필수)
+- 모든 코드 블록에 **반드시 파일명을 포함**하세요
+  - 형식: \`\`\`javascript src/파일명.js
+- 테스트 파일: \`\`\`javascript src/파일명.test.js 또는 tests/파일명.test.js
+- 설정 파일: \`\`\`json package.json
+- 각 Phase의 결과를 순서대로 보고하세요`;
+
+  if (context.projectType) {
+    prompt += `\n\n## 프로젝트 힌트\n- 프로젝트 유형: ${context.projectType}`;
+  }
+
+  return prompt;
+}
