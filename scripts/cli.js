@@ -35,6 +35,7 @@ import {
 import {
   createEvalSession, recordApproachResult, compareApproaches,
   generateEvalReport, saveEvalSession, loadEvalSession, listEvalSessions,
+  buildSinglePromptBaseline,
 } from './lib/eval-engine.js';
 import {
   connectWithApiKey, connectGeminiCli, removeAuth, listConnectedProviders,
@@ -518,6 +519,12 @@ const commands = {
   'eval-list': async () => {
     const sessions = await listEvalSessions();
     output(sessions);
+  },
+
+  'eval-baseline-prompt': async () => {
+    const data = await readStdin();
+    const prompt = buildSinglePromptBaseline(data.description);
+    output({ prompt });
   },
 
   // --- Multi-model provider commands ---

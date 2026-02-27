@@ -1,4 +1,4 @@
-import { execSync, execFileSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { existsSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
@@ -12,14 +12,14 @@ export function checkGhStatus() {
   let username = null;
 
   try {
-    execSync('which gh', { stdio: 'pipe' });
+    execFileSync('which', ['gh'], { stdio: 'pipe' });
     installed = true;
   } catch {
     return { installed: false, authenticated: false, username: null };
   }
 
   try {
-    const output = execSync('gh auth status 2>&1', { stdio: 'pipe', encoding: 'utf-8' });
+    const output = execFileSync('gh', ['auth', 'status'], { stdio: 'pipe', encoding: 'utf-8' });
     if (output.includes('Logged in')) {
       authenticated = true;
       const match = output.match(/Logged in to [^\s]+ account (\S+)/);
@@ -63,14 +63,14 @@ export function createGithubRepo(repoName, options = {}) {
     return { success: false, url: null, error: 'repoName이 필요합니다' };
   }
 
-  const vis = visibility === 'public' ? '--public' : '--private';
-  const descFlag = description ? ` --description "${description.replace(/"/g, '\\"')}"` : '';
+  const args = ['repo', 'create', repoName];
+  args.push(visibility === 'public' ? '--public' : '--private');
+  if (description) {
+    args.push('--description', description);
+  }
 
   try {
-    const output = execSync(
-      `gh repo create ${repoName} ${vis}${descFlag} 2>&1`,
-      { stdio: 'pipe', encoding: 'utf-8' }
-    );
+    const output = execFileSync('gh', args, { stdio: 'pipe', encoding: 'utf-8' });
 
     const urlMatch = output.match(/(https:\/\/github\.com\/\S+)/);
     const url = urlMatch ? urlMatch[1] : null;
@@ -144,11 +144,11 @@ export function gitInitAndPush(projectDir, remoteUrl) {
   try {
     const opts = { cwd: projectDir, stdio: 'pipe', encoding: 'utf-8' };
 
-    execSync('git init', opts);
-    execSync('git add .', opts);
-    execSync('git commit -m "Initial commit"', opts);
-    execSync(`git remote add origin ${remoteUrl}`, opts);
-    execSync('git push -u origin main', opts);
+    execFileSync('git', ['init'], opts);
+    execFileSync('git', ['add', '.'], opts);
+    execFileSync('git', ['commit', '-m', 'Initial commit'], opts);
+    execFileSync('git', ['remote', 'add', 'origin', remoteUrl], opts);
+    execFileSync('git', ['push', '-u', 'origin', 'main'], opts);
 
     return { success: true, error: null };
   } catch (err) {

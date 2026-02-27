@@ -54,6 +54,7 @@ export async function materializeCode(taskOutput, projectDir, options = {}) {
       skippedCount: 0,
       unmaterializableCount: 0,
       failedCount: 0,
+      existsSkippedCount: 0,
       dryRunCount: 0,
       files: [],
     };
@@ -78,6 +79,7 @@ export async function materializeCode(taskOutput, projectDir, options = {}) {
       skippedCount: totalBlocks,
       unmaterializableCount,
       failedCount: 0,
+      existsSkippedCount: 0,
       dryRunCount: 0,
       files: [],
     };
@@ -91,6 +93,7 @@ export async function materializeCode(taskOutput, projectDir, options = {}) {
   let materializedCount = 0;
   let failedCount = 0;
   let dryRunCount = 0;
+  let existsSkippedCount = 0;
 
   for (const block of materializableBlocks) {
     const fullPath = resolve(projectDir, block.filename);
@@ -128,6 +131,8 @@ export async function materializeCode(taskOutput, projectDir, options = {}) {
 
       if (result.written) {
         materializedCount++;
+      } else {
+        existsSkippedCount++;
       }
     } catch (error) {
       fileRecord.written = false;
@@ -138,7 +143,7 @@ export async function materializeCode(taskOutput, projectDir, options = {}) {
     files.push(fileRecord);
   }
 
-  const skippedCount = unmaterializableCount + failedCount;
+  const skippedCount = unmaterializableCount + failedCount + existsSkippedCount;
 
   return {
     totalBlocks,
@@ -146,6 +151,7 @@ export async function materializeCode(taskOutput, projectDir, options = {}) {
     skippedCount,
     unmaterializableCount,
     failedCount,
+    existsSkippedCount,
     dryRunCount,
     files,
   };

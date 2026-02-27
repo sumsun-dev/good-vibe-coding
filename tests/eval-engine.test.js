@@ -14,6 +14,7 @@ import {
   loadEvalSession,
   listEvalSessions,
   setEvalDir,
+  buildSinglePromptBaseline,
 } from '../scripts/lib/eval-engine.js';
 
 let tmpDir;
@@ -570,6 +571,39 @@ describe('listEvalSessions', () => {
     setEvalDir('/tmp/nonexistent-eval-dir-' + Date.now());
     const list = await listEvalSessions();
     expect(list).toEqual([]);
+  });
+});
+
+// --- buildSinglePromptBaseline ---
+
+describe('buildSinglePromptBaseline', () => {
+  it('프로젝트 설명을 포함한다', () => {
+    const prompt = buildSinglePromptBaseline('날씨 알림 텔레그램 봇');
+    expect(prompt).toContain('날씨 알림 텔레그램 봇');
+  });
+
+  it('멀티에이전트 팀이 다루는 모든 분석 영역을 포함한다', () => {
+    const prompt = buildSinglePromptBaseline('테스트 프로젝트');
+    expect(prompt).toContain('아키텍처');
+    expect(prompt).toContain('기술 스택');
+    expect(prompt).toContain('작업 분해');
+    expect(prompt).toContain('API 설계');
+    expect(prompt).toContain('데이터베이스 스키마');
+    expect(prompt).toContain('에러 처리');
+    expect(prompt).toContain('위험 분석');
+    expect(prompt).toContain('타임라인');
+    expect(prompt).toContain('보안');
+    expect(prompt).toContain('테스트 전략');
+  });
+
+  it('마크다운 출력을 요청한다', () => {
+    const prompt = buildSinglePromptBaseline('프로젝트');
+    expect(prompt).toContain('마크다운');
+  });
+
+  it('코드 예시를 요청한다', () => {
+    const prompt = buildSinglePromptBaseline('프로젝트');
+    expect(prompt).toContain('코드 예시');
   });
 });
 

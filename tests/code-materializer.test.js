@@ -214,6 +214,9 @@ describe('materializeCode', () => {
     const result = await materializeCode(SINGLE_FILE_OUTPUT, dir, { overwrite: false });
 
     expect(result.files[0].written).toBe(false);
+    expect(result.existsSkippedCount).toBe(1);
+    expect(result.materializedCount).toBe(0);
+    expect(result.skippedCount).toBe(1);
   });
 
   it('backup 옵션이 true이면 백업 파일을 생성한다', async () => {
@@ -256,6 +259,7 @@ describe('materializeCode', () => {
     expect(result).toHaveProperty('skippedCount');
     expect(result).toHaveProperty('unmaterializableCount');
     expect(result).toHaveProperty('failedCount');
+    expect(result).toHaveProperty('existsSkippedCount');
     expect(result).toHaveProperty('dryRunCount');
     expect(result).toHaveProperty('files');
     expect(typeof result.totalBlocks).toBe('number');
@@ -263,6 +267,7 @@ describe('materializeCode', () => {
     expect(typeof result.skippedCount).toBe('number');
     expect(typeof result.unmaterializableCount).toBe('number');
     expect(typeof result.failedCount).toBe('number');
+    expect(typeof result.existsSkippedCount).toBe('number');
     expect(typeof result.dryRunCount).toBe('number');
     expect(Array.isArray(result.files)).toBe(true);
   });

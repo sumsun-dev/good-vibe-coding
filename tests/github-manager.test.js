@@ -1,10 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { checkGhStatus, createGithubRepo, gitInitAndPush, commitPhase, MINIMAL_GITIGNORE } from '../scripts/lib/github-manager.js';
-import { execSync, execFileSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { existsSync, writeFileSync } from 'fs';
 
 vi.mock('child_process', () => ({
-  execSync: vi.fn(),
   execFileSync: vi.fn(),
 }));
 
@@ -20,7 +19,7 @@ describe('github-manager', () => {
 
   describe('checkGhStatus', () => {
     it('gh가 설치되고 인증된 경우 정보를 반환한다', () => {
-      execSync
+      execFileSync
         .mockReturnValueOnce(Buffer.from('/usr/local/bin/gh'))
         .mockReturnValueOnce('Logged in to github.com account testuser');
 
@@ -31,7 +30,7 @@ describe('github-manager', () => {
     });
 
     it('gh가 미설치된 경우를 처리한다', () => {
-      execSync.mockImplementationOnce(() => {
+      execFileSync.mockImplementationOnce(() => {
         throw new Error('not found');
       });
 
@@ -42,7 +41,7 @@ describe('github-manager', () => {
     });
 
     it('gh가 설치됐지만 미인증인 경우를 처리한다', () => {
-      execSync
+      execFileSync
         .mockReturnValueOnce(Buffer.from('/usr/local/bin/gh'))
         .mockImplementationOnce(() => {
           const err = new Error('not logged in');
@@ -57,7 +56,7 @@ describe('github-manager', () => {
     });
 
     it('stderr에서 인증 정보를 파싱한다', () => {
-      execSync
+      execFileSync
         .mockReturnValueOnce(Buffer.from('/usr/local/bin/gh'))
         .mockImplementationOnce(() => {
           const err = new Error('');
@@ -74,34 +73,37 @@ describe('github-manager', () => {
 
   describe('createGithubRepo', () => {
     it('public 저장소를 생성한다', () => {
-      execSync.mockReturnValueOnce('https://github.com/user/my-repo');
+      execFileSync.mockReturnValueOnce('https://github.com/user/my-repo');
 
       const result = createGithubRepo('my-repo', { visibility: 'public' });
       expect(result.success).toBe(true);
       expect(result.url).toBe('https://github.com/user/my-repo');
 
-      expect(execSync).toHaveBeenCalledWith(
-        expect.stringContaining('--public'),
+      expect(execFileSync).toHaveBeenCalledWith(
+        'gh',
+        expect.arrayContaining(['--public']),
         expect.any(Object)
       );
     });
 
     it('private 저장소를 기본으로 생성한다', () => {
-      execSync.mockReturnValueOnce('https://github.com/user/my-repo');
+      execFileSync.mockReturnValueOnce('https://github.com/user/my-repo');
 
       createGithubRepo('my-repo');
-      expect(execSync).toHaveBeenCalledWith(
-        expect.stringContaining('--private'),
+      expect(execFileSync).toHaveBeenCalledWith(
+        'gh',
+        expect.arrayContaining(['--private']),
         expect.any(Object)
       );
     });
 
     it('설명을 포함하여 생성한다', () => {
-      execSync.mockReturnValueOnce('https://github.com/user/my-repo');
+      execFileSync.mockReturnValueOnce('https://github.com/user/my-repo');
 
       createGithubRepo('my-repo', { description: 'A test repo' });
-      expect(execSync).toHaveBeenCalledWith(
-        expect.stringContaining('--description'),
+      expect(execFileSync).toHaveBeenCalledWith(
+        'gh',
+        expect.arrayContaining(['--description', 'A test repo']),
         expect.any(Object)
       );
     });
@@ -113,7 +115,7 @@ describe('github-manager', () => {
     });
 
     it('gh 명령 실패 시 에러를 반환한다', () => {
-      execSync.mockImplementationOnce(() => {
+      execFileSync.mockImplementationOnce(() => {
         const err = new Error('failed');
         err.stderr = Buffer.from('Repository already exists');
         throw err;
@@ -127,21 +129,21 @@ describe('github-manager', () => {
 
   describe('gitInitAndPush', () => {
     it('git init부터 push까지 순서대로 실행한다', () => {
-      execSync.mockReturnValue('');
+      execFileSync.mockReturnValue('');
 
       const result = gitInitAndPush('/tmp/my-project', 'https://github.com/user/repo.git');
       expect(result.success).toBe(true);
 
-      const calls = execSync.mock.calls.map(c => c[0]);
+      const calls = execFileSync.mock.calls.map(c => [c[0], c[1]]);
       expect(calls).toEqual([
-        'git init',
-        'git add .',
-        'git commit -m "Initial commit"',
-        'git remote add origin https://github.com/user/repo.git',
-        'git push -u origin main',
+        ['git', ['init']],
+        ['git', ['add', '.']],
+        ['git', ['commit', '-m', 'Initial commit']],
+        ['git', ['remote', 'add', 'origin', 'https://github.com/user/repo.git']],
+        ['git', ['push', '-u', 'origin', 'main']],
       ]);
 
-      expect(execSync.mock.calls[0][1].cwd).toBe('/tmp/my-project');
+      expect(execFileSync.mock.calls[0][2].cwd).toBe('/tmp/my-project');
     });
 
     it('projectDir이 없으면 에러를 반환한다', () => {
@@ -157,7 +159,7 @@ describe('github-manager', () => {
     });
 
     it('git 명령 실패 시 에러를 반환한다', () => {
-      execSync.mockImplementationOnce(() => {
+      execFileSync.mockImplementationOnce(() => {
         const err = new Error('git failed');
         err.stderr = Buffer.from('fatal: not a git repository');
         throw err;
