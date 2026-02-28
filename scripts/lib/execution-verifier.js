@@ -8,6 +8,7 @@ import { execSync } from 'child_process';
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, dirname } from 'path';
+import { config } from './config.js';
 
 /** 실행 가능 언어 목록 */
 const EXECUTABLE_LANGUAGES = [
@@ -45,7 +46,7 @@ export const BUILD_STRATEGIES = {
     build: (tempDir) => {
       if (existsSync(join(tempDir, 'package.json'))) {
         const output = execSync('npm install --ignore-scripts && npm run build', {
-          cwd: tempDir, timeout: 30_000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+          cwd: tempDir, timeout: config.build.defaultTimeout, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
         });
         return { success: true, output, exitCode: 0 };
       }
@@ -56,7 +57,7 @@ export const BUILD_STRATEGIES = {
       }
       const checkCommands = jsFiles.map(f => `node --check "${f}"`).join(' && ');
       const output = execSync(checkCommands, {
-        cwd: tempDir, timeout: 30_000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+        cwd: tempDir, timeout: config.build.defaultTimeout, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
       });
       return { success: true, output: output || 'syntax check passed', exitCode: 0 };
     },
@@ -65,7 +66,7 @@ export const BUILD_STRATEGIES = {
         return { success: null, output: 'no package.json for test execution', exitCode: null };
       }
       const output = execSync('npm test', {
-        cwd: tempDir, timeout: 30_000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+        cwd: tempDir, timeout: config.build.defaultTimeout, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
       });
       return { success: true, output, exitCode: 0 };
     },
@@ -79,13 +80,13 @@ export const BUILD_STRATEGIES = {
       }
       const checkCommands = pyFiles.map(f => `python3 -m py_compile "${f}"`).join(' && ');
       const output = execSync(checkCommands, {
-        cwd: tempDir, timeout: 30_000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+        cwd: tempDir, timeout: config.build.defaultTimeout, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
       });
       return { success: true, output: output || 'python compile check passed', exitCode: 0 };
     },
     test: (tempDir) => {
       const output = execSync('python3 -m pytest', {
-        cwd: tempDir, timeout: 30_000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+        cwd: tempDir, timeout: config.build.defaultTimeout, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
       });
       return { success: true, output, exitCode: 0 };
     },

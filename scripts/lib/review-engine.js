@@ -8,6 +8,7 @@
  */
 
 import { parseJsonObject } from './json-parser.js';
+import { config } from './config.js';
 
 /** 범용 리뷰 역할: 어떤 작업이든 리뷰 가치가 높은 역할 */
 const UNIVERSAL_REVIEWER_ROLES = ['qa', 'security', 'cto'];
@@ -47,8 +48,7 @@ export function selectReviewers(task, team) {
 
   scored.sort((a, b) => b.score - a.score);
 
-  // 최소 2명, 최대 3명
-  const count = Math.max(2, Math.min(3, scored.length));
+  const count = Math.max(config.review.minReviewers, Math.min(config.review.maxReviewers, scored.length));
   return scored.slice(0, count).map(s => s.member);
 }
 

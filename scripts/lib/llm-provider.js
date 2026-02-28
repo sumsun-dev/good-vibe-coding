@@ -8,6 +8,7 @@
 
 import { loadAuth } from './auth-manager.js';
 import { callGeminiCli } from './gemini-bridge.js';
+import { config } from './config.js';
 
 /** 프로바이더별 API 엔드포인트 */
 const PROVIDER_ENDPOINTS = {
@@ -57,7 +58,7 @@ export async function callLLM(providerId, prompt, options = {}) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...headers },
     body: JSON.stringify(request.body),
-    signal: AbortSignal.timeout(options.timeout || 60000),
+    signal: AbortSignal.timeout(options.timeout || config.llm.defaultTimeout),
   });
 
   if (!response.ok) {
@@ -78,7 +79,7 @@ export async function callLLM(providerId, prompt, options = {}) {
  * @returns {{ url: string, body: object }}
  */
 export function buildProviderRequest(providerId, prompt, model, options = {}) {
-  const maxTokens = options.maxTokens || 4096;
+  const maxTokens = options.maxTokens || config.llm.defaultMaxTokens;
 
   switch (providerId) {
     case 'claude':
@@ -184,8 +185,8 @@ export function parseProviderResponse(providerId, data, model) {
 export async function verifyConnection(providerId) {
   try {
     const result = await callLLM(providerId, 'Hello, respond with just "ok".', {
-      maxTokens: 16,
-      timeout: 15000,
+      maxTokens: config.llm.pingMaxTokens,
+      timeout: config.llm.pingTimeout,
     });
     return { connected: true, model: result.model };
   } catch (err) {

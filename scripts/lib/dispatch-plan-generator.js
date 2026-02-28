@@ -8,6 +8,7 @@
 import { buildAgentAnalysisPrompt, buildSynthesisPrompt, buildReviewPrompt, groupAgentsForParallelDispatch } from './orchestrator.js';
 import { buildExecutionPlanWithReviews, buildExecutionPrompt, buildTddExecutionPrompt, isCodeTask } from './task-distributor.js';
 import { selectReviewers, buildTaskReviewPrompt } from './review-engine.js';
+import { config } from './config.js';
 
 /**
  * 토론 디스패치 계획을 생성한다.
@@ -28,12 +29,12 @@ export function buildDiscussionDispatchPlan(project, team, context = {}) {
       project: null,
       tiers: [],
       synthesisPrompt: '',
-      convergenceConfig: { threshold: 0.8, maxRounds: 3 },
+      convergenceConfig: { threshold: config.convergence.threshold, maxRounds: config.convergence.maxRounds },
     };
   }
 
   const round = context.round || 1;
-  const maxRounds = context.maxRounds || 3;
+  const maxRounds = context.maxRounds || config.convergence.maxRounds;
 
   const tiers = groupAgentsForParallelDispatch(team);
 
@@ -78,7 +79,7 @@ export function buildDiscussionDispatchPlan(project, team, context = {}) {
     synthesisPrompt,
     reviewPrompts,
     convergenceConfig: {
-      threshold: 0.8,
+      threshold: config.convergence.threshold,
       maxRounds,
     },
   };
@@ -102,7 +103,7 @@ export function buildExecutionDispatchPlan(project, tasks, team, context = {}) {
       type: 'execution',
       project: null,
       phases: [],
-      reviewConfig: { minReviewers: 2, maxRevisionRounds: 2 },
+      reviewConfig: { minReviewers: config.review.minReviewers, maxRevisionRounds: config.review.maxRevisionRounds },
     };
   }
 
@@ -173,8 +174,8 @@ export function buildExecutionDispatchPlan(project, tasks, team, context = {}) {
     phases,
     dependencies: executionPlan.dependencies,
     reviewConfig: {
-      minReviewers: 2,
-      maxRevisionRounds: 2,
+      minReviewers: config.review.minReviewers,
+      maxRevisionRounds: config.review.maxRevisionRounds,
     },
   };
 }

@@ -59,8 +59,9 @@ async function loadAllAuth() {
   try {
     const content = await readFile(authPath, 'utf-8');
     return JSON.parse(content);
-  } catch {
-    return {};
+  } catch (err) {
+    if (err.code === 'ENOENT') return {};
+    throw err;
   }
 }
 
@@ -129,8 +130,9 @@ export async function loadProvidersConfig() {
   try {
     const content = await readFile(configPath, 'utf-8');
     return JSON.parse(content);
-  } catch {
-    return { ...DEFAULT_PROVIDERS_CONFIG };
+  } catch (err) {
+    if (err.code === 'ENOENT') return { ...DEFAULT_PROVIDERS_CONFIG };
+    throw err;
   }
 }
 

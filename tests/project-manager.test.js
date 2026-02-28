@@ -22,6 +22,7 @@ import {
   updateExecutionState,
   recordMetrics,
 } from '../scripts/lib/project-manager.js';
+import { AppError } from '../scripts/lib/validators.js';
 
 const TMP_DIR = resolve('.tmp-test-project-manager');
 
@@ -432,6 +433,30 @@ describe('saveProject concurrency', () => {
     const updated = await setProjectPlan(project.id, '정상 기획서');
     expect(updated.discussion.planDocument).toBe('정상 기획서');
   });
+
+  it('10개 동시 쓰기가 모두 보존된다 (스트레스 테스트)', async () => {
+    const project = await createProject('스트레스', 'telegram-bot', '설명');
+    const updates = Array.from({ length: 10 }, (_, i) =>
+      setProjectPlan(project.id, `plan-${i}`)
+    );
+    const results = await Promise.all(updates);
+    const final = await getProject(project.id);
+    expect(results).toHaveLength(10);
+    expect(final.discussion.planDocument).toBe('plan-9');
+  });
+
+  it('서로 다른 projectId 간 병렬 쓰기는 비간섭이다', async () => {
+    const p1 = await createProject('프로젝트A', 'web-app', '설명A');
+    const p2 = await createProject('프로젝트B', 'cli-tool', '설명B');
+    await Promise.all([
+      setProjectPlan(p1.id, 'A의 기획서'),
+      setProjectPlan(p2.id, 'B의 기획서'),
+    ]);
+    const r1 = await getProject(p1.id);
+    const r2 = await getProject(p2.id);
+    expect(r1.discussion.planDocument).toBe('A의 기획서');
+    expect(r2.discussion.planDocument).toBe('B의 기획서');
+  });
 });
 
 describe('addDiscussionRound', () => {
@@ -485,5 +510,49 @@ describe('recordMetrics', () => {
   it('존재하지 않는 프로젝트는 에러를 던진다', async () => {
     await expect(recordMetrics('nonexistent', { type: 'agent-call' }))
       .rejects.toThrow('프로젝트를 찾을 수 없습니다');
+  });
+});
+
+describe('에러 타입 검증 (Phase 2)', () => {
+  it('존재하지 않는 프로젝트는 NOT_FOUND AppError를 던진다', async () => {
+    try {
+      await updateProjectStatus('no-exist', 'approved');
+    } catch (e) {
+      expect(e).toBeInstanceOf(AppError);
+      expect(e.code).toBe('NOT_FOUND');
+      expect(e.message).toContain('프로젝트를 찾을 수 없습니다');
+    }
+  });
+
+  it('유효하지 않은 상태는 INPUT_ERROR AppError를 던진다', async () => {
+    const project = await createProject('에러테스트', 'web-app', '설명');
+    try {
+      await updateProjectStatus(project.id, 'invalid');
+    } catch (e) {
+      expect(e).toBeInstanceOf(AppError);
+      expect(e.code).toBe('INPUT_ERROR');
+      expect(e.message).toContain('유효하지 않은 상태');
+    }
+  });
+
+  it('존재하지 않는 태스크는 NOT_FOUND AppError를 던진다', async () => {
+    const project = await createProject('에러테스트2', 'web-app', '설명');
+    try {
+      await updateTaskStatus(project.id, 'no-task', 'completed');
+    } catch (e) {
+      expect(e).toBeInstanceOf(AppError);
+      expect(e.code).toBe('NOT_FOUND');
+      expect(e.message).toContain('태스크를 찾을 수 없습니다');
+    }
+  });
+
+  it('유효하지 않은 모드는 INPUT_ERROR AppError를 던진다', async () => {
+    try {
+      await createProject('에러테스트3', 'web-app', '설명', { mode: 'bad-mode' });
+    } catch (e) {
+      expect(e).toBeInstanceOf(AppError);
+      expect(e.code).toBe('INPUT_ERROR');
+      expect(e.message).toContain('유효하지 않은 모드');
+    }
   });
 });

@@ -35,6 +35,20 @@ describe('file-writer', () => {
     it('존재하지 않는 파일은 false를 반환한다', async () => {
       expect(await fileExists(resolve(TMP_DIR, 'nope.txt'))).toBe(false);
     });
+
+    it('EACCES 에러는 전파한다 (ENOENT만 false)', async () => {
+      const { chmod, writeFile: wf } = await import('fs/promises');
+      const filePath = resolve(TMP_DIR, 'no-access-dir', 'test.txt');
+      const dirPath = resolve(TMP_DIR, 'no-access-dir');
+      await mkdir(dirPath, { recursive: true });
+      await wf(resolve(dirPath, 'dummy.txt'), 'x', 'utf-8');
+      await chmod(dirPath, 0o000);
+      try {
+        await expect(fileExists(resolve(dirPath, 'dummy.txt'))).rejects.toThrow();
+      } finally {
+        await chmod(dirPath, 0o755);
+      }
+    });
   });
 
   describe('backupFile', () => {

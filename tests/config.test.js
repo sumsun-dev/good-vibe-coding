@@ -1,0 +1,42 @@
+import { describe, it, expect } from 'vitest';
+import { config } from '../scripts/lib/config.js';
+
+describe('config', () => {
+  it('Object.freeze로 불변이다', () => {
+    expect(Object.isFrozen(config)).toBe(true);
+    expect(Object.isFrozen(config.convergence)).toBe(true);
+    expect(Object.isFrozen(config.similarity)).toBe(true);
+    expect(Object.isFrozen(config.execution)).toBe(true);
+    expect(Object.isFrozen(config.build)).toBe(true);
+    expect(Object.isFrozen(config.llm)).toBe(true);
+    expect(Object.isFrozen(config.review)).toBe(true);
+    expect(Object.isFrozen(config.team)).toBe(true);
+    expect(Object.isFrozen(config.team.simple)).toBe(true);
+  });
+
+  it('모든 설정값에 접근할 수 있다', () => {
+    expect(config.convergence.threshold).toBe(0.8);
+    expect(config.convergence.maxRounds).toBe(3);
+    expect(config.similarity.redundancyThreshold).toBe(0.7);
+    expect(config.similarity.contributionThreshold).toBe(0.5);
+    expect(config.execution.maxFixAttempts).toBe(2);
+    expect(config.execution.maxOutputLines).toBe(200);
+    expect(config.build.defaultTimeout).toBe(30_000);
+    expect(config.llm.defaultTimeout).toBe(60_000);
+    expect(config.llm.defaultMaxTokens).toBe(4096);
+    expect(config.llm.pingTimeout).toBe(15_000);
+    expect(config.llm.pingMaxTokens).toBe(16);
+    expect(config.review.minReviewers).toBe(2);
+    expect(config.review.maxReviewers).toBe(3);
+    expect(config.review.maxRevisionRounds).toBe(2);
+    expect(config.team.simple).toEqual({ min: 2, max: 3 });
+    expect(config.team.medium).toEqual({ min: 3, max: 5 });
+    expect(config.team.complex).toEqual({ min: 5, max: 8 });
+  });
+
+  it('값을 변경할 수 없다', () => {
+    expect(() => { config.convergence.threshold = 0.5; }).toThrow();
+    expect(() => { config.team.simple.min = 10; }).toThrow();
+    expect(config.convergence.threshold).toBe(0.8);
+  });
+});

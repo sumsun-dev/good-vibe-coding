@@ -18,8 +18,9 @@ export async function fileExists(filePath) {
   try {
     await access(filePath);
     return true;
-  } catch {
-    return false;
+  } catch (err) {
+    if (err.code === 'ENOENT') return false;
+    throw err;
   }
 }
 

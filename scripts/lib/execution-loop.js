@@ -21,10 +21,11 @@
 
 import { isCodeTask } from './task-distributor.js';
 import { getProject, updateExecutionState } from './project-manager.js';
+import { config } from './config.js';
 
 const VALID_STATUSES = ['idle', 'executing', 'reviewing', 'fixing', 'committing', 'paused', 'escalated', 'completed'];
 const VALID_PHASE_STEPS = ['execute-tasks', 'materialize', 'review', 'quality-gate', 'fix', 'commit', 'build-context'];
-const MAX_FIX_ATTEMPTS = 2;
+const MAX_FIX_ATTEMPTS = config.execution.maxFixAttempts;
 
 /**
  * 유효한 phaseStep 전이 맵.
@@ -70,6 +71,7 @@ export function createInitialExecutionState(mode = 'interactive') {
     startedAt: new Date().toISOString(),
     completedAt: null,
     phaseResults: {},
+    journal: [],
   };
 }
 
@@ -86,6 +88,11 @@ export function isValidExecutionState(state) {
   if (typeof state.fixAttempt !== 'number' || state.fixAttempt < 0) return false;
   if (!['interactive', 'auto'].includes(state.mode)) return false;
   if (!Array.isArray(state.completedPhases)) return false;
+  // 시맨틱 검증 강화
+  if (state.fixAttempt > MAX_FIX_ATTEMPTS) return false;
+  if (state.status === 'completed' && !state.completedAt) return false;
+  if (state.status === 'escalated' && !state.pendingEscalation) return false;
+  if (new Set(state.completedPhases).size !== state.completedPhases.length) return false;
   return true;
 }
 
@@ -367,6 +374,16 @@ export async function advanceExecution(projectId, stepResult) {
       throw new Error(`알 수 없는 completedAction: ${stepResult.completedAction}`);
   }
 
+  // 저널 기록
+  state.journal = [...(state.journal || [])];
+  state.journal.push({
+    timestamp: new Date().toISOString(),
+    action: stepResult.completedAction,
+    fromStep: project.executionState.phaseStep,
+    toStep: state.phaseStep,
+    phase: state.currentPhase,
+  });
+
   state.phaseResults[phase] = phaseResult;
   const updatedProject = await updateExecutionState(projectId, state);
 
@@ -483,4 +500,20 @@ export function getExecutionSummary(project) {
     percentage,
     display,
   };
+}
+
+/**
+ * 마지막 저널 엔트리 기준으로 실행이 부실(stale)한지 감지한다.
+ * @param {object} state - ExecutionState 객체
+ * @param {number} maxAgeMs - 최대 허용 나이 (밀리초)
+ * @returns {boolean} 부실 여부
+ */
+export function isStaleExecution(state, maxAgeMs) {
+  if (!state || !state.journal || state.journal.length === 0) {
+    // 저널이 없으면 startedAt 기준
+    if (!state || !state.startedAt) return true;
+    return (Date.now() - new Date(state.startedAt).getTime()) > maxAgeMs;
+  }
+  const lastEntry = state.journal[state.journal.length - 1];
+  return (Date.now() - new Date(lastEntry.timestamp).getTime()) > maxAgeMs;
 }

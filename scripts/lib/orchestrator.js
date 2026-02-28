@@ -5,6 +5,7 @@
 
 import { detectRedundantAgents } from './agent-optimizer.js';
 import { parseJsonObject } from './json-parser.js';
+import { config } from './config.js';
 
 /**
  * 개별 에이전트 분석 프롬프트를 생성한다 (역할별 독립 분석).
@@ -201,7 +202,7 @@ export function checkConvergence(reviews) {
 
   const approvedCount = reviews.filter(r => r.approved).length;
   const approvalRate = approvedCount / reviews.length;
-  const converged = approvalRate >= 0.8;
+  const converged = approvalRate >= config.convergence.threshold;
 
   const blockers = reviews
     .filter(r => !r.approved)

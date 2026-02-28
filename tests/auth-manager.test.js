@@ -98,6 +98,24 @@ describe('listConnectedProviders', () => {
   });
 });
 
+describe('loadAllAuth error propagation', () => {
+  it('JSON 파싱 에러는 전파한다', async () => {
+    const { writeFileSync } = await import('fs');
+    const authPath = join(tempDir, 'auth.json');
+    writeFileSync(authPath, '{ invalid json !!!', 'utf-8');
+    await expect(loadAuth('claude')).rejects.toThrow();
+  });
+});
+
+describe('loadProvidersConfig error propagation', () => {
+  it('JSON 파싱 에러는 전파한다', async () => {
+    const { writeFileSync } = await import('fs');
+    const configPath = join(tempDir, 'providers.json');
+    writeFileSync(configPath, '{ broken json', 'utf-8');
+    await expect(loadProvidersConfig()).rejects.toThrow();
+  });
+});
+
 // --- 프로바이더 설정 ---
 
 describe('loadProvidersConfig', () => {

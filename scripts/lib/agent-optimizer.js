@@ -3,6 +3,8 @@
  * 에이전트 출력 유사도 분석, 기여도 추적, 최적 팀 추천을 담당한다.
  */
 
+import { config } from './config.js';
+
 /** 범용 리뷰어 roleId 목록 (항상 유지 대상) */
 const UNIVERSAL_REVIEWERS = ['qa', 'security', 'cto'];
 
@@ -55,7 +57,7 @@ export function measureOutputSimilarity(outputA, outputB) {
  * @param {number} [threshold=0.7] - 유사도 임계값
  * @returns {Array<{roleId: string, similarTo: string, similarity: number}>} 중복 쌍 배열
  */
-export function detectRedundantAgents(agentOutputs, threshold = 0.7) {
+export function detectRedundantAgents(agentOutputs, threshold = config.similarity.redundancyThreshold) {
   if (!agentOutputs || agentOutputs.length < 2) {
     return [];
   }
@@ -159,14 +161,14 @@ export function recommendOptimalTeam(agentOutputs, roleContributions, teamSize) 
 
     if (isUniversal) {
       keep.push(roleId);
-      if (contribution < 0.5) {
+      if (contribution < config.similarity.contributionThreshold) {
         reasoning.push(
           `${roleId}: 범용 리뷰어로 유지하지만 기여도가 낮습니다 (${contribution.toFixed(2)}).`,
         );
       }
     } else if (isRedundant) {
       const pair = redundancies.find(r => r.roleId === roleId);
-      if (contribution < 0.5) {
+      if (contribution < config.similarity.contributionThreshold) {
         remove.push(roleId);
         reasoning.push(
           `${roleId}: ${pair.similarTo}와 유사도 ${pair.similarity.toFixed(2)}이고 기여도가 낮아 제거를 권장합니다.`,

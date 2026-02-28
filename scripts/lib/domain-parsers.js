@@ -4,6 +4,59 @@
  */
 
 import { parseJsonObject, parseJsonArray } from './json-parser.js';
+import { coerce } from './schema-validator.js';
+
+/** 리뷰 응답 스키마 */
+const REVIEW_SCHEMA = {
+  type: 'object',
+  properties: {
+    approved: { type: 'boolean', required: true, default: false },
+    feedback: { type: 'string', default: '' },
+    issues: {
+      type: 'array',
+      default: [],
+      items: {
+        type: 'object',
+        properties: {
+          severity: { type: 'string', enum: ['critical', 'major', 'minor'], default: 'minor' },
+          description: { type: 'string', default: '' },
+        },
+      },
+    },
+  },
+};
+
+/** 복잡도 분석 스키마 */
+const COMPLEXITY_SCHEMA = {
+  type: 'object',
+  properties: {
+    level: { type: 'string', enum: ['simple', 'medium', 'complex'], default: 'medium' },
+    reasoning: { type: 'string', default: '' },
+    recommendations: { type: 'array', default: [] },
+  },
+};
+
+/** 태스크 목록 아이템 스키마 */
+const TASK_ITEM_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: { type: 'string', default: '' },
+    title: { type: 'string', required: true, default: '' },
+    assignee: { type: 'string', default: '' },
+    phase: { type: 'number', default: 1 },
+  },
+};
+
+/** 개선 제안 아이템 스키마 */
+const SUGGESTION_ITEM_SCHEMA = {
+  type: 'object',
+  properties: {
+    section: { type: 'string', default: '' },
+    current: { type: 'string', default: '' },
+    suggested: { type: 'string', required: true, default: '' },
+    reason: { type: 'string', default: '' },
+  },
+};
 
 /**
  * 리뷰 응답을 파싱한다.
@@ -15,10 +68,11 @@ export function parseReviewResponse(rawResponse) {
   if (!parsed) {
     return { approved: false, feedback: '', issues: [], parseError: true };
   }
+  const coerced = coerce(parsed, REVIEW_SCHEMA);
   return {
-    approved: Boolean(parsed.approved),
-    feedback: parsed.feedback || '',
-    issues: normalizeIssues(parsed.issues),
+    approved: Boolean(coerced.approved),
+    feedback: coerced.feedback || '',
+    issues: normalizeIssues(coerced.issues),
   };
 }
 
@@ -32,11 +86,11 @@ export function parseComplexityResponse(rawResponse) {
   if (!parsed) {
     return { level: 'medium', reasoning: '', recommendations: [], parseError: true };
   }
-  const validLevels = ['simple', 'medium', 'complex'];
+  const coerced = coerce(parsed, COMPLEXITY_SCHEMA);
   return {
-    level: validLevels.includes(parsed.level) ? parsed.level : 'medium',
-    reasoning: parsed.reasoning || '',
-    recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : [],
+    level: coerced.level,
+    reasoning: coerced.reasoning,
+    recommendations: coerced.recommendations,
   };
 }
 
@@ -49,12 +103,15 @@ export function parseTaskListResponse(rawResponse) {
   const parsed = parseJsonArray(rawResponse);
   return parsed
     .filter(t => t && typeof t === 'object' && t.title)
-    .map((t, i) => ({
-      id: t.id || `task-${i + 1}`,
-      title: t.title || '',
-      assignee: t.assignee || '',
-      phase: t.phase || 1,
-    }));
+    .map((t, i) => {
+      const coerced = coerce(t, TASK_ITEM_SCHEMA);
+      return {
+        id: coerced.id || `task-${i + 1}`,
+        title: coerced.title,
+        assignee: coerced.assignee,
+        phase: coerced.phase,
+      };
+    });
 }
 
 /**
@@ -66,12 +123,15 @@ export function parseSuggestionsResponse(rawResponse) {
   const parsed = parseJsonArray(rawResponse);
   return parsed
     .filter(s => s && typeof s === 'object' && s.suggested)
-    .map(s => ({
-      section: s.section || '',
-      current: s.current || '',
-      suggested: s.suggested,
-      reason: s.reason || '',
-    }));
+    .map(s => {
+      const coerced = coerce(s, SUGGESTION_ITEM_SCHEMA);
+      return {
+        section: coerced.section,
+        current: coerced.current,
+        suggested: coerced.suggested,
+        reason: coerced.reason,
+      };
+    });
 }
 
 /**

@@ -10,6 +10,7 @@ import {
   getExecutionSummary,
   PHASE_TRANSITIONS,
   isValidTransition,
+  isStaleExecution,
 } from '../scripts/lib/execution-loop.js';
 import {
   createProject,
@@ -712,5 +713,126 @@ describe('PHASE_TRANSITIONS', () => {
 
   it('존재하지 않는 단계는 false를 반환한다', () => {
     expect(isValidTransition('unknown', 'commit')).toBe(false);
+  });
+});
+
+// --- Phase 3b: 시맨틱 검증 강화 + 저널 + isStaleExecution ---
+
+describe('isValidExecutionState 시맨틱 검증 (v4.5)', () => {
+  it('fixAttempt > maxFixAttempts이면 false', () => {
+    const state = createInitialExecutionState();
+    state.fixAttempt = 3;
+    expect(isValidExecutionState(state)).toBe(false);
+  });
+
+  it('completed 상태인데 completedAt이 없으면 false', () => {
+    const state = createInitialExecutionState();
+    state.status = 'completed';
+    state.completedAt = null;
+    expect(isValidExecutionState(state)).toBe(false);
+  });
+
+  it('completed + completedAt이 있으면 true', () => {
+    const state = createInitialExecutionState();
+    state.status = 'completed';
+    state.completedAt = new Date().toISOString();
+    expect(isValidExecutionState(state)).toBe(true);
+  });
+
+  it('escalated 상태인데 pendingEscalation이 없으면 false', () => {
+    const state = createInitialExecutionState();
+    state.status = 'escalated';
+    state.pendingEscalation = null;
+    expect(isValidExecutionState(state)).toBe(false);
+  });
+
+  it('escalated + pendingEscalation이 있으면 true', () => {
+    const state = createInitialExecutionState();
+    state.status = 'escalated';
+    state.pendingEscalation = { reason: 'test' };
+    expect(isValidExecutionState(state)).toBe(true);
+  });
+
+  it('completedPhases에 중복이 있으면 false', () => {
+    const state = createInitialExecutionState();
+    state.completedPhases = [1, 1, 2];
+    expect(isValidExecutionState(state)).toBe(false);
+  });
+});
+
+describe('createInitialExecutionState journal (v4.5)', () => {
+  it('초기 상태에 빈 journal 배열이 포함된다', () => {
+    const state = createInitialExecutionState();
+    expect(state.journal).toEqual([]);
+  });
+});
+
+describe('advanceExecution journal 기록 (v4.5)', () => {
+  it('상태 전이 시 저널 엔트리가 기록된다', async () => {
+    const project = await createTestProject(1);
+    await initExecution(project.id, { mode: 'auto' });
+    const { project: updated } = await advanceExecution(project.id, {
+      completedAction: 'execute-tasks',
+      taskResults: [{ taskId: 'task-1-1', output: '결과' }],
+    });
+    const journal = updated.executionState.journal;
+    expect(journal).toHaveLength(1);
+    expect(journal[0].action).toBe('execute-tasks');
+    expect(journal[0].fromStep).toBe('execute-tasks');
+    expect(journal[0].toStep).toBe('materialize');
+    expect(journal[0].phase).toBe(1);
+    expect(journal[0].timestamp).toBeTruthy();
+  });
+
+  it('여러 전이 시 저널이 누적된다', async () => {
+    const project = await createTestProject(1);
+    await initExecution(project.id, { mode: 'auto' });
+    await advanceExecution(project.id, { completedAction: 'execute-tasks' });
+    const { project: updated } = await advanceExecution(project.id, { completedAction: 'materialize' });
+    expect(updated.executionState.journal).toHaveLength(2);
+    expect(updated.executionState.journal[1].action).toBe('materialize');
+  });
+
+  it('기존 journal이 없는 상태에서도 정상 동작한다', async () => {
+    const project = await createTestProject(1);
+    await initExecution(project.id, { mode: 'auto' });
+    // 기존 journal 필드를 수동으로 제거한 뒤 테스트
+    const p = await getProject(project.id);
+    delete p.executionState.journal;
+    const { updateExecutionState } = await import('../scripts/lib/project-manager.js');
+    await updateExecutionState(project.id, p.executionState);
+    const { project: updated } = await advanceExecution(project.id, { completedAction: 'execute-tasks' });
+    expect(updated.executionState.journal).toHaveLength(1);
+  });
+});
+
+describe('isStaleExecution', () => {
+  it('최근 저널이 있으면 fresh로 판정한다', () => {
+    const state = {
+      startedAt: new Date().toISOString(),
+      journal: [{ timestamp: new Date().toISOString() }],
+    };
+    expect(isStaleExecution(state, 60_000)).toBe(false);
+  });
+
+  it('오래된 저널이면 stale로 판정한다', () => {
+    const old = new Date(Date.now() - 120_000).toISOString();
+    const state = {
+      startedAt: old,
+      journal: [{ timestamp: old }],
+    };
+    expect(isStaleExecution(state, 60_000)).toBe(true);
+  });
+
+  it('저널이 없으면 startedAt 기준으로 판정한다', () => {
+    const state = {
+      startedAt: new Date().toISOString(),
+      journal: [],
+    };
+    expect(isStaleExecution(state, 60_000)).toBe(false);
+  });
+
+  it('null 상태는 stale로 판정한다', () => {
+    expect(isStaleExecution(null, 60_000)).toBe(true);
   });
 });

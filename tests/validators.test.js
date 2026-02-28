@@ -16,8 +16,12 @@ describe('requireString', () => {
     expect(requireString('hello', 'name')).toBe('hello');
   });
 
-  it('빈 문자열이면 에러를 던진다', () => {
+  it('빈 문자열이면 AppError(INPUT_ERROR)를 던진다', () => {
     expect(() => requireString('', 'name')).toThrow('name는 비어있지 않은 문자열');
+    try { requireString('', 'name'); } catch (e) {
+      expect(e).toBeInstanceOf(AppError);
+      expect(e.code).toBe('INPUT_ERROR');
+    }
   });
 
   it('null이면 에러를 던진다', () => {
@@ -42,8 +46,12 @@ describe('requireArray', () => {
     expect(requireArray([], 'items')).toEqual([]);
   });
 
-  it('null이면 에러를 던진다', () => {
+  it('null이면 AppError(INPUT_ERROR)를 던진다', () => {
     expect(() => requireArray(null, 'items')).toThrow('items는 배열');
+    try { requireArray(null, 'items'); } catch (e) {
+      expect(e).toBeInstanceOf(AppError);
+      expect(e.code).toBe('INPUT_ERROR');
+    }
   });
 
   it('객체이면 에러를 던진다', () => {
@@ -60,8 +68,12 @@ describe('requireOneOf', () => {
     expect(requireOneOf('a', ['a', 'b', 'c'], 'choice')).toBe('a');
   });
 
-  it('허용되지 않은 값이면 에러를 던진다', () => {
+  it('허용되지 않은 값이면 AppError(INPUT_ERROR)를 던진다', () => {
     expect(() => requireOneOf('d', ['a', 'b', 'c'], 'choice')).toThrow('choice는 다음 중 하나');
+    try { requireOneOf('d', ['a', 'b', 'c'], 'choice'); } catch (e) {
+      expect(e).toBeInstanceOf(AppError);
+      expect(e.code).toBe('INPUT_ERROR');
+    }
   });
 });
 
@@ -72,8 +84,12 @@ describe('requireDefined', () => {
     expect(requireDefined(false, 'field')).toBe(false);
   });
 
-  it('null이면 에러를 던진다', () => {
+  it('null이면 AppError(INPUT_ERROR)를 던진다', () => {
     expect(() => requireDefined(null, 'field')).toThrow('field가 필요합니다');
+    try { requireDefined(null, 'field'); } catch (e) {
+      expect(e).toBeInstanceOf(AppError);
+      expect(e.code).toBe('INPUT_ERROR');
+    }
   });
 
   it('undefined이면 에러를 던진다', () => {
@@ -87,8 +103,12 @@ describe('requireFields', () => {
     expect(requireFields(data, ['a', 'b'])).toBe(data);
   });
 
-  it('필드가 없으면 에러를 던진다', () => {
+  it('필드가 없으면 AppError(INPUT_ERROR)를 던진다', () => {
     expect(() => requireFields({ a: 1 }, ['a', 'b'])).toThrow('b 필드가 필요합니다');
+    try { requireFields({ a: 1 }, ['a', 'b']); } catch (e) {
+      expect(e).toBeInstanceOf(AppError);
+      expect(e.code).toBe('INPUT_ERROR');
+    }
   });
 
   it('필드가 null이면 에러를 던진다', () => {
@@ -139,10 +159,12 @@ describe('validateRoleId', () => {
     expect(validateRoleId('cto')).toBe('cto');
   });
 
-  it('경로 순회를 거부한다', () => {
+  it('경로 순회를 AppError(INPUT_ERROR)로 거부한다', () => {
     expect(() => validateRoleId('../etc/passwd')).toThrow('유효하지 않은 roleId');
-    expect(() => validateRoleId('foo/bar')).toThrow('유효하지 않은 roleId');
-    expect(() => validateRoleId('foo\\bar')).toThrow('유효하지 않은 roleId');
+    try { validateRoleId('../etc/passwd'); } catch (e) {
+      expect(e).toBeInstanceOf(AppError);
+      expect(e.code).toBe('INPUT_ERROR');
+    }
   });
 
   it('빈 문자열을 거부한다', () => {

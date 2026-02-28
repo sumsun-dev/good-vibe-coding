@@ -4,6 +4,7 @@
  */
 
 import { parseJsonObject } from './json-parser.js';
+import { config } from './config.js';
 
 /**
  * 프로젝트 설명을 분석해 복잡도 판단 프롬프트를 생성한다.
@@ -91,7 +92,7 @@ export function parseComplexityAnalysis(rawOutput) {
 export function getDefaultsForComplexity(level) {
   const defaults = {
     simple: {
-      teamSize: { min: 2, max: 3 },
+      teamSize: { ...config.team.simple },
       discussionRounds: 0,
       reviewRounds: 1,
       suggestedRoles: ['cto', 'fullstack', 'qa'],
@@ -104,7 +105,7 @@ export function getDefaultsForComplexity(level) {
       },
     },
     medium: {
-      teamSize: { min: 3, max: 5 },
+      teamSize: { ...config.team.medium },
       discussionRounds: 1,
       reviewRounds: 1,
       suggestedRoles: ['cto', 'frontend', 'backend', 'qa'],
@@ -117,7 +118,7 @@ export function getDefaultsForComplexity(level) {
       },
     },
     complex: {
-      teamSize: { min: 5, max: 8 },
+      teamSize: { ...config.team.complex },
       discussionRounds: 3,
       reviewRounds: 2,
       suggestedRoles: ['cto', 'po', 'frontend', 'backend', 'qa', 'security'],

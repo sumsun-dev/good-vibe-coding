@@ -2,8 +2,10 @@ import { readFile, writeFile, readdir } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { ensureDir, fileExists } from './file-writer.js';
+import { inputError, notFoundError } from './validators.js';
 import { createMetricsSnapshot, recordAgentCall, recordPhaseCompletion } from './project-metrics.js';
 import { projectsDir } from './app-paths.js';
+import { config } from './config.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_BASE_DIR = projectsDir();
@@ -62,10 +64,39 @@ function getProjectFilePath(projectId) {
 const writeLocks = new Map();
 
 /**
- * 프로젝트를 디스크에 저장한다 (동시 쓰기 보호).
+ * 프로젝트 파일을 디스크에서 읽는다.
+ * @param {string} projectId - 프로젝트 ID
+ * @returns {Promise<object|null>} 프로젝트 또는 null (파일 없음)
  */
-async function saveProject(project) {
-  const projectId = project.id;
+async function readProjectFile(projectId) {
+  const filePath = getProjectFilePath(projectId);
+  try {
+    const content = await readFile(filePath, 'utf-8');
+    return JSON.parse(content);
+  } catch (err) {
+    if (err.code === 'ENOENT') return null;
+    throw err;
+  }
+}
+
+/**
+ * 프로젝트 객체를 디스크에 기록한다.
+ * @param {string} projectId - 프로젝트 ID
+ * @param {object} project - 프로젝트 객체
+ */
+async function writeProjectFile(projectId, project) {
+  const dir = getProjectDir(projectId);
+  await ensureDir(dir);
+  await writeFile(getProjectFilePath(projectId), JSON.stringify(project, null, 2), 'utf-8');
+}
+
+/**
+ * 프로젝트 락을 획득하고 read → mutate → write 사이클을 원자적으로 수행한다.
+ * @param {string} projectId - 프로젝트 ID
+ * @param {function} fn - (project) => updatedProject 변환 함수
+ * @returns {Promise<object>} 업데이트된 프로젝트
+ */
+async function withProjectLock(projectId, fn) {
   const prev = writeLocks.get(projectId) || Promise.resolve();
   let resolveLock;
   const lockPromise = new Promise(r => { resolveLock = r; });
@@ -73,13 +104,23 @@ async function saveProject(project) {
 
   await prev;
   try {
-    const dir = getProjectDir(projectId);
-    await ensureDir(dir);
-    await writeFile(getProjectFilePath(projectId), JSON.stringify(project, null, 2), 'utf-8');
-    return project;
+    const project = await readProjectFile(projectId);
+    if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${projectId}`);
+    const updated = fn(project);
+    await writeProjectFile(projectId, updated);
+    return updated;
   } finally {
     resolveLock();
   }
+}
+
+/**
+ * 프로젝트를 디스크에 저장한다 (createProject 전용 — 신규 파일 생성).
+ */
+async function saveProject(project) {
+  const projectId = project.id;
+  await writeProjectFile(projectId, project);
+  return project;
 }
 
 /**
@@ -91,11 +132,11 @@ async function saveProject(project) {
  * @returns {Promise<object>} 생성된 프로젝트
  */
 export async function createProject(name, type, description, options = {}) {
-  if (!name || typeof name !== 'string') throw new Error('name 필드가 필요합니다');
-  if (!type || typeof type !== 'string') throw new Error('type 필드가 필요합니다');
+  if (!name || typeof name !== 'string') throw inputError('name 필드가 필요합니다');
+  if (!type || typeof type !== 'string') throw inputError('type 필드가 필요합니다');
 
   const mode = options.mode || 'plan-only';
-  if (!VALID_MODES.includes(mode)) throw new Error(`유효하지 않은 모드: ${mode}`);
+  if (!VALID_MODES.includes(mode)) throw inputError(`유효하지 않은 모드: ${mode}`);
 
   const project = {
     id: generateProjectId(name),
@@ -124,10 +165,7 @@ export async function createProject(name, type, description, options = {}) {
  * @returns {Promise<object|null>} 프로젝트 또는 null
  */
 export async function getProject(projectId) {
-  const filePath = getProjectFilePath(projectId);
-  if (!(await fileExists(filePath))) return null;
-  const content = await readFile(filePath, 'utf-8');
-  return JSON.parse(content);
+  return readProjectFile(projectId);
 }
 
 /**
@@ -159,12 +197,9 @@ export async function listProjects() {
  */
 export async function updateProjectStatus(projectId, status) {
   if (!VALID_STATUSES.includes(status)) {
-    throw new Error(`유효하지 않은 상태: ${status}. 가능한 값: ${VALID_STATUSES.join(', ')}`);
+    throw inputError(`유효하지 않은 상태: ${status}. 가능한 값: ${VALID_STATUSES.join(', ')}`);
   }
-  const project = await getProject(projectId);
-  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
-  project.status = status;
-  return saveProject(project);
+  return withProjectLock(projectId, project => ({ ...project, status }));
 }
 
 /**
@@ -174,10 +209,7 @@ export async function updateProjectStatus(projectId, status) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function setProjectTeam(projectId, team) {
-  const project = await getProject(projectId);
-  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
-  project.team = team;
-  return saveProject(project);
+  return withProjectLock(projectId, project => ({ ...project, team }));
 }
 
 /**
@@ -187,10 +219,10 @@ export async function setProjectTeam(projectId, team) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function setProjectPlan(projectId, planDocument) {
-  const project = await getProject(projectId);
-  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
-  project.discussion.planDocument = planDocument;
-  return saveProject(project);
+  return withProjectLock(projectId, project => ({
+    ...project,
+    discussion: { ...project.discussion, planDocument },
+  }));
 }
 
 /**
@@ -200,10 +232,10 @@ export async function setProjectPlan(projectId, planDocument) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function addProjectTasks(projectId, tasks) {
-  const project = await getProject(projectId);
-  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
-  project.tasks = [...project.tasks, ...tasks];
-  return saveProject(project);
+  return withProjectLock(projectId, project => ({
+    ...project,
+    tasks: [...project.tasks, ...tasks],
+  }));
 }
 
 /**
@@ -213,10 +245,7 @@ export async function addProjectTasks(projectId, tasks) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function setProjectReport(projectId, report) {
-  const project = await getProject(projectId);
-  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
-  project.report = report;
-  return saveProject(project);
+  return withProjectLock(projectId, project => ({ ...project, report }));
 }
 
 /**
@@ -231,14 +260,14 @@ export async function setProjectReport(projectId, report) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function addDiscussionRound(projectId, roundData) {
-  const project = await getProject(projectId);
-  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
-  if (!project.discussion.rounds) project.discussion.rounds = [];
-  project.discussion.rounds.push(roundData);
-  if (roundData.synthesis) {
-    project.discussion.planDocument = roundData.synthesis;
-  }
-  return saveProject(project);
+  return withProjectLock(projectId, project => {
+    const rounds = [...(project.discussion.rounds || []), roundData];
+    const planDocument = roundData.synthesis || project.discussion.planDocument;
+    return {
+      ...project,
+      discussion: { ...project.discussion, rounds, planDocument },
+    };
+  });
 }
 
 /**
@@ -249,13 +278,16 @@ export async function addDiscussionRound(projectId, roundData) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function addTaskReviews(projectId, taskId, reviews) {
-  const project = await getProject(projectId);
-  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
-  const task = project.tasks.find(t => t.id === taskId);
-  if (!task) throw new Error(`태스크를 찾을 수 없습니다: ${taskId}`);
-  if (!task.reviews) task.reviews = [];
-  task.reviews.push(...reviews);
-  return saveProject(project);
+  return withProjectLock(projectId, project => {
+    const task = project.tasks.find(t => t.id === taskId);
+    if (!task) throw notFoundError(`태스크를 찾을 수 없습니다: ${taskId}`);
+    const updatedTasks = project.tasks.map(t =>
+      t.id === taskId
+        ? { ...t, reviews: [...(t.reviews || []), ...reviews] }
+        : t
+    );
+    return { ...project, tasks: updatedTasks };
+  });
 }
 
 /**
@@ -266,12 +298,14 @@ export async function addTaskReviews(projectId, taskId, reviews) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function updateTaskStatus(projectId, taskId, status) {
-  const project = await getProject(projectId);
-  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
-  const task = project.tasks.find(t => t.id === taskId);
-  if (!task) throw new Error(`태스크를 찾을 수 없습니다: ${taskId}`);
-  task.status = status;
-  return saveProject(project);
+  return withProjectLock(projectId, project => {
+    const task = project.tasks.find(t => t.id === taskId);
+    if (!task) throw notFoundError(`태스크를 찾을 수 없습니다: ${taskId}`);
+    const updatedTasks = project.tasks.map(t =>
+      t.id === taskId ? { ...t, status } : t
+    );
+    return { ...project, tasks: updatedTasks };
+  });
 }
 
 /**
@@ -282,16 +316,22 @@ export async function updateTaskStatus(projectId, taskId, status) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function addTaskMaterializationResult(projectId, taskId, materializeResult) {
-  const project = await getProject(projectId);
-  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
-  const task = project.tasks.find(t => t.id === taskId);
-  if (!task) throw new Error(`태스크를 찾을 수 없습니다: ${taskId}`);
-  if (!task.materialization) task.materialization = [];
-  task.materialization.push({
-    ...materializeResult,
-    timestamp: new Date().toISOString(),
+  return withProjectLock(projectId, project => {
+    const task = project.tasks.find(t => t.id === taskId);
+    if (!task) throw notFoundError(`태스크를 찾을 수 없습니다: ${taskId}`);
+    const updatedTasks = project.tasks.map(t =>
+      t.id === taskId
+        ? {
+            ...t,
+            materialization: [
+              ...(t.materialization || []),
+              { ...materializeResult, timestamp: new Date().toISOString() },
+            ],
+          }
+        : t
+    );
+    return { ...project, tasks: updatedTasks };
   });
-  return saveProject(project);
 }
 
 /**
@@ -304,19 +344,22 @@ export async function addTaskMaterializationResult(projectId, taskId, materializ
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function saveTaskOutput(projectId, taskId, taskOutput, options = {}) {
-  const project = await getProject(projectId);
-  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
-  const task = project.tasks.find(t => t.id === taskId);
-  if (!task) throw new Error(`태스크를 찾을 수 없습니다: ${taskId}`);
+  return withProjectLock(projectId, project => {
+    const task = project.tasks.find(t => t.id === taskId);
+    if (!task) throw notFoundError(`태스크를 찾을 수 없습니다: ${taskId}`);
 
-  const output = taskOutput || '';
-  const maxLines = options.maxLines || 200;
-  const lines = output.split('\n');
-  task.taskOutput = lines.length > maxLines
-    ? lines.slice(0, maxLines).join('\n') + '\n...(truncated)'
-    : output;
+    const output = taskOutput || '';
+    const maxLines = options.maxLines || config.execution.maxOutputLines;
+    const lines = output.split('\n');
+    const truncatedOutput = lines.length > maxLines
+      ? lines.slice(0, maxLines).join('\n') + '\n...(truncated)'
+      : output;
 
-  return saveProject(project);
+    const updatedTasks = project.tasks.map(t =>
+      t.id === taskId ? { ...t, taskOutput: truncatedOutput } : t
+    );
+    return { ...project, tasks: updatedTasks };
+  });
 }
 
 /**
@@ -326,10 +369,7 @@ export async function saveTaskOutput(projectId, taskId, taskOutput, options = {}
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function updateExecutionState(projectId, executionState) {
-  const project = await getProject(projectId);
-  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
-  project.executionState = executionState;
-  return saveProject(project);
+  return withProjectLock(projectId, project => ({ ...project, executionState }));
 }
 
 /**
@@ -374,19 +414,18 @@ export function getExecutionProgress(project) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function recordMetrics(projectId, event) {
-  const project = await getProject(projectId);
-  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
+  return withProjectLock(projectId, project => {
+    // 하위 호환: 기존 프로젝트에 metrics가 없으면 생성
+    const metrics = project.metrics
+      ? { ...project.metrics }
+      : createMetricsSnapshot();
 
-  // 하위 호환: 기존 프로젝트에 metrics가 없으면 생성
-  if (!project.metrics) {
-    project.metrics = createMetricsSnapshot();
-  }
+    if (event.type === 'agent-call') {
+      recordAgentCall(metrics, event);
+    } else if (event.type === 'phase-completion') {
+      recordPhaseCompletion(metrics, event);
+    }
 
-  if (event.type === 'agent-call') {
-    recordAgentCall(project.metrics, event);
-  } else if (event.type === 'phase-completion') {
-    recordPhaseCompletion(project.metrics, event);
-  }
-
-  return saveProject(project);
+    return { ...project, metrics };
+  });
 }

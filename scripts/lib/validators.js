@@ -37,7 +37,7 @@ export function notFoundError(message) {
  */
 export function requireString(value, fieldName) {
   if (!value || typeof value !== 'string') {
-    throw new Error(`${fieldName}는 비어있지 않은 문자열이어야 합니다`);
+    throw inputError(`${fieldName}는 비어있지 않은 문자열이어야 합니다`);
   }
   return value;
 }
@@ -50,7 +50,7 @@ export function requireString(value, fieldName) {
  */
 export function requireArray(value, fieldName) {
   if (!Array.isArray(value)) {
-    throw new Error(`${fieldName}는 배열이어야 합니다`);
+    throw inputError(`${fieldName}는 배열이어야 합니다`);
   }
   return value;
 }
@@ -64,7 +64,7 @@ export function requireArray(value, fieldName) {
  */
 export function requireOneOf(value, allowed, fieldName) {
   if (!allowed.includes(value)) {
-    throw new Error(`${fieldName}는 다음 중 하나여야 합니다: ${allowed.join(', ')}`);
+    throw inputError(`${fieldName}는 다음 중 하나여야 합니다: ${allowed.join(', ')}`);
   }
   return value;
 }
@@ -77,7 +77,7 @@ export function requireOneOf(value, allowed, fieldName) {
  */
 export function requireDefined(value, fieldName) {
   if (value === null || value === undefined) {
-    throw new Error(`${fieldName}가 필요합니다`);
+    throw inputError(`${fieldName}가 필요합니다`);
   }
   return value;
 }
@@ -91,7 +91,7 @@ export function requireDefined(value, fieldName) {
 export function requireFields(data, fields) {
   for (const field of fields) {
     if (data[field] === undefined || data[field] === null) {
-      throw new Error(`${field} 필드가 필요합니다`);
+      throw inputError(`${field} 필드가 필요합니다`);
     }
   }
   return data;
@@ -105,7 +105,7 @@ export function requireFields(data, fields) {
 export function validateRoleId(roleId) {
   requireString(roleId, 'roleId');
   if (/[/\\]/.test(roleId) || roleId.includes('..')) {
-    throw new Error(`유효하지 않은 roleId: ${roleId}`);
+    throw inputError(`유효하지 않은 roleId: ${roleId}`);
   }
   return roleId;
 }
