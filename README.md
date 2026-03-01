@@ -22,13 +22,30 @@
 - **에이전트 피드백**: 프로젝트 결과 분석 → 에이전트 .md 수정안 자동 제안 → 오버라이드 저장
 - **한국어 지원**: 가이드, 프롬프트, 에이전트, 커맨드가 한국어 (CLI 출력 및 코드 주석은 영어)
 
-## 퀵스타트
+## 설치
+
+### Claude Code 플러그인으로 설치 (권장)
+
+```bash
+claude plugin add sumsun-dev/good-vibe-coding
+```
+
+### 로컬 설치
 
 ```bash
 git clone https://github.com/sumsun-dev/good-vibe-coding.git
 cd good-vibe-coding
 npm install
+claude plugin add .
 ```
+
+### 요구사항
+
+- [Claude Code](https://claude.ai/code) 2.0+
+- Node.js 18+
+- (선택) [GitHub CLI](https://cli.github.com/) — `/hello`에서 저장소 자동 생성 시 필요
+
+## 퀵스타트
 
 6개 커맨드로 프로젝트를 완성하세요:
 
