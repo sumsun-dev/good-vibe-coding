@@ -85,6 +85,52 @@ describe('parseTaskListResponse', () => {
   });
 });
 
+describe('parseReviewResponse — 엣지케이스', () => {
+  it('issues가 배열이 아니면 빈 배열을 반환한다', () => {
+    const raw = JSON.stringify({ approved: true, feedback: 'OK', issues: '없음' });
+    const result = parseReviewResponse(raw);
+    expect(result.issues).toEqual([]);
+  });
+
+  it('issues가 null이면 빈 배열을 반환한다', () => {
+    const raw = JSON.stringify({ approved: true, feedback: 'OK', issues: null });
+    const result = parseReviewResponse(raw);
+    expect(result.issues).toEqual([]);
+  });
+
+  it('severity가 없는 이슈는 minor로 기본 설정된다', () => {
+    const raw = JSON.stringify({
+      approved: false,
+      feedback: '수정 필요',
+      issues: [{ description: 'severity 없음' }],
+    });
+    const result = parseReviewResponse(raw);
+    expect(result.issues[0].severity).toBe('minor');
+  });
+
+  it('description이 없는 이슈는 빈 문자열로 기본 설정된다', () => {
+    const raw = JSON.stringify({
+      approved: false,
+      feedback: 'issues',
+      issues: [{ severity: 'important' }],
+    });
+    const result = parseReviewResponse(raw);
+    expect(result.issues[0].description).toBe('');
+  });
+
+  it('feedback이 없으면 빈 문자열을 반환한다', () => {
+    const raw = JSON.stringify({ approved: true, issues: [] });
+    const result = parseReviewResponse(raw);
+    expect(result.feedback).toBe('');
+  });
+
+  it('feedback이 null이면 빈 문자열을 반환한다', () => {
+    const raw = JSON.stringify({ approved: false, feedback: null, issues: [] });
+    const result = parseReviewResponse(raw);
+    expect(result.feedback).toBe('');
+  });
+});
+
 describe('parseSuggestionsResponse', () => {
   it('제안을 파싱한다', () => {
     const raw = JSON.stringify([

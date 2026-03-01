@@ -267,6 +267,19 @@ describe('getNextExecutionStep', () => {
     const result = getNextExecutionStep(project);
     expect(result.action).toBe('complete');
   });
+
+  it('알 수 없는 phaseStep이면 not-started를 반환한다', () => {
+    const state = createInitialExecutionState();
+    state.phaseStep = 'unknown-step';
+    const project = {
+      tasks: [{ id: 't1', phase: 1 }],
+      executionState: state,
+    };
+    const result = getNextExecutionStep(project);
+    expect(result.action).toBe('not-started');
+    expect(result.description).toContain('알 수 없는 phaseStep');
+    expect(result.description).toContain('unknown-step');
+  });
 });
 
 describe('getExecutionSummary', () => {
@@ -317,6 +330,19 @@ describe('getExecutionSummary', () => {
     const project = { tasks: [{ id: 't1', phase: 1 }], executionState: state };
     const summary = getExecutionSummary(project);
     expect(summary.display).toContain('CEO 결정 대기');
+  });
+
+  it('paused 상태 display를 반환한다', () => {
+    const state = createInitialExecutionState();
+    state.status = 'paused';
+    const project = {
+      tasks: [{ id: 't1', phase: 1 }, { id: 't2', phase: 2 }],
+      executionState: state,
+    };
+    const summary = getExecutionSummary(project);
+    expect(summary.display).toContain('일시 중지');
+    expect(summary.status).toBe('paused');
+    expect(summary.percentage).toBe(0);
   });
 });
 

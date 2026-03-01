@@ -3,7 +3,15 @@
  * 모든 모듈이 이 모듈을 통해 경로를 참조한다.
  */
 
-import { resolve } from 'path';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+/** 플러그인 루트 디렉토리 (이 프로젝트의 소스 루트) */
+export function pluginRoot() {
+  return resolve(__dirname, '../..');
+}
 
 function homeDir() {
   return process.env.HOME || process.env.USERPROFILE || '';

@@ -206,6 +206,20 @@ describe('connectWithApiKey', () => {
     const auth = await loadAuth('claude');
     expect(auth.apiKey).toBe('sk-trimmed');
   });
+
+  it('반환값에 apiKey가 노출되지 않는다 (보안)', async () => {
+    const result = await connectWithApiKey('claude', 'sk-secret-key');
+    expect(result.apiKey).toBeUndefined();
+    expect(JSON.stringify(result)).not.toContain('sk-secret-key');
+  });
+
+  it('알 수 없는 프로바이더는 에러를 던진다', async () => {
+    await expect(connectWithApiKey('unknown-provider', 'sk-test')).rejects.toThrow('알 수 없는 프로바이더');
+  });
+
+  it('null API Key는 에러를 던진다', async () => {
+    await expect(connectWithApiKey('claude', null)).rejects.toThrow();
+  });
 });
 
 // --- 상태 요약 ---

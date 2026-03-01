@@ -1,11 +1,9 @@
 import { readFile } from 'fs/promises';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { resolve } from 'path';
 import { requireString, assertWithinRoot } from './validators.js';
+import { pluginRoot } from './app-paths.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = resolve(__dirname, '../..');
-const PRESETS_DIR = resolve(PROJECT_ROOT, 'presets');
+const PRESETS_DIR = resolve(pluginRoot(), 'presets');
 
 /**
  * 프리셋 JSON 파일을 로딩한다.

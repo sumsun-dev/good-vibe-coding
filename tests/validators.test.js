@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { resolve, sep } from 'path';
 import {
   requireString,
   requireArray,
@@ -6,6 +7,7 @@ import {
   requireDefined,
   requireFields,
   validateRoleId,
+  assertWithinRoot,
   AppError,
   inputError,
   notFoundError,
@@ -173,5 +175,54 @@ describe('validateRoleId', () => {
 
   it('null을 거부한다', () => {
     expect(() => validateRoleId(null)).toThrow('비어있지 않은 문자열');
+  });
+
+  it('백슬래시를 거부한다', () => {
+    expect(() => validateRoleId('dir\\evil')).toThrow('유효하지 않은 roleId');
+  });
+
+  it('슬래시를 거부한다', () => {
+    expect(() => validateRoleId('dir/evil')).toThrow('유효하지 않은 roleId');
+  });
+
+  it('점점만으로 된 경로를 거부한다', () => {
+    expect(() => validateRoleId('..')).toThrow('유효하지 않은 roleId');
+  });
+});
+
+// --- assertWithinRoot (보안: path traversal 방지) ---
+
+describe('assertWithinRoot', () => {
+  const root = resolve('/project/dir');
+
+  it('루트 내부 경로를 허용한다', () => {
+    expect(() => assertWithinRoot(resolve('/project/dir/src/app.js'), root, 'file')).not.toThrow();
+  });
+
+  it('루트 자체를 허용한다', () => {
+    expect(() => assertWithinRoot(root, root, 'file')).not.toThrow();
+  });
+
+  it('루트 바깥 경로를 거부한다', () => {
+    expect(() => assertWithinRoot(resolve('/project/other'), root, 'file')).toThrow('허용 범위를 벗어났습니다');
+    try {
+      assertWithinRoot(resolve('/project/other'), root, 'file');
+    } catch (e) {
+      expect(e).toBeInstanceOf(AppError);
+      expect(e.code).toBe('INPUT_ERROR');
+    }
+  });
+
+  it('../로 탈출하는 경로를 거부한다', () => {
+    expect(() => assertWithinRoot(resolve('/project/dir/../other'), root, 'file')).toThrow('허용 범위를 벗어났습니다');
+  });
+
+  it('루트 이름의 prefix 디렉토리를 거부한다', () => {
+    // /project/dir-evil은 /project/dir로 시작하지만 sep가 아님
+    expect(() => assertWithinRoot(resolve('/project/dir-evil/file'), root, 'file')).toThrow('허용 범위를 벗어났습니다');
+  });
+
+  it('절대 경로가 완전히 다른 경우를 거부한다', () => {
+    expect(() => assertWithinRoot(resolve('/etc/passwd'), root, 'file')).toThrow('허용 범위를 벗어났습니다');
   });
 });

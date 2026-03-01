@@ -318,6 +318,15 @@ describe('parseTaskReview', () => {
     const result = parseTaskReview(raw);
     expect(result.issues[0].suggestion).toBe('');
   });
+
+  it('description이 없는 이슈는 빈 문자열로 기본 설정된다', () => {
+    const raw = JSON.stringify({
+      verdict: 'request-changes',
+      issues: [{ severity: 'critical' }],
+    });
+    const result = parseTaskReview(raw);
+    expect(result.issues[0].description).toBe('');
+  });
 });
 
 // --- checkQualityGate ---
@@ -367,6 +376,17 @@ describe('checkQualityGate', () => {
   it('minor 이슈만 있으면 통과한다', () => {
     const reviews = [
       { verdict: 'approve', issues: [{ severity: 'minor', description: '스타일' }] },
+    ];
+    const result = checkQualityGate(reviews);
+    expect(result.passed).toBe(true);
+    expect(result.criticalCount).toBe(0);
+    expect(result.importantCount).toBe(0);
+  });
+
+  it('issues 필드가 없는 리뷰도 처리한다', () => {
+    const reviews = [
+      { verdict: 'approve' },
+      { verdict: 'approve', issues: undefined },
     ];
     const result = checkQualityGate(reviews);
     expect(result.passed).toBe(true);
@@ -435,6 +455,15 @@ describe('buildRevisionPrompt', () => {
     const prompt = buildRevisionPrompt(task, implementer, reviews);
     expect(prompt).toContain('이슈1');
     expect(prompt).toContain('이슈2');
+  });
+
+  it('issues 필드가 없는 리뷰도 처리한다', () => {
+    const reviews = [
+      { verdict: 'request-changes' },
+      { verdict: 'request-changes', issues: [{ severity: 'critical', description: '실제 이슈' }] },
+    ];
+    const prompt = buildRevisionPrompt(task, implementer, reviews);
+    expect(prompt).toContain('실제 이슈');
   });
 });
 

@@ -493,3 +493,51 @@ describe('E2E: isCodeTask + extractMaterializableBlocks 통합', () => {
     expect(blocks.length).toBe(0);
   });
 });
+
+// --- CLI 에러 경로 ---
+
+describe('E2E: CLI 에러 경로', () => {
+  function cliExecRaw(command, input) {
+    try {
+      execSync(`node ${CLI_PATH} ${command}`, {
+        input: input ? JSON.stringify(input) : '',
+        encoding: 'utf-8',
+        timeout: 10_000,
+      });
+      return { exitCode: 0, stderr: '' };
+    } catch (err) {
+      return { exitCode: err.status, stderr: err.stderr || '' };
+    }
+  }
+
+  it('존재하지 않는 커맨드는 exit 1과 사용 가능한 명령 목록을 반환한다', () => {
+    const result = cliExecRaw('nonexistent-command-xyz');
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain('사용 가능한 명령');
+  });
+
+  it('유사한 커맨드를 제안한다', () => {
+    const result = cliExecRaw('build-teem');  // build-team 유사
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain('혹시 이 커맨드를 찾으셨나요?');
+    expect(result.stderr).toContain('build-team');
+  });
+
+  it('커맨드 없이 실행하면 사용법을 출력한다', () => {
+    const result = cliExecRaw('');
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain('사용법');
+  });
+
+  it('필수 필드 누락 시 INPUT_ERROR exit 2를 반환한다', () => {
+    const result = cliExecRaw('create-project', {});
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('INPUT_ERROR');
+  });
+
+  it('존재하지 않는 프로젝트 조회 시 NOT_FOUND exit 3을 반환한다', () => {
+    const result = cliExecRaw('get-project --id non-existent-id-xyz');
+    expect(result.exitCode).toBe(3);
+    expect(result.stderr).toContain('NOT_FOUND');
+  });
+});

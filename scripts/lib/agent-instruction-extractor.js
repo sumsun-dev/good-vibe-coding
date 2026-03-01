@@ -1,10 +1,8 @@
 import { readFile } from 'fs/promises';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { resolve } from 'path';
+import { pluginRoot } from './app-paths.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = resolve(__dirname, '../..');
-const AGENTS_DIR = resolve(PROJECT_ROOT, 'agents');
+const AGENTS_DIR = resolve(pluginRoot(), 'agents');
 
 /**
  * 마크다운 콘텐츠에서 "## 지시사항" 이하의 내용을 추출한다.

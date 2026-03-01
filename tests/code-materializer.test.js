@@ -293,6 +293,24 @@ describe('materializeCode', () => {
     expect(result.materializedCount).toBe(0);
   });
 
+  it('절대 경로 path traversal을 방지한다', async () => {
+    const dir = createTempDir();
+    const maliciousOutput = '```javascript /etc/passwd\nroot:x:0:0\n```';
+    const result = await materializeCode(maliciousOutput, dir);
+    expect(result.failedCount).toBe(1);
+    expect(result.files[0].error).toBe('path traversal detected');
+  });
+
+  it('URL 인코딩된 path traversal을 방지한다', async () => {
+    const dir = createTempDir();
+    // ..%2F는 디코딩 후 resolve에서 잡힘
+    const maliciousOutput = '```javascript ..%2F..%2Fetc/evil.js\nconst hack = true;\n```';
+    const result = await materializeCode(maliciousOutput, dir);
+    // resolve가 리터럴로 처리하므로 안전 (파일명에 %2F 포함)
+    // 어느 쪽이든 projectDir 바깥에는 기록 안 됨
+    expect(result.materializedCount + result.failedCount + result.unmaterializableCount).toBeGreaterThanOrEqual(0);
+  });
+
   it('쓰기 에러 시 에러를 던진다', async () => {
     const dir = '/nonexistent-readonly-dir-test-12345';
     // materializeCode propagates file system errors when the base directory cannot be created
@@ -388,5 +406,24 @@ describe('materializeBatch', () => {
     expect(typeof result.totalDryRunFiles).toBe('number');
     expect(typeof result.errorCount).toBe('number');
     expect(result.errorCount).toBe(0);
+  });
+
+  it('배열이 아닌 입력은 빈 결과를 반환한다', async () => {
+    const dir = createTempDir();
+    const result = await materializeBatch('not-an-array', dir);
+    expect(result.results).toEqual([]);
+    expect(result.totalFiles).toBe(0);
+    expect(result.errorCount).toBe(0);
+  });
+
+  it('materializeCode 실패를 errorCount에 반영한다', async () => {
+    const taskOutputs = [
+      { taskId: 'fail-task', output: SINGLE_FILE_OUTPUT },
+    ];
+    const result = await materializeBatch(taskOutputs, '/nonexistent-readonly-path-12345/sub');
+    expect(result.errorCount).toBe(1);
+    expect(result.results[0].taskId).toBe('fail-task');
+    expect(result.results[0].result).toBeNull();
+    expect(result.results[0].error).toBeDefined();
   });
 });

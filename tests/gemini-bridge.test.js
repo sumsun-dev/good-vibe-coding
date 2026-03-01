@@ -223,3 +223,41 @@ describe('callGeminiCli', () => {
     expect(callArgs[2].timeout).toBe(120000);
   });
 });
+
+// --- 보안: shell injection 방지 ---
+
+describe('callGeminiCli — 보안', () => {
+  beforeEach(() => {
+    vi.mocked(spawnSync).mockReset();
+  });
+
+  function mockInstalledThenCall(callResult) {
+    vi.mocked(spawnSync)
+      .mockReturnValueOnce({ status: 0, stdout: '1.0.0', stderr: '', pid: 1, output: [], signal: null })
+      .mockReturnValueOnce(callResult);
+  }
+
+  it('shell 메타문자가 포함된 프롬프트가 args 배열로 전달된다 (injection 방지)', () => {
+    const malicious = '$(rm -rf /) && echo pwned; cat /etc/passwd';
+    const cliOutput = JSON.stringify({ response: 'safe' });
+    mockInstalledThenCall({ status: 0, stdout: cliOutput, stderr: '', pid: 2, output: [], signal: null });
+
+    callGeminiCli(malicious);
+
+    const callArgs = vi.mocked(spawnSync).mock.calls[1];
+    // args 배열로 전달 — shell 해석 안 함
+    expect(callArgs[1]).toContain(malicious);
+    // shell 옵션이 true가 아닌지 확인
+    expect(callArgs[2].shell).toBeFalsy();
+  });
+
+  it('spawnSync에 shell: true가 전달되지 않는다', () => {
+    const cliOutput = JSON.stringify({ response: 'ok' });
+    mockInstalledThenCall({ status: 0, stdout: cliOutput, stderr: '', pid: 2, output: [], signal: null });
+
+    callGeminiCli('normal prompt');
+
+    const options = vi.mocked(spawnSync).mock.calls[1][2];
+    expect(options.shell).toBeFalsy();
+  });
+});

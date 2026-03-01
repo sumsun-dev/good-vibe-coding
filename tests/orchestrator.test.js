@@ -6,6 +6,7 @@ import {
   parseReviewOutput,
   checkConvergence,
   groupAgentsForParallelDispatch,
+  analyzeAgentEfficiency,
 } from '../scripts/lib/orchestrator.js';
 
 const SAMPLE_PROJECT = {
@@ -412,5 +413,50 @@ describe('groupAgentsForParallelDispatch', () => {
     expect(tiers.length).toBe(1);
     // priority 5 → Tier 3
     expect(tiers[0][0].roleId).toBe('cto');
+  });
+});
+
+// --- analyzeAgentEfficiency ---
+
+describe('analyzeAgentEfficiency', () => {
+  it('빈 입력은 빈 redundancies를 반환한다', () => {
+    expect(analyzeAgentEfficiency([])).toEqual({ redundancies: [] });
+    expect(analyzeAgentEfficiency(null)).toEqual({ redundancies: [] });
+  });
+
+  it('단일 에이전트는 중복 없음', () => {
+    const result = analyzeAgentEfficiency([
+      { roleId: 'cto', output: 'Node.js 기반 설계' },
+    ]);
+    expect(result.redundancies).toEqual([]);
+  });
+
+  it('전혀 다른 출력이면 중복을 감지하지 않는다', () => {
+    const result = analyzeAgentEfficiency([
+      { roleId: 'cto', output: 'aaaa bbbb cccc dddd eeee ffff' },
+      { roleId: 'backend', output: 'xxxx yyyy zzzz wwww vvvv uuuu' },
+    ]);
+    expect(result.redundancies).toEqual([]);
+  });
+
+  it('동일한 출력이면 중복을 감지한다', () => {
+    const sharedText = 'Node.js와 telegraf 프레임워크를 사용하여 텔레그램 봇을 구현합니다. REST API 엔드포인트를 설계하고 PostgreSQL 데이터베이스를 연결합니다.';
+    const result = analyzeAgentEfficiency([
+      { roleId: 'cto', output: sharedText },
+      { roleId: 'backend', output: sharedText },
+    ]);
+    expect(result.redundancies.length).toBe(1);
+    expect(result.redundancies[0].roleId).toBe('backend');
+    expect(result.redundancies[0].similarTo).toBe('cto');
+    expect(result.redundancies[0].similarity).toBeGreaterThan(0.7);
+  });
+
+  it('결과 구조가 올바르다', () => {
+    const result = analyzeAgentEfficiency([
+      { roleId: 'a', output: 'test' },
+      { roleId: 'b', output: 'different' },
+    ]);
+    expect(result).toHaveProperty('redundancies');
+    expect(Array.isArray(result.redundancies)).toBe(true);
   });
 });
