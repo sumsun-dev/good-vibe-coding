@@ -116,9 +116,22 @@ echo '{"claudeMdPath":"{infraPath}/CLAUDE.md","sectionName":"architecture-placeh
 
 ## Step 9: 다음 단계 안내
 
+프로젝트 모드에 따라 차등 안내합니다:
+
+**quick-build / plan-execute 모드:**
 ```
 기획서가 완성되었습니다! (라운드 {N}에서 수렴, 승인율 {X}%)
-- `/approve` — 기획서를 승인하고 작업 분배
-- `/discuss` — 재토론 (다른 관점에서)
-- `/status` — 현재 상태 확인
+
+다음 단계: 작업을 실행합니다.
+→ `/execute` — 팀원들이 작업을 실행하고 리뷰합니다
+```
+
+**plan-only 모드:**
+```
+기획서가 완성되었습니다! (라운드 {N}에서 수렴, 승인율 {X}%)
+
+다음 단계: CEO 승인이 필요합니다.
+→ `/approve` — 기획서를 승인하고 작업을 분배합니다
+→ `/discuss` — 재토론 (다른 관점에서)
+→ `/status` — 현재 상태 확인
 ```
