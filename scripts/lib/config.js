@@ -21,4 +21,5 @@ export const config = Object.freeze({
     maxKeywordHits: 3,
     weights: Object.freeze({ projectType: 3, complexity: 2, keyword: 1, roleAffinity: 2 }),
   }),
+  cli: Object.freeze({ suggestionThreshold: 3 }),
 });

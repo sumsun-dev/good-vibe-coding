@@ -267,14 +267,14 @@ good-vibe-coding/
 ├── hooks/                        # 훅 정의
 ├── guides/                       # 학습 가이드
 ├── skills/                       # 스킬 (4개)
-└── tests/                        # Vitest 테스트 (1,010개)
+└── tests/                        # Vitest 테스트 (1,110개)
 ```
 
 ## 기술 스택
 
 - **Node.js 18+** (ESM)
 - **Handlebars** (템플릿 엔진)
-- **Vitest** (테스트 프레임워크, 1,010개 테스트)
+- **Vitest** (테스트 프레임워크, 1,110개 테스트)
 - **GitHub Actions CI** (Node 18/20/22 매트릭스)
 
 ## 개발
