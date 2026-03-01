@@ -7,8 +7,9 @@
  */
 
 import { spawnSync } from 'child_process';
+import { AppError, notFoundError } from './validators.js';
 
-const DEFAULT_CLI_PATH = '/opt/homebrew/bin/gemini';
+const DEFAULT_CLI_PATH = process.env.GEMINI_CLI_PATH || 'gemini';
 const DEFAULT_TIMEOUT_MS = 120000;
 
 /**
@@ -83,7 +84,7 @@ export function callGeminiCli(prompt, options = {}) {
   const timeout = options.timeout || DEFAULT_TIMEOUT_MS;
 
   if (!isGeminiCliInstalled(cliPath)) {
-    throw new Error('Gemini CLI가 설치되지 않았습니다. `npm install -g @anthropic-ai/gemini-cli` 또는 brew로 설치하세요.');
+    throw notFoundError('Gemini CLI가 설치되지 않았습니다. `npm install -g @anthropic-ai/gemini-cli` 또는 brew로 설치하세요.');
   }
 
   const args = ['-p', prompt, '-o', 'json', '-m', model];
@@ -96,14 +97,14 @@ export function callGeminiCli(prompt, options = {}) {
 
   if (result.error) {
     if (result.error.code === 'ETIMEDOUT') {
-      throw new Error(`Gemini CLI 타임아웃 (${timeout}ms)`);
+      throw new AppError(`Gemini CLI 타임아웃 (${timeout}ms)`, 'SYSTEM_ERROR');
     }
-    throw new Error(`Gemini CLI 실행 실패: ${result.error.message}`);
+    throw new AppError(`Gemini CLI 실행 실패: ${result.error.message}`, 'SYSTEM_ERROR');
   }
 
   if (result.status !== 0) {
     const stderr = result.stderr?.trim() || '';
-    throw new Error(`Gemini CLI 비정상 종료 (exit ${result.status}): ${stderr}`);
+    throw new AppError(`Gemini CLI 비정상 종료 (exit ${result.status}): ${stderr}`, 'SYSTEM_ERROR');
   }
 
   return parseGeminiCliOutput(result.stdout, model);

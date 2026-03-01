@@ -10,8 +10,7 @@ export const COST_RATES = {
   gemini: { input: 0.000001, output: 0.000004 },
 };
 
-/** 에이전트 호출 기록 최대 개수 */
-const MAX_AGENT_CALLS = 500;
+import { config } from './config.js';
 
 /**
  * 빈 메트릭스 스냅샷을 생성한다.
@@ -59,7 +58,7 @@ export function recordAgentCall(metrics, event) {
     durationMs: event.durationMs || 0,
     timestamp: new Date().toISOString(),
   };
-  const updatedCalls = [...metrics.agentCalls, newCall].slice(-MAX_AGENT_CALLS);
+  const updatedCalls = [...metrics.agentCalls, newCall].slice(-config.execution.maxAgentCalls);
 
   // byRole 집계 (immutable)
   const prevRole = (event.roleId && metrics.byRole[event.roleId]) || { callCount: 0, inputTokens: 0, outputTokens: 0, costUsd: 0 };

@@ -8,7 +8,7 @@ import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { LazyCache } from './cache.js';
 import { config } from './config.js';
-import { requireString, requireOneOf } from './validators.js';
+import { requireString, requireOneOf, inputError } from './validators.js';
 import { validate } from './schema-validator.js';
 
 const VALID_COMPLEXITIES = ['simple', 'medium', 'complex'];
@@ -43,7 +43,7 @@ function validateCatalog(catalog) {
     }
   }
   if (errors.length > 0) {
-    throw new Error(`카탈로그 검증 실패:\n${errors.join('\n')}`);
+    throw inputError(`카탈로그 검증 실패:\n${errors.join('\n')}`);
   }
   return catalog;
 }

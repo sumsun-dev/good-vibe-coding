@@ -66,4 +66,3 @@ export function renderString(source, data) {
   return template(data);
 }
 
-export { hbs, PROJECT_ROOT };

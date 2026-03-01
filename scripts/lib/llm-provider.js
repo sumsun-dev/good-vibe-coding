@@ -9,6 +9,7 @@
 import { loadAuth } from './auth-manager.js';
 import { callGeminiCli } from './gemini-bridge.js';
 import { config } from './config.js';
+import { AppError, inputError, notFoundError } from './validators.js';
 
 /** 프로바이더별 API 엔드포인트 */
 const PROVIDER_ENDPOINTS = {
@@ -36,12 +37,12 @@ export const SUPPORTED_PROVIDERS = ['claude', 'openai', 'gemini'];
  */
 export async function callLLM(providerId, prompt, options = {}) {
   if (!SUPPORTED_PROVIDERS.includes(providerId)) {
-    throw new Error(`지원하지 않는 프로바이더: ${providerId}`);
+    throw inputError(`지원하지 않는 프로바이더: ${providerId}`);
   }
 
   let auth = await loadAuth(providerId);
   if (!auth) {
-    throw new Error(`${providerId} 인증 정보가 없습니다. 먼저 connect 명령으로 인증하세요.`);
+    throw notFoundError(`${providerId} 인증 정보가 없습니다. 먼저 connect 명령으로 인증하세요.`);
   }
 
   // Gemini CLI 인증일 때 서브프로세스 경로로 분기
@@ -63,7 +64,8 @@ export async function callLLM(providerId, prompt, options = {}) {
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`${providerId} API 호출 실패 (${response.status}): ${errorText}`);
+    const truncated = errorText.length > 200 ? errorText.slice(0, 200) + '...' : errorText;
+    throw new AppError(`${providerId} API 호출 실패 (${response.status}): ${truncated}`, 'SYSTEM_ERROR');
   }
 
   const data = await response.json();
@@ -109,7 +111,7 @@ export function buildProviderRequest(providerId, prompt, model, options = {}) {
         },
       };
     default:
-      throw new Error(`지원하지 않는 프로바이더: ${providerId}`);
+      throw inputError(`지원하지 않는 프로바이더: ${providerId}`);
   }
 }
 

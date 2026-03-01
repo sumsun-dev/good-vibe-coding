@@ -10,6 +10,7 @@ import {
 import {
   buildComplexityAnalysisPrompt, parseComplexityAnalysis, getDefaultsForComplexity,
 } from '../lib/complexity-analyzer.js';
+import { inputError } from '../lib/validators.js';
 
 const [,, , ...args] = process.argv;
 
@@ -30,6 +31,7 @@ export const commands = {
 
   'eval-compare': async () => {
     const opts = parseArgs(args);
+    if (!opts['session-id']) throw inputError('--session-id 옵션이 필요합니다');
     const session = await loadEvalSession(opts['session-id']);
     const comparison = compareApproaches(session);
     output(comparison);
@@ -37,6 +39,7 @@ export const commands = {
 
   'eval-report': async () => {
     const opts = parseArgs(args);
+    if (!opts['session-id']) throw inputError('--session-id 옵션이 필요합니다');
     const session = await loadEvalSession(opts['session-id']);
     const comparison = compareApproaches(session);
     const report = generateEvalReport(session, comparison);

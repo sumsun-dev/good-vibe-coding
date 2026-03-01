@@ -184,7 +184,7 @@ describe('connectWithApiKey', () => {
   it('API Key로 연결하고 프로바이더를 활성화한다', async () => {
     const auth = await connectWithApiKey('openai', 'sk-test-key');
     expect(auth.type).toBe('api-key');
-    expect(auth.apiKey).toBe('sk-test-key');
+    expect(auth.apiKey).toBeUndefined(); // 반환값에 apiKey를 포함하지 않음 (보안)
     expect(auth.connectedAt).toBeTruthy();
 
     // auth.json에 저장 확인

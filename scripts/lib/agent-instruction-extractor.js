@@ -52,4 +52,3 @@ export async function extractAllInstructions(agents) {
   return result;
 }
 
-export { AGENTS_DIR };

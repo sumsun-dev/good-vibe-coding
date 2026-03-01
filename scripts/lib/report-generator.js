@@ -11,9 +11,11 @@ import { getCostSummary, getAgentPerformanceSummary } from './project-metrics.js
  */
 export function generateReport(project) {
   const stats = generateProjectStats(project);
-  const roleSummaries = project.team
+  const team = project.team || [];
+  const tasks = project.tasks || [];
+  const roleSummaries = team
     .map(member => {
-      const memberTasks = project.tasks.filter(t => t.assignee === member.roleId);
+      const memberTasks = tasks.filter(t => t.assignee === member.roleId);
       return generateRoleSummary(member, memberTasks);
     })
     .join('\n\n');
@@ -22,7 +24,7 @@ export function generateReport(project) {
 
 ## 개요
 - 프로젝트: ${project.name} (${project.type})
-- 팀원: ${project.team.length}명
+- 팀원: ${team.length}명
 - 작업: ${stats.totalTasks}개 (완료: ${stats.completed})
 - 모드: ${project.mode}
 - 상태: ${project.status}

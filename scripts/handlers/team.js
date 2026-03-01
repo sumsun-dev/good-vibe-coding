@@ -6,13 +6,14 @@ import {
   recommendTeam, buildTeam, loadRoleCatalog, loadProjectTypes,
   getTeamSummary, getOptimizedTeam,
 } from '../lib/team-builder.js';
-import { requireFields } from '../lib/validators.js';
+import { requireFields, inputError } from '../lib/validators.js';
 
 const [,, , ...args] = process.argv;
 
 export const commands = {
   'recommend-team': async () => {
     const opts = parseArgs(args);
+    if (!opts.type) throw inputError('--type 옵션이 필요합니다');
     const result = await recommendTeam(opts.type);
     output(result);
   },

@@ -156,6 +156,7 @@ export async function saveProvidersConfig(config) {
   await mkdir(providersDir, { recursive: true });
   const configPath = resolve(providersDir, PROVIDERS_FILENAME);
   await writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8');
+  await chmod(configPath, 0o600);
 }
 
 /**
@@ -168,8 +169,11 @@ export async function setProviderEnabled(providerId, enabled) {
   if (!config.providers[providerId]) {
     throw inputError(`알 수 없는 프로바이더: ${providerId}`);
   }
-  config.providers[providerId] = { ...config.providers[providerId], enabled };
-  await saveProvidersConfig(config);
+  const updatedConfig = {
+    ...config,
+    providers: { ...config.providers, [providerId]: { ...config.providers[providerId], enabled } },
+  };
+  await saveProvidersConfig(updatedConfig);
 }
 
 /**
@@ -181,8 +185,7 @@ export async function setReviewStrategy(strategy) {
     throw inputError(`잘못된 전략: ${strategy}. 'single' 또는 'cross-model' 사용`);
   }
   const config = await loadProvidersConfig();
-  config.reviewStrategy = strategy;
-  await saveProvidersConfig(config);
+  await saveProvidersConfig({ ...config, reviewStrategy: strategy });
 }
 
 // --- API Key 인증 ---
@@ -207,7 +210,8 @@ export async function connectWithApiKey(providerId, apiKey) {
   await saveAuth(providerId, authData);
   await setProviderEnabled(providerId, true);
 
-  return authData;
+  const { apiKey: _, ...safeData } = authData;
+  return safeData;
 }
 
 // --- CLI 인증 (Gemini) ---

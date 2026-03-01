@@ -22,6 +22,7 @@ export const commands = {
   'get-project': async () => {
     const opts = parseArgs(args);
     const project = await getProject(opts.id);
+    if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
     output(project);
   },
 

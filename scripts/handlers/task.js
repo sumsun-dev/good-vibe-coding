@@ -42,6 +42,7 @@ export const commands = {
 
   'add-task-materialization': async () => {
     const data = await readStdin();
+    requireFields(data, ['id', 'taskId', 'materializeResult']);
     const project = await addTaskMaterializationResult(data.id, data.taskId, data.materializeResult);
     output(project);
   },

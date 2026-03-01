@@ -11,7 +11,12 @@ export async function readStdin() {
     chunks.push(chunk);
   }
   const raw = Buffer.concat(chunks).toString('utf-8').trim();
-  return raw ? JSON.parse(raw) : {};
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw);
+  } catch (err) {
+    throw new Error(`잘못된 JSON 입력: ${err.message}`);
+  }
 }
 
 /**

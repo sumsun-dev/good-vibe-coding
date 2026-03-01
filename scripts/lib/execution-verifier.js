@@ -7,8 +7,9 @@
 import { execSync } from 'child_process';
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync } from 'fs';
 import { tmpdir } from 'os';
-import { join, dirname } from 'path';
+import { join, dirname, resolve } from 'path';
 import { config } from './config.js';
+import { assertWithinRoot } from './validators.js';
 
 /** 실행 가능 언어 목록 */
 const EXECUTABLE_LANGUAGES = [
@@ -102,13 +103,13 @@ export const BUILD_STRATEGIES = {
     detect: (files) => files.some(f => f === 'go.mod'),
     build: (tempDir) => {
       const output = execSync('go build ./...', {
-        cwd: tempDir, timeout: 45_000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+        cwd: tempDir, timeout: config.build.goTimeout, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
       });
       return { success: true, output: output || 'go build passed', exitCode: 0 };
     },
     test: (tempDir) => {
       const output = execSync('go test ./...', {
-        cwd: tempDir, timeout: 45_000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+        cwd: tempDir, timeout: config.build.goTimeout, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
       });
       return { success: true, output, exitCode: 0 };
     },
@@ -117,13 +118,13 @@ export const BUILD_STRATEGIES = {
     detect: (files) => files.some(f => f === 'pom.xml'),
     build: (tempDir) => {
       const output = execSync('mvn compile -q', {
-        cwd: tempDir, timeout: 60_000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+        cwd: tempDir, timeout: config.build.javaTimeout, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
       });
       return { success: true, output: output || 'mvn compile passed', exitCode: 0 };
     },
     test: (tempDir) => {
       const output = execSync('mvn test -q', {
-        cwd: tempDir, timeout: 60_000, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+        cwd: tempDir, timeout: config.build.javaTimeout, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
       });
       return { success: true, output, exitCode: 0 };
     },
@@ -250,7 +251,8 @@ export function writeTemporaryProject(codeBlocks, projectType) {
 
   codeBlocks.forEach((block, idx) => {
     const filename = block.filename || `file-${idx}${langExtMap[block.language] || '.txt'}`;
-    const fullPath = join(tempDir, filename);
+    const fullPath = resolve(join(tempDir, filename));
+    assertWithinRoot(fullPath, tempDir, 'filename');
     const dir = dirname(fullPath);
 
     if (!existsSync(dir)) {
@@ -442,8 +444,8 @@ function findFilesByExtension(dir, ext) {
         results.push(fullPath);
       }
     }
-  } catch {
-    // 오류 무시
+  } catch (err) {
+    if (err.code !== 'ENOENT') throw err;
   }
 
   return results;

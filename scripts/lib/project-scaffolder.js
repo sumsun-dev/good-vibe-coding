@@ -2,6 +2,7 @@ import { resolve } from 'path';
 import { readFile } from 'fs/promises';
 import { ensureDir, safeWriteFile, writeFiles, fileExists } from './file-writer.js';
 import { renderTemplate } from './template-engine.js';
+import { inputError } from './validators.js';
 
 const GITIGNORE_TEMPLATES = {
   'next-js': `node_modules/
@@ -140,7 +141,7 @@ export async function setupProjectInfra(options) {
   const { name, description, techStack, targetDir } = options;
 
   if (!name || typeof name !== 'string') {
-    throw new Error('name 필드가 필요합니다');
+    throw inputError('name 필드가 필요합니다');
   }
 
   const slug = name

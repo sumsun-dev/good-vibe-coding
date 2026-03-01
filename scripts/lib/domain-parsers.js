@@ -18,7 +18,7 @@ const REVIEW_SCHEMA = {
       items: {
         type: 'object',
         properties: {
-          severity: { type: 'string', enum: ['critical', 'major', 'minor'], default: 'minor' },
+          severity: { type: 'string', enum: ['critical', 'important', 'minor'], default: 'minor' },
           description: { type: 'string', default: '' },
         },
       },

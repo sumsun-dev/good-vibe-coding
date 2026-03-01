@@ -107,7 +107,7 @@ export function requireFields(data, fields) {
  */
 export function assertWithinRoot(resolvedPath, rootDir, label) {
   if (!resolvedPath.startsWith(rootDir + sep) && resolvedPath !== rootDir) {
-    throw inputError(`${label}이 허용 범위를 벗어났습니다: ${resolvedPath}`);
+    throw inputError(`${label}이 허용 범위를 벗어났습니다`);
   }
 }
 

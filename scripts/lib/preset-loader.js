@@ -1,7 +1,7 @@
 import { readFile } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { requireString } from './validators.js';
+import { requireString, assertWithinRoot } from './validators.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '../..');
@@ -15,6 +15,7 @@ const PRESETS_DIR = resolve(PROJECT_ROOT, 'presets');
  */
 export async function loadPreset(category, name) {
   const filePath = resolve(PRESETS_DIR, category, `${name}.json`);
+  assertWithinRoot(filePath, PRESETS_DIR, 'preset path');
   const content = await readFile(filePath, 'utf-8');
   const preset = JSON.parse(content);
   validatePreset(preset, category);

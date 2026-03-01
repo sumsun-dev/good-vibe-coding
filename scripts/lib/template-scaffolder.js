@@ -3,6 +3,7 @@ import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { renderString } from './template-engine.js';
 import { ensureDir, safeWriteFile, fileExists } from './file-writer.js';
+import { notFoundError } from './validators.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = resolve(__dirname, '../..');
@@ -62,8 +63,8 @@ async function loadTemplatesFromDir(dir) {
       try {
         const content = await readFile(resolve(dir, entry), 'utf-8');
         templates.push(JSON.parse(content));
-      } catch {
-        // 잘못된 JSON 파일 무시
+      } catch (err) {
+        process.stderr.write(`경고: 템플릿 파일 로드 실패 (${entry}): ${err.message}\n`);
       }
     }
     return templates;
@@ -92,7 +93,7 @@ export async function loadTemplate(name) {
     return JSON.parse(content);
   }
 
-  throw new Error(`Template not found: ${name}`);
+  throw notFoundError(`Template not found: ${name}`);
 }
 
 /**

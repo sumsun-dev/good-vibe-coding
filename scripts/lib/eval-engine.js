@@ -9,6 +9,7 @@ import crypto from 'crypto';
 import { ensureDir, fileExists, readJsonFile } from './file-writer.js';
 import { COST_RATES } from './project-metrics.js';
 import { evaluationsDir } from './app-paths.js';
+import { notFoundError } from './validators.js';
 
 const DEFAULT_EVAL_DIR = evaluationsDir();
 let evalDir = DEFAULT_EVAL_DIR;
@@ -358,7 +359,7 @@ export async function saveEvalSession(session) {
 export async function loadEvalSession(sessionId) {
   const filePath = resolve(evalDir, `${sessionId}.json`);
   const session = await readJsonFile(filePath);
-  if (!session) throw new Error(`세션을 찾을 수 없습니다: ${sessionId}`);
+  if (!session) throw notFoundError(`세션을 찾을 수 없습니다: ${sessionId}`);
   return session;
 }
 
