@@ -1,6 +1,6 @@
-import { readFile } from 'fs/promises';
 import { resolve } from 'path';
 import { requireString, assertWithinRoot } from './validators.js';
+import { readJsonFile } from './file-writer.js';
 import { pluginRoot } from './app-paths.js';
 
 const PRESETS_DIR = resolve(pluginRoot(), 'presets');
@@ -14,8 +14,11 @@ const PRESETS_DIR = resolve(pluginRoot(), 'presets');
 export async function loadPreset(category, name) {
   const filePath = resolve(PRESETS_DIR, category, `${name}.json`);
   assertWithinRoot(filePath, PRESETS_DIR, 'preset path');
-  const content = await readFile(filePath, 'utf-8');
-  const preset = JSON.parse(content);
+  const preset = await readJsonFile(filePath);
+  if (!preset) {
+    const { inputError } = await import('./validators.js');
+    throw inputError(`프리셋을 찾을 수 없습니다: ${category}/${name}`);
+  }
   validatePreset(preset, category);
   return preset;
 }
@@ -100,16 +103,10 @@ export function mergePresets(...presets) {
  * @returns {Promise<string[]>} 프리셋 이름 목록
  */
 export async function listPresets(category) {
-  const { readdir } = await import('fs/promises');
+  const { listFilesByExtension } = await import('./file-writer.js');
   const dirPath = resolve(PRESETS_DIR, category);
-  try {
-    const files = await readdir(dirPath);
-    return files
-      .filter(f => f.endsWith('.json'))
-      .map(f => f.replace('.json', ''));
-  } catch {
-    return [];
-  }
+  const files = await listFilesByExtension(dirPath, '.json');
+  return files.map(f => f.replace('.json', ''));
 }
 
 export { PRESETS_DIR, validatePreset };

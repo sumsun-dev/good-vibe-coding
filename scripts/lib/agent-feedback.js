@@ -4,9 +4,9 @@
  * 승인된 수정을 오버라이드 파일로 저장한다.
  */
 
-import { readFile, writeFile, readdir, stat } from 'fs/promises';
+import { readFile, writeFile, stat } from 'fs/promises';
 import { resolve } from 'path';
-import { ensureDir, fileExists } from './file-writer.js';
+import { ensureDir, fileExists, listFilesByExtension } from './file-writer.js';
 import { parseJsonArray } from './json-parser.js';
 import { validateRoleId } from './validators.js';
 import { agentOverridesDir } from './app-paths.js';
@@ -161,21 +161,17 @@ export async function loadAgentOverride(roleId) {
  * @returns {Promise<Array<{roleId: string, updatedAt: string}>>}
  */
 export async function listAgentOverrides() {
-  if (!(await fileExists(overridesDir))) return [];
+  const files = await listFilesByExtension(overridesDir, '.md');
+  if (files.length === 0) return [];
 
-  const files = await readdir(overridesDir);
-  const results = [];
-
-  for (const file of files) {
-    if (!file.endsWith('.md')) continue;
-    const roleId = file.slice(0, -3);
-    const filePath = resolve(overridesDir, file);
-    const fileStat = await stat(filePath);
-    results.push({
-      roleId,
-      updatedAt: fileStat.mtime.toISOString(),
-    });
-  }
+  const results = await Promise.all(
+    files.map(async file => {
+      const roleId = file.slice(0, -3);
+      const filePath = resolve(overridesDir, file);
+      const fileStat = await stat(filePath);
+      return { roleId, updatedAt: fileStat.mtime.toISOString() };
+    })
+  );
 
   return results;
 }
@@ -236,21 +232,17 @@ export async function loadProjectOverride(projectDir, roleId) {
  */
 export async function listProjectOverrides(projectDir) {
   const dir = resolve(projectDir, PROJECT_OVERRIDES_SUBDIR);
-  if (!(await fileExists(dir))) return [];
+  const files = await listFilesByExtension(dir, '.md');
+  if (files.length === 0) return [];
 
-  const files = await readdir(dir);
-  const results = [];
-
-  for (const file of files) {
-    if (!file.endsWith('.md')) continue;
-    const roleId = file.slice(0, -3);
-    const filePath = resolve(dir, file);
-    const fileStat = await stat(filePath);
-    results.push({
-      roleId,
-      updatedAt: fileStat.mtime.toISOString(),
-    });
-  }
+  const results = await Promise.all(
+    files.map(async file => {
+      const roleId = file.slice(0, -3);
+      const filePath = resolve(dir, file);
+      const fileStat = await stat(filePath);
+      return { roleId, updatedAt: fileStat.mtime.toISOString() };
+    })
+  );
 
   return results;
 }

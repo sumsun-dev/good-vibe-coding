@@ -1,7 +1,6 @@
-import { readFile, readdir } from 'fs/promises';
 import { resolve } from 'path';
 import { renderString } from './template-engine.js';
-import { ensureDir, safeWriteFile, fileExists } from './file-writer.js';
+import { ensureDir, safeWriteFile, readJsonFile, listFilesByExtension } from './file-writer.js';
 import { notFoundError } from './validators.js';
 import { pluginRoot } from './app-paths.js';
 
@@ -53,22 +52,17 @@ export function validateTemplate(template) {
  * @returns {Promise<object[]>}
  */
 async function loadTemplatesFromDir(dir) {
-  try {
-    const entries = await readdir(dir);
-    const templates = [];
-    for (const entry of entries) {
-      if (!entry.endsWith('.json')) continue;
-      try {
-        const content = await readFile(resolve(dir, entry), 'utf-8');
-        templates.push(JSON.parse(content));
-      } catch (err) {
-        process.stderr.write(`경고: 템플릿 파일 로드 실패 (${entry}): ${err.message}\n`);
-      }
+  const entries = await listFilesByExtension(dir, '.json');
+  const templates = [];
+  for (const entry of entries) {
+    try {
+      const data = await readJsonFile(resolve(dir, entry));
+      if (data) templates.push(data);
+    } catch (err) {
+      process.stderr.write(`경고: 템플릿 파일 로드 실패 (${entry}): ${err.message}\n`);
     }
-    return templates;
-  } catch {
-    return [];
   }
+  return templates;
 }
 
 /**
@@ -79,17 +73,13 @@ async function loadTemplatesFromDir(dir) {
 export async function loadTemplate(name) {
   // custom 먼저
   const customPath = resolve(customTemplatesDir, `${name}.json`);
-  if (await fileExists(customPath)) {
-    const content = await readFile(customPath, 'utf-8');
-    return JSON.parse(content);
-  }
+  const customData = await readJsonFile(customPath);
+  if (customData) return customData;
 
   // built-in fallback
   const builtinPath = resolve(BUILTIN_TEMPLATES_DIR, `${name}.json`);
-  if (await fileExists(builtinPath)) {
-    const content = await readFile(builtinPath, 'utf-8');
-    return JSON.parse(content);
-  }
+  const builtinData = await readJsonFile(builtinPath);
+  if (builtinData) return builtinData;
 
   throw notFoundError(`Template not found: ${name}`);
 }
