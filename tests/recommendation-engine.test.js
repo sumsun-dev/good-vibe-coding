@@ -43,17 +43,26 @@ describe('recommendation-engine', () => {
       expect(extractKeywords(undefined)).toEqual(new Set());
     });
 
-    it('2자 미만 토큰을 제외한다', () => {
+    it('영어 1자는 제외하고 한글 1자는 포함한다', () => {
       const kw = extractKeywords('a 나 ok 좋아');
       expect(kw.has('a')).toBe(false);
+      expect(kw.has('나')).toBe(true);
       expect(kw.has('ok')).toBe(true);
       expect(kw.has('좋아')).toBe(true);
+    });
+
+    it('한글 1자 의미 단어를 추출한다', () => {
+      const kw = extractKeywords('웹 앱 봇 서비스');
+      expect(kw.has('웹')).toBe(true);
+      expect(kw.has('앱')).toBe(true);
+      expect(kw.has('봇')).toBe(true);
+      expect(kw.has('서비스')).toBe(true);
     });
 
     it('구두점을 제거한다', () => {
       const kw = extractKeywords('todo(앱), 리뷰!');
       expect(kw.has('todo')).toBe(true);
-      expect(kw.has('앱')).toBe(false); // 1자 (조사 제거 후에도)
+      expect(kw.has('앱')).toBe(true);
       expect(kw.has('리뷰')).toBe(true);
     });
   });
@@ -140,12 +149,12 @@ describe('recommendation-engine', () => {
       const item = {
         applicableProjectTypes: ['web-app'],
         complexityRange: ['medium'],
-        keywords: ['리뷰'],
+        keywords: ['웹'],
         targetRoles: ['fullstack'],
       };
-      const ctx = { ...baseContext, description: '코드 리뷰 서비스' };
+      const ctx = { ...baseContext, description: '웹 기반 서비스' };
       const score = scoreItem(item, ctx);
-      // 타입 3 + 복잡도 2 + 키워드 1 + 역할 2 = 8
+      // 타입 3 + 복잡도 2 + 키워드 1 (웹 매칭) + 역할 2 = 8
       expect(score).toBe(8);
     });
   });
@@ -272,6 +281,19 @@ describe('recommendation-engine', () => {
       expect(result).toBeDefined();
       expect(result.skills).toBeDefined();
       expect(result.agents).toBeDefined();
+    });
+  });
+
+  // --- catalog validation ---
+  describe('catalog validation', () => {
+    it('카탈로그가 스키마 검증을 통과한다', async () => {
+      const result = await recommendSetup({
+        projectType: 'web-app',
+        complexity: 'medium',
+        description: '테스트',
+        teamRoles: [],
+      });
+      expect(result).toBeDefined();
     });
   });
 

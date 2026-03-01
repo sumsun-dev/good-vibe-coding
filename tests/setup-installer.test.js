@@ -103,6 +103,33 @@ describe('setup-installer', () => {
       expect(result.installed).toBe(true);
       expect(result.path).toContain('agents');
     });
+
+    it('installPath path traversal을 차단한다', async () => {
+      const item = {
+        id: 'malicious',
+        sourcePath: 'agents/code-reviewer-kr.md',
+        installPath: '../../etc/passwd',
+      };
+      await expect(installItem(item)).rejects.toThrow('허용 범위를 벗어났습니다');
+    });
+
+    it('sourcePath path traversal을 차단한다', async () => {
+      const item = {
+        id: 'malicious',
+        sourcePath: '../../../etc/passwd',
+        installPath: 'agents/safe.md',
+      };
+      await expect(installItem(item)).rejects.toThrow('허용 범위를 벗어났습니다');
+    });
+
+    it('소스 파일 미존재 시 에러를 던진다', async () => {
+      const item = {
+        id: 'nonexistent',
+        sourcePath: 'agents/does-not-exist.md',
+        installPath: 'agents/does-not-exist.md',
+      };
+      await expect(installItem(item)).rejects.toThrow();
+    });
   });
 
   // --- installItems ---
@@ -115,6 +142,18 @@ describe('setup-installer', () => {
       const results = await installItems(items);
       expect(results).toHaveLength(2);
       expect(results.every(r => r.installed)).toBe(true);
+    });
+
+    it('에러 발생 시 나머지 항목을 계속 설치한다', async () => {
+      const items = [
+        { id: 'nonexistent', sourcePath: 'agents/does-not-exist.md', installPath: 'agents/does-not-exist.md' },
+        { id: 'code-reviewer-kr', sourcePath: 'agents/code-reviewer-kr.md', installPath: 'agents/code-reviewer-kr.md' },
+      ];
+      const results = await installItems(items);
+      expect(results).toHaveLength(2);
+      expect(results[0].error).toBeDefined();
+      expect(results[0].installed).toBe(false);
+      expect(results[1].installed).toBe(true);
     });
 
     it('부분 성공을 처리한다 (이미 설치된 항목 포함)', async () => {

@@ -9,23 +9,61 @@ import { fileURLToPath } from 'url';
 import { LazyCache } from './cache.js';
 import { config } from './config.js';
 import { requireString, requireOneOf } from './validators.js';
+import { validate } from './schema-validator.js';
 
 const VALID_COMPLEXITIES = ['simple', 'medium', 'complex'];
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CATALOG_PATH = resolve(__dirname, '../../presets/recommendation-catalog.json');
 
+const CATALOG_ITEM_SCHEMA = {
+  type: 'object',
+  properties: {
+    id: { type: 'string', required: true },
+    displayName: { type: 'string', required: true },
+    description: { type: 'string', required: true },
+    sourcePath: { type: 'string', required: true },
+    installPath: { type: 'string', required: true },
+    type: { type: 'string', required: true, enum: ['skill', 'agent'] },
+    keywords: { type: 'array', required: true },
+    applicableProjectTypes: { type: 'array', required: true },
+    complexityRange: { type: 'array', required: true },
+    targetRoles: { type: 'array', required: true },
+    priority: { type: 'string', required: true, enum: ['high', 'medium', 'low'] },
+  },
+};
+
+function validateCatalog(catalog) {
+  const allItems = [...(catalog.skills || []), ...(catalog.agents || [])];
+  const errors = [];
+  for (const item of allItems) {
+    const result = validate(item, CATALOG_ITEM_SCHEMA);
+    if (!result.valid) {
+      errors.push(`카탈로그 항목 "${item.id || '(unknown)'}": ${result.errors.join(', ')}`);
+    }
+  }
+  if (errors.length > 0) {
+    throw new Error(`카탈로그 검증 실패:\n${errors.join('\n')}`);
+  }
+  return catalog;
+}
+
 const catalogCache = new LazyCache(async () => {
   const raw = await readFile(CATALOG_PATH, 'utf-8');
-  return JSON.parse(raw);
+  const catalog = JSON.parse(raw);
+  return validateCatalog(catalog);
 });
 
 /** 한국어 조사 패턴 (단어 끝에 붙는 1-2자) */
 const KOREAN_PARTICLES = /[은는이가을를의에로서와과도만까지부터마저조차]$/;
 
+/** 한글 포함 여부 */
+const HAS_HANGUL = /[\uAC00-\uD7AF]/;
+
 /**
  * 설명 텍스트에서 키워드를 추출한다.
  * 공백/구두점 기준 토큰화, 한국어 조사 제거, 영어 소문자 정규화.
+ * 한글 토큰은 1자도 허용 (웹, 앱, 봇 등), 영어는 2자 이상만.
  * @param {string} description - 입력 텍스트
  * @returns {Set<string>} 키워드 집합
  */
@@ -35,11 +73,13 @@ export function extractKeywords(description) {
   const tokens = description
     .replace(/[.,!?;:()[\]{}"'`~@#$%^&*+=<>/\\|]/g, ' ')
     .split(/\s+/)
-    .filter(t => t.length >= 2)
+    .filter(t => t.length >= 1)
     .map(t => {
       const stripped = t.replace(KOREAN_PARTICLES, '');
-      return (stripped.length >= 2 ? stripped : t).toLowerCase();
-    });
+      const token = stripped.length >= 1 ? stripped : t;
+      return token.toLowerCase();
+    })
+    .filter(t => t.length >= 2 || HAS_HANGUL.test(t));
 
   return new Set(tokens);
 }
