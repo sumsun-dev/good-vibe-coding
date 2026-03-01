@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { safeWriteFile, fileExists, backupFile, ensureDir, writeFiles } from '../scripts/lib/file-writer.js';
+import { safeWriteFile, fileExists, backupFile, ensureDir, writeFiles, readJsonFile } from '../scripts/lib/file-writer.js';
 import { readFile, rm, mkdir } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -127,6 +127,30 @@ describe('file-writer', () => {
 
       const content = await readFile(filePath, 'utf-8');
       expect(content).toBe('깊은 파일');
+    });
+  });
+
+  describe('readJsonFile', () => {
+    it('정상 JSON 파일을 읽어 파싱한다', async () => {
+      const filePath = resolve(TMP_DIR, 'data.json');
+      const { writeFile: wf } = await import('fs/promises');
+      await wf(filePath, JSON.stringify({ key: 'value' }), 'utf-8');
+
+      const result = await readJsonFile(filePath);
+      expect(result).toEqual({ key: 'value' });
+    });
+
+    it('파일이 없으면 null을 반환한다', async () => {
+      const result = await readJsonFile(resolve(TMP_DIR, 'missing.json'));
+      expect(result).toBeNull();
+    });
+
+    it('잘못된 JSON이면 SyntaxError를 throw한다', async () => {
+      const filePath = resolve(TMP_DIR, 'bad.json');
+      const { writeFile: wf } = await import('fs/promises');
+      await wf(filePath, '{ invalid json', 'utf-8');
+
+      await expect(readJsonFile(filePath)).rejects.toThrow(SyntaxError);
     });
   });
 

@@ -3,10 +3,10 @@
  * 멀티에이전트 오케스트레이션과 단순 접근법의 성능을 비교 측정한다.
  */
 
-import { readFile, writeFile, readdir } from 'fs/promises';
+import { writeFile, readdir } from 'fs/promises';
 import { resolve } from 'path';
 import crypto from 'crypto';
-import { ensureDir, fileExists } from './file-writer.js';
+import { ensureDir, fileExists, readJsonFile } from './file-writer.js';
 import { COST_RATES } from './project-metrics.js';
 import { evaluationsDir } from './app-paths.js';
 
@@ -64,6 +64,23 @@ export function recordApproachResult(session, approach, result) {
 }
 
 /**
+ * 패턴 매칭 기반 스코어링 공통 헬퍼.
+ * @param {string} text - 검사할 텍스트
+ * @param {Object<string, RegExp>} patterns - { key: regex } 패턴 맵
+ * @returns {{ score: number, breakdown: Object<string, boolean> }}
+ */
+function scoreByPatterns(text, patterns) {
+  const breakdown = {};
+  for (const [key, regex] of Object.entries(patterns)) {
+    breakdown[key] = regex.test(text);
+  }
+  const trueCount = Object.values(breakdown).filter(Boolean).length;
+  const total = Object.keys(patterns).length;
+  const score = total > 0 ? Math.round((trueCount / total) * 100) : 0;
+  return { score, breakdown };
+}
+
+/**
  * 출력물의 완성도를 평가한다.
  * 키워드/섹션 헤딩 기반 탐지로 아키텍처, 태스크 분해, 기술 스택, 위험 분석, 타임라인을 확인한다.
  * @param {string} output - 접근법 출력물
@@ -72,18 +89,13 @@ export function recordApproachResult(session, approach, result) {
  */
 export function scoreCompleteness(output, _projectDescription) {
   const text = (output || '').toLowerCase();
-
-  const architecture = /architect|아키텍처|시스템\s*설계|system\s*design|구조/.test(text);
-  const taskBreakdown = /task|작업\s*(분해|분배|목록)|breakdown|분해|단계|phase|step\s*\d/.test(text);
-  const techStack = /tech\s*stack|기술\s*스택|framework|프레임워크|라이브러리|library|stack/.test(text);
-  const riskAnalysis = /risk|위험|리스크|challenge|도전|제약|constraint|limitation/.test(text);
-  const timeline = /timeline|타임라인|일정|schedule|마일스톤|milestone|sprint|주차|week/.test(text);
-
-  const breakdown = { architecture, taskBreakdown, techStack, riskAnalysis, timeline };
-  const trueCount = Object.values(breakdown).filter(Boolean).length;
-  const score = Math.round((trueCount / 5) * 100);
-
-  return { score, breakdown };
+  return scoreByPatterns(text, {
+    architecture: /architect|아키텍처|시스템\s*설계|system\s*design|구조/,
+    taskBreakdown: /task|작업\s*(분해|분배|목록)|breakdown|분해|단계|phase|step\s*\d/,
+    techStack: /tech\s*stack|기술\s*스택|framework|프레임워크|라이브러리|library|stack/,
+    riskAnalysis: /risk|위험|리스크|challenge|도전|제약|constraint|limitation/,
+    timeline: /timeline|타임라인|일정|schedule|마일스톤|milestone|sprint|주차|week/,
+  });
 }
 
 /**
@@ -93,29 +105,13 @@ export function scoreCompleteness(output, _projectDescription) {
  * @returns {{ score: number, breakdown: { specificLibraries: boolean, codeExamples: boolean, apiDesign: boolean, databaseSchema: boolean, errorHandling: boolean } }}
  */
 export function scoreTechnicalDepth(output) {
-  const text = (output || '');
-  const lower = text.toLowerCase();
-
-  // 특정 라이브러리/프레임워크 언급 (일반적인 단어가 아닌 구체적 이름)
-  const specificLibraries = /react|vue|angular|express|fastify|next\.?js|nest\.?js|django|flask|spring|postgresql|mongodb|redis|docker|kubernetes|webpack|vite|tailwind|prisma|typeorm|sequelize|graphql|grpc/.test(lower);
-
-  // 코드 예시 (마크다운 코드 블록 또는 인라인 코드 패턴)
-  const codeExamples = /```[\s\S]*?```|`[^`]+`/.test(text) || /function\s+\w+|const\s+\w+\s*=|import\s+.*from|class\s+\w+/.test(text);
-
-  // API 설계 (엔드포인트, HTTP 메서드, REST/GraphQL 패턴)
-  const apiDesign = /api|endpoint|엔드포인트|GET\s+\/|POST\s+\/|PUT\s+\/|DELETE\s+\/|REST|graphql|route|라우트/.test(text);
-
-  // 데이터베이스 스키마 (테이블, 컬럼, 관계, 스키마 키워드)
-  const databaseSchema = /schema|스키마|table|테이블|column|컬럼|foreign\s*key|primary\s*key|index|relation|entity|ERD|모델\s*설계/.test(lower);
-
-  // 에러 처리 전략
-  const errorHandling = /error\s*handl|에러\s*처리|exception|예외|try\s*[\-/]?\s*catch|fallback|retry|재시도|graceful|circuit\s*breaker|timeout|validation/.test(lower);
-
-  const breakdown = { specificLibraries, codeExamples, apiDesign, databaseSchema, errorHandling };
-  const trueCount = Object.values(breakdown).filter(Boolean).length;
-  const score = Math.round((trueCount / 5) * 100);
-
-  return { score, breakdown };
+  return scoreByPatterns(output || '', {
+    specificLibraries: /react|vue|angular|express|fastify|next\.?js|nest\.?js|django|flask|spring|postgresql|mongodb|redis|docker|kubernetes|webpack|vite|tailwind|prisma|typeorm|sequelize|graphql|grpc/i,
+    codeExamples: /```[\s\S]*?```|`[^`]+`|function\s+\w+|const\s+\w+\s*=|import\s+.*from|class\s+\w+/,
+    apiDesign: /api|endpoint|엔드포인트|GET\s+\/|POST\s+\/|PUT\s+\/|DELETE\s+\/|REST|graphql|route|라우트/,
+    databaseSchema: /schema|스키마|table|테이블|column|컬럼|foreign\s*key|primary\s*key|index|relation|entity|ERD|모델\s*설계/i,
+    errorHandling: /error\s*handl|에러\s*처리|exception|예외|try\s*[\-/]?\s*catch|fallback|retry|재시도|graceful|circuit\s*breaker|timeout|validation/i,
+  });
 }
 
 /**
@@ -361,8 +357,9 @@ export async function saveEvalSession(session) {
  */
 export async function loadEvalSession(sessionId) {
   const filePath = resolve(evalDir, `${sessionId}.json`);
-  const content = await readFile(filePath, 'utf-8');
-  return JSON.parse(content);
+  const session = await readJsonFile(filePath);
+  if (!session) throw new Error(`세션을 찾을 수 없습니다: ${sessionId}`);
+  return session;
 }
 
 /**
@@ -378,8 +375,8 @@ export async function listEvalSessions() {
   for (const file of files) {
     if (!file.endsWith('.json')) continue;
     const filePath = resolve(evalDir, file);
-    const content = await readFile(filePath, 'utf-8');
-    const session = JSON.parse(content);
+    const session = await readJsonFile(filePath);
+    if (!session) continue;
     sessions.push({
       sessionId: session.sessionId,
       projectDescription: session.projectDescription,

@@ -1,7 +1,7 @@
-import { readFile, writeFile, readdir } from 'fs/promises';
+import { writeFile, readdir } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { ensureDir, fileExists } from './file-writer.js';
+import { ensureDir, fileExists, readJsonFile } from './file-writer.js';
 import { inputError, notFoundError } from './validators.js';
 import { createMetricsSnapshot, recordAgentCall, recordPhaseCompletion } from './project-metrics.js';
 import { projectsDir } from './app-paths.js';
@@ -69,14 +69,7 @@ const writeLocks = new Map();
  * @returns {Promise<object|null>} 프로젝트 또는 null (파일 없음)
  */
 async function readProjectFile(projectId) {
-  const filePath = getProjectFilePath(projectId);
-  try {
-    const content = await readFile(filePath, 'utf-8');
-    return JSON.parse(content);
-  } catch (err) {
-    if (err.code === 'ENOENT') return null;
-    throw err;
-  }
+  return readJsonFile(getProjectFilePath(projectId));
 }
 
 /**
@@ -271,6 +264,24 @@ export async function addDiscussionRound(projectId, roundData) {
 }
 
 /**
+ * 태스크를 찾아 업데이트하는 공통 헬퍼 (find → throw if missing → map update).
+ * @param {string} projectId - 프로젝트 ID
+ * @param {string} taskId - 태스크 ID
+ * @param {function} updaterFn - (task) => updatedTask 변환 함수
+ * @returns {Promise<object>} 업데이트된 프로젝트
+ */
+async function updateTaskField(projectId, taskId, updaterFn) {
+  return withProjectLock(projectId, project => {
+    const task = project.tasks.find(t => t.id === taskId);
+    if (!task) throw notFoundError(`태스크를 찾을 수 없습니다: ${taskId}`);
+    const updatedTasks = project.tasks.map(t =>
+      t.id === taskId ? updaterFn(t) : t
+    );
+    return { ...project, tasks: updatedTasks };
+  });
+}
+
+/**
  * 태스크에 리뷰 결과를 추가한다.
  * @param {string} projectId - 프로젝트 ID
  * @param {string} taskId - 태스크 ID
@@ -278,16 +289,9 @@ export async function addDiscussionRound(projectId, roundData) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function addTaskReviews(projectId, taskId, reviews) {
-  return withProjectLock(projectId, project => {
-    const task = project.tasks.find(t => t.id === taskId);
-    if (!task) throw notFoundError(`태스크를 찾을 수 없습니다: ${taskId}`);
-    const updatedTasks = project.tasks.map(t =>
-      t.id === taskId
-        ? { ...t, reviews: [...(t.reviews || []), ...reviews] }
-        : t
-    );
-    return { ...project, tasks: updatedTasks };
-  });
+  return updateTaskField(projectId, taskId, t => ({
+    ...t, reviews: [...(t.reviews || []), ...reviews],
+  }));
 }
 
 /**
@@ -298,14 +302,7 @@ export async function addTaskReviews(projectId, taskId, reviews) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function updateTaskStatus(projectId, taskId, status) {
-  return withProjectLock(projectId, project => {
-    const task = project.tasks.find(t => t.id === taskId);
-    if (!task) throw notFoundError(`태스크를 찾을 수 없습니다: ${taskId}`);
-    const updatedTasks = project.tasks.map(t =>
-      t.id === taskId ? { ...t, status } : t
-    );
-    return { ...project, tasks: updatedTasks };
-  });
+  return updateTaskField(projectId, taskId, t => ({ ...t, status }));
 }
 
 /**
@@ -316,22 +313,13 @@ export async function updateTaskStatus(projectId, taskId, status) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function addTaskMaterializationResult(projectId, taskId, materializeResult) {
-  return withProjectLock(projectId, project => {
-    const task = project.tasks.find(t => t.id === taskId);
-    if (!task) throw notFoundError(`태스크를 찾을 수 없습니다: ${taskId}`);
-    const updatedTasks = project.tasks.map(t =>
-      t.id === taskId
-        ? {
-            ...t,
-            materialization: [
-              ...(t.materialization || []),
-              { ...materializeResult, timestamp: new Date().toISOString() },
-            ],
-          }
-        : t
-    );
-    return { ...project, tasks: updatedTasks };
-  });
+  return updateTaskField(projectId, taskId, t => ({
+    ...t,
+    materialization: [
+      ...(t.materialization || []),
+      { ...materializeResult, timestamp: new Date().toISOString() },
+    ],
+  }));
 }
 
 /**
@@ -344,21 +332,14 @@ export async function addTaskMaterializationResult(projectId, taskId, materializ
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function saveTaskOutput(projectId, taskId, taskOutput, options = {}) {
-  return withProjectLock(projectId, project => {
-    const task = project.tasks.find(t => t.id === taskId);
-    if (!task) throw notFoundError(`태스크를 찾을 수 없습니다: ${taskId}`);
-
+  return updateTaskField(projectId, taskId, t => {
     const output = taskOutput || '';
     const maxLines = options.maxLines || config.execution.maxOutputLines;
     const lines = output.split('\n');
     const truncatedOutput = lines.length > maxLines
       ? lines.slice(0, maxLines).join('\n') + '\n...(truncated)'
       : output;
-
-    const updatedTasks = project.tasks.map(t =>
-      t.id === taskId ? { ...t, taskOutput: truncatedOutput } : t
-    );
-    return { ...project, tasks: updatedTasks };
+    return { ...t, taskOutput: truncatedOutput };
   });
 }
 

@@ -1,5 +1,5 @@
 import { writeFile as fsWriteFile, readFile, mkdir, copyFile, access } from 'fs/promises';
-import { resolve, dirname, basename } from 'path';
+import { dirname } from 'path';
 
 /**
  * 디렉토리가 없으면 생성한다.
@@ -64,6 +64,21 @@ export async function safeWriteFile(filePath, content, options = {}) {
   await fsWriteFile(filePath, content, 'utf-8');
 
   return { written: true, backupPath };
+}
+
+/**
+ * JSON 파일을 읽어 파싱한다. 파일이 없으면 null을 반환한다.
+ * @param {string} filePath - JSON 파일 경로
+ * @returns {Promise<object|null>} 파싱된 객체 또는 null (파일 없음)
+ */
+export async function readJsonFile(filePath) {
+  try {
+    const content = await readFile(filePath, 'utf-8');
+    return JSON.parse(content);
+  } catch (err) {
+    if (err.code === 'ENOENT') return null;
+    throw err;
+  }
 }
 
 /**
