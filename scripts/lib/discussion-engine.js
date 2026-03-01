@@ -5,7 +5,7 @@
 
 /**
  * 팀 토론 프롬프트를 생성한다.
- * @deprecated v4.0에서 멀티에이전트 방식으로 전환. buildSingleAgentDiscussionPrompt() 사용 권장.
+ * @deprecated 멀티에이전트 방식으로 전환. buildSingleAgentDiscussionPrompt() 사용 권장.
  * @param {object} project - 프로젝트 정보
  * @param {Array<object>} team - 팀원 배열
  * @param {number} round - 토론 라운드 번호

@@ -718,7 +718,7 @@ describe('PHASE_TRANSITIONS', () => {
 
 // --- Phase 3b: 시맨틱 검증 강화 + 저널 + isStaleExecution ---
 
-describe('isValidExecutionState 시맨틱 검증 (v4.5)', () => {
+describe('isValidExecutionState 시맨틱 검증', () => {
   it('fixAttempt > maxFixAttempts이면 false', () => {
     const state = createInitialExecutionState();
     state.fixAttempt = 3;
@@ -760,14 +760,14 @@ describe('isValidExecutionState 시맨틱 검증 (v4.5)', () => {
   });
 });
 
-describe('createInitialExecutionState journal (v4.5)', () => {
+describe('createInitialExecutionState journal', () => {
   it('초기 상태에 빈 journal 배열이 포함된다', () => {
     const state = createInitialExecutionState();
     expect(state.journal).toEqual([]);
   });
 });
 
-describe('advanceExecution journal 기록 (v4.5)', () => {
+describe('advanceExecution journal 기록', () => {
   it('상태 전이 시 저널 엔트리가 기록된다', async () => {
     const project = await createTestProject(1);
     await initExecution(project.id, { mode: 'auto' });
