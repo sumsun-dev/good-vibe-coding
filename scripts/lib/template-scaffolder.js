@@ -1,13 +1,11 @@
 import { readFile, readdir } from 'fs/promises';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { resolve } from 'path';
 import { renderString } from './template-engine.js';
 import { ensureDir, safeWriteFile, fileExists } from './file-writer.js';
 import { notFoundError } from './validators.js';
+import { pluginRoot } from './app-paths.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = resolve(__dirname, '../..');
-const BUILTIN_TEMPLATES_DIR = resolve(PROJECT_ROOT, 'presets/templates');
+const BUILTIN_TEMPLATES_DIR = resolve(pluginRoot(), 'presets/templates');
 
 import { customTemplatesDir as defaultCustomTemplatesDir } from './app-paths.js';
 

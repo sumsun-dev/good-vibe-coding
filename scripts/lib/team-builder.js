@@ -1,14 +1,12 @@
 import { readFile } from 'fs/promises';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { resolve } from 'path';
 import { getDefaultsForComplexity } from './complexity-analyzer.js';
 import { LazyCache } from './cache.js';
+import { pluginRoot } from './app-paths.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = resolve(__dirname, '../..');
-const CATALOG_PATH = resolve(PROJECT_ROOT, 'presets', 'team-roles', 'catalog.json');
-const PROJECT_TYPES_PATH = resolve(PROJECT_ROOT, 'presets', 'project-types.json');
-const PERSONALITIES_PATH = resolve(PROJECT_ROOT, 'presets', 'team-personalities.json');
+const CATALOG_PATH = resolve(pluginRoot(), 'presets', 'team-roles', 'catalog.json');
+const PROJECT_TYPES_PATH = resolve(pluginRoot(), 'presets', 'project-types.json');
+const PERSONALITIES_PATH = resolve(pluginRoot(), 'presets', 'team-personalities.json');
 
 const catalogCache = new LazyCache(async () => JSON.parse(await readFile(CATALOG_PATH, 'utf-8')));
 const projectTypesCache = new LazyCache(async () => JSON.parse(await readFile(PROJECT_TYPES_PATH, 'utf-8')));

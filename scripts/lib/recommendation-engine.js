@@ -4,17 +4,16 @@
  */
 
 import { readFile } from 'fs/promises';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { resolve } from 'path';
 import { LazyCache } from './cache.js';
 import { config } from './config.js';
 import { requireString, requireOneOf, inputError } from './validators.js';
 import { validate } from './schema-validator.js';
+import { pluginRoot } from './app-paths.js';
 
 const VALID_COMPLEXITIES = ['simple', 'medium', 'complex'];
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const CATALOG_PATH = resolve(__dirname, '../../presets/recommendation-catalog.json');
+const CATALOG_PATH = resolve(pluginRoot(), 'presets/recommendation-catalog.json');
 
 const CATALOG_ITEM_SCHEMA = {
   type: 'object',

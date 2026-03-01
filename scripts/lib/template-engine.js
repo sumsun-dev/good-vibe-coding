@@ -1,10 +1,7 @@
 import Handlebars from 'handlebars';
 import { readFile } from 'fs/promises';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const PROJECT_ROOT = resolve(__dirname, '../..');
+import { resolve } from 'path';
+import { pluginRoot } from './app-paths.js';
 
 /**
  * Handlebars 인스턴스를 생성하고 커스텀 헬퍼를 등록한다.
@@ -49,7 +46,7 @@ const hbs = createHandlebarsInstance();
  * @returns {Promise<string>} 렌더링된 문자열
  */
 export async function renderTemplate(templatePath, data) {
-  const fullPath = resolve(PROJECT_ROOT, 'templates', templatePath);
+  const fullPath = resolve(pluginRoot(), 'templates', templatePath);
   const source = await readFile(fullPath, 'utf-8');
   const template = hbs.compile(source, { noEscape: true });
   return template(data);

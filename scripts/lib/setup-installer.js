@@ -5,13 +5,11 @@
 
 import { readFile, writeFile, readdir } from 'fs/promises';
 import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
 import { ensureDir, fileExists } from './file-writer.js';
-import { claudeDir, userSkillsDir, userAgentsDir } from './app-paths.js';
+import { claudeDir, userSkillsDir, userAgentsDir, pluginRoot } from './app-paths.js';
 import { assertWithinRoot } from './validators.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const PLUGIN_ROOT = resolve(__dirname, '../..');
+const PLUGIN_ROOT = pluginRoot();
 
 /**
  * 설치된 스킬/에이전트 목록을 조회한다.
