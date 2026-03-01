@@ -15,4 +15,10 @@ export const config = Object.freeze({
     medium: Object.freeze({ min: 3, max: 5 }),
     complex: Object.freeze({ min: 5, max: 8 }),
   }),
+  recommendation: Object.freeze({
+    minScore: 3,
+    maxPerCategory: 5,
+    maxKeywordHits: 3,
+    weights: Object.freeze({ projectType: 3, complexity: 2, keyword: 1, roleAffinity: 2 }),
+  }),
 });

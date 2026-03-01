@@ -12,6 +12,8 @@ describe('config', () => {
     expect(Object.isFrozen(config.review)).toBe(true);
     expect(Object.isFrozen(config.team)).toBe(true);
     expect(Object.isFrozen(config.team.simple)).toBe(true);
+    expect(Object.isFrozen(config.recommendation)).toBe(true);
+    expect(Object.isFrozen(config.recommendation.weights)).toBe(true);
   });
 
   it('모든 설정값에 접근할 수 있다', () => {
@@ -32,6 +34,10 @@ describe('config', () => {
     expect(config.team.simple).toEqual({ min: 2, max: 3 });
     expect(config.team.medium).toEqual({ min: 3, max: 5 });
     expect(config.team.complex).toEqual({ min: 5, max: 8 });
+    expect(config.recommendation.minScore).toBe(3);
+    expect(config.recommendation.maxPerCategory).toBe(5);
+    expect(config.recommendation.maxKeywordHits).toBe(3);
+    expect(config.recommendation.weights).toEqual({ projectType: 3, complexity: 2, keyword: 1, roleAffinity: 2 });
   });
 
   it('값을 변경할 수 없다', () => {

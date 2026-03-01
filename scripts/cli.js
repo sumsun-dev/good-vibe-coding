@@ -15,6 +15,7 @@ const HANDLERS = {
   metrics: () => import('./handlers/metrics.js'),
   template: () => import('./handlers/template.js'),
   task: () => import('./handlers/task.js'),
+  recommendation: () => import('./handlers/recommendation.js'),
 };
 
 async function resolveCommand(name) {

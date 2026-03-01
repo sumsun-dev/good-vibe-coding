@@ -38,3 +38,18 @@ export function customTemplatesDir() {
 export function authDir() {
   return baseDir();
 }
+
+/** ~/.claude 디렉토리 */
+export function claudeDir() {
+  return resolve(homeDir(), '.claude');
+}
+
+/** 사용자 스킬 디렉토리 (~/.claude/skills) */
+export function userSkillsDir() {
+  return resolve(claudeDir(), 'skills');
+}
+
+/** 사용자 에이전트 디렉토리 (~/.claude/agents) */
+export function userAgentsDir() {
+  return resolve(claudeDir(), 'agents');
+}

@@ -95,6 +95,38 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js recommend-team --type {프로젝트타
 echo '{"name": "프로젝트명", "type": "타입", "description": "설명", "mode": "선택된모드"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js create-project
 ```
 
+## Step 4.5: 스킬/에이전트 추천
+
+팀 구성 후, 프로젝트에 도움이 될 스킬과 에이전트를 자동 추천합니다.
+
+### 1. 추천 요청
+
+```bash
+echo '{"projectType":"{타입}","complexity":"{level}","description":"{프로젝트 설명}","teamRoles":["{역할1}","{역할2}",...]}' \
+  | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js recommend-setup
+```
+
+### 2. 결과 처리
+
+- 추천 결과가 **비어있으면** (`skills`와 `agents` 모두 빈 배열) → 이 단계를 건너뛰고 Step 5로 진행
+- 추천 결과가 **있으면** → `formatted` 필드의 마크다운 테이블을 표시하고 AskUserQuestion으로 선택:
+  - **"전체 설치"** — 추천된 모든 항목 설치
+  - **"선택 설치"** — 사용자가 원하는 항목만 선택
+  - **"건너뛰기"** — 설치 없이 진행
+
+### 3. 설치 실행
+
+사용자가 전체 설치 또는 선택 설치를 선택한 경우:
+
+```bash
+echo '{"items":["항목id1","항목id2",...]}' \
+  | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js install-setup
+```
+
+설치 결과의 `formatted` 필드를 표시합니다.
+
+### 4. Step 5로 진행
+
 ## Step 5: 선택된 모드로 플로우 실행
 
 ### 모드 A: 바로 만들기 (quick-build)
