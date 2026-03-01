@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { vi, describe, it, expect, afterEach } from 'vitest';
 import { existsSync, readFileSync, mkdtempSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -704,6 +704,143 @@ describe('detectBuildStrategy', () => {
     expect(result.success).toBe(false);
     expect(result.output).toContain('unsupported project type');
     cleanup(tempDir);
+  });
+});
+
+// --- attemptTests 에러 경로 ---
+
+describe('attemptTests — 에러 경로', () => {
+  const tempDirs = [];
+
+  afterEach(() => {
+    for (const dir of tempDirs) cleanup(dir);
+    tempDirs.length = 0;
+    vi.restoreAllMocks();
+  });
+
+  it('ENOENT 발생 시 not found를 반환한다', () => {
+    const blocks = [
+      { language: 'javascript', filename: 'index.test.js', content: 'test("x", () => {});' },
+      { language: 'json', filename: 'package.json', content: '{"scripts":{"test":"vitest"}}' },
+    ];
+    const { tempDir } = writeTemporaryProject(blocks, 'cli-tool');
+    tempDirs.push(tempDir);
+
+    const enoentError = new Error('npm not found');
+    enoentError.code = 'ENOENT';
+    enoentError.path = 'npm';
+    vi.spyOn(BUILD_STRATEGIES.node, 'test').mockImplementation(() => { throw enoentError; });
+
+    const result = attemptTests(tempDir, 'cli-tool');
+    expect(result.success).toBe(false);
+    expect(result.output).toContain('not found');
+    expect(result.exitCode).toBe(1);
+  });
+
+  it('ENOENT에서 err.path가 없으면 runtime을 표시한다', () => {
+    const blocks = [
+      { language: 'javascript', filename: 'index.test.js', content: 'test("x", () => {});' },
+      { language: 'json', filename: 'package.json', content: '{"scripts":{"test":"vitest"}}' },
+    ];
+    const { tempDir } = writeTemporaryProject(blocks, 'cli-tool');
+    tempDirs.push(tempDir);
+
+    const enoentError = new Error('command not found');
+    enoentError.code = 'ENOENT';
+    vi.spyOn(BUILD_STRATEGIES.node, 'test').mockImplementation(() => { throw enoentError; });
+
+    const result = attemptTests(tempDir, 'cli-tool');
+    expect(result.output).toBe('runtime not found');
+  });
+
+  it('일반 예외 시 stderr를 우선 반환한다', () => {
+    const blocks = [
+      { language: 'javascript', filename: 'index.test.js', content: 'test("x", () => {});' },
+      { language: 'json', filename: 'package.json', content: '{"scripts":{"test":"vitest"}}' },
+    ];
+    const { tempDir } = writeTemporaryProject(blocks, 'cli-tool');
+    tempDirs.push(tempDir);
+
+    const error = new Error('tests failed');
+    error.stderr = 'AssertionError: expected true';
+    error.status = 1;
+    vi.spyOn(BUILD_STRATEGIES.node, 'test').mockImplementation(() => { throw error; });
+
+    const result = attemptTests(tempDir, 'cli-tool');
+    expect(result.success).toBe(false);
+    expect(result.output).toContain('AssertionError');
+    expect(result.exitCode).toBe(1);
+  });
+
+  it('stderr 없으면 message를 사용하고, status 없으면 기본값 1', () => {
+    const blocks = [
+      { language: 'javascript', filename: 'index.test.js', content: 'test("x", () => {});' },
+      { language: 'json', filename: 'package.json', content: '{"scripts":{"test":"vitest"}}' },
+    ];
+    const { tempDir } = writeTemporaryProject(blocks, 'cli-tool');
+    tempDirs.push(tempDir);
+
+    const error = new Error('unknown failure');
+    vi.spyOn(BUILD_STRATEGIES.node, 'test').mockImplementation(() => { throw error; });
+
+    const result = attemptTests(tempDir, 'cli-tool');
+    expect(result.output).toBe('unknown failure');
+    expect(result.exitCode).toBe(1);
+  });
+});
+
+// --- verifyAndMaterialize 반환 객체 완전성 ---
+
+describe('verifyAndMaterialize — 반환 객체 완전성', () => {
+  const tempDirs = [];
+
+  afterEach(() => {
+    for (const dir of tempDirs) cleanup(dir);
+    tempDirs.length = 0;
+  });
+
+  function createTempDir() {
+    const dir = mkdtempSync(join(tmpdir(), 'gvc-vam-comp-'));
+    tempDirs.push(dir);
+    return dir;
+  }
+
+  it('verified=null일 때 buildResult/testResult/tempDir가 undefined', async () => {
+    const dir = createTempDir();
+    const result = await verifyAndMaterialize('텍스트만', { id: 'task-1' }, dir);
+
+    expect(result.verified).toBeNull();
+    expect(result.codeBlockCount).toBe(0);
+    expect(result.buildResult).toBeUndefined();
+    expect(result.testResult).toBeUndefined();
+    expect(result.tempDir).toBeUndefined();
+  });
+
+  it('verified=true일 때 tempDir/reason 필드가 없다', async () => {
+    const dir = createTempDir();
+    const md = '```javascript src/x.js\nconst x = 1;\n```';
+    const result = await verifyAndMaterialize(md, { id: 'task-1', projectType: 'cli-tool' }, dir);
+
+    expect(result.verified).toBe(true);
+    expect('tempDir' in result).toBe(false);
+    expect('reason' in result).toBe(false);
+    expect(result.materializeResult).toBeDefined();
+    expect(result.codeBlockCount).toBe(1);
+  });
+
+  it('verified=false일 때 buildResult/testResult/tempDir가 모두 있다', async () => {
+    const dir = createTempDir();
+    const md = '```javascript src/broken.js\nconst x = {{\n```';
+    const result = await verifyAndMaterialize(md, { id: 'task-1', projectType: 'cli-tool' }, dir);
+
+    expect(result.verified).toBe(false);
+    expect(result.buildResult).toBeDefined();
+    expect(result.testResult).toBeDefined();
+    expect(result.tempDir).toBeTruthy();
+    expect(result.codeBlockCount).toBe(1);
+    expect(result.reason).toBeUndefined();
+
+    if (result.tempDir) cleanup(result.tempDir);
   });
 });
 

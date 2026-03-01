@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 import {
   loadRoleCatalog,
   loadProjectTypes,
@@ -222,6 +222,34 @@ describe('resolveModel', () => {
   it('architecture-review + simple → sonnet (업그레이드 없음)', () => {
     const role = { model: 'sonnet', category: 'engineering' };
     expect(resolveModel(role, 'simple', 'architecture-review')).toBe('sonnet');
+  });
+});
+
+// --- resolveModel 엣지케이스 ---
+
+describe('resolveModel — 엣지케이스', () => {
+  it('category가 없으면 engineering 기본값을 사용한다', () => {
+    const role = { model: 'haiku' };
+    const result = resolveModel(role, 'simple');
+    expect(result).toBe('sonnet');
+  });
+
+  it('modelTiers에 없는 category면 role.model로 fallback', () => {
+    const role = { model: 'opus', category: 'exotic-unknown' };
+    const result = resolveModel(role, 'simple');
+    expect(result).toBe('opus');
+  });
+});
+
+// --- getTeamSummary null/undefined 가드 ---
+
+describe('getTeamSummary — null/undefined', () => {
+  it('null을 전달하면 빈 문자열을 반환한다', () => {
+    expect(getTeamSummary(null)).toBe('');
+  });
+
+  it('undefined를 전달하면 빈 문자열을 반환한다', () => {
+    expect(getTeamSummary(undefined)).toBe('');
   });
 });
 

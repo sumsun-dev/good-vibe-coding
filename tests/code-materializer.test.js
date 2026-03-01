@@ -389,4 +389,23 @@ describe('materializeBatch', () => {
     expect(typeof result.errorCount).toBe('number');
     expect(result.errorCount).toBe(0);
   });
+
+  it('배열이 아닌 입력은 빈 결과를 반환한다', async () => {
+    const dir = createTempDir();
+    const result = await materializeBatch('not-an-array', dir);
+    expect(result.results).toEqual([]);
+    expect(result.totalFiles).toBe(0);
+    expect(result.errorCount).toBe(0);
+  });
+
+  it('materializeCode 실패를 errorCount에 반영한다', async () => {
+    const taskOutputs = [
+      { taskId: 'fail-task', output: SINGLE_FILE_OUTPUT },
+    ];
+    const result = await materializeBatch(taskOutputs, '/nonexistent-readonly-path-12345/sub');
+    expect(result.errorCount).toBe(1);
+    expect(result.results[0].taskId).toBe('fail-task');
+    expect(result.results[0].result).toBeNull();
+    expect(result.results[0].error).toBeDefined();
+  });
 });

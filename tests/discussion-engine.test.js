@@ -125,6 +125,81 @@ describe('buildPlanDocument', () => {
   });
 });
 
+describe('buildDiscussionPrompt — skills 엣지케이스', () => {
+  it('skills가 없는 팀원도 오류 없이 처리한다', () => {
+    const teamNoSkills = [{ ...SAMPLE_TEAM[0], skills: undefined }];
+    const prompt = buildDiscussionPrompt(SAMPLE_PROJECT, teamNoSkills, 1);
+    expect(prompt).toContain('민준');
+    expect(prompt).toContain('전문 분야: ');
+  });
+
+  it('skills가 null인 팀원도 오류 없이 처리한다', () => {
+    const teamNullSkills = [{ ...SAMPLE_TEAM[0], skills: null }];
+    const prompt = buildDiscussionPrompt(SAMPLE_PROJECT, teamNullSkills, 1);
+    expect(prompt).toContain('민준');
+  });
+});
+
+describe('buildPlanDocument — 빈 토론', () => {
+  it('토론이 없을 때 (토론 내용 없음) 텍스트를 포함한다', () => {
+    const doc = buildPlanDocument(SAMPLE_PROJECT, []);
+    expect(doc).toContain('(토론 내용 없음)');
+  });
+
+  it('토론이 있을 때 역할과 내용을 포함한다', () => {
+    const discussions = [{ role: 'CTO', content: '마이크로서비스 권장' }];
+    const doc = buildPlanDocument(SAMPLE_PROJECT, discussions);
+    expect(doc).toContain('**CTO**');
+    expect(doc).toContain('마이크로서비스 권장');
+    expect(doc).not.toContain('(토론 내용 없음)');
+  });
+});
+
+describe('buildSingleAgentDiscussionPrompt — context 분기', () => {
+  it('round가 없으면 기본값 1을 사용한다', () => {
+    const prompt = buildSingleAgentDiscussionPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {});
+    expect(prompt).toContain('라운드 1');
+  });
+
+  it('context 없이 호출해도 오류가 없다', () => {
+    const prompt = buildSingleAgentDiscussionPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0]);
+    expect(prompt).toContain('라운드 1');
+  });
+
+  it('priorTierOutputs가 빈 배열이면 이전 tier 섹션을 추가하지 않는다', () => {
+    const prompt = buildSingleAgentDiscussionPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {
+      round: 1,
+      priorTierOutputs: [],
+    });
+    expect(prompt).not.toContain('이전 tier 팀원 분석 요약');
+  });
+
+  it('previousSynthesis가 있으면 이전 라운드 기획서 섹션을 포함한다', () => {
+    const prompt = buildSingleAgentDiscussionPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {
+      round: 2,
+      previousSynthesis: '## 1라운드 기획서\n기술 스택: Node.js',
+    });
+    expect(prompt).toContain('이전 라운드 기획서');
+    expect(prompt).toContain('기술 스택: Node.js');
+    expect(prompt).toContain('수정/보완 의견을 제시하세요');
+  });
+
+  it('feedbackForMe가 있으면 피드백 섹션을 포함한다', () => {
+    const prompt = buildSingleAgentDiscussionPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {
+      round: 2,
+      feedbackForMe: '아키텍처 단순화를 검토해주세요.',
+    });
+    expect(prompt).toContain('다른 팀원의 피드백');
+    expect(prompt).toContain('단순화를 검토해주세요');
+  });
+
+  it('skills가 없는 팀원에서도 오류 없이 동작한다', () => {
+    const memberNoSkills = { ...SAMPLE_TEAM[0], skills: undefined };
+    const prompt = buildSingleAgentDiscussionPrompt(SAMPLE_PROJECT, memberNoSkills, { round: 1 });
+    expect(prompt).toContain('전문 분야: ');
+  });
+});
+
 describe('buildSingleAgentDiscussionPrompt - tier cascade', () => {
   it('priorTierOutputs의 비어있지 않은 첫 5줄을 포함한다', () => {
     const teamMember = SAMPLE_TEAM[0]; // CTO
