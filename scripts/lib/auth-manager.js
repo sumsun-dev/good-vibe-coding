@@ -7,9 +7,10 @@
  * 크레덴셜은 config와 분리 저장 (auth.json).
  */
 
-import { readFile, writeFile, mkdir } from 'fs/promises';
+import { readFile, writeFile, mkdir, chmod } from 'fs/promises';
 import { resolve } from 'path';
 import { authDir as getAuthDir } from './app-paths.js';
+import { inputError } from './validators.js';
 
 const DEFAULT_AUTH_DIR = getAuthDir();
 const DEFAULT_PROVIDERS_DIR = DEFAULT_AUTH_DIR;
@@ -73,6 +74,7 @@ async function saveAllAuth(allAuth) {
   await mkdir(authDir, { recursive: true });
   const authPath = resolve(authDir, AUTH_FILENAME);
   await writeFile(authPath, JSON.stringify(allAuth, null, 2), 'utf-8');
+  await chmod(authPath, 0o600);
 }
 
 /**
@@ -164,7 +166,7 @@ export async function saveProvidersConfig(config) {
 export async function setProviderEnabled(providerId, enabled) {
   const config = await loadProvidersConfig();
   if (!config.providers[providerId]) {
-    throw new Error(`알 수 없는 프로바이더: ${providerId}`);
+    throw inputError(`알 수 없는 프로바이더: ${providerId}`);
   }
   config.providers[providerId] = { ...config.providers[providerId], enabled };
   await saveProvidersConfig(config);
@@ -176,7 +178,7 @@ export async function setProviderEnabled(providerId, enabled) {
  */
 export async function setReviewStrategy(strategy) {
   if (strategy !== 'single' && strategy !== 'cross-model') {
-    throw new Error(`잘못된 전략: ${strategy}. 'single' 또는 'cross-model' 사용`);
+    throw inputError(`잘못된 전략: ${strategy}. 'single' 또는 'cross-model' 사용`);
   }
   const config = await loadProvidersConfig();
   config.reviewStrategy = strategy;
@@ -193,7 +195,7 @@ export async function setReviewStrategy(strategy) {
  */
 export async function connectWithApiKey(providerId, apiKey) {
   if (!apiKey || apiKey.trim() === '') {
-    throw new Error('API Key가 비어있습니다');
+    throw inputError('API Key가 비어있습니다');
   }
 
   const authData = {

@@ -3,6 +3,7 @@
  */
 import { readStdin, output, parseArgs } from '../cli-utils.js';
 import { getProject } from '../lib/project-manager.js';
+import { notFoundError, inputError } from '../lib/validators.js';
 import {
   buildDiscussionPrompt, buildPlanDocument, buildSingleAgentDiscussionPrompt,
 } from '../lib/discussion-engine.js';
@@ -20,7 +21,7 @@ export const commands = {
   'discussion-prompt': async () => {
     const opts = parseArgs(args);
     const project = await getProject(opts.id);
-    if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
+    if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
     const prompt = buildDiscussionPrompt(project, project.team, parseInt(opts.round || '1'));
     output({ prompt });
   },
@@ -70,7 +71,7 @@ export const commands = {
   'discussion-dispatch-plan': async () => {
     const data = await readStdin();
     const project = data.project || (data.id ? await getProject(data.id) : null);
-    if (!project) throw new Error('프로젝트 정보가 필요합니다');
+    if (!project) throw inputError('프로젝트 정보가 필요합니다');
     const plan = buildDiscussionDispatchPlan(project, data.team || project.team, data.context || {});
     output(plan);
   },
@@ -78,7 +79,7 @@ export const commands = {
   'execution-dispatch-plan': async () => {
     const data = await readStdin();
     const project = data.project || (data.id ? await getProject(data.id) : null);
-    if (!project) throw new Error('프로젝트 정보가 필요합니다');
+    if (!project) throw inputError('프로젝트 정보가 필요합니다');
     const plan = buildExecutionDispatchPlan(project, data.tasks || project.tasks, data.team || project.team, data.context || {});
     output(plan);
   },

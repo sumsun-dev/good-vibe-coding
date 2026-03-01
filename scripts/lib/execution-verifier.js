@@ -38,14 +38,21 @@ const PROJECT_TYPE_STRATEGY_MAP = {
   'java-app': 'java',
 };
 
-/** 빌드 전략 맵 — 언어별 detect/build/test */
+/**
+ * 빌드 전략 맵 — 언어별 detect/build/test
+ *
+ * SECURITY NOTE: 이 전략들은 LLM이 생성한 코드를 /tmp에서 실행한다.
+ * npm install에는 --ignore-scripts를 적용하여 postinstall 스크립트 실행을 방지한다.
+ * npm run build는 package.json scripts를 실행하므로, 신뢰할 수 없는 입력에 대해
+ * 샌드박스 환경(Docker 등)에서의 실행을 권장한다.
+ */
 export const BUILD_STRATEGIES = {
   node: {
     detect: (files) => files.some(f => f === 'package.json') ||
       files.some(f => f.endsWith('.js') || f.endsWith('.ts')),
     build: (tempDir) => {
       if (existsSync(join(tempDir, 'package.json'))) {
-        const output = execSync('npm install --ignore-scripts && npm run build', {
+        const output = execSync('npm install --ignore-scripts && npm run build --ignore-scripts', {
           cwd: tempDir, timeout: config.build.defaultTimeout, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
         });
         return { success: true, output, exitCode: 0 };

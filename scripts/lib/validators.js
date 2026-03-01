@@ -3,6 +3,8 @@
  * CLI 커맨드와 라이브러리 모듈 전체에서 재사용.
  */
 
+import { sep } from 'path';
+
 /**
  * 구조화된 에러 클래스.
  * code: 'INPUT_ERROR' | 'NOT_FOUND' | 'SYSTEM_ERROR'
@@ -95,6 +97,18 @@ export function requireFields(data, fields) {
     }
   }
   return data;
+}
+
+/**
+ * 경로가 기준 디렉토리 내에 있는지 검증한다 (path traversal 방지).
+ * @param {string} resolvedPath - 검증할 전체 경로 (resolve 완료)
+ * @param {string} rootDir - 기준 디렉토리 (resolve 완료)
+ * @param {string} label - 에러 메시지용 라벨
+ */
+export function assertWithinRoot(resolvedPath, rootDir, label) {
+  if (!resolvedPath.startsWith(rootDir + sep) && resolvedPath !== rootDir) {
+    throw inputError(`${label}이 허용 범위를 벗어났습니다: ${resolvedPath}`);
+  }
 }
 
 /**

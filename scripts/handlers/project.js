@@ -7,7 +7,7 @@ import {
   setProjectTeam, getExecutionProgress,
 } from '../lib/project-manager.js';
 import { generateReport } from '../lib/report-generator.js';
-import { requireFields } from '../lib/validators.js';
+import { requireFields, notFoundError } from '../lib/validators.js';
 
 const [,, , ...args] = process.argv;
 
@@ -47,7 +47,7 @@ export const commands = {
   'execution-progress': async () => {
     const opts = parseArgs(args);
     const project = await getProject(opts.id);
-    if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
+    if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
     const progress = getExecutionProgress(project);
     output(progress);
   },
@@ -55,7 +55,7 @@ export const commands = {
   'report': async () => {
     const opts = parseArgs(args);
     const project = await getProject(opts.id);
-    if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
+    if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
     const report = generateReport(project);
     output({ report });
   },

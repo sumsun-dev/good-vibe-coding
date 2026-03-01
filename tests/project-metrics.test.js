@@ -45,8 +45,7 @@ describe('COST_RATES', () => {
 
 describe('recordAgentCall', () => {
   it('토큰과 비용을 누적한다', () => {
-    const metrics = createMetricsSnapshot();
-    recordAgentCall(metrics, { roleId: 'cto', provider: 'claude', inputTokens: 1000, outputTokens: 500 });
+    const metrics = recordAgentCall(createMetricsSnapshot(), { roleId: 'cto', provider: 'claude', inputTokens: 1000, outputTokens: 500 });
 
     expect(metrics.totalInputTokens).toBe(1000);
     expect(metrics.totalOutputTokens).toBe(500);
@@ -54,9 +53,9 @@ describe('recordAgentCall', () => {
   });
 
   it('여러 호출을 누적한다', () => {
-    const metrics = createMetricsSnapshot();
-    recordAgentCall(metrics, { roleId: 'cto', inputTokens: 100, outputTokens: 50 });
-    recordAgentCall(metrics, { roleId: 'backend', inputTokens: 200, outputTokens: 100 });
+    let metrics = createMetricsSnapshot();
+    metrics = recordAgentCall(metrics, { roleId: 'cto', inputTokens: 100, outputTokens: 50 });
+    metrics = recordAgentCall(metrics, { roleId: 'backend', inputTokens: 200, outputTokens: 100 });
 
     expect(metrics.totalInputTokens).toBe(300);
     expect(metrics.totalOutputTokens).toBe(150);
@@ -64,9 +63,9 @@ describe('recordAgentCall', () => {
   });
 
   it('byRole에 역할별 집계를 기록한다', () => {
-    const metrics = createMetricsSnapshot();
-    recordAgentCall(metrics, { roleId: 'cto', inputTokens: 100, outputTokens: 50 });
-    recordAgentCall(metrics, { roleId: 'cto', inputTokens: 200, outputTokens: 100 });
+    let metrics = createMetricsSnapshot();
+    metrics = recordAgentCall(metrics, { roleId: 'cto', inputTokens: 100, outputTokens: 50 });
+    metrics = recordAgentCall(metrics, { roleId: 'cto', inputTokens: 200, outputTokens: 100 });
 
     expect(metrics.byRole.cto.callCount).toBe(2);
     expect(metrics.byRole.cto.inputTokens).toBe(300);
@@ -74,26 +73,25 @@ describe('recordAgentCall', () => {
   });
 
   it('byProvider에 프로바이더별 집계를 기록한다', () => {
-    const metrics = createMetricsSnapshot();
-    recordAgentCall(metrics, { roleId: 'cto', provider: 'claude', inputTokens: 100, outputTokens: 50 });
-    recordAgentCall(metrics, { roleId: 'backend', provider: 'openai', inputTokens: 200, outputTokens: 100 });
+    let metrics = createMetricsSnapshot();
+    metrics = recordAgentCall(metrics, { roleId: 'cto', provider: 'claude', inputTokens: 100, outputTokens: 50 });
+    metrics = recordAgentCall(metrics, { roleId: 'backend', provider: 'openai', inputTokens: 200, outputTokens: 100 });
 
     expect(metrics.byProvider.claude.callCount).toBe(1);
     expect(metrics.byProvider.openai.callCount).toBe(1);
   });
 
   it('provider 기본값은 claude이다', () => {
-    const metrics = createMetricsSnapshot();
-    recordAgentCall(metrics, { roleId: 'cto', inputTokens: 100, outputTokens: 50 });
+    const metrics = recordAgentCall(createMetricsSnapshot(), { roleId: 'cto', inputTokens: 100, outputTokens: 50 });
 
     expect(metrics.byProvider.claude).toBeDefined();
     expect(metrics.byProvider.claude.callCount).toBe(1);
   });
 
   it('agentCalls가 500개를 초과하면 오래된 것을 제거한다', () => {
-    const metrics = createMetricsSnapshot();
+    let metrics = createMetricsSnapshot();
     for (let i = 0; i < 510; i++) {
-      recordAgentCall(metrics, { roleId: 'cto', inputTokens: 1, outputTokens: 1 });
+      metrics = recordAgentCall(metrics, { roleId: 'cto', inputTokens: 1, outputTokens: 1 });
     }
     expect(metrics.agentCalls.length).toBe(500);
   });
@@ -105,11 +103,20 @@ describe('recordAgentCall', () => {
   });
 
   it('비용 계산이 올바르다 (claude)', () => {
-    const metrics = createMetricsSnapshot();
-    recordAgentCall(metrics, { roleId: 'cto', provider: 'claude', inputTokens: 1000, outputTokens: 1000 });
+    const metrics = recordAgentCall(createMetricsSnapshot(), { roleId: 'cto', provider: 'claude', inputTokens: 1000, outputTokens: 1000 });
 
     const expectedCost = (1000 * COST_RATES.claude.input) + (1000 * COST_RATES.claude.output);
     expect(metrics.totalCostUsd).toBeCloseTo(expectedCost, 10);
+  });
+
+  it('원본 메트릭스를 변경하지 않는다 (immutability)', () => {
+    const original = createMetricsSnapshot();
+    const updated = recordAgentCall(original, { roleId: 'cto', inputTokens: 100, outputTokens: 50 });
+
+    expect(original.totalInputTokens).toBe(0);
+    expect(updated.totalInputTokens).toBe(100);
+    expect(original.agentCalls).toHaveLength(0);
+    expect(updated.agentCalls).toHaveLength(1);
   });
 });
 
@@ -117,8 +124,7 @@ describe('recordAgentCall', () => {
 
 describe('recordPhaseCompletion', () => {
   it('페이즈 메트릭스를 기록한다', () => {
-    const metrics = createMetricsSnapshot();
-    recordPhaseCompletion(metrics, {
+    const metrics = recordPhaseCompletion(createMetricsSnapshot(), {
       phase: 1,
       startedAt: '2026-01-01T00:00:00Z',
       durationMs: 5000,
@@ -133,9 +139,9 @@ describe('recordPhaseCompletion', () => {
   });
 
   it('여러 페이즈를 기록한다', () => {
-    const metrics = createMetricsSnapshot();
-    recordPhaseCompletion(metrics, { phase: 1, durationMs: 1000, taskCount: 2 });
-    recordPhaseCompletion(metrics, { phase: 2, durationMs: 2000, taskCount: 3 });
+    let metrics = createMetricsSnapshot();
+    metrics = recordPhaseCompletion(metrics, { phase: 1, durationMs: 1000, taskCount: 2 });
+    metrics = recordPhaseCompletion(metrics, { phase: 2, durationMs: 2000, taskCount: 3 });
 
     expect(Object.keys(metrics.phaseMetrics)).toHaveLength(2);
   });
@@ -145,14 +151,21 @@ describe('recordPhaseCompletion', () => {
     const metrics = createMetricsSnapshot();
     expect(recordPhaseCompletion(metrics, null)).toBe(metrics);
   });
+
+  it('원본 메트릭스를 변경하지 않는다 (immutability)', () => {
+    const original = createMetricsSnapshot();
+    const updated = recordPhaseCompletion(original, { phase: 1, durationMs: 5000, taskCount: 3 });
+
+    expect(Object.keys(original.phaseMetrics)).toHaveLength(0);
+    expect(Object.keys(updated.phaseMetrics)).toHaveLength(1);
+  });
 });
 
 // --- getCostSummary ---
 
 describe('getCostSummary', () => {
   it('비용 요약을 반환한다', () => {
-    const metrics = createMetricsSnapshot();
-    recordAgentCall(metrics, { roleId: 'cto', inputTokens: 1000, outputTokens: 500 });
+    const metrics = recordAgentCall(createMetricsSnapshot(), { roleId: 'cto', inputTokens: 1000, outputTokens: 500 });
 
     const summary = getCostSummary(metrics);
     expect(summary.totalInputTokens).toBe(1000);
@@ -172,9 +185,9 @@ describe('getCostSummary', () => {
 
 describe('getAgentPerformanceSummary', () => {
   it('에이전트별 성능 요약을 반환한다', () => {
-    const metrics = createMetricsSnapshot();
-    recordAgentCall(metrics, { roleId: 'cto', inputTokens: 1000, outputTokens: 500 });
-    recordAgentCall(metrics, { roleId: 'backend', inputTokens: 2000, outputTokens: 1000 });
+    let metrics = createMetricsSnapshot();
+    metrics = recordAgentCall(metrics, { roleId: 'cto', inputTokens: 1000, outputTokens: 500 });
+    metrics = recordAgentCall(metrics, { roleId: 'backend', inputTokens: 2000, outputTokens: 1000 });
 
     const summary = getAgentPerformanceSummary(metrics, { cto: 0.8, backend: 0.9 });
     expect(summary).toHaveLength(2);
@@ -183,8 +196,7 @@ describe('getAgentPerformanceSummary', () => {
   });
 
   it('기여도가 없으면 0을 반환한다', () => {
-    const metrics = createMetricsSnapshot();
-    recordAgentCall(metrics, { roleId: 'cto', inputTokens: 100, outputTokens: 50 });
+    const metrics = recordAgentCall(createMetricsSnapshot(), { roleId: 'cto', inputTokens: 100, outputTokens: 50 });
 
     const summary = getAgentPerformanceSummary(metrics);
     expect(summary[0].contributionScore).toBe(0);
@@ -199,9 +211,9 @@ describe('getAgentPerformanceSummary', () => {
 
 describe('buildMetricsDashboard', () => {
   it('마크다운 대시보드를 생성한다', () => {
-    const metrics = createMetricsSnapshot();
-    recordAgentCall(metrics, { roleId: 'cto', provider: 'claude', inputTokens: 1000, outputTokens: 500 });
-    recordPhaseCompletion(metrics, { phase: 1, durationMs: 5000, taskCount: 3 });
+    let metrics = createMetricsSnapshot();
+    metrics = recordAgentCall(metrics, { roleId: 'cto', provider: 'claude', inputTokens: 1000, outputTokens: 500 });
+    metrics = recordPhaseCompletion(metrics, { phase: 1, durationMs: 5000, taskCount: 3 });
 
     const dashboard = buildMetricsDashboard({ metrics });
     expect(dashboard).toContain('비용/성능 대시보드');

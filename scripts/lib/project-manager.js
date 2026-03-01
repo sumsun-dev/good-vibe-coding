@@ -1,13 +1,11 @@
 import { writeFile, readdir } from 'fs/promises';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { resolve } from 'path';
 import { ensureDir, fileExists, readJsonFile } from './file-writer.js';
 import { inputError, notFoundError } from './validators.js';
 import { createMetricsSnapshot, recordAgentCall, recordPhaseCompletion } from './project-metrics.js';
 import { projectsDir } from './app-paths.js';
 import { config } from './config.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_BASE_DIR = projectsDir();
 
 let baseDir = DEFAULT_BASE_DIR;
@@ -396,15 +394,15 @@ export function getExecutionProgress(project) {
  */
 export async function recordMetrics(projectId, event) {
   return withProjectLock(projectId, project => {
-    // 하위 호환: 기존 프로젝트에 metrics가 없으면 생성
-    const metrics = project.metrics
-      ? { ...project.metrics }
-      : createMetricsSnapshot();
+    const base = project.metrics || createMetricsSnapshot();
 
+    let metrics;
     if (event.type === 'agent-call') {
-      recordAgentCall(metrics, event);
+      metrics = recordAgentCall(base, event);
     } else if (event.type === 'phase-completion') {
-      recordPhaseCompletion(metrics, event);
+      metrics = recordPhaseCompletion(base, event);
+    } else {
+      metrics = base;
     }
 
     return { ...project, metrics };

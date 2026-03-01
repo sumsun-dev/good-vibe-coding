@@ -4,20 +4,14 @@
  */
 
 import { readFile, writeFile, readdir } from 'fs/promises';
-import { resolve, dirname, sep } from 'path';
+import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { ensureDir, fileExists } from './file-writer.js';
 import { claudeDir, userSkillsDir, userAgentsDir } from './app-paths.js';
-import { inputError } from './validators.js';
+import { assertWithinRoot } from './validators.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PLUGIN_ROOT = resolve(__dirname, '../..');
-
-function assertWithinRoot(resolved, root, label) {
-  if (!resolved.startsWith(root + sep) && resolved !== root) {
-    throw inputError(`${label}이 허용 범위를 벗어났습니다: ${resolved}`);
-  }
-}
 
 /**
  * 설치된 스킬/에이전트 목록을 조회한다.

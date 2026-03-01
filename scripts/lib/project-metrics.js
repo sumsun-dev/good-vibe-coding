@@ -30,15 +30,15 @@ export function createMetricsSnapshot() {
 }
 
 /**
- * 에이전트 호출 이벤트를 기록한다 (토큰/비용 누적).
- * @param {object} metrics - 메트릭스 객체 (in-place 변경)
+ * 에이전트 호출 이벤트를 기록한다 (토큰/비용 누적). Pure function — 새 객체를 반환한다.
+ * @param {object} metrics - 메트릭스 객체
  * @param {object} event - 호출 이벤트
  * @param {string} event.roleId - 역할 ID
  * @param {string} [event.provider='claude'] - 프로바이더
  * @param {number} [event.inputTokens=0] - 입력 토큰 수
  * @param {number} [event.outputTokens=0] - 출력 토큰 수
  * @param {number} [event.durationMs=0] - 소요 시간
- * @returns {object} 업데이트된 메트릭스
+ * @returns {object} 새 메트릭스 객체
  */
 export function recordAgentCall(metrics, event) {
   if (!metrics || !event) return metrics;
@@ -50,12 +50,7 @@ export function recordAgentCall(metrics, event) {
   const rates = COST_RATES[provider] || COST_RATES.claude;
   const cost = (inputTokens * rates.input) + (outputTokens * rates.output);
 
-  metrics.totalInputTokens += inputTokens;
-  metrics.totalOutputTokens += outputTokens;
-  metrics.totalCostUsd += cost;
-
-  // 에이전트 호출 기록 (rolling max)
-  metrics.agentCalls.push({
+  const newCall = {
     roleId: event.roleId,
     provider,
     inputTokens,
@@ -63,39 +58,49 @@ export function recordAgentCall(metrics, event) {
     cost,
     durationMs: event.durationMs || 0,
     timestamp: new Date().toISOString(),
-  });
-  if (metrics.agentCalls.length > MAX_AGENT_CALLS) {
-    metrics.agentCalls = metrics.agentCalls.slice(-MAX_AGENT_CALLS);
-  }
+  };
+  const updatedCalls = [...metrics.agentCalls, newCall].slice(-MAX_AGENT_CALLS);
 
-  // byRole 집계
-  if (event.roleId) {
-    if (!metrics.byRole[event.roleId]) {
-      metrics.byRole[event.roleId] = { callCount: 0, inputTokens: 0, outputTokens: 0, costUsd: 0 };
+  // byRole 집계 (immutable)
+  const prevRole = (event.roleId && metrics.byRole[event.roleId]) || { callCount: 0, inputTokens: 0, outputTokens: 0, costUsd: 0 };
+  const updatedByRole = event.roleId
+    ? {
+      ...metrics.byRole,
+      [event.roleId]: {
+        callCount: prevRole.callCount + 1,
+        inputTokens: prevRole.inputTokens + inputTokens,
+        outputTokens: prevRole.outputTokens + outputTokens,
+        costUsd: prevRole.costUsd + cost,
+      },
     }
-    const r = metrics.byRole[event.roleId];
-    r.callCount += 1;
-    r.inputTokens += inputTokens;
-    r.outputTokens += outputTokens;
-    r.costUsd += cost;
-  }
+    : { ...metrics.byRole };
 
-  // byProvider 집계
-  if (!metrics.byProvider[provider]) {
-    metrics.byProvider[provider] = { callCount: 0, inputTokens: 0, outputTokens: 0, costUsd: 0 };
-  }
-  const p = metrics.byProvider[provider];
-  p.callCount += 1;
-  p.inputTokens += inputTokens;
-  p.outputTokens += outputTokens;
-  p.costUsd += cost;
+  // byProvider 집계 (immutable)
+  const prevProv = metrics.byProvider[provider] || { callCount: 0, inputTokens: 0, outputTokens: 0, costUsd: 0 };
+  const updatedByProvider = {
+    ...metrics.byProvider,
+    [provider]: {
+      callCount: prevProv.callCount + 1,
+      inputTokens: prevProv.inputTokens + inputTokens,
+      outputTokens: prevProv.outputTokens + outputTokens,
+      costUsd: prevProv.costUsd + cost,
+    },
+  };
 
-  return metrics;
+  return {
+    ...metrics,
+    totalInputTokens: metrics.totalInputTokens + inputTokens,
+    totalOutputTokens: metrics.totalOutputTokens + outputTokens,
+    totalCostUsd: metrics.totalCostUsd + cost,
+    agentCalls: updatedCalls,
+    byRole: updatedByRole,
+    byProvider: updatedByProvider,
+  };
 }
 
 /**
- * 페이즈 완료 이벤트를 기록한다.
- * @param {object} metrics - 메트릭스 객체 (in-place 변경)
+ * 페이즈 완료 이벤트를 기록한다. Pure function — 새 객체를 반환한다.
+ * @param {object} metrics - 메트릭스 객체
  * @param {object} event - 페이즈 이벤트
  * @param {number} event.phase - 페이즈 번호
  * @param {string} [event.startedAt] - 시작 시각
@@ -103,21 +108,25 @@ export function recordAgentCall(metrics, event) {
  * @param {number} [event.durationMs=0] - 소요 시간
  * @param {number} [event.fixAttempts=0] - 수정 시도 횟수
  * @param {number} [event.taskCount=0] - 태스크 수
- * @returns {object} 업데이트된 메트릭스
+ * @returns {object} 새 메트릭스 객체
  */
 export function recordPhaseCompletion(metrics, event) {
   if (!metrics || !event || event.phase === undefined) return metrics;
 
   const key = `phase-${event.phase}`;
-  metrics.phaseMetrics[key] = {
-    startedAt: event.startedAt || null,
-    completedAt: event.completedAt || new Date().toISOString(),
-    durationMs: event.durationMs || 0,
-    fixAttempts: event.fixAttempts || 0,
-    taskCount: event.taskCount || 0,
+  return {
+    ...metrics,
+    phaseMetrics: {
+      ...metrics.phaseMetrics,
+      [key]: {
+        startedAt: event.startedAt || null,
+        completedAt: event.completedAt || new Date().toISOString(),
+        durationMs: event.durationMs || 0,
+        fixAttempts: event.fixAttempts || 0,
+        taskCount: event.taskCount || 0,
+      },
+    },
   };
-
-  return metrics;
 }
 
 /**

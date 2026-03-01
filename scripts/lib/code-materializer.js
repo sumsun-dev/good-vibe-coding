@@ -7,18 +7,7 @@
 import { resolve } from 'path';
 import { extractCodeBlocks, classifyCodeBlocks } from './execution-verifier.js';
 import { safeWriteFile, ensureDir } from './file-writer.js';
-
-/**
- * 경로가 기준 디렉토리 내에 있는지 검증한다 (path traversal 방지).
- * @param {string} fullPath - 검증할 전체 경로
- * @param {string} baseDir - 기준 디렉토리
- * @returns {boolean}
- */
-function isPathSafe(fullPath, baseDir) {
-  const resolvedPath = resolve(fullPath);
-  const resolvedBase = resolve(baseDir);
-  return resolvedPath.startsWith(resolvedBase + '/') || resolvedPath === resolvedBase;
-}
+import { assertWithinRoot, inputError } from './validators.js';
 
 /**
  * 파일명이 있는 코드 블록만 필터링하여 반환한다.
@@ -61,7 +50,7 @@ export async function materializeCode(taskOutput, projectDir, options = {}) {
   }
 
   if (!projectDir || typeof projectDir !== 'string') {
-    throw new Error('projectDir must be a non-empty string');
+    throw inputError('projectDir must be a non-empty string');
   }
 
   const { overwrite = true, backup = true, dryRun = false } = options;
@@ -107,7 +96,9 @@ export async function materializeCode(taskOutput, projectDir, options = {}) {
     };
 
     // path traversal 방지
-    if (!isPathSafe(fullPath, projectDir)) {
+    try {
+      assertWithinRoot(resolve(fullPath), resolve(projectDir), 'filePath');
+    } catch {
       fileRecord.error = 'path traversal detected';
       files.push(fileRecord);
       failedCount++;
@@ -175,7 +166,7 @@ export async function materializeBatch(taskOutputs, projectDir, options = {}) {
   }
 
   if (!projectDir || typeof projectDir !== 'string') {
-    throw new Error('projectDir must be a non-empty string');
+    throw inputError('projectDir must be a non-empty string');
   }
 
   const results = [];

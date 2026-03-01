@@ -22,6 +22,7 @@
 import { isCodeTask } from './task-distributor.js';
 import { getProject, updateExecutionState } from './project-manager.js';
 import { config } from './config.js';
+import { inputError, notFoundError } from './validators.js';
 
 const VALID_STATUSES = ['idle', 'executing', 'reviewing', 'fixing', 'committing', 'paused', 'escalated', 'completed'];
 const VALID_PHASE_STEPS = ['execute-tasks', 'materialize', 'review', 'quality-gate', 'fix', 'commit', 'build-context'];
@@ -253,15 +254,15 @@ export function getNextExecutionStep(project) {
  */
 export async function advanceExecution(projectId, stepResult) {
   if (!stepResult || typeof stepResult !== 'object') {
-    throw new Error('stepResult 객체가 필요합니다');
+    throw inputError('stepResult 객체가 필요합니다');
   }
   if (!stepResult.completedAction || typeof stepResult.completedAction !== 'string') {
-    throw new Error('stepResult.completedAction 문자열이 필요합니다');
+    throw inputError('stepResult.completedAction 문자열이 필요합니다');
   }
 
   const project = await getProject(projectId);
-  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
-  if (!project.executionState) throw new Error('실행 상태가 초기화되지 않았습니다.');
+  if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${projectId}`);
+  if (!project.executionState) throw inputError('실행 상태가 초기화되지 않았습니다.');
 
   const state = {
     ...project.executionState,
@@ -365,13 +366,13 @@ export async function advanceExecution(projectId, stepResult) {
           state.status = 'paused';
           break;
         default:
-          throw new Error(`알 수 없는 에스컬레이션 결정: ${stepResult.escalationDecision}`);
+          throw inputError(`알 수 없는 에스컬레이션 결정: ${stepResult.escalationDecision}`);
       }
       state.lastCompletedStep = 'escalation-response';
       break;
 
     default:
-      throw new Error(`알 수 없는 completedAction: ${stepResult.completedAction}`);
+      throw inputError(`알 수 없는 completedAction: ${stepResult.completedAction}`);
   }
 
   // 저널 기록
@@ -405,7 +406,7 @@ export async function initExecution(projectId, options = {}) {
   const { mode = 'interactive', resume = false } = options;
 
   const project = await getProject(projectId);
-  if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${projectId}`);
+  if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${projectId}`);
 
   const hasExistingState = project.executionState && isValidExecutionState(project.executionState);
 
@@ -424,7 +425,7 @@ export async function initExecution(projectId, options = {}) {
   }
 
   if (resume && !hasExistingState && project.executionState) {
-    throw new Error('기존 실행 상태가 손상되었습니다. resume=false로 재시작하세요.');
+    throw inputError('기존 실행 상태가 손상되었습니다. resume=false로 재시작하세요.');
   }
 
   // 새 실행 초기화

@@ -3,6 +3,7 @@
  */
 import { readStdin, output, parseArgs } from '../cli-utils.js';
 import { getProject } from '../lib/project-manager.js';
+import { notFoundError } from '../lib/validators.js';
 import {
   initExecution, getNextExecutionStep, advanceExecution, getExecutionSummary,
 } from '../lib/execution-loop.js';
@@ -23,7 +24,7 @@ export const commands = {
   'next-step': async () => {
     const opts = parseArgs(args);
     const project = await getProject(opts.id);
-    if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
+    if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
     output(getNextExecutionStep(project));
   },
 
@@ -36,14 +37,14 @@ export const commands = {
   'execution-summary': async () => {
     const opts = parseArgs(args);
     const project = await getProject(opts.id);
-    if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
+    if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
     output(getExecutionSummary(project));
   },
 
   'task-distribution-prompt': async () => {
     const opts = parseArgs(args);
     const project = await getProject(opts.id);
-    if (!project) throw new Error(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
+    if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
     const prompt = buildTaskDistributionPrompt(project, project.discussion.planDocument);
     output({ prompt });
   },

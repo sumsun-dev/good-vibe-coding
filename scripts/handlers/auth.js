@@ -2,6 +2,7 @@
  * handlers/auth — 멀티 모델 프로바이더 인증 + 크로스 모델 리뷰 커맨드
  */
 import { readStdin, output, outputOk } from '../cli-utils.js';
+import { inputError } from '../lib/validators.js';
 import {
   connectWithApiKey, connectGeminiCli, removeAuth, listConnectedProviders,
   loadProvidersConfig, setReviewStrategy, getProviderStatus,
@@ -18,15 +19,15 @@ export const commands = {
   'connect': async () => {
     const data = await readStdin();
     const providerId = data.provider || args[0];
-    if (!providerId) throw new Error('프로바이더 ID가 필요합니다');
+    if (!providerId) throw inputError('프로바이더 ID가 필요합니다');
 
     if (data.authType === 'cli') {
       if (providerId !== 'gemini') {
-        throw new Error('CLI 인증은 현재 gemini만 지원합니다');
+        throw inputError('CLI 인증은 현재 gemini만 지원합니다');
       }
       const { isGeminiCliInstalled } = await import('../lib/gemini-bridge.js');
       if (!isGeminiCliInstalled()) {
-        throw new Error('Gemini CLI가 설치되지 않았습니다. `npm install -g @google/gemini-cli` 로 설치하세요.');
+        throw inputError('Gemini CLI가 설치되지 않았습니다. `npm install -g @google/gemini-cli` 로 설치하세요.');
       }
       const auth = await connectGeminiCli();
       outputOk({ providerId, type: auth.type });
@@ -39,7 +40,7 @@ export const commands = {
   'disconnect': async () => {
     const data = await readStdin();
     const providerId = data.provider || args[0];
-    if (!providerId) throw new Error('프로바이더 ID가 필요합니다');
+    if (!providerId) throw inputError('프로바이더 ID가 필요합니다');
     await removeAuth(providerId);
     outputOk({ providerId });
   },
