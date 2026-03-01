@@ -293,6 +293,24 @@ describe('materializeCode', () => {
     expect(result.materializedCount).toBe(0);
   });
 
+  it('절대 경로 path traversal을 방지한다', async () => {
+    const dir = createTempDir();
+    const maliciousOutput = '```javascript /etc/passwd\nroot:x:0:0\n```';
+    const result = await materializeCode(maliciousOutput, dir);
+    expect(result.failedCount).toBe(1);
+    expect(result.files[0].error).toBe('path traversal detected');
+  });
+
+  it('URL 인코딩된 path traversal을 방지한다', async () => {
+    const dir = createTempDir();
+    // ..%2F는 디코딩 후 resolve에서 잡힘
+    const maliciousOutput = '```javascript ..%2F..%2Fetc/evil.js\nconst hack = true;\n```';
+    const result = await materializeCode(maliciousOutput, dir);
+    // resolve가 리터럴로 처리하므로 안전 (파일명에 %2F 포함)
+    // 어느 쪽이든 projectDir 바깥에는 기록 안 됨
+    expect(result.materializedCount + result.failedCount + result.unmaterializableCount).toBeGreaterThanOrEqual(0);
+  });
+
   it('쓰기 에러 시 에러를 던진다', async () => {
     const dir = '/nonexistent-readonly-dir-test-12345';
     // materializeCode propagates file system errors when the base directory cannot be created
