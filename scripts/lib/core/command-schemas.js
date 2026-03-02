@@ -109,7 +109,7 @@ export const COMMAND_SCHEMAS = {
   'optimized-team': {
     handler: 'team',
     inputMethod: 'stdin',
-    input: obj({ type: str(true), complexity: str(true) }),
+    input: obj({ projectType: str(true), complexity: str(true) }),
     output: obj({ roles: arr(), optional: arr() }),
     description: '타입 + 복잡도를 결합해 최적 팀을 구성한다',
   },
@@ -137,8 +137,8 @@ export const COMMAND_SCHEMAS = {
   'team-summary': {
     handler: 'team',
     inputMethod: 'stdin',
-    input: obj({ team: arr(true) }),
-    output: obj({ summary: str() }),
+    input: obj({ roleIds: arr(true), personalityChoices: objField() }),
+    output: obj({ summary: str(), team: arr() }),
     description: '팀 요약 문자열을 생성한다',
   },
 
@@ -155,8 +155,8 @@ export const COMMAND_SCHEMAS = {
   'plan-document': {
     handler: 'discussion',
     inputMethod: 'stdin',
-    input: obj({ id: str(true), planDocument: str(true) }),
-    output: obj({ id: str(), planDocument: str() }),
+    input: obj({ project: objField(true), discussions: arr() }),
+    output: obj({ planDocument: str() }),
     description: '기획서를 저장한다',
   },
   'single-agent-discussion-prompt': {
@@ -342,14 +342,14 @@ export const COMMAND_SCHEMAS = {
   'verify-execution': {
     handler: 'review',
     inputMethod: 'stdin',
-    input: obj({ projectDir: str(true), language: str() }),
+    input: obj({ taskOutput: str(true), task: objField(true) }),
     output: obj({ verified: bool(), buildResult: objField() }),
     description: '빌드 실행을 검증한다',
   },
   'analyze-efficiency': {
     handler: 'review',
     inputMethod: 'stdin',
-    input: obj({ team: arr(true), tasks: arr(true) }),
+    input: obj({ agentOutputs: arr(), roleContributions: arr(), teamSize: num(), id: str() }),
     output: obj({ redundancies: arr(), recommendations: arr() }),
     description: '에이전트 효율성을 분석한다',
   },
@@ -367,7 +367,7 @@ export const COMMAND_SCHEMAS = {
   'materialize-batch': {
     handler: 'build',
     inputMethod: 'stdin',
-    input: obj({ tasks: arr(true), projectDir: str(true) }),
+    input: obj({ taskOutputs: arr(true), projectDir: str(true), options: objField() }),
     output: obj({ results: arr(), totalFiles: num() }),
     description: '여러 태스크의 코드를 일괄 구체화한다',
   },
@@ -434,7 +434,7 @@ export const COMMAND_SCHEMAS = {
   'eval-baseline-prompt': {
     handler: 'eval',
     inputMethod: 'stdin',
-    input: obj({ description: str(true), approach: str(true) }),
+    input: obj({ description: str(true) }),
     output: promptOutput,
     description: '기준선 프롬프트를 생성한다',
   },
@@ -522,8 +522,8 @@ export const COMMAND_SCHEMAS = {
   'gemini-review': {
     handler: 'auth',
     inputMethod: 'stdin',
-    input: obj({ prompt: str(true), model: str() }),
-    output: obj({ review: str(), tokenCount: num() }),
+    input: obj({ reviewer: objField(true), task: objField(true), taskOutput: str(true), model: str() }),
+    output: obj({ reviewer: objField(), provider: str(), model: str(), review: objField(), tokenCount: num() }),
     description: 'Gemini로 리뷰를 실행한다',
   },
 
@@ -575,7 +575,7 @@ export const COMMAND_SCHEMAS = {
   'merge-agent-override': {
     handler: 'feedback',
     inputMethod: 'stdin',
-    input: obj({ roleId: str(true), teamMember: objField(true) }),
+    input: obj({ baseMd: str(true), overrideMd: str(true) }),
     output: obj({ merged: str() }),
     description: '에이전트 오버라이드를 머지한다',
   },
@@ -603,8 +603,8 @@ export const COMMAND_SCHEMAS = {
   'merge-all-overrides': {
     handler: 'feedback',
     inputMethod: 'stdin',
-    input: obj({ roleId: str(true), teamMember: objField(true), projectDir: str() }),
-    output: obj({ merged: str() }),
+    input: obj({ baseMd: str(true), overrides: arr() }),
+    output: obj({ result: str() }),
     description: '모든 레벨의 오버라이드를 머지한다',
   },
 
@@ -678,8 +678,8 @@ export const COMMAND_SCHEMAS = {
   'record-metrics': {
     handler: 'metrics',
     inputMethod: 'stdin',
-    input: obj({ id: str(true), event: objField(true) }),
-    output: obj({ id: str(), metrics: objField() }),
+    input: obj({ id: str(true), type: str(true) }),
+    output: obj({ metrics: objField() }),
     description: '메트릭스 이벤트를 기록한다',
   },
   'project-metrics': {
@@ -717,7 +717,7 @@ export const COMMAND_SCHEMAS = {
   'scaffold': {
     handler: 'template',
     inputMethod: 'stdin',
-    input: obj({ template: str(true), projectDir: str(true), variables: objField() }),
+    input: obj({ template: str(true), targetDir: str(true), variables: objField(), overwrite: bool(), backup: bool() }),
     output: obj({ filesCreated: arr() }),
     description: '템플릿으로 프로젝트를 스캐폴딩한다',
   },
@@ -728,7 +728,7 @@ export const COMMAND_SCHEMAS = {
   'add-discussion-round': {
     handler: 'task',
     inputMethod: 'stdin',
-    input: obj({ id: str(true), round: num(true), agentOutputs: arr(true), synthesis: str(true), reviews: arr(true), converged: bool(true) }),
+    input: obj({ id: str(true), roundData: objField(true) }),
     output: obj({ project: objField() }),
     description: '토론 라운드 데이터를 프로젝트에 추가한다',
   },
@@ -788,7 +788,7 @@ export const COMMAND_SCHEMAS = {
   'recommend-setup': {
     handler: 'recommendation',
     inputMethod: 'stdin',
-    input: obj({ projectType: str(true), complexity: str(), techStack: arr() }),
+    input: obj({ projectType: str(true), complexity: str(true), description: str(true), teamRoles: arr() }),
     output: obj({ skills: arr(), agents: arr() }),
     description: '프로젝트에 맞는 스킬/에이전트를 추천한다',
   },
