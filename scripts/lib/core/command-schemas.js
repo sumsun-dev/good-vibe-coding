@@ -399,7 +399,7 @@ export const COMMAND_SCHEMAS = {
   'eval-create': {
     handler: 'eval',
     inputMethod: 'stdin',
-    input: obj({ description: str(true), approaches: arr(true) }),
+    input: obj({ projectDescription: str(true), approaches: arr(true) }),
     output: obj({ sessionId: str(), approaches: arr() }),
     description: 'A/B 평가 세션을 생성한다',
   },
@@ -413,14 +413,14 @@ export const COMMAND_SCHEMAS = {
   'eval-compare': {
     handler: 'eval',
     inputMethod: 'args',
-    input: obj({ sessionId: str(true) }),
+    input: obj({ 'session-id': str(true) }),
     output: obj({ comparison: objField(), winner: str() }),
     description: '평가 결과를 비교한다',
   },
   'eval-report': {
     handler: 'eval',
     inputMethod: 'args',
-    input: obj({ sessionId: str(true) }),
+    input: obj({ 'session-id': str(true) }),
     output: obj({ report: str() }),
     description: '평가 보고서를 생성한다',
   },
@@ -540,14 +540,14 @@ export const COMMAND_SCHEMAS = {
   'improvement-prompt': {
     handler: 'feedback',
     inputMethod: 'stdin',
-    input: obj({ performance: arr(true) }),
+    input: obj({ roleId: str(true), performance: objField(), agentMd: str() }),
     output: promptOutput,
     description: '개선 제안 프롬프트를 생성한다',
   },
   'parse-suggestions': {
     handler: 'feedback',
     inputMethod: 'stdin',
-    input: obj({ rawOutput: str(true) }),
+    input: obj({ analysisText: str(true) }),
     output: obj({ suggestions: arr() }),
     description: '개선 제안을 파싱한다',
   },
@@ -561,7 +561,7 @@ export const COMMAND_SCHEMAS = {
   'load-agent-override': {
     handler: 'feedback',
     inputMethod: 'args',
-    input: obj({ roleId: str(true) }),
+    input: obj({ role: str(true) }),
     output: obj({ roleId: str(), content: str() }),
     description: '에이전트 오버라이드를 로딩한다',
   },
@@ -635,14 +635,14 @@ export const COMMAND_SCHEMAS = {
   'create-github-repo': {
     handler: 'infra',
     inputMethod: 'stdin',
-    input: obj({ name: str(true), description: str(), private: bool() }),
+    input: obj({ repoName: str(true), description: str(), visibility: str() }),
     output: obj({ repoUrl: str() }),
     description: 'GitHub 저장소를 생성한다',
   },
   'git-init-push': {
     handler: 'infra',
     inputMethod: 'stdin',
-    input: obj({ projectDir: str(true), repoUrl: str(true) }),
+    input: obj({ projectDir: str(true), remoteUrl: str(true) }),
     output: obj({ pushed: bool() }),
     description: 'git init + push를 실행한다',
   },

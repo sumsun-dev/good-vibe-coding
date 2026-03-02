@@ -10,8 +10,5 @@ export const DEFAULT_MODELS = {
 
 export const DEFAULTS = {
   maxDiscussionRounds: 3,
-  convergenceThreshold: 0.8,
-  maxFixAttempts: 2,
-  minReviewers: 2,
   maxExecutionSteps: 200,
 };
