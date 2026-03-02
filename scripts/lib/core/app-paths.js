@@ -38,6 +38,7 @@ function homeDir() {
 /** 앱 루트 디렉토리 (~/.claude/good-vibe) */
 export function baseDir() {
   if (_overrides?.baseDir) return _overrides.baseDir;
+  if (process.env.GOOD_VIBE_BASE_DIR) return process.env.GOOD_VIBE_BASE_DIR;
   return resolve(homeDir(), '.claude', 'good-vibe');
 }
 

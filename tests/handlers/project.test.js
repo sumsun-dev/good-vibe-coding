@@ -1,11 +1,17 @@
 /**
  * handlers/project — CLI 핸들러 e2e 테스트
  */
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { execSync } from 'child_process';
 import { resolve } from 'path';
+import { mkdirSync, rmSync } from 'fs';
+import { tmpdir } from 'os';
 
 const CLI_PATH = resolve('scripts/cli.js');
+const TMP_BASE = resolve(tmpdir(), 'good-vibe-test-project-handler');
+
+/** CLI 자식 프로세스에 전달할 환경변수 (임시 디렉토리 사용) */
+const childEnv = { ...process.env, GOOD_VIBE_BASE_DIR: TMP_BASE };
 
 function cliExec(command, input) {
   return JSON.parse(
@@ -13,7 +19,8 @@ function cliExec(command, input) {
       input: JSON.stringify(input),
       encoding: 'utf-8',
       timeout: 10_000,
-    }),
+      env: childEnv,
+    })
   );
 }
 
@@ -23,6 +30,7 @@ function cliExecRaw(command, input) {
       input: input ? JSON.stringify(input) : '',
       encoding: 'utf-8',
       timeout: 10_000,
+      env: childEnv,
     });
     return { exitCode: 0, stdout, stderr: '' };
   } catch (err) {
@@ -33,7 +41,15 @@ function cliExecRaw(command, input) {
 describe('handlers/project', () => {
   const createdIds = [];
 
-  afterEach(async () => {
+  beforeAll(() => {
+    mkdirSync(TMP_BASE, { recursive: true });
+  });
+
+  afterAll(() => {
+    rmSync(TMP_BASE, { recursive: true, force: true });
+  });
+
+  afterEach(() => {
     // cleanup: 생성된 프로젝트 상태를 archived로 변경
     for (const id of createdIds) {
       try {
