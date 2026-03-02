@@ -72,7 +72,7 @@
       "emoji": "🧪",
       "category": "engineering",
       "description": "테스트 전략, 테스트 코드 작성, 품질 보증",
-      "defaultTools": ["Read", "Grep", "Glob", "Bash"],
+      "defaultTools": ["Read", "Grep", "Glob", "Bash", "Edit", "Write"],
       "model": "sonnet",
       "discussionPriority": 6,
       "skills": ["testing", "e2e", "tdd"],
