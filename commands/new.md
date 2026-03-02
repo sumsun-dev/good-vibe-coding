@@ -22,6 +22,45 @@
 지금은 아이디어만 입력해주세요. 나머지는 단계별로 안내해드립니다.
 ```
 
+## Step 0: 버전 체크
+
+새 프로젝트를 시작하기 전에 최신 버전인지 확인합니다:
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js check-version
+```
+
+**`updateAvailable: false`** → Step 1로 바로 진행합니다.
+
+**`updateAvailable: true`** → 업데이트 여부를 물어봅니다:
+
+```
+질문: "새 버전이 있습니다 (현재: {version}). 업데이트하시겠습니까?"
+header: "업데이트"
+options:
+  - label: "업데이트 후 진행 (Recommended)"
+    description: "최신 버전으로 업데이트한 뒤 /new를 다시 실행합니다"
+  - label: "이대로 진행"
+    description: "현재 버전으로 프로젝트를 시작합니다"
+```
+
+"업데이트 후 진행" 선택 시:
+```
+📦 업데이트 방법:
+
+  # 소스 설치 사용자
+  cd good-vibe-coding && git pull && npm install
+
+  # 플러그인 사용자
+  claude plugin update sumsun-dev/good-vibe-coding
+
+업데이트 후 /new를 다시 실행해주세요.
+```
+
+이 경우 여기서 커맨드를 종료합니다. "이대로 진행" 선택 시 Step 1로 넘어갑니다.
+
+---
+
 ## Step 1: 프로젝트 아이디어 수집
 
 사용자에게 물어보세요:

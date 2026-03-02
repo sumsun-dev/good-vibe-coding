@@ -1,36 +1,28 @@
 # Good Vibe Coding
 
-**Virtual AI Team Management Platform** — AI 팀을 구성하고 프로젝트를 관리하세요
+**AI 팀을 만들고, 프로젝트를 함께 굴려보세요.**
 
 [![CI](https://github.com/sumsun-dev/good-vibe-coding/actions/workflows/ci.yml/badge.svg)](https://github.com/sumsun-dev/good-vibe-coding/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
 
-사용자가 **CEO**가 되어 프로젝트를 정의하면, AI 팀원들이 토론하고 기획하고 실행합니다.
+"텔레그램 봇 만들어줘"라고 하면, CTO가 아키텍처를 잡고, 백엔드 개발자가 API를 짜고, QA가 테스트를 돌립니다. 당신은 CEO로서 방향만 잡으면 됩니다.
 
-## 핵심 특징
+## 왜 쓰나요?
 
-- **구조화된 다관점 분석**: 15개 전문 역할이 독립적으로 분석 → 종합하여 단일 시점에서 놓치는 문제를 포착 (역할별 2개 페르소나 변형)
-- **멀티에이전트 오케스트레이션**: 역할별 병렬 분석 → 종합 → 수렴까지 자동 반복 (최대 3라운드), JSON 디스패치 계획으로 구조화
-- **크로스 리뷰 시스템**: 작업 실행 후 다른 역할 에이전트가 결과물 리뷰, 품질 게이트 체크
-- **복잡도 기반 자동 모드 선택**: 프로젝트 복잡도 분석 → 적합한 모드 자동 추천
-- **모델 다양성**: 복잡도 기반 opus/sonnet/haiku 자동 선택 (역할 카테고리별 최적 배분)
-- **관측성**: 비용/토큰 추적, 에이전트 기여도 분석, 대시보드
-- **팀 설정 공유**: 프로젝트 레벨 에이전트 오버라이드 (`.good-vibe/` 디렉토리로 git 공유)
-- **스킬/에이전트 자동 추천**: 프로젝트 컨텍스트 기반 스킬/에이전트 추천 → 설치
-- **세 가지 모드**: quick-build / plan-execute / plan-only
-- **에이전트 피드백**: 프로젝트 결과 분석 → 에이전트 .md 수정안 자동 제안 → 오버라이드 저장
-- **한국어 지원**: 가이드, 프롬프트, 에이전트, 커맨드가 한국어 (CLI 출력 및 코드 주석은 영어)
+혼자 코딩할 때 놓치는 게 많습니다. 보안은 생각했는지, API 설계는 괜찮은지, 테스트는 충분한지. Good Vibe Coding은 15개 전문 역할의 AI 팀원이 각자 관점에서 짚어주고, 서로 리뷰하고, 문제가 있으면 자동으로 고칩니다.
+
+**한 줄 요약:** 아이디어를 말하면, AI 팀이 기획 - 토론 - 실행 - 리뷰까지 해줍니다.
 
 ## 설치
 
-### Claude Code 플러그인으로 설치 (권장)
+### Claude Code 플러그인 (권장)
 
 ```bash
 claude plugin add sumsun-dev/good-vibe-coding
 ```
 
-### 로컬 설치
+### 소스에서 직접 설치
 
 ```bash
 git clone https://github.com/sumsun-dev/good-vibe-coding.git
@@ -39,252 +31,262 @@ npm install
 claude plugin add .
 ```
 
-### 요구사항
+### 업데이트
 
-- [Claude Code](https://claude.ai/code) 2.0+
-- Node.js 18+
-- (선택) [GitHub CLI](https://cli.github.com/) — `/hello`에서 저장소 자동 생성 시 필요
+```bash
+# 소스 설치 사용자
+cd good-vibe-coding && git pull && npm install
 
-## 퀵스타트
-
-6개 커맨드로 프로젝트를 완성하세요:
-
-```
-/hello → /new → /discuss → /approve → /execute → /report
+# 플러그인 사용자
+claude plugin update sumsun-dev/good-vibe-coding
 ```
 
-| 단계 | 커맨드 | 하는 일 | 소요시간 |
-|------|--------|---------|----------|
-| 1 | `/hello` | 프로젝트 폴더 + GitHub 저장소 생성 | 2-3분 |
-| 2 | `/new` | 아이디어 입력 + 팀 자동 구성 | 1-2분 |
-| 3 | `/discuss` | 팀 토론 → 기획서 작성 | 3-10분 |
-| 4 | `/approve` | 기획서 확인 + 승인 | 1-2분 |
-| 5 | `/execute` | 작업 실행 + 리뷰 | 5-15분 |
-| 6 | `/report` | 보고서 생성 | 1분 |
+### 필요한 것
 
-**처음이라면 `/hello`부터 입력하세요.** 나머지는 단계별로 안내해드립니다.
+- [Claude Code](https://claude.ai/code) 2.0 이상
+- Node.js 18 이상
+- (선택) [GitHub CLI](https://cli.github.com/) — 저장소 자동 생성에 쓰임
+- (선택) [Gemini CLI](https://github.com/anthropics/gemini-cli) — 크로스 모델 리뷰에 쓰임
 
-> 자세한 가이드: [3분 퀵스타트](guides/common/00-quick-start.md)
+## 시작하기
 
-## 사용법: CEO 시나리오
+커맨드 6개로 프로젝트 하나를 처음부터 끝까지 만들 수 있습니다.
 
-### 0. 프로젝트 인프라 셋업
+```
+/hello  →  /new  →  /discuss  →  /approve  →  /execute  →  /report
+```
+
+| 단계 | 커맨드 | 뭘 하나요? | 걸리는 시간 |
+|------|--------|-----------|-----------|
+| 1 | `/hello` | 프로젝트 폴더와 GitHub 저장소를 만듭니다 | 2-3분 |
+| 2 | `/new` | 아이디어를 말하면, 복잡도를 보고 팀을 짜줍니다 | 1-2분 |
+| 3 | `/discuss` | 팀원들이 돌아가며 분석하고, 기획서를 씁니다 | 3-10분 |
+| 4 | `/approve` | 기획서를 읽고 승인하거나 수정을 요청합니다 | 1-2분 |
+| 5 | `/execute` | 팀원들이 작업하고, 서로 리뷰합니다 | 5-15분 |
+| 6 | `/report` | 전체 과정을 정리한 보고서를 받습니다 | 1분 |
+
+**처음이라면 `/hello`부터 입력하세요.** 다음 단계는 그때그때 안내해드립니다.
+
+> 더 자세한 설명: [퀵스타트 가이드](guides/common/00-quick-start.md)
+
+## 실제 사용 흐름
+
+### 1. 프로젝트 만들기
 
 ```
 /hello
 ```
 
-프로젝트 폴더, CLAUDE.md, README.md를 만들고 GitHub 저장소를 생성합니다:
-1. 프로젝트 이름, 설명, 기술 스택 입력
-2. GitHub 연동 여부 선택 (gh CLI 자동 감지)
-3. 프로젝트 폴더 + 초기 파일 생성
+프로젝트 이름, 설명, 기술 스택을 물어봅니다. GitHub CLI가 설치돼 있으면 저장소까지 자동으로 만들어줍니다.
 
-### 1. 프로젝트 시작
+### 2. 팀 꾸리기
 
 ```
 /new
 ```
 
-복잡도를 자동 분석하고 적합한 모드를 추천합니다:
-1. 프로젝트 설명 입력 ("텔레그램 봇을 만들고 싶어")
-2. 복잡도 분석 → 모드 자동 추천 (quick-build / plan-execute / plan-only)
-3. 추천 팀 확인 및 수정
-4. 팀원 스타일 선택
+"날씨 알림 텔레그램 봇을 만들고 싶어"처럼 아이디어를 입력하면, 프로젝트 복잡도를 분석해서 적합한 모드와 팀 구성을 추천합니다. 마음에 안 들면 직접 수정할 수 있습니다.
 
-> `/new-project`로 수동 설정도 가능합니다.
+> 모드를 직접 고르고 싶다면 `/new-project`를 쓰세요.
 
-### 2. 팀 토론
+### 3. 팀 토론
 
 ```
 /discuss
 ```
 
-팀원들이 Tier별로 병렬 분석합니다:
-- Tier 1: CTO, PO, Researcher (전략적 분석)
-- Tier 2-4: Frontend, Backend, QA 등 (실행 관점 분석)
-- 전체 결과 종합 → 80% 이상 승인 시 수렴 (최대 3라운드)
+CTO가 먼저 아키텍처를 잡고, PO가 요구사항을 정리하고, 리서처가 기술 스택을 비교합니다. 그 결과를 바탕으로 나머지 팀원들이 각자 관점에서 살을 붙입니다. 팀원의 80% 이상이 동의하면 기획서가 완성되고, 아니면 의견이 갈리는 부분을 중심으로 다시 토론합니다 (최대 3라운드).
 
-### 3. 기획서 승인
+### 4. 기획서 승인
 
 ```
 /approve
 ```
 
-CEO가 기획서를 검토하고 승인합니다. 승인 후 작업이 역할별로 분배됩니다.
+완성된 기획서를 보여줍니다. 승인하면 작업이 역할별로 분배되고, 수정이 필요하면 피드백을 남길 수 있습니다.
 
-### 4. 작업 실행 (plan-execute 모드)
+### 5. 실행
 
 ```
 /execute
 ```
 
-분배된 작업을 팀원들이 실행합니다:
-- 팀원별 병렬 실행
-- 크로스 리뷰 (최소 2명이 결과물 검토)
-- Quality Gate: critical 이슈 0개 시 통과
-- 실패 시 수정 루프 (최대 2회) → 해결 불가 시 CEO 에스컬레이션
+여기서 실제 작업이 이뤄집니다. 팀원들이 Phase별로 병렬 작업하고, 다른 팀원 최소 2명이 결과물을 리뷰합니다.
 
-### 5. 보고서 & 피드백
+리뷰에서 문제가 발견되면:
+1. 문제를 7개 카테고리(보안, 빌드, 테스트, 성능, 타입, 아키텍처, 로직)로 분류
+2. 담당자에게 "이전에 뭘 시도했고 뭐가 안 됐는지"를 알려주면서 수정을 요청 (최대 2회)
+3. 그래도 안 되면 당신(CEO)에게 알려줌 — 계속 시도할지, 건너뛸지, 중단할지 선택
+
+### 6. 보고서
 
 ```
-/report     # 최종 보고서 생성
-/feedback   # 프로젝트 결과 분석 → 에이전트 개선 제안
+/report      # 전체 과정 정리
+/feedback    # 팀원별 성과 분석 + 다음 프로젝트를 위한 개선 제안
 ```
+
+## 전체 커맨드
+
+20개 슬래시 커맨드를 제공합니다. 처음에는 위의 6개만 알면 충분합니다.
+
+### 프로젝트 진행
+
+| 커맨드 | 설명 |
+|--------|------|
+| `/hello` | 프로젝트 폴더 + GitHub 저장소 생성 |
+| `/new` | 아이디어 입력, 복잡도 분석, 팀 자동 구성 |
+| `/discuss` | 팀 토론으로 기획서 작성 |
+| `/approve` | 기획서 승인 + 작업 분배 |
+| `/execute` | 작업 실행 + 크로스 리뷰 + 자동 수정 |
+| `/report` | 최종 보고서 |
+
+### 프로젝트 관리
+
+| 커맨드 | 설명 |
+|--------|------|
+| `/status` | 현재 프로젝트 상태 확인 |
+| `/feedback` | 팀원 성과 분석, 에이전트 개선 제안 |
+| `/my-team` | 팀 구성 확인 + 역할 카탈로그 |
+| `/learn` | 역할별 학습 가이드 |
+
+### 커스터마이징
+
+| 커맨드 | 설명 |
+|--------|------|
+| `/new-project` | `/new`의 수동 버전 (타입/모드 직접 선택) |
+| `/projects` | 전체 프로젝트 목록 |
+| `/onboarding` | 사용자 환경 초기 설정 (한 번만 하면 됨) |
+| `/my-config` | 현재 설정 확인 |
+| `/scaffold` | 프로젝트 템플릿으로 초기 코드 생성 |
+| `/add-skill` | 스킬 추가 설치 |
+| `/add-agent` | 에이전트 추가 설치 |
+| `/preset` | 프리셋(역할/스택/워크플로우) 관리 |
+| `/reset` | 설정 초기화 |
+| `/eval` | 접근법 A/B 비교 평가 |
+
+## 세 가지 모드
+
+프로젝트 규모에 맞는 모드를 자동으로 추천합니다. `/new`에서 복잡도를 분석한 결과에 따라 달라집니다.
+
+| 모드 | 팀 규모 | 토론 | 추천 상황 |
+|------|---------|------|----------|
+| **quick-build** | 2-3명 | 생략 | 간단한 봇, 스크립트, 유틸리티 |
+| **plan-execute** | 3-5명 | 1라운드 | 웹앱, API 서버, 중간 규모 프로젝트 |
+| **plan-only** | 5-15명 | 최대 3라운드 | 대규모 시스템, 기획서만 필요할 때 |
+
+## 팀원 역할 (15개)
+
+| 역할 | 카테고리 | 하는 일 |
+|------|----------|---------|
+| CTO | Leadership | 기술 아키텍처 설계, 기술 의사결정 |
+| Product Owner | Leadership | 요구사항 정의, 우선순위 결정 |
+| Full-stack Developer | Engineering | 프론트엔드 + 백엔드 전체 구현 |
+| Frontend Developer | Engineering | UI 구현, 컴포넌트 설계 |
+| Backend Developer | Engineering | API 설계, 비즈니스 로직 |
+| QA Engineer | Engineering | 테스트 전략, 품질 보증 |
+| UI/UX Designer | Design | 사용자 경험 설계 |
+| DevOps Engineer | Engineering | CI/CD, 배포, 인프라 |
+| Data Engineer | Engineering | 데이터 파이프라인, 분석 |
+| Security Engineer | Engineering | 보안 검토, 취약점 분석 |
+| Technical Writer | Support | 기술 문서 작성 |
+| Market Researcher | Research | 시장 분석, 경쟁사, 트렌드 |
+| Business Researcher | Research | 비즈니스 모델, 수익화, 성장 전략 |
+| Tech Researcher | Research | 기술 스택 비교, 벤치마크, 오픈소스 |
+| Design Researcher | Research | 사용자 리서치, UX 벤치마크, 접근성 |
+
+각 역할마다 2개의 페르소나 변형이 있어서, 총 30가지 성격의 팀원을 골라 쓸 수 있습니다.
+
+## SDK (프로그래밍 API)
+
+슬래시 커맨드 대신 코드로 직접 호출할 수도 있습니다.
+
+```javascript
+import { GoodVibe } from 'good-vibe-coding';
+
+const gv = new GoodVibe({
+  provider: 'claude',                // 'claude' | 'openai' | 'gemini'
+  model: 'claude-sonnet-4-6',
+  storage: 'memory',                 // 경로 문자열 또는 커스텀 객체
+});
+
+// 팀 구성 (로컬 계산, LLM 미사용)
+const team = await gv.buildTeam('날씨 알림 텔레그램 봇', {
+  complexity: 'simple',
+});
+
+// 토론 자동 루프 (LLM 호출)
+const plan = await gv.discuss(team);
+
+// 실행 자동 루프 (LLM 호출)
+const result = await gv.execute(plan, {
+  onEscalation: async (ctx) => 'skip',     // 품질 게이트 실패 시
+  onPhaseComplete: async (phase) => {},     // Phase 완료 시
+});
+
+// 보고서
+const report = gv.report(result);
+```
+
+Discusser, Executor를 개별로 import해서 세밀하게 제어할 수도 있습니다.
 
 ## 아키텍처
 
 ```
 ┌─────────────────────────────────────────────┐
-│  User Layer     사용자는 6개 커맨드만 사용    │
+│  사용자              슬래시 커맨드 6개        │
 │  /hello → /new → /discuss → /approve →      │
 │  /execute → /report                          │
 ├─────────────────────────────────────────────┤
-│  Agent Layer    15개 역할 × 30 페르소나        │
-│  CTO, PO, Backend, Frontend, QA, ...         │
-│  Tier별 병렬 디스패치 + 크로스 리뷰           │
+│  SDK                 GoodVibe 클래스         │
+│  buildTeam → discuss → execute → report     │
 ├─────────────────────────────────────────────┤
-│  Internal API   CLI-as-API                   │
-│  cli.js — 에이전트가 호출하는 내부 API        │
-│  사용자가 직접 호출하지 않음                   │
+│  AI 팀원             15개 역할 × 30 페르소나  │
+│  Tier별 병렬 분석 + 크로스 리뷰              │
 ├─────────────────────────────────────────────┤
-│  Core Library   37개 lib 모듈 + 14개 핸들러   │
-│  project-manager, orchestrator, review-      │
-│  engine, complexity-analyzer, ...            │
+│  내부 API            CLI-as-API (101개)      │
+│  에이전트가 호출하는 인터페이스               │
+├─────────────────────────────────────────────┤
+│  코어 라이브러리      41개 모듈 + 14개 핸들러  │
+│  프로젝트 관리, 오케스트레이션, 리뷰 엔진 등  │
 └─────────────────────────────────────────────┘
 ```
 
-**사용자는 6개 커맨드만 알면 됩니다.** 나머지는 에이전트들이 내부 API를 통해 자동으로 처리합니다.
-
-- **20개 커맨드** (슬래시 커맨드)
-- **23개 에이전트** (15 팀 + 8 서포트)
-- **37개 lib 모듈** + **14개 핸들러**
-
-## 전체 커맨드
-
-### 필수 커맨드 (프로젝트 완성 플로우)
-
-| 커맨드 | 설명 | 언제 사용? |
-|--------|------|-----------|
-| `/hello` | 프로젝트 인프라 셋업 (폴더, GitHub) | 맨 처음 |
-| `/new` | 스마트 프로젝트 시작 (복잡도 분석 → 모드 추천) | /hello 후 |
-| `/discuss` | 멀티에이전트 팀 토론 → 기획서 작성 | /new 후 |
-| `/approve` | 기획서 승인 + 작업 분배 | /discuss 후 |
-| `/execute` | 작업 실행 + 크로스 리뷰 | /approve 후 |
-| `/report` | 최종 보고서 생성 | /execute 후 |
-
-### 보조 커맨드 (프로젝트 관리)
-
-| 커맨드 | 설명 |
-|--------|------|
-| `/status` | 현재 프로젝트 대시보드 (프로젝트 없으면 목록 표시) |
-| `/feedback` | 에이전트 피드백 (결과 분석 → .md 개선) |
-| `/my-team` | 팀 현황 + 역할 카탈로그 |
-| `/learn` | 역할별 학습 가이드 |
-
-### 고급 커맨드 (커스터마이징)
-
-| 커맨드 | 설명 |
-|--------|------|
-| `/new-project` | 수동 프로젝트 생성 (`/new`의 수동 버전) |
-| `/projects` | 전체 프로젝트 목록 (여러 프로젝트 관리 시) |
-| `/onboarding` | 사용자 환경 설정 (역할/워크플로우 — 1회성) |
-| `/my-config` | 현재 설정 대시보드 |
-| `/scaffold` | 프로젝트 템플릿 스캐폴딩 |
-| `/add-skill` | 스킬 추가 |
-| `/add-agent` | 에이전트 추가 |
-| `/preset` | 프리셋 관리 |
-| `/reset` | 설정 초기화 |
-| `/eval` | A/B 평가 (접근법 비교) |
-
-## 역할 카탈로그 (15개)
-
-| 역할 | 이모지 | 카테고리 | 설명 |
-|------|--------|----------|------|
-| CTO | 🏗️ | Leadership | 기술 아키텍처 설계, 기술 의사결정 |
-| Product Owner | 📋 | Leadership | 요구사항 정의, 우선순위 결정 |
-| Full-stack Developer | ⚡ | Engineering | 프론트엔드 + 백엔드 전체 구현 |
-| Frontend Developer | 🎨 | Engineering | UI 구현, 컴포넌트 설계 |
-| Backend Developer | 🔧 | Engineering | API 설계, 비즈니스 로직 |
-| QA Engineer | 🧪 | Engineering | 테스트 전략, 품질 보증 |
-| UI/UX Designer | 🖌️ | Design | 사용자 경험 설계 |
-| DevOps Engineer | 🚀 | Engineering | CI/CD, 배포, 인프라 |
-| Data Engineer | 📊 | Engineering | 데이터 파이프라인, 분석 |
-| Security Engineer | 🛡️ | Engineering | 보안 검토, 취약점 분석 |
-| Technical Writer | 📝 | Support | 기술 문서 작성 |
-| Market Researcher | 🔍 | Research | 시장 규모, 경쟁사, 트렌드 분석 |
-| Business Researcher | 📈 | Research | 비즈니스 모델, 수익화, 성장 전략 |
-| Tech Researcher | 🧬 | Research | 기술 스택 비교, 벤치마크, 오픈소스 |
-| Design Researcher | 🔬 | Research | 사용자 리서치, UX 벤치마크, 접근성 |
-
-## 프로젝트 타입 (12개)
-
-| 타입 | 추천 팀 |
-|------|---------|
-| 웹 애플리케이션 | CTO + Full-stack + QA |
-| API 서버 | CTO + Backend + QA |
-| 텔레그램 봇 | CTO + Backend + QA |
-| CLI 도구 | CTO + Backend + QA |
-| 모바일 앱 | CTO + Full-stack + UI/UX + QA |
-| Chrome 확장 | CTO + Frontend + QA |
-| 데이터 파이프라인 | CTO + Data + QA |
-| 라이브러리/패키지 | CTO + Backend + QA + Tech Writer |
-| Python 앱 | CTO + Backend + QA |
-| Go 서비스 | CTO + Backend + QA |
-| Java 앱 | CTO + Backend + QA |
-| 커스텀 | CTO + 자유 선택 |
+사용자가 슬래시 커맨드를 입력하면, 에이전트가 내부 API를 호출하고, 코어 라이브러리가 실제 로직을 처리합니다. SDK는 동일한 코어 라이브러리를 프로그래밍 API로 노출합니다.
 
 ## 프로젝트 구조
 
 ```
 good-vibe-coding/
-├── .claude-plugin/plugin.json    # 플러그인 매니페스트
-├── agents/                       # 에이전트 (23개: 15 팀 + 8 서포트)
-│   ├── team-cto.md              #   CTO 에이전트
-│   ├── team-backend.md          #   Backend 에이전트
-│   ├── team-*.md                #   (15개 팀 역할 에이전트)
-│   └── *.md                     #   (8개 서포트 에이전트)
-├── commands/                     # 커맨드 (20개)
-│   ├── hello.md                 #   프로젝트 인프라 셋업
-│   ├── new.md                   #   스마트 프로젝트 시작
-│   ├── new-project.md           #   수동 프로젝트 생성
-│   ├── discuss.md               #   멀티에이전트 토론
-│   ├── approve.md               #   기획서 승인
-│   ├── execute.md               #   작업 실행 + 크로스 리뷰
-│   └── *.md                     #   ...
-├── presets/
-│   ├── team-roles/catalog.json  #   15개 역할 카탈로그
-│   ├── project-types.json       #   12개 프로젝트 타입
-│   ├── templates/               #   5개 프로젝트 템플릿 (JSON)
-│   ├── team-personalities.json  #   30개 페르소나 (15역할 x 2변형)
-│   ├── recommendation-catalog.json # 스킬/에이전트 추천 카탈로그
-│   ├── roles/                   #   6개 역할 프리셋
-│   └── stacks/                  #   2개 스택 프리셋
+├── src/             SDK (GoodVibe, Discusser, Executor, Storage)
+├── plugin/          Claude Code 어댑터
+├── agents/          23개 에이전트 (팀 15 + 서포트 8)
+├── commands/        20개 슬래시 커맨드 정의
 ├── scripts/
-│   ├── cli.js                   #   CLI-as-API (에이전트용 내부 API)
-│   ├── handlers/                #   14개 핸들러 모듈
-│   └── lib/                     #   핵심 라이브러리 (37개 모듈)
-├── templates/                    # Handlebars 템플릿
-├── hooks/                        # 훅 정의
-├── guides/                       # 학습 가이드
-├── skills/                       # 스킬 (4개)
-└── tests/                        # Vitest 테스트 (1,110개)
+│   ├── cli.js       내부 API 라우터 (101개 커맨드)
+│   ├── handlers/    14개 핸들러 모듈
+│   └── lib/         41개 코어 라이브러리
+├── presets/         역할, 프로젝트 타입, 템플릿, 페르소나
+├── guides/          사용자 가이드
+├── templates/       Handlebars 템플릿
+├── skills/          4개 내장 스킬
+└── tests/           1,225+ 테스트 (Vitest)
+```
+
+## 개발
+
+```bash
+npm install           # 의존성 설치
+npm test              # 전체 테스트
+npm run test:watch    # 감시 모드
+npm run test:coverage # 커버리지 리포트
 ```
 
 ## 기술 스택
 
 - **Node.js 18+** (ESM)
-- **Handlebars** (템플릿 엔진)
-- **Vitest** (테스트 프레임워크, 1,110개 테스트)
-- **GitHub Actions CI** (Node 18/20/22 매트릭스)
-
-## 개발
-
-```bash
-npm install          # 의존성 설치
-npm test             # 전체 테스트 실행
-npm run test:watch   # 테스트 감시 모드
-npm run test:coverage # 커버리지 리포트
-```
+- **Handlebars** 템플릿 엔진
+- **Vitest** 테스트 (1,225+개)
+- **GitHub Actions** CI (Node 18/20/22)
 
 ## 데이터 저장 위치
 

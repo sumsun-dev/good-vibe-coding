@@ -186,8 +186,9 @@ describe('preset-loader', () => {
       expect(() => validatePreset({ name: 'test', displayName: 'Test' }, 'roles')).toThrow('역할 프리셋 category');
     });
 
-    it('stacks 카테고리는 category가 불필요하므로 통과한다', () => {
-      expect(() => validatePreset({ name: 'test', displayName: 'Test' }, 'stacks')).not.toThrow();
+    it('stacks 카테고리는 stackRules가 필수이다', () => {
+      expect(() => validatePreset({ name: 'test', displayName: 'Test' }, 'stacks')).toThrow('stackRules');
+      expect(() => validatePreset({ name: 'test', displayName: 'Test', stackRules: [] }, 'stacks')).not.toThrow();
     });
   });
 });

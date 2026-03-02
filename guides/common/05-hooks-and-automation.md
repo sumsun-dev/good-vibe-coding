@@ -107,3 +107,6 @@ Good Vibe Coding에서 제공하는 기본 훅입니다:
 
 ## 이전 가이드
 - [에이전트 이해하기](./04-agents.md) → 전문 AI 도우미 활용법
+
+## 다음 가이드
+- [외부 서비스 연동](./06-integrations.md) → GitHub, Supabase, Vercel, n8n 연결

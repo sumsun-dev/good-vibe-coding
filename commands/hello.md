@@ -122,7 +122,7 @@ options:
 필수는 아니지만, 설치되어 있으면 리뷰 품질이 향상됩니다.
 
 ```bash
-which gemini 2>/dev/null && echo '{"installed":true}' || echo '{"installed":false}'
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js check-gemini-status
 ```
 
 **미설치 시 안내:**

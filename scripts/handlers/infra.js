@@ -4,6 +4,9 @@
 import { readStdin, output } from '../cli-utils.js';
 import { setupProjectInfra, appendToClaudeMd } from '../lib/project-scaffolder.js';
 import { checkGhStatus, createGithubRepo, gitInitAndPush } from '../lib/github-manager.js';
+import { isGeminiCliInstalled } from '../lib/gemini-bridge.js';
+import { checkEnvironment } from '../lib/env-checker.js';
+import { getVersionInfo } from '../lib/update-checker.js';
 
 export const commands = {
   'setup-project-infra': async () => {
@@ -37,9 +40,24 @@ export const commands = {
     output(result);
   },
 
+  'check-gemini-status': async () => {
+    const installed = isGeminiCliInstalled();
+    output({ installed, authType: 'cli', model: 'gemini-2.0-flash' });
+  },
+
   'append-claude-md': async () => {
     const data = await readStdin();
     const result = await appendToClaudeMd(data.claudeMdPath, data.sectionName, data.content);
+    output(result);
+  },
+
+  'check-environment': async () => {
+    const result = checkEnvironment();
+    output(result);
+  },
+
+  'check-version': async () => {
+    const result = getVersionInfo();
     output(result);
   },
 };

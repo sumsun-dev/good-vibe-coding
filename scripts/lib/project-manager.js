@@ -386,6 +386,28 @@ export function getExecutionProgress(project) {
 }
 
 /**
+ * 프로젝트에 기여도를 기록한다 (누적).
+ * @param {string} projectId - 프로젝트 ID
+ * @param {Array<{roleId: string, contributionScore: number, criticalsCaught?: number}>} contributions - 기여도 배열
+ * @returns {Promise<object>} 업데이트된 프로젝트
+ */
+export async function recordContributions(projectId, contributions) {
+  return withProjectLock(projectId, project => {
+    const existing = project.contributions || {};
+    const updated = { ...existing };
+    for (const c of contributions) {
+      const prev = updated[c.roleId] || { totalScore: 0, reviewCount: 0, criticalsCaught: 0 };
+      updated[c.roleId] = {
+        totalScore: prev.totalScore + (c.contributionScore || 0),
+        reviewCount: prev.reviewCount + 1,
+        criticalsCaught: prev.criticalsCaught + (c.criticalsCaught || 0),
+      };
+    }
+    return { ...project, contributions: updated };
+  });
+}
+
+/**
  * 프로젝트에 메트릭스 이벤트를 기록한다.
  * @param {string} projectId - 프로젝트 ID
  * @param {object} event - 이벤트 데이터

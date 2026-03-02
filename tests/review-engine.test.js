@@ -465,6 +465,58 @@ describe('buildRevisionPrompt', () => {
     const prompt = buildRevisionPrompt(task, implementer, reviews);
     expect(prompt).toContain('실제 이슈');
   });
+
+  it('failureContext 없이 호출하면 하위 호환된다', () => {
+    const reviews = [
+      { verdict: 'request-changes', issues: [{ severity: 'critical', description: '이슈' }] },
+    ];
+    const prompt = buildRevisionPrompt(task, implementer, reviews);
+    expect(prompt).not.toContain('수정 이력');
+    expect(prompt).toContain('이슈');
+  });
+
+  it('failureContext가 있으면 시도 차수를 포함한다', () => {
+    const reviews = [
+      { verdict: 'request-changes', issues: [{ severity: 'critical', description: '보안 이슈' }] },
+    ];
+    const failureContext = {
+      attempt: 2,
+      maxAttempts: 2,
+      issues: [{ description: '보안 이슈', severity: 'critical', category: 'security' }],
+      previousAttempts: [
+        { attempt: 1, issues: [{ description: '이전 보안 이슈', category: 'security' }] },
+      ],
+    };
+    const prompt = buildRevisionPrompt(task, implementer, reviews, failureContext);
+    expect(prompt).toContain('시도 2/2');
+    expect(prompt).toContain('이전 시도');
+    expect(prompt).toContain('시도 1');
+    expect(prompt).toContain('이전 시도에서 해결되지 않은 이슈에 주의');
+  });
+
+  it('failureContext에 이전 시도가 없으면 이전 시도 섹션을 생략한다', () => {
+    const reviews = [
+      { verdict: 'request-changes', issues: [{ severity: 'critical', description: '이슈' }] },
+    ];
+    const failureContext = {
+      attempt: 1,
+      maxAttempts: 2,
+      issues: [{ description: '이슈', severity: 'critical', category: 'logic' }],
+      previousAttempts: [],
+    };
+    const prompt = buildRevisionPrompt(task, implementer, reviews, failureContext);
+    expect(prompt).toContain('시도 1/2');
+    expect(prompt).not.toContain('이전 시도');
+    expect(prompt).toContain('카테고리 분포');
+  });
+
+  it('failureContext가 null이면 무시한다', () => {
+    const reviews = [
+      { verdict: 'request-changes', issues: [{ severity: 'critical', description: '이슈' }] },
+    ];
+    const prompt = buildRevisionPrompt(task, implementer, reviews, null);
+    expect(prompt).not.toContain('수정 이력');
+  });
 });
 
 // --- checkEnhancedQualityGate ---

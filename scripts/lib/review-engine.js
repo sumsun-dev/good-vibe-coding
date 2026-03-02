@@ -163,9 +163,10 @@ export function checkQualityGate(reviews) {
  * @param {object} task - 태스크 정보
  * @param {object} implementer - 구현 담당자 팀원 정보
  * @param {Array<{verdict: string, issues: Array}>} reviews - 리뷰 결과 배열
+ * @param {object|null} [failureContext=null] - 실패 컨텍스트 (시도 차수, 이전 이력)
  * @returns {string} 수정 프롬프트
  */
-export function buildRevisionPrompt(task, implementer, reviews) {
+export function buildRevisionPrompt(task, implementer, reviews, failureContext = null) {
   if (!reviews || reviews.length === 0) return '';
 
   const issuesList = reviews
@@ -176,7 +177,7 @@ export function buildRevisionPrompt(task, implementer, reviews) {
 
   if (!issuesList) return '';
 
-  return `당신은 ${implementer.emoji} **${implementer.displayName}** (${implementer.role})입니다.
+  let prompt = `당신은 ${implementer.emoji} **${implementer.displayName}** (${implementer.role})입니다.
 
 ## 수정 대상 작업
 - ID: ${task.id}
@@ -184,7 +185,26 @@ export function buildRevisionPrompt(task, implementer, reviews) {
 
 ## 리뷰에서 발견된 이슈
 
-${issuesList}
+${issuesList}`;
+
+  if (failureContext) {
+    prompt += `\n\n## 수정 이력 (시도 ${failureContext.attempt}/${failureContext.maxAttempts})`;
+    if (failureContext.previousAttempts && failureContext.previousAttempts.length > 0) {
+      prompt += '\n\n### 이전 시도';
+      for (const prev of failureContext.previousAttempts) {
+        const categories = prev.issues ? [...new Set(prev.issues.map(i => i.category))].join(', ') : '없음';
+        const issueCount = prev.issues ? prev.issues.length : 0;
+        prompt += `\n- 시도 ${prev.attempt}: ${issueCount}건 (카테고리: ${categories})`;
+      }
+      prompt += '\n\n**이전 시도에서 해결되지 않은 이슈에 주의하세요.**';
+    }
+    if (failureContext.issues && failureContext.issues.length > 0) {
+      const categories = [...new Set(failureContext.issues.map(i => i.category))];
+      prompt += `\n\n### 이슈 카테고리 분포: ${categories.join(', ')}`;
+    }
+  }
+
+  prompt += `
 
 ## 수정 지시사항
 
@@ -192,6 +212,8 @@ ${issuesList}
 - critical 이슈는 반드시 수정
 - important 이슈는 가능한 한 수정
 - 수정 후 각 이슈에 대한 해결 방법을 보고`;
+
+  return prompt;
 }
 
 /**

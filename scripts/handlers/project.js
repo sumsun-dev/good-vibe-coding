@@ -8,6 +8,7 @@ import {
 } from '../lib/project-manager.js';
 import { generateReport } from '../lib/report-generator.js';
 import { requireFields, notFoundError } from '../lib/validators.js';
+import { getCommandSchema, listCommandSchemas } from '../lib/command-schemas.js';
 
 const [,, , ...args] = process.argv;
 
@@ -59,5 +60,16 @@ export const commands = {
     if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
     const report = generateReport(project);
     output({ report });
+  },
+
+  'describe-command': async () => {
+    const opts = parseArgs(args);
+    if (opts.command) {
+      const schema = getCommandSchema(opts.command);
+      if (!schema) throw notFoundError(`커맨드 스키마를 찾을 수 없습니다: ${opts.command}`);
+      output({ command: opts.command, ...schema });
+    } else {
+      output(listCommandSchemas());
+    }
   },
 };

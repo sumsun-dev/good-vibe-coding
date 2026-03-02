@@ -86,4 +86,22 @@ describe('handlers/execution', () => {
     const result = cliExecRaw('execution-summary --id nonexistent-xyz', {});
     expect(result.exitCode).toBe(3);
   });
+
+  it('get-failure-context → 프로젝트 없으면 NOT_FOUND', () => {
+    const result = cliExecRaw('get-failure-context --id nonexistent-xyz', {});
+    expect(result.exitCode).toBe(3);
+    expect(result.stderr).toContain('NOT_FOUND');
+  });
+
+  it('handle-escalation → 필수 필드 누락 시 INPUT_ERROR', () => {
+    const result = cliExecRaw('handle-escalation', { id: 'test' });
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('INPUT_ERROR');
+  });
+
+  it('handle-escalation → 유효하지 않은 decision', () => {
+    const result = cliExecRaw('handle-escalation', { id: 'test', decision: 'invalid' });
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('INPUT_ERROR');
+  });
 });

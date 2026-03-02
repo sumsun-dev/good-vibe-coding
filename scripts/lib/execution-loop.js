@@ -20,13 +20,25 @@
  */
 
 import { isCodeTask } from './task-distributor.js';
-import { getProject, updateExecutionState } from './project-manager.js';
+import { getProject, updateExecutionState, recordMetrics, recordContributions } from './project-manager.js';
+import { trackRoleContribution } from './agent-optimizer.js';
 import { config } from './config.js';
 import { inputError, notFoundError } from './validators.js';
 
 const VALID_STATUSES = ['idle', 'executing', 'reviewing', 'fixing', 'committing', 'paused', 'escalated', 'completed'];
 const VALID_PHASE_STEPS = ['execute-tasks', 'materialize', 'review', 'quality-gate', 'fix', 'commit', 'build-context'];
 const MAX_FIX_ATTEMPTS = config.execution.maxFixAttempts;
+
+/** 실패 카테고리 — 이슈 분류용 키워드 매핑 */
+const FAILURE_CATEGORY_KEYWORDS = {
+  security: ['security', 'xss', 'injection', 'csrf', 'auth', 'owasp', '보안', '취약점', '인증'],
+  build: ['build', 'compile', 'syntax', 'import', 'module', '빌드', '컴파일'],
+  test: ['test', 'coverage', 'assertion', 'expect', 'tdd', '테스트', '커버리지'],
+  performance: ['performance', 'memory', 'latency', 'timeout', 'slow', '성능', '메모리'],
+  type: ['type', 'typescript', 'typing', 'interface', '타입'],
+  architecture: ['architecture', 'design', 'pattern', 'coupling', 'dependency', '아키텍처', '설계'],
+  logic: ['logic', 'bug', 'error', 'null', 'undefined', 'race', '로직', '버그'],
+};
 
 /**
  * 유효한 phaseStep 전이 맵.
@@ -55,6 +67,38 @@ export function isValidTransition(from, to) {
 }
 
 /**
+ * 이슈를 7개 카테고리 중 하나로 분류한다 (pure).
+ * @param {{ severity?: string, description?: string, suggestion?: string }} issue - 이슈 객체
+ * @returns {'security'|'build'|'test'|'performance'|'type'|'architecture'|'logic'} 카테고리
+ */
+export function categorizeFailure(issue) {
+  const text = `${issue.description || ''} ${issue.suggestion || ''}`.toLowerCase();
+  for (const [category, keywords] of Object.entries(FAILURE_CATEGORY_KEYWORDS)) {
+    if (keywords.some(kw => text.includes(kw))) return category;
+  }
+  return 'logic';
+}
+
+/**
+ * 품질 게이트 실패 시 실패 컨텍스트를 생성한다 (pure).
+ * @param {object} state - 현재 ExecutionState
+ * @param {object} stepResult - 품질 게이트 결과를 포함한 stepResult
+ * @returns {object} failureContext 객체
+ */
+export function buildFailureContext(state, stepResult) {
+  const issues = (stepResult.qualityGateResult && stepResult.qualityGateResult.issues) || [];
+  return {
+    attempt: (state.fixAttempt || 0) + 1,
+    maxAttempts: MAX_FIX_ATTEMPTS,
+    issues: issues.map(i => {
+      const issue = typeof i === 'string' ? { description: i, severity: 'critical' } : i;
+      return { ...issue, category: categorizeFailure(issue) };
+    }),
+    previousAttempts: state.failureHistory || [],
+  };
+}
+
+/**
  * 초기 실행 상태 객체를 생성한다 (pure).
  * @param {'interactive'|'auto'} [mode='interactive'] - 실행 모드
  * @returns {object} 초기 ExecutionState
@@ -73,6 +117,8 @@ export function createInitialExecutionState(mode = 'interactive') {
     completedAt: null,
     phaseResults: {},
     journal: [],
+    failureContext: null,
+    failureHistory: [],
   };
 }
 
@@ -247,21 +293,19 @@ export function getNextExecutionStep(project) {
 }
 
 /**
- * 실행 상태를 전이시키고 영속화한다.
- * @param {string} projectId - 프로젝트 ID
+ * 순수 상태 전이 함수. I/O 없이 프로젝트 상태를 전이한다.
+ * SDK에서 스토리지에 독립적으로 상태 전이를 계산할 때 사용.
+ * @param {object} project - 프로젝트 객체 (executionState 포함)
  * @param {object} stepResult - 완료된 단계 결과
- * @returns {Promise<{project: object, nextStep: object}>}
+ * @returns {object} 업데이트된 프로젝트 객체 (새 객체, 원본 불변)
  */
-export async function advanceExecution(projectId, stepResult) {
+export function computeStateTransition(project, stepResult) {
   if (!stepResult || typeof stepResult !== 'object') {
     throw inputError('stepResult 객체가 필요합니다');
   }
   if (!stepResult.completedAction || typeof stepResult.completedAction !== 'string') {
     throw inputError('stepResult.completedAction 문자열이 필요합니다');
   }
-
-  const project = await getProject(projectId);
-  if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${projectId}`);
   if (!project.executionState) throw inputError('실행 상태가 초기화되지 않았습니다.');
 
   const state = {
@@ -306,25 +350,39 @@ export async function advanceExecution(projectId, stepResult) {
       if (stepResult.qualityGateResult && stepResult.qualityGateResult.passed) {
         state.phaseStep = 'commit';
         state.status = 'committing';
+        state.failureContext = null;
       } else if (state.fixAttempt < MAX_FIX_ATTEMPTS) {
         state.phaseStep = 'fix';
         state.status = 'fixing';
+        state.failureContext = buildFailureContext(state, stepResult);
       } else {
+        state.failureContext = buildFailureContext(state, stepResult);
         state.status = 'escalated';
         state.pendingEscalation = {
           reason: `Phase ${phase}: 품질 게이트 ${MAX_FIX_ATTEMPTS}회 수정 후에도 실패`,
           unresolvedIssues: stepResult.qualityGateResult ? stepResult.qualityGateResult.issues : [],
+          failureHistory: state.failureHistory || [],
         };
       }
       state.lastCompletedStep = 'quality-gate';
       break;
 
-    case 'fix':
+    case 'fix': {
+      // 현재 실패 컨텍스트를 이력에 누적
+      state.failureHistory = [...(state.failureHistory || [])];
+      if (state.failureContext) {
+        state.failureHistory.push({
+          attempt: state.fixAttempt + 1,
+          issues: state.failureContext.issues,
+          timestamp: new Date().toISOString(),
+        });
+      }
       state.fixAttempt += 1;
       state.phaseStep = 'materialize';
       state.status = 'executing';
       state.lastCompletedStep = 'fix';
       break;
+    }
 
     case 'commit':
       phaseResult.committed = true;
@@ -377,21 +435,84 @@ export async function advanceExecution(projectId, stepResult) {
 
   // 저널 기록
   state.journal = [...(state.journal || [])];
-  state.journal.push({
+  const journalEntry = {
     timestamp: new Date().toISOString(),
     action: stepResult.completedAction,
     fromStep: project.executionState.phaseStep,
     toStep: state.phaseStep,
     phase: state.currentPhase,
-  });
+  };
+  if (stepResult.completedAction === 'quality-gate' && state.failureContext) {
+    const categories = [...new Set(state.failureContext.issues.map(i => i.category))];
+    journalEntry.failureSummary = {
+      issueCount: state.failureContext.issues.length,
+      categories,
+    };
+  }
+  if (stepResult.completedAction === 'fix') {
+    journalEntry.fixAttempt = state.fixAttempt;
+  }
+  state.journal.push(journalEntry);
 
   state.phaseResults[phase] = phaseResult;
-  const updatedProject = await updateExecutionState(projectId, state);
+
+  return { ...project, executionState: state };
+}
+
+/**
+ * 실행 상태를 전이시키고 영속화한다.
+ * @param {string} projectId - 프로젝트 ID
+ * @param {object} stepResult - 완료된 단계 결과
+ * @returns {Promise<{project: object, nextStep: object}>}
+ */
+export async function advanceExecution(projectId, stepResult) {
+  const project = await getProject(projectId);
+  if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${projectId}`);
+
+  const updatedProject = computeStateTransition(project, stepResult);
+  await updateExecutionState(projectId, updatedProject.executionState);
+
+  // 자동 수집: fire-and-forget (실패해도 메인 로직 미영향)
+  const phase = project.executionState.currentPhase;
+  if (stepResult.completedAction === 'build-context') {
+    const phaseTasks = getTasksForPhase(project, phase);
+    recordMetrics(projectId, {
+      type: 'phase-completion',
+      phase,
+      fixAttempts: updatedProject.executionState.fixAttempt,
+      taskCount: phaseTasks.length,
+    }).catch(() => {});
+  }
+  if (stepResult.completedAction === 'review' && stepResult.reviews) {
+    const contributions = extractContributions(stepResult.reviews);
+    if (contributions.length > 0) {
+      recordContributions(projectId, contributions).catch(() => {});
+    }
+  }
 
   return {
     project: updatedProject,
     nextStep: getNextExecutionStep(updatedProject),
   };
+}
+
+/**
+ * 리뷰 결과에서 역할별 기여도를 추출한다 (내부 헬퍼).
+ * @param {Array} reviews - 리뷰 결과 배열
+ * @returns {Array<{roleId: string, contributionScore: number, uniqueIssues: number, criticalsCaught: number}>}
+ */
+export function extractContributions(reviews) {
+  const byRole = {};
+  for (const r of reviews) {
+    const roleId = r.reviewerId || r.roleId;
+    if (!roleId) continue;
+    if (!byRole[roleId]) byRole[roleId] = [];
+    byRole[roleId].push(r);
+  }
+  return Object.entries(byRole).map(([roleId, roleReviews]) => {
+    const c = trackRoleContribution(roleId, roleReviews);
+    return { roleId, contributionScore: c.contributionScore, uniqueIssues: c.uniqueIssues, criticalsCaught: c.criticalsCaught };
+  });
 }
 
 /**

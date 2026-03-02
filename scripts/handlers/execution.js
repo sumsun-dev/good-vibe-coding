@@ -3,7 +3,7 @@
  */
 import { readStdin, output, parseArgs } from '../cli-utils.js';
 import { getProject } from '../lib/project-manager.js';
-import { notFoundError } from '../lib/validators.js';
+import { notFoundError, requireFields, inputError } from '../lib/validators.js';
 import {
   initExecution, getNextExecutionStep, advanceExecution, getExecutionSummary,
 } from '../lib/execution-loop.js';
@@ -65,5 +65,34 @@ export const commands = {
     const data = await readStdin();
     const plan = buildExecutionPlanWithReviews(data.tasks, data.team);
     output(plan);
+  },
+
+  'get-failure-context': async () => {
+    const opts = parseArgs(args);
+    const project = await getProject(opts.id);
+    if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
+    const state = project.executionState;
+    output({
+      status: state ? state.status : 'idle',
+      phase: state ? state.currentPhase : null,
+      fixAttempt: state ? state.fixAttempt : 0,
+      failureContext: state ? state.failureContext || null : null,
+      failureHistory: state ? state.failureHistory || [] : [],
+      pendingEscalation: state ? state.pendingEscalation || null : null,
+    });
+  },
+
+  'handle-escalation': async () => {
+    const data = await readStdin();
+    requireFields(data, ['id', 'decision']);
+    const validDecisions = ['continue', 'skip', 'abort'];
+    if (!validDecisions.includes(data.decision)) {
+      throw inputError(`유효하지 않은 결정: ${data.decision}. 가능한 값: ${validDecisions.join(', ')}`);
+    }
+    const result = await advanceExecution(data.id, {
+      completedAction: 'escalation-response',
+      escalationDecision: data.decision,
+    });
+    output(result);
   },
 };

@@ -3,7 +3,6 @@
  * 롤플레이 대신 각 역할을 독립 Task 에이전트로 디스패치하고 결과를 종합한다.
  */
 
-import { detectRedundantAgents } from './agent-optimizer.js';
 import { parseJsonObject } from './json-parser.js';
 import { config } from './config.js';
 
@@ -246,13 +245,3 @@ export function groupAgentsForParallelDispatch(team) {
   return tiers.filter(tier => tier.length > 0);
 }
 
-/**
- * 에이전트 출력 효율성을 분석한다 (중복 에이전트 탐지).
- * synthesis 단계 이후 정보 제공 목적으로 호출한다.
- * @param {Array<{roleId: string, output: string}>} agentOutputs - 에이전트 출력 배열
- * @returns {{ redundancies: Array<{roleId: string, similarTo: string, similarity: number}> }}
- */
-export function analyzeAgentEfficiency(agentOutputs) {
-  const redundancies = detectRedundantAgents(agentOutputs);
-  return { redundancies };
-}

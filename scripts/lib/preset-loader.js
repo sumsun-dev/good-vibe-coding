@@ -1,5 +1,5 @@
 import { resolve } from 'path';
-import { requireString, assertWithinRoot } from './validators.js';
+import { requireString, assertWithinRoot, inputError } from './validators.js';
 import { readJsonFile } from './file-writer.js';
 import { pluginRoot } from './app-paths.js';
 
@@ -16,7 +16,6 @@ export async function loadPreset(category, name) {
   assertWithinRoot(filePath, PRESETS_DIR, 'preset path');
   const preset = await readJsonFile(filePath);
   if (!preset) {
-    const { inputError } = await import('./validators.js');
     throw inputError(`프리셋을 찾을 수 없습니다: ${category}/${name}`);
   }
   validatePreset(preset, category);
@@ -33,6 +32,11 @@ function validatePreset(preset, category) {
   requireString(preset.displayName, '프리셋 displayName');
   if (category === 'roles') {
     requireString(preset.category, '역할 프리셋 category');
+  }
+  if (category === 'stacks') {
+    if (!Array.isArray(preset.stackRules)) {
+      throw inputError('스택 프리셋에 stackRules 배열이 필요합니다');
+    }
   }
 }
 

@@ -8,6 +8,24 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+/** SDK/테스트에서 경로를 오버라이드하기 위한 설정 */
+let _overrides = null;
+
+/**
+ * 경로 오버라이드를 설정한다.
+ * @param {{ baseDir?: string, claudeDir?: string }} options - 오버라이드 옵션
+ */
+export function configure(options = {}) {
+  _overrides = options;
+}
+
+/**
+ * 경로 오버라이드를 초기화한다.
+ */
+export function resetConfiguration() {
+  _overrides = null;
+}
+
 /** 플러그인 루트 디렉토리 (이 프로젝트의 소스 루트) */
 export function pluginRoot() {
   return resolve(__dirname, '../..');
@@ -19,6 +37,7 @@ function homeDir() {
 
 /** 앱 루트 디렉토리 (~/.claude/good-vibe) */
 export function baseDir() {
+  if (_overrides?.baseDir) return _overrides.baseDir;
   return resolve(homeDir(), '.claude', 'good-vibe');
 }
 
@@ -49,6 +68,7 @@ export function authDir() {
 
 /** ~/.claude 디렉토리 */
 export function claudeDir() {
+  if (_overrides?.claudeDir) return _overrides.claudeDir;
   return resolve(homeDir(), '.claude');
 }
 

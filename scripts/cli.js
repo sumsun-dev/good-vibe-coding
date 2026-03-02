@@ -24,6 +24,7 @@ const COMMAND_MAP = {
   // project
   'create-project': 'project', 'get-project': 'project', 'list-projects': 'project',
   'update-status': 'project', 'set-team': 'project', 'execution-progress': 'project', 'report': 'project',
+  'describe-command': 'project',
   // team
   'recommend-team': 'team', 'optimized-team': 'team', 'build-team': 'team',
   'role-catalog': 'team', 'project-types': 'team', 'team-summary': 'team',
@@ -38,6 +39,7 @@ const COMMAND_MAP = {
   'execution-summary': 'execution', 'task-distribution-prompt': 'execution',
   'execution-prompt': 'execution', 'execution-plan': 'execution',
   'execution-plan-with-reviews': 'execution',
+  'get-failure-context': 'execution', 'handle-escalation': 'execution',
   // review
   'select-reviewers': 'review', 'task-review-prompt': 'review',
   'check-quality-gate': 'review', 'enhanced-quality-gate': 'review',
@@ -62,8 +64,9 @@ const COMMAND_MAP = {
   'load-project-override': 'feedback', 'list-project-overrides': 'feedback',
   'merge-all-overrides': 'feedback',
   // infra
-  'setup-project-infra': 'infra', 'check-gh-status': 'infra',
+  'setup-project-infra': 'infra', 'check-gh-status': 'infra', 'check-gemini-status': 'infra',
   'create-github-repo': 'infra', 'git-init-push': 'infra', 'append-claude-md': 'infra',
+  'check-environment': 'infra', 'check-version': 'infra',
   // metrics
   'record-metrics': 'metrics', 'project-metrics': 'metrics', 'cost-summary': 'metrics',
   // template

@@ -4,6 +4,11 @@
   "description": "Virtual AI Team Management Platform — AI 팀을 구성하고 프로젝트를 관리하세요",
   "type": "module",
   "main": "scripts/cli.js",
+  "exports": {
+    ".": "./src/index.js",
+    "./plugin": "./plugin/adapter.js",
+    "./lib/*": "./scripts/lib/*.js"
+  },
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",

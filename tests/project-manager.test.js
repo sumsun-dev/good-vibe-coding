@@ -21,6 +21,7 @@ import {
   addDiscussionRound,
   updateExecutionState,
   recordMetrics,
+  recordContributions,
 } from '../scripts/lib/project-manager.js';
 import { AppError } from '../scripts/lib/validators.js';
 
@@ -554,5 +555,44 @@ describe('에러 타입 검증 (Phase 2)', () => {
       expect(e.code).toBe('INPUT_ERROR');
       expect(e.message).toContain('유효하지 않은 모드');
     }
+  });
+});
+
+describe('recordContributions', () => {
+  it('기여도를 정상 기록한다', async () => {
+    const project = await createProject('기여도 테스트', 'web-app', '설명');
+    const contributions = [
+      { roleId: 'qa', contributionScore: 3.5, criticalsCaught: 2 },
+      { roleId: 'security', contributionScore: 2.0, criticalsCaught: 1 },
+    ];
+    const updated = await recordContributions(project.id, contributions);
+    expect(updated.contributions).toBeTruthy();
+    expect(updated.contributions.qa.totalScore).toBe(3.5);
+    expect(updated.contributions.qa.reviewCount).toBe(1);
+    expect(updated.contributions.qa.criticalsCaught).toBe(2);
+    expect(updated.contributions.security.totalScore).toBe(2.0);
+  });
+
+  it('기존 기여도에 누적한다', async () => {
+    const project = await createProject('누적 테스트', 'web-app', '설명');
+    await recordContributions(project.id, [
+      { roleId: 'qa', contributionScore: 2.0, criticalsCaught: 1 },
+    ]);
+    const updated = await recordContributions(project.id, [
+      { roleId: 'qa', contributionScore: 3.0, criticalsCaught: 2 },
+    ]);
+    expect(updated.contributions.qa.totalScore).toBe(5.0);
+    expect(updated.contributions.qa.reviewCount).toBe(2);
+    expect(updated.contributions.qa.criticalsCaught).toBe(3);
+  });
+
+  it('contributionScore가 없으면 0으로 처리한다', async () => {
+    const project = await createProject('기본값 테스트', 'web-app', '설명');
+    const updated = await recordContributions(project.id, [
+      { roleId: 'cto' },
+    ]);
+    expect(updated.contributions.cto.totalScore).toBe(0);
+    expect(updated.contributions.cto.reviewCount).toBe(1);
+    expect(updated.contributions.cto.criticalsCaught).toBe(0);
   });
 });
