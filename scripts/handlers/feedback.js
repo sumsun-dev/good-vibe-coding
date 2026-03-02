@@ -2,13 +2,13 @@
  * handlers/feedback — 에이전트 피드백 + 오버라이드 커맨드
  */
 import { readStdin, output, outputOk, parseArgs } from '../cli-utils.js';
-import { getProject } from '../lib/project-manager.js';
-import { inputError, notFoundError, requireFields } from '../lib/validators.js';
+import { getProject } from '../lib/project/project-manager.js';
+import { inputError, notFoundError, requireFields } from '../lib/core/validators.js';
 import {
   extractAgentPerformance, buildImprovementPrompt, parseImprovementSuggestions,
   saveAgentOverride, loadAgentOverride, listAgentOverrides, mergeAgentWithOverride,
   saveProjectOverride, loadProjectOverride, listProjectOverrides, mergeAgentWithOverrides,
-} from '../lib/agent-feedback.js';
+} from '../lib/agent/agent-feedback.js';
 
 const [,, , ...args] = process.argv;
 

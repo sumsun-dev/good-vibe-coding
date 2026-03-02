@@ -5,9 +5,9 @@
 
 import { readFile, writeFile, readdir } from 'fs/promises';
 import { resolve, dirname } from 'path';
-import { ensureDir, fileExists } from './file-writer.js';
-import { claudeDir, userSkillsDir, userAgentsDir, pluginRoot } from './app-paths.js';
-import { assertWithinRoot } from './validators.js';
+import { ensureDir, fileExists } from '../core/file-writer.js';
+import { claudeDir, userSkillsDir, userAgentsDir, pluginRoot } from '../core/app-paths.js';
+import { assertWithinRoot } from '../core/validators.js';
 
 const PLUGIN_ROOT = pluginRoot();
 

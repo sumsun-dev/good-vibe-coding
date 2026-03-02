@@ -3,10 +3,10 @@
  * 6개 슬래시 커맨드 플로우를 프로그래밍 API로 노출한다.
  */
 
-import { getDefaultsForComplexity } from '../scripts/lib/complexity-analyzer.js';
-import { buildTeam, getOptimizedTeam } from '../scripts/lib/team-builder.js';
-import { generateReport } from '../scripts/lib/report-generator.js';
-import { inputError } from '../scripts/lib/validators.js';
+import { getDefaultsForComplexity } from '../scripts/lib/agent/complexity-analyzer.js';
+import { buildTeam, getOptimizedTeam } from '../scripts/lib/agent/team-builder.js';
+import { generateReport } from '../scripts/lib/output/report-generator.js';
+import { inputError } from '../scripts/lib/core/validators.js';
 import { Discusser } from './discusser.js';
 import { Executor } from './executor.js';
 import { resolveStorage } from './storage.js';

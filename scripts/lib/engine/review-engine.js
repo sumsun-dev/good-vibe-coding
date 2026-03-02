@@ -7,8 +7,8 @@
  * fallback: workDomains → reviewDomains → skills.
  */
 
-import { parseJsonObject } from './json-parser.js';
-import { config } from './config.js';
+import { parseJsonObject } from '../core/json-parser.js';
+import { config } from '../core/config.js';
 
 /** 범용 리뷰 역할: 어떤 작업이든 리뷰 가치가 높은 역할 */
 const UNIVERSAL_REVIEWER_ROLES = ['qa', 'security', 'cto'];

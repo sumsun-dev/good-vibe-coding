@@ -15,7 +15,7 @@ import {
   listEvalSessions,
   setEvalDir,
   buildSinglePromptBaseline,
-} from '../scripts/lib/eval-engine.js';
+} from '../scripts/lib/engine/eval-engine.js';
 
 let tmpDir;
 

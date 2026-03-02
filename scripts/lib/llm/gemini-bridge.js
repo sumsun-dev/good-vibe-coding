@@ -7,7 +7,7 @@
  */
 
 import { spawnSync } from 'child_process';
-import { AppError, notFoundError } from './validators.js';
+import { AppError, notFoundError } from '../core/validators.js';
 
 const DEFAULT_CLI_PATH = process.env.GEMINI_CLI_PATH || 'gemini';
 const DEFAULT_TIMEOUT_MS = 120000;

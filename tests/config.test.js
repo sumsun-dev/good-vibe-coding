@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { config } from '../scripts/lib/config.js';
+import { config } from '../scripts/lib/core/config.js';
 
 describe('config', () => {
   it('Object.freeze로 불변이다', () => {

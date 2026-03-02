@@ -3,8 +3,8 @@
  * 프로젝트 설명을 분석하여 적절한 모드와 팀 규모를 추천한다.
  */
 
-import { parseJsonObject } from './json-parser.js';
-import { config } from './config.js';
+import { parseJsonObject } from '../core/json-parser.js';
+import { config } from '../core/config.js';
 
 /**
  * 프로젝트 설명을 분석해 복잡도 판단 프롬프트를 생성한다.

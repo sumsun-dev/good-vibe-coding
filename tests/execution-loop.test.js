@@ -14,14 +14,14 @@ import {
   buildFailureContext,
   categorizeFailure,
   extractContributions,
-} from '../scripts/lib/execution-loop.js';
+} from '../scripts/lib/engine/execution-loop.js';
 import {
   createProject,
   addProjectTasks,
   updateProjectStatus,
   getProject,
   setBaseDir,
-} from '../scripts/lib/project-manager.js';
+} from '../scripts/lib/project/project-manager.js';
 
 const TMP_DIR = resolve('.tmp-test-execution-loop');
 
@@ -701,7 +701,7 @@ describe('initExecution - edge cases', () => {
   it('resume=true이고 기존 상태가 손상되었으면 에러', async () => {
     const project = await createTestProject();
     // 수동으로 손상된 상태 설정
-    const { updateExecutionState } = await import('../scripts/lib/project-manager.js');
+    const { updateExecutionState } = await import('../scripts/lib/project/project-manager.js');
     await updateExecutionState(project.id, { status: 'invalid', phaseStep: 'bad' });
 
     await expect(
@@ -828,7 +828,7 @@ describe('advanceExecution journal 기록', () => {
     // 기존 journal 필드를 수동으로 제거한 뒤 테스트
     const p = await getProject(project.id);
     delete p.executionState.journal;
-    const { updateExecutionState } = await import('../scripts/lib/project-manager.js');
+    const { updateExecutionState } = await import('../scripts/lib/project/project-manager.js');
     await updateExecutionState(project.id, p.executionState);
     const { project: updated } = await advanceExecution(project.id, { completedAction: 'execute-tasks' });
     expect(updated.executionState.journal).toHaveLength(1);

@@ -17,7 +17,7 @@ import {
   setReviewStrategy,
   connectWithApiKey,
   getProviderStatus,
-} from '../scripts/lib/auth-manager.js';
+} from '../scripts/lib/llm/auth-manager.js';
 
 let tempDir;
 

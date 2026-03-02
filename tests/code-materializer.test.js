@@ -2,12 +2,12 @@ import { vi, describe, it, expect, afterEach } from 'vitest';
 import { mkdtempSync, existsSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { cleanup } from '../scripts/lib/execution-verifier.js';
+import { cleanup } from '../scripts/lib/engine/execution-verifier.js';
 import {
   materializeCode,
   materializeBatch,
   extractMaterializableBlocks,
-} from '../scripts/lib/code-materializer.js';
+} from '../scripts/lib/engine/code-materializer.js';
 import {
   SINGLE_FILE_OUTPUT,
   MULTI_FILE_OUTPUT,

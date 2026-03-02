@@ -20,10 +20,10 @@
  */
 
 import { isCodeTask } from './task-distributor.js';
-import { getProject, updateExecutionState, recordMetrics, recordContributions } from './project-manager.js';
-import { trackRoleContribution } from './agent-optimizer.js';
-import { config } from './config.js';
-import { inputError, notFoundError } from './validators.js';
+import { getProject, updateExecutionState, recordMetrics, recordContributions } from '../project/project-manager.js';
+import { trackRoleContribution } from '../agent/agent-optimizer.js';
+import { config } from '../core/config.js';
+import { inputError, notFoundError } from '../core/validators.js';
 
 const VALID_STATUSES = ['idle', 'executing', 'reviewing', 'fixing', 'committing', 'paused', 'escalated', 'completed'];
 const VALID_PHASE_STEPS = ['execute-tasks', 'materialize', 'review', 'quality-gate', 'fix', 'commit', 'build-context'];

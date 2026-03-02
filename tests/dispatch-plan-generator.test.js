@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildDiscussionDispatchPlan, buildExecutionDispatchPlan } from '../scripts/lib/dispatch-plan-generator.js';
+import { buildDiscussionDispatchPlan, buildExecutionDispatchPlan } from '../scripts/lib/engine/dispatch-plan-generator.js';
 
 const SAMPLE_PROJECT = {
   id: 'test-2025-01',

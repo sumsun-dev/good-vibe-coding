@@ -4,7 +4,7 @@
 import { readStdin, output, parseArgs } from '../cli-utils.js';
 import {
   listTemplates, loadTemplate, scaffold, getTemplatesForProjectType,
-} from '../lib/template-scaffolder.js';
+} from '../lib/project/template-scaffolder.js';
 
 const [,, , ...args] = process.argv;
 

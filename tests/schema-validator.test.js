@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validate, coerce } from '../scripts/lib/schema-validator.js';
+import { validate, coerce } from '../scripts/lib/core/schema-validator.js';
 
 describe('validate', () => {
   it('유효한 문자열을 통과시킨다', () => {

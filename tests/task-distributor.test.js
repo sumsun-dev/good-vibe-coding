@@ -7,7 +7,7 @@ import {
   buildTddExecutionPrompt,
   buildPhaseContext,
   isCodeTask,
-} from '../scripts/lib/task-distributor.js';
+} from '../scripts/lib/engine/task-distributor.js';
 
 const SAMPLE_PROJECT = {
   id: 'telegram-bot-2026-02',

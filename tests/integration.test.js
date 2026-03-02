@@ -4,14 +4,14 @@ import { resolve } from 'path';
 import {
   createProject, getProject, updateProjectStatus, setProjectTeam,
   setProjectPlan, addProjectTasks, setProjectReport, listProjects, setBaseDir,
-} from '../scripts/lib/project-manager.js';
-import { recommendTeam, buildTeam, getTeamSummary, clearCaches } from '../scripts/lib/team-builder.js';
-import { buildDiscussionPrompt, buildPlanDocument } from '../scripts/lib/discussion-engine.js';
-import { buildTaskDistributionPrompt, buildExecutionPlan } from '../scripts/lib/task-distributor.js';
-import { generateReport, generateProjectStats } from '../scripts/lib/report-generator.js';
+} from '../scripts/lib/project/project-manager.js';
+import { recommendTeam, buildTeam, getTeamSummary, clearCaches } from '../scripts/lib/agent/team-builder.js';
+import { buildDiscussionPrompt, buildPlanDocument } from '../scripts/lib/engine/discussion-engine.js';
+import { buildTaskDistributionPrompt, buildExecutionPlan } from '../scripts/lib/engine/task-distributor.js';
+import { generateReport, generateProjectStats } from '../scripts/lib/output/report-generator.js';
 import {
   scaffold, loadTemplate, listTemplates, validateTemplate, setCustomTemplatesDir,
-} from '../scripts/lib/template-scaffolder.js';
+} from '../scripts/lib/project/template-scaffolder.js';
 
 const TMP_DIR = resolve('.tmp-test-integration');
 

@@ -14,7 +14,7 @@ import {
   loadProjectOverride,
   listProjectOverrides,
   mergeAgentWithOverrides,
-} from '../scripts/lib/agent-feedback.js';
+} from '../scripts/lib/agent/agent-feedback.js';
 
 const TMP_DIR = resolve('.tmp-test-agent-feedback');
 

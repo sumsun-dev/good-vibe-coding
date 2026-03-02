@@ -2,11 +2,11 @@
  * handlers/infra — 프로젝트 인프라 셋업 + GitHub 커맨드
  */
 import { readStdin, output } from '../cli-utils.js';
-import { setupProjectInfra, appendToClaudeMd } from '../lib/project-scaffolder.js';
-import { checkGhStatus, createGithubRepo, gitInitAndPush } from '../lib/github-manager.js';
-import { isGeminiCliInstalled } from '../lib/gemini-bridge.js';
-import { checkEnvironment } from '../lib/env-checker.js';
-import { getVersionInfo } from '../lib/update-checker.js';
+import { setupProjectInfra, appendToClaudeMd } from '../lib/project/project-scaffolder.js';
+import { checkGhStatus, createGithubRepo, gitInitAndPush } from '../lib/project/github-manager.js';
+import { isGeminiCliInstalled } from '../lib/llm/gemini-bridge.js';
+import { checkEnvironment } from '../lib/output/env-checker.js';
+import { getVersionInfo } from '../lib/output/update-checker.js';
 
 export const commands = {
   'setup-project-infra': async () => {

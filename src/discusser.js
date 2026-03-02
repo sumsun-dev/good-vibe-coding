@@ -11,8 +11,8 @@ import {
   buildReviewPrompt,
   checkConvergence,
   parseReviewOutput,
-} from '../scripts/lib/orchestrator.js';
-import { callLLM } from '../scripts/lib/llm-provider.js';
+} from '../scripts/lib/engine/orchestrator.js';
+import { callLLM } from '../scripts/lib/llm/llm-provider.js';
 import { DEFAULTS } from './defaults.js';
 
 export class Discusser {

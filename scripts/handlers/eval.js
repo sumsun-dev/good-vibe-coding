@@ -6,11 +6,11 @@ import {
   createEvalSession, recordApproachResult, compareApproaches,
   generateEvalReport, saveEvalSession, loadEvalSession, listEvalSessions,
   buildSinglePromptBaseline,
-} from '../lib/eval-engine.js';
+} from '../lib/engine/eval-engine.js';
 import {
   buildComplexityAnalysisPrompt, parseComplexityAnalysis, getDefaultsForComplexity,
-} from '../lib/complexity-analyzer.js';
-import { inputError } from '../lib/validators.js';
+} from '../lib/agent/complexity-analyzer.js';
+import { inputError } from '../lib/core/validators.js';
 
 const [,, , ...args] = process.argv;
 

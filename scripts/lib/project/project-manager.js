@@ -1,10 +1,10 @@
 import { writeFile, readdir } from 'fs/promises';
 import { resolve } from 'path';
-import { ensureDir, fileExists, readJsonFile } from './file-writer.js';
-import { inputError, notFoundError } from './validators.js';
+import { ensureDir, fileExists, readJsonFile } from '../core/file-writer.js';
+import { inputError, notFoundError } from '../core/validators.js';
 import { createMetricsSnapshot, recordAgentCall, recordPhaseCompletion } from './project-metrics.js';
-import { projectsDir } from './app-paths.js';
-import { config } from './config.js';
+import { projectsDir } from '../core/app-paths.js';
+import { config } from '../core/config.js';
 
 const DEFAULT_BASE_DIR = projectsDir();
 

@@ -4,7 +4,7 @@ import {
   parseDiscussionOutput,
   buildPlanDocument,
   buildSingleAgentDiscussionPrompt,
-} from '../scripts/lib/discussion-engine.js';
+} from '../scripts/lib/engine/discussion-engine.js';
 
 const SAMPLE_PROJECT = {
   id: 'telegram-bot-2026-02',

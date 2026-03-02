@@ -6,11 +6,11 @@
 
 import { readFile, writeFile, stat } from 'fs/promises';
 import { resolve } from 'path';
-import { ensureDir, fileExists, listFilesByExtension } from './file-writer.js';
-import { parseJsonArray } from './json-parser.js';
-import { validateRoleId } from './validators.js';
-import { agentOverridesDir } from './app-paths.js';
-import { buildSectioned, toMarkdownList } from './prompt-builder.js';
+import { ensureDir, fileExists, listFilesByExtension } from '../core/file-writer.js';
+import { parseJsonArray } from '../core/json-parser.js';
+import { validateRoleId } from '../core/validators.js';
+import { agentOverridesDir } from '../core/app-paths.js';
+import { buildSectioned, toMarkdownList } from '../llm/prompt-builder.js';
 
 const DEFAULT_OVERRIDES_DIR = agentOverridesDir();
 let overridesDir = DEFAULT_OVERRIDES_DIR;

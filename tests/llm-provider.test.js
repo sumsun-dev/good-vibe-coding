@@ -4,7 +4,7 @@ import {
   buildProviderRequest,
   buildAuthHeaders,
   parseProviderResponse,
-} from '../scripts/lib/llm-provider.js';
+} from '../scripts/lib/llm/llm-provider.js';
 
 // --- SUPPORTED_PROVIDERS ---
 
@@ -167,14 +167,14 @@ describe('callLLM', () => {
     mockLoadAuth = vi.fn();
     mockCallGeminiCli = vi.fn();
 
-    vi.doMock('../scripts/lib/auth-manager.js', () => ({
+    vi.doMock('../scripts/lib/llm/auth-manager.js', () => ({
       loadAuth: mockLoadAuth,
     }));
-    vi.doMock('../scripts/lib/gemini-bridge.js', () => ({
+    vi.doMock('../scripts/lib/llm/gemini-bridge.js', () => ({
       callGeminiCli: mockCallGeminiCli,
     }));
 
-    const mod = await import('../scripts/lib/llm-provider.js');
+    const mod = await import('../scripts/lib/llm/llm-provider.js');
     callLLM = mod.callLLM;
   });
 
@@ -275,14 +275,14 @@ describe('verifyConnection', () => {
   beforeEach(async () => {
     vi.resetModules();
     mockLoadAuth = vi.fn();
-    vi.doMock('../scripts/lib/auth-manager.js', () => ({
+    vi.doMock('../scripts/lib/llm/auth-manager.js', () => ({
       loadAuth: mockLoadAuth,
     }));
-    vi.doMock('../scripts/lib/gemini-bridge.js', () => ({
+    vi.doMock('../scripts/lib/llm/gemini-bridge.js', () => ({
       callGeminiCli: vi.fn().mockResolvedValue({ text: 'ok', model: 'gemini-2.0-flash', tokenCount: 5 }),
     }));
 
-    const mod = await import('../scripts/lib/llm-provider.js');
+    const mod = await import('../scripts/lib/llm/llm-provider.js');
     verifyConnection = mod.verifyConnection;
   });
 

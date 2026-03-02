@@ -9,8 +9,8 @@
 
 import { readFile, writeFile, mkdir, chmod } from 'fs/promises';
 import { resolve } from 'path';
-import { authDir as getAuthDir } from './app-paths.js';
-import { inputError } from './validators.js';
+import { authDir as getAuthDir } from '../core/app-paths.js';
+import { inputError } from '../core/validators.js';
 
 const DEFAULT_AUTH_DIR = getAuthDir();
 const DEFAULT_PROVIDERS_DIR = DEFAULT_AUTH_DIR;

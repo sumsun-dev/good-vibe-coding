@@ -22,8 +22,8 @@ import {
   updateExecutionState,
   recordMetrics,
   recordContributions,
-} from '../scripts/lib/project-manager.js';
-import { AppError } from '../scripts/lib/validators.js';
+} from '../scripts/lib/project/project-manager.js';
+import { AppError } from '../scripts/lib/core/validators.js';
 
 const TMP_DIR = resolve('.tmp-test-project-manager');
 

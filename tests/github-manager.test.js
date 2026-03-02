@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { checkGhStatus, createGithubRepo, gitInitAndPush, commitPhase, MINIMAL_GITIGNORE } from '../scripts/lib/github-manager.js';
+import { checkGhStatus, createGithubRepo, gitInitAndPush, commitPhase, MINIMAL_GITIGNORE } from '../scripts/lib/project/github-manager.js';
 import { execFileSync } from 'child_process';
 import { existsSync, writeFileSync } from 'fs';
 

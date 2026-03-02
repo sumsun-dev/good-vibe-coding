@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { withProject } from '../scripts/lib/handler-helpers.js';
+import { withProject } from '../scripts/lib/core/handler-helpers.js';
 
-vi.mock('../scripts/lib/project-manager.js', () => ({
+vi.mock('../scripts/lib/project/project-manager.js', () => ({
   getProject: vi.fn(),
 }));
 
-const { getProject } = await import('../scripts/lib/project-manager.js');
+const { getProject } = await import('../scripts/lib/project/project-manager.js');
 
 describe('withProject', () => {
   beforeEach(() => {

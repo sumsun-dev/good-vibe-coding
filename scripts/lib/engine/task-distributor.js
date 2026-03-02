@@ -2,7 +2,7 @@
  * task-distributor — 작업 분배 및 에이전트 실행 프롬프트 생성 모듈
  */
 
-import { parseJsonArray } from './json-parser.js';
+import { parseJsonArray } from '../core/json-parser.js';
 
 /**
  * 기획서를 분석하여 작업 목록을 추출하는 프롬프트를 생성한다.

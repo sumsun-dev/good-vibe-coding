@@ -9,7 +9,7 @@
  * - cross-model: 리뷰어별로 다른 프로바이더를 라운드로빈 배정
  */
 
-import { loadProvidersConfig } from './auth-manager.js';
+import { loadProvidersConfig } from '../llm/auth-manager.js';
 
 /**
  * 활성화된 프로바이더 목록을 반환한다.
@@ -100,7 +100,7 @@ export async function executeCrossModelReviews(assignments, task, taskOutput) {
 
   // 동적 import로 순환 참조 방지
   const { buildTaskReviewPrompt, parseTaskReview } = await import('./review-engine.js');
-  const { callLLM } = await import('./llm-provider.js');
+  const { callLLM } = await import('../llm/llm-provider.js');
 
   const results = await Promise.allSettled(
     assignments.map(async ({ reviewer, provider }) => {

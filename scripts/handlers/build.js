@@ -4,9 +4,9 @@
 import { readStdin, output } from '../cli-utils.js';
 import {
   materializeCode, materializeBatch, extractMaterializableBlocks,
-} from '../lib/code-materializer.js';
-import { verifyAndMaterialize } from '../lib/execution-verifier.js';
-import { commitPhase } from '../lib/github-manager.js';
+} from '../lib/engine/code-materializer.js';
+import { verifyAndMaterialize } from '../lib/engine/execution-verifier.js';
+import { commitPhase } from '../lib/project/github-manager.js';
 
 export const commands = {
   'materialize-code': async () => {

@@ -5,7 +5,7 @@ import {
   trackRoleContribution,
   recommendOptimalTeam,
   buildOptimizationReport,
-} from '../scripts/lib/agent-optimizer.js';
+} from '../scripts/lib/agent/agent-optimizer.js';
 
 // --- measureOutputSimilarity ---
 

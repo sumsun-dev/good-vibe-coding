@@ -4,23 +4,23 @@ vi.mock('child_process', async () => ({
   execFileSync: vi.fn(),
 }));
 
-vi.mock('../scripts/lib/github-manager.js', () => ({
+vi.mock('../scripts/lib/project/github-manager.js', () => ({
   checkGhStatus: vi.fn(),
 }));
 
-vi.mock('../scripts/lib/gemini-bridge.js', () => ({
+vi.mock('../scripts/lib/llm/gemini-bridge.js', () => ({
   isGeminiCliInstalled: vi.fn(),
 }));
 
 import { execFileSync } from 'child_process';
-import { checkGhStatus } from '../scripts/lib/github-manager.js';
-import { isGeminiCliInstalled } from '../scripts/lib/gemini-bridge.js';
+import { checkGhStatus } from '../scripts/lib/project/github-manager.js';
+import { isGeminiCliInstalled } from '../scripts/lib/llm/gemini-bridge.js';
 import {
   checkCommand,
   checkNodeVersion,
   compareVersions,
   checkEnvironment,
-} from '../scripts/lib/env-checker.js';
+} from '../scripts/lib/output/env-checker.js';
 
 describe('env-checker', () => {
   beforeEach(() => {

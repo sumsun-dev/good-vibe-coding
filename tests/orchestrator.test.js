@@ -6,7 +6,7 @@ import {
   parseReviewOutput,
   checkConvergence,
   groupAgentsForParallelDispatch,
-} from '../scripts/lib/orchestrator.js';
+} from '../scripts/lib/engine/orchestrator.js';
 
 const SAMPLE_PROJECT = {
   id: 'telegram-bot-2026-02',

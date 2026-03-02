@@ -4,7 +4,7 @@ import {
   assignReviewProviders,
   resolveReviewAssignments,
   summarizeCrossModelResults,
-} from '../scripts/lib/cross-model-strategy.js';
+} from '../scripts/lib/engine/cross-model-strategy.js';
 
 const SAMPLE_REVIEWERS = [
   { roleId: 'qa', displayName: '지민', role: 'QA Engineer' },
@@ -196,12 +196,12 @@ describe('executeCrossModelReviews', () => {
 
     mockCallLLM = vi.fn();
 
-    vi.doMock('../scripts/lib/llm-provider.js', () => ({
+    vi.doMock('../scripts/lib/llm/llm-provider.js', () => ({
       callLLM: mockCallLLM,
     }));
 
     // review-engine uses json-parser, so let it load naturally
-    const mod = await import('../scripts/lib/cross-model-strategy.js');
+    const mod = await import('../scripts/lib/engine/cross-model-strategy.js');
     executeCrossModelReviews = mod.executeCrossModelReviews;
   });
 

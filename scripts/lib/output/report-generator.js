@@ -2,7 +2,7 @@
  * report-generator — 프로젝트 보고서 생성 모듈
  */
 
-import { getCostSummary, getAgentPerformanceSummary } from './project-metrics.js';
+import { getCostSummary, getAgentPerformanceSummary } from '../project/project-metrics.js';
 
 /**
  * 전체 프로젝트 보고서를 생성한다.

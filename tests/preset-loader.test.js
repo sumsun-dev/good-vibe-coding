@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { loadPreset, mergePresets, listPresets, validatePreset } from '../scripts/lib/preset-loader.js';
+import { loadPreset, mergePresets, listPresets, validatePreset } from '../scripts/lib/core/preset-loader.js';
 
 describe('preset-loader', () => {
   describe('loadPreset', () => {

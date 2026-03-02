@@ -1,6 +1,6 @@
 import { readFile } from 'fs/promises';
 import { resolve } from 'path';
-import { pluginRoot } from './app-paths.js';
+import { pluginRoot } from '../core/app-paths.js';
 
 const AGENTS_DIR = resolve(pluginRoot(), 'agents');
 

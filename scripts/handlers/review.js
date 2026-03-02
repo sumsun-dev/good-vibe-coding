@@ -5,12 +5,12 @@ import { readStdin, output } from '../cli-utils.js';
 import {
   selectReviewers, buildTaskReviewPrompt,
   checkQualityGate, buildRevisionPrompt, checkEnhancedQualityGate,
-} from '../lib/review-engine.js';
-import { verifyExecution } from '../lib/execution-verifier.js';
+} from '../lib/engine/review-engine.js';
+import { verifyExecution } from '../lib/engine/execution-verifier.js';
 import {
   detectRedundantAgents, recommendOptimalTeam, buildOptimizationReport,
-} from '../lib/agent-optimizer.js';
-import { getProject } from '../lib/project-manager.js';
+} from '../lib/agent/agent-optimizer.js';
+import { getProject } from '../lib/project/project-manager.js';
 
 export const commands = {
   'select-reviewers': async () => {

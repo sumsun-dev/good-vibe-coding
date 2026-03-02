@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import { AppError } from './lib/validators.js';
-import { config } from './lib/config.js';
+import { AppError } from './lib/core/validators.js';
+import { config } from './lib/core/config.js';
 
 const HANDLERS = {
   project: () => import('./handlers/project.js'),

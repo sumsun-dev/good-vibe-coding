@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { renderTemplate, renderString } from '../scripts/lib/template-engine.js';
+import { renderTemplate, renderString } from '../scripts/lib/project/template-engine.js';
 import { writeFile, mkdir } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';

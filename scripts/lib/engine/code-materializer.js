@@ -6,8 +6,8 @@
 
 import { resolve } from 'path';
 import { extractCodeBlocks, classifyCodeBlocks } from './execution-verifier.js';
-import { safeWriteFile, ensureDir } from './file-writer.js';
-import { assertWithinRoot, inputError } from './validators.js';
+import { safeWriteFile, ensureDir } from '../core/file-writer.js';
+import { assertWithinRoot, inputError } from '../core/validators.js';
 
 /**
  * 파일명이 있는 코드 블록만 필터링하여 반환한다.

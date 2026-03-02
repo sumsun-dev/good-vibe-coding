@@ -6,8 +6,8 @@
  */
 
 import { execFileSync } from 'child_process';
-import { checkGhStatus } from './github-manager.js';
-import { isGeminiCliInstalled } from './gemini-bridge.js';
+import { checkGhStatus } from '../project/github-manager.js';
+import { isGeminiCliInstalled } from '../llm/gemini-bridge.js';
 
 /**
  * CLI 커맨드의 설치 여부와 버전을 확인한다.

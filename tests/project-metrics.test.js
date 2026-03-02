@@ -7,7 +7,7 @@ import {
   getCostSummary,
   getAgentPerformanceSummary,
   buildMetricsDashboard,
-} from '../scripts/lib/project-metrics.js';
+} from '../scripts/lib/project/project-metrics.js';
 
 // --- createMetricsSnapshot ---
 

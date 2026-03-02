@@ -8,7 +8,7 @@ import {
   getOptimizedTeam,
   resolveModel,
   clearCaches,
-} from '../scripts/lib/team-builder.js';
+} from '../scripts/lib/agent/team-builder.js';
 
 beforeEach(() => {
   clearCaches();

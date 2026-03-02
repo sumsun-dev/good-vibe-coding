@@ -3,8 +3,8 @@
  * 롤플레이 대신 각 역할을 독립 Task 에이전트로 디스패치하고 결과를 종합한다.
  */
 
-import { parseJsonObject } from './json-parser.js';
-import { config } from './config.js';
+import { parseJsonObject } from '../core/json-parser.js';
+import { config } from '../core/config.js';
 
 /**
  * 개별 에이전트 분석 프롬프트를 생성한다 (역할별 독립 분석).

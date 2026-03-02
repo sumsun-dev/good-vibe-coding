@@ -2,13 +2,13 @@
  * handlers/recommendation — 스킬/에이전트 추천 및 설치 커맨드
  */
 import { readStdin, output, outputOk } from '../cli-utils.js';
-import { requireFields, requireArray } from '../lib/validators.js';
+import { requireFields, requireArray } from '../lib/core/validators.js';
 import {
   recommendSetup, formatRecommendations, getCatalog,
-} from '../lib/recommendation-engine.js';
+} from '../lib/agent/recommendation-engine.js';
 import {
   listInstalled, installItems, formatInstallResults,
-} from '../lib/setup-installer.js';
+} from '../lib/agent/setup-installer.js';
 
 export const commands = {
   /** 프로젝트 컨텍스트 기반 추천 */

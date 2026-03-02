@@ -1,12 +1,12 @@
 import { resolve } from 'path';
 import { renderString } from './template-engine.js';
-import { ensureDir, safeWriteFile, readJsonFile, listFilesByExtension } from './file-writer.js';
-import { notFoundError } from './validators.js';
-import { pluginRoot } from './app-paths.js';
+import { ensureDir, safeWriteFile, readJsonFile, listFilesByExtension } from '../core/file-writer.js';
+import { notFoundError } from '../core/validators.js';
+import { pluginRoot } from '../core/app-paths.js';
 
 const BUILTIN_TEMPLATES_DIR = resolve(pluginRoot(), 'presets/templates');
 
-import { customTemplatesDir as defaultCustomTemplatesDir } from './app-paths.js';
+import { customTemplatesDir as defaultCustomTemplatesDir } from '../core/app-paths.js';
 
 let customTemplatesDir = defaultCustomTemplatesDir();
 

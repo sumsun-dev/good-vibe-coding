@@ -1,16 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../scripts/lib/llm-provider.js', () => ({
+vi.mock('../../scripts/lib/llm/llm-provider.js', () => ({
   callLLM: vi.fn(),
 }));
 
-vi.mock('../../scripts/lib/auth-manager.js', () => ({
+vi.mock('../../scripts/lib/llm/auth-manager.js', () => ({
   loadAuth: vi.fn().mockResolvedValue({ apiKey: 'test-key' }),
 }));
 
 import { Executor } from '../../src/executor.js';
 import { MemoryStorage } from '../../src/storage.js';
-import { callLLM } from '../../scripts/lib/llm-provider.js';
+import { callLLM } from '../../scripts/lib/llm/llm-provider.js';
 
 function makeProject(overrides = {}) {
   return {

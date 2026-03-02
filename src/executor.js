@@ -8,15 +8,15 @@ import {
   getNextExecutionStep,
   computeStateTransition,
   createInitialExecutionState,
-} from '../scripts/lib/execution-loop.js';
+} from '../scripts/lib/engine/execution-loop.js';
 import {
   selectReviewers,
   buildTaskReviewPrompt,
   parseTaskReview,
   checkQualityGate,
   buildRevisionPrompt,
-} from '../scripts/lib/review-engine.js';
-import { callLLM } from '../scripts/lib/llm-provider.js';
+} from '../scripts/lib/engine/review-engine.js';
+import { callLLM } from '../scripts/lib/llm/llm-provider.js';
 import { DEFAULTS } from './defaults.js';
 
 export class Executor {

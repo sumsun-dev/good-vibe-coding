@@ -3,7 +3,7 @@ import {
   buildComplexityAnalysisPrompt,
   parseComplexityAnalysis,
   getDefaultsForComplexity,
-} from '../scripts/lib/complexity-analyzer.js';
+} from '../scripts/lib/agent/complexity-analyzer.js';
 
 // --- buildComplexityAnalysisPrompt ---
 

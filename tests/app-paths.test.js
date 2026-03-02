@@ -3,7 +3,7 @@ import {
   baseDir, projectsDir, agentOverridesDir,
   evaluationsDir, customTemplatesDir, authDir,
   claudeDir, userSkillsDir, userAgentsDir,
-} from '../scripts/lib/app-paths.js';
+} from '../scripts/lib/core/app-paths.js';
 
 describe('app-paths', () => {
   it('baseDir는 .claude/good-vibe를 포함한다', () => {

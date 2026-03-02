@@ -13,7 +13,7 @@ describe('template-scaffolder', () => {
 
   beforeEach(async () => {
     await mkdir(CUSTOM_DIR, { recursive: true });
-    scaffolder = await import('../scripts/lib/template-scaffolder.js');
+    scaffolder = await import('../scripts/lib/project/template-scaffolder.js');
     scaffolder.setCustomTemplatesDir(CUSTOM_DIR);
   });
 
@@ -277,7 +277,7 @@ describe('template-scaffolder', () => {
       const targetDir = resolve(TMP_DIR, 'scaffold-dirs');
       await scaffolder.scaffold('next-app', targetDir, { projectName: 'app' });
 
-      const { fileExists: fe } = await import('../scripts/lib/file-writer.js');
+      const { fileExists: fe } = await import('../scripts/lib/core/file-writer.js');
       expect(await fe(resolve(targetDir, 'src/app'))).toBe(true);
       expect(await fe(resolve(targetDir, 'src/components'))).toBe(true);
     });

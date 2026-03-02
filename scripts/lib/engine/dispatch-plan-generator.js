@@ -8,7 +8,7 @@
 import { buildAgentAnalysisPrompt, buildSynthesisPrompt, buildReviewPrompt, groupAgentsForParallelDispatch } from './orchestrator.js';
 import { buildExecutionPlanWithReviews, buildExecutionPrompt, buildTddExecutionPrompt, isCodeTask } from './task-distributor.js';
 import { selectReviewers, buildTaskReviewPrompt } from './review-engine.js';
-import { config } from './config.js';
+import { config } from '../core/config.js';
 
 /**
  * 토론 디스패치 계획을 생성한다.

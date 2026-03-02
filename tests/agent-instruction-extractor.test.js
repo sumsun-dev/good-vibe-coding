@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { extractInstructions, extractAllInstructions } from '../scripts/lib/agent-instruction-extractor.js';
+import { extractInstructions, extractAllInstructions } from '../scripts/lib/agent/agent-instruction-extractor.js';
 
 describe('agent-instruction-extractor', () => {
   describe('extractInstructions', () => {

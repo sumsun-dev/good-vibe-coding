@@ -1,8 +1,8 @@
 import { resolve } from 'path';
 import { readFile } from 'fs/promises';
-import { ensureDir, safeWriteFile, writeFiles, fileExists } from './file-writer.js';
+import { ensureDir, safeWriteFile, writeFiles, fileExists } from '../core/file-writer.js';
 import { renderTemplate } from './template-engine.js';
-import { inputError } from './validators.js';
+import { inputError } from '../core/validators.js';
 
 const GITIGNORE_TEMPLATES = {
   'next-js': `node_modules/

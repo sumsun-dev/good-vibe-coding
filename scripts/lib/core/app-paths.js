@@ -28,7 +28,7 @@ export function resetConfiguration() {
 
 /** 플러그인 루트 디렉토리 (이 프로젝트의 소스 루트) */
 export function pluginRoot() {
-  return resolve(__dirname, '../..');
+  return resolve(__dirname, '../../..');
 }
 
 function homeDir() {

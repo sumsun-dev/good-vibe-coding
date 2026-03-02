@@ -2,9 +2,9 @@
  * handlers/metrics — 관측성 + 비용/성능 추적 커맨드
  */
 import { readStdin, output, outputOk, parseArgs } from '../cli-utils.js';
-import { getProject, recordMetrics } from '../lib/project-manager.js';
-import { inputError, notFoundError } from '../lib/validators.js';
-import { getCostSummary, buildMetricsDashboard } from '../lib/project-metrics.js';
+import { getProject, recordMetrics } from '../lib/project/project-manager.js';
+import { inputError, notFoundError } from '../lib/core/validators.js';
+import { getCostSummary, buildMetricsDashboard } from '../lib/project/project-metrics.js';
 
 const [,, , ...args] = process.argv;
 

@@ -3,7 +3,7 @@ import {
   generateReport,
   generateRoleSummary,
   generateProjectStats,
-} from '../scripts/lib/report-generator.js';
+} from '../scripts/lib/output/report-generator.js';
 
 const SAMPLE_PROJECT = {
   id: 'telegram-bot-2026-02',

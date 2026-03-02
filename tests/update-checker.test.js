@@ -12,7 +12,7 @@ vi.mock('child_process', async () => {
 
 import { readFileSync } from 'fs';
 import { execFileSync } from 'child_process';
-import { getCurrentVersion, checkForUpdates, getVersionInfo } from '../scripts/lib/update-checker.js';
+import { getCurrentVersion, checkForUpdates, getVersionInfo } from '../scripts/lib/output/update-checker.js';
 
 describe('update-checker', () => {
   beforeEach(() => {

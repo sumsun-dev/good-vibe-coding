@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { parseGeminiCliOutput, isGeminiCliInstalled, callGeminiCli } from '../scripts/lib/gemini-bridge.js';
+import { parseGeminiCliOutput, isGeminiCliInstalled, callGeminiCli } from '../scripts/lib/llm/gemini-bridge.js';
 import { spawnSync } from 'child_process';
 
 vi.mock('child_process', () => ({

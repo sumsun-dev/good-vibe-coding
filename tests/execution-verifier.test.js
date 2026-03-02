@@ -13,7 +13,7 @@ import {
   cleanup,
   BUILD_STRATEGIES,
   detectBuildStrategy,
-} from '../scripts/lib/execution-verifier.js';
+} from '../scripts/lib/engine/execution-verifier.js';
 
 // --- extractCodeBlocks ---
 

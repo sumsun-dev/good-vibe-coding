@@ -3,7 +3,7 @@
  * 에이전트 출력 유사도 분석, 기여도 추적, 최적 팀 추천을 담당한다.
  */
 
-import { config } from './config.js';
+import { config } from '../core/config.js';
 
 /** 범용 리뷰어 roleId 목록 (항상 유지 대상) */
 const UNIVERSAL_REVIEWERS = ['qa', 'security', 'cto'];

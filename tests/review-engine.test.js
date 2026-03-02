@@ -6,7 +6,7 @@ import {
   checkQualityGate,
   buildRevisionPrompt,
   checkEnhancedQualityGate,
-} from '../scripts/lib/review-engine.js';
+} from '../scripts/lib/engine/review-engine.js';
 
 const SAMPLE_TEAM = [
   {

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { LazyCache } from '../scripts/lib/cache.js';
+import { LazyCache } from '../scripts/lib/core/cache.js';
 
 describe('LazyCache', () => {
   it('최초 get에서 loader를 호출한다', async () => {

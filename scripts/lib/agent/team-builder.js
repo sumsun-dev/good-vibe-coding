@@ -1,8 +1,8 @@
 import { readFile } from 'fs/promises';
 import { resolve } from 'path';
 import { getDefaultsForComplexity } from './complexity-analyzer.js';
-import { LazyCache } from './cache.js';
-import { pluginRoot } from './app-paths.js';
+import { LazyCache } from '../core/cache.js';
+import { pluginRoot } from '../core/app-paths.js';
 
 const CATALOG_PATH = resolve(pluginRoot(), 'presets', 'team-roles', 'catalog.json');
 const PROJECT_TYPES_PATH = resolve(pluginRoot(), 'presets', 'project-types.json');

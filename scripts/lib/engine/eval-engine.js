@@ -6,10 +6,10 @@
 import { writeFile } from 'fs/promises';
 import { resolve } from 'path';
 import crypto from 'crypto';
-import { ensureDir, readJsonFile, listFilesByExtension } from './file-writer.js';
-import { COST_RATES } from './project-metrics.js';
-import { evaluationsDir } from './app-paths.js';
-import { notFoundError } from './validators.js';
+import { ensureDir, readJsonFile, listFilesByExtension } from '../core/file-writer.js';
+import { COST_RATES } from '../project/project-metrics.js';
+import { evaluationsDir } from '../core/app-paths.js';
+import { notFoundError } from '../core/validators.js';
 
 const DEFAULT_EVAL_DIR = evaluationsDir();
 let evalDir = DEFAULT_EVAL_DIR;

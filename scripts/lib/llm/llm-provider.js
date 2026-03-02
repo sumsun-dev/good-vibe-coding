@@ -8,8 +8,8 @@
 
 import { loadAuth } from './auth-manager.js';
 import { callGeminiCli } from './gemini-bridge.js';
-import { config } from './config.js';
-import { AppError, inputError, notFoundError } from './validators.js';
+import { config } from '../core/config.js';
+import { AppError, inputError, notFoundError } from '../core/validators.js';
 
 /** 프로바이더별 API 엔드포인트 */
 const PROVIDER_ENDPOINTS = {

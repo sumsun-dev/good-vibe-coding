@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseJsonObject, parseJsonArray } from '../scripts/lib/json-parser.js';
+import { parseJsonObject, parseJsonArray } from '../scripts/lib/core/json-parser.js';
 
 // --- parseJsonObject ---
 

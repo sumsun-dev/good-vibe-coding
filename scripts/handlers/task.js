@@ -5,11 +5,11 @@ import { readStdin, output } from '../cli-utils.js';
 import {
   addDiscussionRound, addTaskReviews, updateTaskStatus,
   saveTaskOutput, addTaskMaterializationResult,
-} from '../lib/project-manager.js';
+} from '../lib/project/project-manager.js';
 import {
   buildTddExecutionPrompt, isCodeTask, buildPhaseContext,
-} from '../lib/task-distributor.js';
-import { requireFields } from '../lib/validators.js';
+} from '../lib/engine/task-distributor.js';
+import { requireFields } from '../lib/core/validators.js';
 
 export const commands = {
   'add-discussion-round': async () => {

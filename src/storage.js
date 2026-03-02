@@ -29,13 +29,13 @@ export class FileStorage {
   }
 
   async _init() {
-    const { setBaseDir } = await import('../scripts/lib/project-manager.js');
+    const { setBaseDir } = await import('../scripts/lib/project/project-manager.js');
     setBaseDir(this._baseDir);
   }
 
   async read(id) {
     await this._initialized;
-    const { getProject } = await import('../scripts/lib/project-manager.js');
+    const { getProject } = await import('../scripts/lib/project/project-manager.js');
     return getProject(id);
   }
 
@@ -50,7 +50,7 @@ export class FileStorage {
 
   async list() {
     await this._initialized;
-    const { listProjects } = await import('../scripts/lib/project-manager.js');
+    const { listProjects } = await import('../scripts/lib/project/project-manager.js');
     return listProjects();
   }
 }

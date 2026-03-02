@@ -6,10 +6,10 @@ import { execSync } from 'child_process';
 import { mkdtempSync, existsSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
-import { cleanup, verifyAndMaterialize } from '../scripts/lib/execution-verifier.js';
-import { materializeCode, materializeBatch, extractMaterializableBlocks } from '../scripts/lib/code-materializer.js';
-import { checkQualityGate, checkEnhancedQualityGate } from '../scripts/lib/review-engine.js';
-import { buildTddExecutionPrompt, buildExecutionPrompt, isCodeTask } from '../scripts/lib/task-distributor.js';
+import { cleanup, verifyAndMaterialize } from '../scripts/lib/engine/execution-verifier.js';
+import { materializeCode, materializeBatch, extractMaterializableBlocks } from '../scripts/lib/engine/code-materializer.js';
+import { checkQualityGate, checkEnhancedQualityGate } from '../scripts/lib/engine/review-engine.js';
+import { buildTddExecutionPrompt, buildExecutionPrompt, isCodeTask } from '../scripts/lib/engine/task-distributor.js';
 import {
   SINGLE_FILE_OUTPUT, MULTI_FILE_OUTPUT, TEXT_ONLY_OUTPUT,
   NESTED_DIR_OUTPUT, TDD_OUTPUT,
@@ -411,7 +411,7 @@ describe('E2E: 수정 루프', () => {
 
 describe('E2E: 오케스트레이션 라운드 (mock)', () => {
   it('분석 프롬프트 → mock 응답 → 리뷰 → 수렴 체크', async () => {
-    const { buildAgentAnalysisPrompt, buildSynthesisPrompt, buildReviewPrompt, checkConvergence } = await import('../scripts/lib/orchestrator.js');
+    const { buildAgentAnalysisPrompt, buildSynthesisPrompt, buildReviewPrompt, checkConvergence } = await import('../scripts/lib/engine/orchestrator.js');
 
     const project = {
       ...PROJECT_WITH_TASKS,
@@ -453,7 +453,7 @@ describe('E2E: 오케스트레이션 라운드 (mock)', () => {
   });
 
   it('수렴 실패 시나리오', async () => {
-    const { checkConvergence } = await import('../scripts/lib/orchestrator.js');
+    const { checkConvergence } = await import('../scripts/lib/engine/orchestrator.js');
 
     // 5명 중 2명만 승인 (40%) → 수렴 실패
     const reviews = [

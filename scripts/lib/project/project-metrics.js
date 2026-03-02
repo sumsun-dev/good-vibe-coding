@@ -10,7 +10,7 @@ export const COST_RATES = {
   gemini: { input: 0.000001, output: 0.000004 },
 };
 
-import { config } from './config.js';
+import { config } from '../core/config.js';
 
 /**
  * 빈 메트릭스 스냅샷을 생성한다.

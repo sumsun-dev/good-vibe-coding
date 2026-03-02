@@ -8,8 +8,8 @@ import { execSync } from 'child_process';
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, dirname, resolve } from 'path';
-import { config } from './config.js';
-import { assertWithinRoot } from './validators.js';
+import { config } from '../core/config.js';
+import { assertWithinRoot } from '../core/validators.js';
 
 /** 실행 가능 언어 목록 */
 const EXECUTABLE_LANGUAGES = [

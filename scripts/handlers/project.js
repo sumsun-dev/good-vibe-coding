@@ -5,10 +5,10 @@ import { readStdin, output, parseArgs } from '../cli-utils.js';
 import {
   createProject, getProject, listProjects, updateProjectStatus,
   setProjectTeam, getExecutionProgress,
-} from '../lib/project-manager.js';
-import { generateReport } from '../lib/report-generator.js';
-import { requireFields, notFoundError } from '../lib/validators.js';
-import { getCommandSchema, listCommandSchemas } from '../lib/command-schemas.js';
+} from '../lib/project/project-manager.js';
+import { generateReport } from '../lib/output/report-generator.js';
+import { requireFields, notFoundError } from '../lib/core/validators.js';
+import { getCommandSchema, listCommandSchemas } from '../lib/core/command-schemas.js';
 
 const [,, , ...args] = process.argv;
 

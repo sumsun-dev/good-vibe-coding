@@ -10,7 +10,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = join(__dirname, '../..');
+const REPO_ROOT = join(__dirname, '../../..');
 
 /**
  * package.json에서 현재 버전을 읽어 반환한다.

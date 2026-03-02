@@ -5,8 +5,8 @@ import { readStdin, output, parseArgs } from '../cli-utils.js';
 import {
   recommendTeam, buildTeam, loadRoleCatalog, loadProjectTypes,
   getTeamSummary, getOptimizedTeam,
-} from '../lib/team-builder.js';
-import { requireFields, inputError } from '../lib/validators.js';
+} from '../lib/agent/team-builder.js';
+import { requireFields, inputError } from '../lib/core/validators.js';
 
 const [,, , ...args] = process.argv;
 

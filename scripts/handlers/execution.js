@@ -2,15 +2,15 @@
  * handlers/execution — 실행 루프 + 실행 계획 커맨드
  */
 import { readStdin, output, parseArgs } from '../cli-utils.js';
-import { getProject } from '../lib/project-manager.js';
-import { notFoundError, requireFields, inputError } from '../lib/validators.js';
+import { getProject } from '../lib/project/project-manager.js';
+import { notFoundError, requireFields, inputError } from '../lib/core/validators.js';
 import {
   initExecution, getNextExecutionStep, advanceExecution, getExecutionSummary,
-} from '../lib/execution-loop.js';
+} from '../lib/engine/execution-loop.js';
 import {
   buildTaskDistributionPrompt, buildExecutionPrompt, buildExecutionPlan,
   buildExecutionPlanWithReviews,
-} from '../lib/task-distributor.js';
+} from '../lib/engine/task-distributor.js';
 
 const [,, , ...args] = process.argv;
 

@@ -4,7 +4,7 @@ import {
   parseComplexityResponse,
   parseTaskListResponse,
   parseSuggestionsResponse,
-} from '../scripts/lib/domain-parsers.js';
+} from '../scripts/lib/core/domain-parsers.js';
 
 describe('parseReviewResponse', () => {
   it('유효한 리뷰를 파싱한다', () => {

@@ -11,7 +11,7 @@ import {
   AppError,
   inputError,
   notFoundError,
-} from '../scripts/lib/validators.js';
+} from '../scripts/lib/core/validators.js';
 
 describe('requireString', () => {
   it('유효한 문자열을 반환한다', () => {

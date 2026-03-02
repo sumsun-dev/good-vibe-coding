@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock LLM provider before importing
-vi.mock('../../scripts/lib/llm-provider.js', () => ({
+vi.mock('../../scripts/lib/llm/llm-provider.js', () => ({
   callLLM: vi.fn(),
 }));
 
 // Mock auth-manager to avoid file system access
-vi.mock('../../scripts/lib/auth-manager.js', () => ({
+vi.mock('../../scripts/lib/llm/auth-manager.js', () => ({
   loadAuth: vi.fn().mockResolvedValue({ apiKey: 'test-key' }),
 }));
 

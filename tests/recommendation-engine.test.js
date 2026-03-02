@@ -6,8 +6,8 @@ import {
   recommendSetup,
   formatRecommendations,
   clearCache,
-} from '../scripts/lib/recommendation-engine.js';
-import { config } from '../scripts/lib/config.js';
+} from '../scripts/lib/agent/recommendation-engine.js';
+import { config } from '../scripts/lib/core/config.js';
 
 describe('recommendation-engine', () => {
   beforeEach(() => {

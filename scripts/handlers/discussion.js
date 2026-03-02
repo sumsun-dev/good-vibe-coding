@@ -2,18 +2,18 @@
  * handlers/discussion — 토론 프롬프트 생성 + 오케스트레이션 커맨드
  */
 import { readStdin, output, parseArgs } from '../cli-utils.js';
-import { getProject } from '../lib/project-manager.js';
-import { notFoundError, inputError } from '../lib/validators.js';
+import { getProject } from '../lib/project/project-manager.js';
+import { notFoundError, inputError } from '../lib/core/validators.js';
 import {
   buildDiscussionPrompt, buildPlanDocument, buildSingleAgentDiscussionPrompt,
-} from '../lib/discussion-engine.js';
+} from '../lib/engine/discussion-engine.js';
 import {
   buildAgentAnalysisPrompt, buildSynthesisPrompt, buildReviewPrompt,
   checkConvergence, groupAgentsForParallelDispatch,
-} from '../lib/orchestrator.js';
+} from '../lib/engine/orchestrator.js';
 import {
   buildDiscussionDispatchPlan, buildExecutionDispatchPlan,
-} from '../lib/dispatch-plan-generator.js';
+} from '../lib/engine/dispatch-plan-generator.js';
 
 const [,, , ...args] = process.argv;
 

@@ -6,7 +6,7 @@ import {
   buildGitignore,
   buildProjectAgents,
   appendToClaudeMd,
-} from '../scripts/lib/project-scaffolder.js';
+} from '../scripts/lib/project/project-scaffolder.js';
 import { readFile, rm, mkdir, writeFile } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -233,7 +233,7 @@ describe('project-scaffolder', () => {
 
       await appendToClaudeMd(claudeMdPath, 'decisions-placeholder', '결정 사항');
 
-      const { fileExists: fe } = await import('../scripts/lib/file-writer.js');
+      const { fileExists: fe } = await import('../scripts/lib/core/file-writer.js');
       expect(await fe(`${claudeMdPath}.backup`)).toBe(true);
     });
   });

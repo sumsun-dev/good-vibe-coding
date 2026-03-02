@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { execSync } from 'child_process';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { COMMAND_SCHEMAS, getCommandSchema, listCommandSchemas } from '../scripts/lib/command-schemas.js';
+import { COMMAND_SCHEMAS, getCommandSchema, listCommandSchemas } from '../scripts/lib/core/command-schemas.js';
 
 const CLI_PATH = resolve('scripts/cli.js');
 

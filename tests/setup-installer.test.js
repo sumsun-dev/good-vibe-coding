@@ -7,8 +7,8 @@ import {
   installItem,
   installItems,
   formatInstallResults,
-} from '../scripts/lib/setup-installer.js';
-import * as appPaths from '../scripts/lib/app-paths.js';
+} from '../scripts/lib/agent/setup-installer.js';
+import * as appPaths from '../scripts/lib/core/app-paths.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const TMP_DIR = resolve(__dirname, '../.tmp-test-installer');

@@ -4,12 +4,12 @@
  */
 
 import { resolve } from 'path';
-import { LazyCache } from './cache.js';
-import { config } from './config.js';
-import { requireString, requireOneOf, inputError } from './validators.js';
-import { validate } from './schema-validator.js';
-import { readJsonFile } from './file-writer.js';
-import { pluginRoot } from './app-paths.js';
+import { LazyCache } from '../core/cache.js';
+import { config } from '../core/config.js';
+import { requireString, requireOneOf, inputError } from '../core/validators.js';
+import { validate } from '../core/schema-validator.js';
+import { readJsonFile } from '../core/file-writer.js';
+import { pluginRoot } from '../core/app-paths.js';
 
 const VALID_COMPLEXITIES = ['simple', 'medium', 'complex'];
 

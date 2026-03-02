@@ -2,16 +2,16 @@
  * handlers/auth — 멀티 모델 프로바이더 인증 + 크로스 모델 리뷰 커맨드
  */
 import { readStdin, output, outputOk } from '../cli-utils.js';
-import { inputError } from '../lib/validators.js';
+import { inputError } from '../lib/core/validators.js';
 import {
   connectWithApiKey, connectGeminiCli, removeAuth, listConnectedProviders,
   loadProvidersConfig, setReviewStrategy, getProviderStatus,
-} from '../lib/auth-manager.js';
+} from '../lib/llm/auth-manager.js';
 import {
   resolveReviewAssignments, executeCrossModelReviews,
   summarizeCrossModelResults,
-} from '../lib/cross-model-strategy.js';
-import { verifyConnection } from '../lib/llm-provider.js';
+} from '../lib/engine/cross-model-strategy.js';
+import { verifyConnection } from '../lib/llm/llm-provider.js';
 
 const [,, , ...args] = process.argv;
 
@@ -25,7 +25,7 @@ export const commands = {
       if (providerId !== 'gemini') {
         throw inputError('CLI 인증은 현재 gemini만 지원합니다');
       }
-      const { isGeminiCliInstalled } = await import('../lib/gemini-bridge.js');
+      const { isGeminiCliInstalled } = await import('../lib/llm/gemini-bridge.js');
       if (!isGeminiCliInstalled()) {
         throw inputError('Gemini CLI가 설치되지 않았습니다. `npm install -g @google/gemini-cli` 로 설치하세요.');
       }
@@ -86,8 +86,8 @@ export const commands = {
 
   'gemini-review': async () => {
     const data = await readStdin();
-    const { buildTaskReviewPrompt, parseTaskReview } = await import('../lib/review-engine.js');
-    const { callGeminiCli } = await import('../lib/gemini-bridge.js');
+    const { buildTaskReviewPrompt, parseTaskReview } = await import('../lib/engine/review-engine.js');
+    const { callGeminiCli } = await import('../lib/llm/gemini-bridge.js');
     const prompt = buildTaskReviewPrompt(data.reviewer, data.task, data.taskOutput);
     const response = callGeminiCli(prompt, { model: data.model });
     const review = parseTaskReview(response.text);

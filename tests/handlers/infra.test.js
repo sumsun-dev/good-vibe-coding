@@ -5,34 +5,34 @@ vi.mock('../../scripts/cli-utils.js', () => ({
   output: vi.fn(),
 }));
 
-vi.mock('../../scripts/lib/project-scaffolder.js', () => ({
+vi.mock('../../scripts/lib/project/project-scaffolder.js', () => ({
   setupProjectInfra: vi.fn(),
   appendToClaudeMd: vi.fn(),
 }));
 
-vi.mock('../../scripts/lib/github-manager.js', () => ({
+vi.mock('../../scripts/lib/project/github-manager.js', () => ({
   checkGhStatus: vi.fn(),
   createGithubRepo: vi.fn(),
   gitInitAndPush: vi.fn(),
 }));
 
-vi.mock('../../scripts/lib/gemini-bridge.js', () => ({
+vi.mock('../../scripts/lib/llm/gemini-bridge.js', () => ({
   isGeminiCliInstalled: vi.fn(),
 }));
 
-vi.mock('../../scripts/lib/env-checker.js', () => ({
+vi.mock('../../scripts/lib/output/env-checker.js', () => ({
   checkEnvironment: vi.fn(),
 }));
 
-vi.mock('../../scripts/lib/update-checker.js', () => ({
+vi.mock('../../scripts/lib/output/update-checker.js', () => ({
   getVersionInfo: vi.fn(),
 }));
 
 import { output } from '../../scripts/cli-utils.js';
-import { isGeminiCliInstalled } from '../../scripts/lib/gemini-bridge.js';
-import { checkEnvironment } from '../../scripts/lib/env-checker.js';
-import { checkGhStatus } from '../../scripts/lib/github-manager.js';
-import { getVersionInfo } from '../../scripts/lib/update-checker.js';
+import { isGeminiCliInstalled } from '../../scripts/lib/llm/gemini-bridge.js';
+import { checkEnvironment } from '../../scripts/lib/output/env-checker.js';
+import { checkGhStatus } from '../../scripts/lib/project/github-manager.js';
+import { getVersionInfo } from '../../scripts/lib/output/update-checker.js';
 import { commands } from '../../scripts/handlers/infra.js';
 
 describe('infra handler', () => {

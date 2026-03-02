@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { safeWriteFile, fileExists, backupFile, ensureDir, writeFiles, readJsonFile, listFilesByExtension } from '../scripts/lib/file-writer.js';
+import { safeWriteFile, fileExists, backupFile, ensureDir, writeFiles, readJsonFile, listFilesByExtension } from '../scripts/lib/core/file-writer.js';
 import { readFile, rm, mkdir } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
