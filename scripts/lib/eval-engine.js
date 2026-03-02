@@ -3,10 +3,10 @@
  * 멀티에이전트 오케스트레이션과 단순 접근법의 성능을 비교 측정한다.
  */
 
-import { writeFile, readdir } from 'fs/promises';
+import { writeFile } from 'fs/promises';
 import { resolve } from 'path';
 import crypto from 'crypto';
-import { ensureDir, fileExists, readJsonFile } from './file-writer.js';
+import { ensureDir, readJsonFile, listFilesByExtension } from './file-writer.js';
 import { COST_RATES } from './project-metrics.js';
 import { evaluationsDir } from './app-paths.js';
 import { notFoundError } from './validators.js';
@@ -368,13 +368,11 @@ export async function loadEvalSession(sessionId) {
  * @returns {Promise<Array<{ sessionId: string, projectDescription: string, createdAt: string, approachCount: number }>>}
  */
 export async function listEvalSessions() {
-  if (!(await fileExists(evalDir))) return [];
+  const files = await listFilesByExtension(evalDir, '.json');
+  if (files.length === 0) return [];
 
-  const files = await readdir(evalDir);
   const sessions = [];
-
   for (const file of files) {
-    if (!file.endsWith('.json')) continue;
     const filePath = resolve(evalDir, file);
     const session = await readJsonFile(filePath);
     if (!session) continue;

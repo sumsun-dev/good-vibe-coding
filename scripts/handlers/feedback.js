@@ -3,7 +3,7 @@
  */
 import { readStdin, output, outputOk, parseArgs } from '../cli-utils.js';
 import { getProject } from '../lib/project-manager.js';
-import { inputError, notFoundError } from '../lib/validators.js';
+import { inputError, notFoundError, requireFields } from '../lib/validators.js';
 import {
   extractAgentPerformance, buildImprovementPrompt, parseImprovementSuggestions,
   saveAgentOverride, loadAgentOverride, listAgentOverrides, mergeAgentWithOverride,
@@ -23,7 +23,7 @@ export const commands = {
 
   'improvement-prompt': async () => {
     const data = await readStdin();
-    if (!data.roleId) throw inputError('roleId 필드가 필요합니다');
+    requireFields(data, ['roleId']);
     const prompt = buildImprovementPrompt(data.roleId, data.performance || {}, data.agentMd || '');
     output({ prompt });
   },
@@ -36,8 +36,7 @@ export const commands = {
 
   'save-agent-override': async () => {
     const data = await readStdin();
-    if (!data.roleId) throw inputError('roleId 필드가 필요합니다');
-    if (!data.content) throw inputError('content 필드가 필요합니다');
+    requireFields(data, ['roleId', 'content']);
     await saveAgentOverride(data.roleId, data.content);
     outputOk({ roleId: data.roleId });
   },
@@ -62,24 +61,21 @@ export const commands = {
 
   'save-project-override': async () => {
     const data = await readStdin();
-    if (!data.projectDir) throw inputError('projectDir가 필요합니다');
-    if (!data.roleId) throw inputError('roleId가 필요합니다');
-    if (!data.content) throw inputError('content가 필요합니다');
+    requireFields(data, ['projectDir', 'roleId', 'content']);
     await saveProjectOverride(data.projectDir, data.roleId, data.content);
     outputOk();
   },
 
   'load-project-override': async () => {
     const data = await readStdin();
-    if (!data.projectDir) throw inputError('projectDir가 필요합니다');
-    if (!data.roleId) throw inputError('roleId가 필요합니다');
+    requireFields(data, ['projectDir', 'roleId']);
     const content = await loadProjectOverride(data.projectDir, data.roleId);
     output({ content });
   },
 
   'list-project-overrides': async () => {
     const data = await readStdin();
-    if (!data.projectDir) throw inputError('projectDir가 필요합니다');
+    requireFields(data, ['projectDir']);
     const overrides = await listProjectOverrides(data.projectDir);
     output(overrides);
   },

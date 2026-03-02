@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { safeWriteFile, fileExists, backupFile, ensureDir, writeFiles, readJsonFile } from '../scripts/lib/file-writer.js';
+import { safeWriteFile, fileExists, backupFile, ensureDir, writeFiles, readJsonFile, listFilesByExtension } from '../scripts/lib/file-writer.js';
 import { readFile, rm, mkdir } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -167,6 +167,38 @@ describe('file-writer', () => {
 
       const contentA = await readFile(files[0].path, 'utf-8');
       expect(contentA).toBe('파일 A');
+    });
+  });
+
+  describe('listFilesByExtension', () => {
+    it('지정 확장자 파일만 반환한다', async () => {
+      const { writeFile: wf } = await import('fs/promises');
+      await wf(resolve(TMP_DIR, 'a.json'), '{}', 'utf-8');
+      await wf(resolve(TMP_DIR, 'b.json'), '{}', 'utf-8');
+      await wf(resolve(TMP_DIR, 'c.txt'), 'text', 'utf-8');
+      await wf(resolve(TMP_DIR, 'd.md'), '# md', 'utf-8');
+
+      const jsonFiles = await listFilesByExtension(TMP_DIR, '.json');
+      expect(jsonFiles).toHaveLength(2);
+      expect(jsonFiles).toContain('a.json');
+      expect(jsonFiles).toContain('b.json');
+
+      const mdFiles = await listFilesByExtension(TMP_DIR, '.md');
+      expect(mdFiles).toHaveLength(1);
+      expect(mdFiles).toContain('d.md');
+    });
+
+    it('디렉토리가 없으면 빈 배열을 반환한다', async () => {
+      const result = await listFilesByExtension(resolve(TMP_DIR, 'nonexistent'), '.json');
+      expect(result).toEqual([]);
+    });
+
+    it('확장자가 일치하는 파일이 없으면 빈 배열을 반환한다', async () => {
+      const { writeFile: wf } = await import('fs/promises');
+      await wf(resolve(TMP_DIR, 'file.txt'), 'text', 'utf-8');
+
+      const result = await listFilesByExtension(TMP_DIR, '.json');
+      expect(result).toEqual([]);
     });
   });
 });

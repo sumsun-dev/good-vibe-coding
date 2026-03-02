@@ -529,15 +529,59 @@ describe('E2E: CLI 에러 경로', () => {
     expect(result.stderr).toContain('사용법');
   });
 
-  it('필수 필드 누락 시 INPUT_ERROR exit 2를 반환한다', () => {
+  it('필수 필드 누락 시 INPUT_ERROR exit 2와 에러 힌트를 반환한다', () => {
     const result = cliExecRaw('create-project', {});
     expect(result.exitCode).toBe(2);
     expect(result.stderr).toContain('INPUT_ERROR');
+    expect(result.stderr).toContain('💡');
   });
 
-  it('존재하지 않는 프로젝트 조회 시 NOT_FOUND exit 3을 반환한다', () => {
+  it('존재하지 않는 프로젝트 조회 시 NOT_FOUND exit 3과 에러 힌트를 반환한다', () => {
     const result = cliExecRaw('get-project --id non-existent-id-xyz');
     expect(result.exitCode).toBe(3);
     expect(result.stderr).toContain('NOT_FOUND');
+    expect(result.stderr).toContain('💡');
+  });
+});
+
+// --- COMMAND_MAP 완전성 ---
+
+describe('E2E: COMMAND_MAP 완전성', () => {
+  it('COMMAND_MAP의 모든 커맨드가 실제 핸들러에 존재한다', async () => {
+    // 14개 핸들러에서 모든 커맨드를 수집
+    const handlerModules = {
+      project: await import('../scripts/handlers/project.js'),
+      team: await import('../scripts/handlers/team.js'),
+      discussion: await import('../scripts/handlers/discussion.js'),
+      execution: await import('../scripts/handlers/execution.js'),
+      review: await import('../scripts/handlers/review.js'),
+      build: await import('../scripts/handlers/build.js'),
+      eval: await import('../scripts/handlers/eval.js'),
+      auth: await import('../scripts/handlers/auth.js'),
+      feedback: await import('../scripts/handlers/feedback.js'),
+      infra: await import('../scripts/handlers/infra.js'),
+      metrics: await import('../scripts/handlers/metrics.js'),
+      template: await import('../scripts/handlers/template.js'),
+      task: await import('../scripts/handlers/task.js'),
+      recommendation: await import('../scripts/handlers/recommendation.js'),
+    };
+
+    const allHandlerCommands = new Set();
+    for (const mod of Object.values(handlerModules)) {
+      for (const cmd of Object.keys(mod.commands)) {
+        allHandlerCommands.add(cmd);
+      }
+    }
+
+    // cli.js의 listAllCommands() 결과 확인 (COMMAND_MAP 기반)
+    const cliOutput = execSync(`node ${CLI_PATH} nonexistent-xyz 2>&1 || true`, {
+      encoding: 'utf-8',
+      timeout: 10_000,
+    });
+
+    // 핸들러에 있는 커맨드가 모두 COMMAND_MAP에 있는지 확인
+    for (const cmd of allHandlerCommands) {
+      expect(cliOutput).toContain(cmd);
+    }
   });
 });

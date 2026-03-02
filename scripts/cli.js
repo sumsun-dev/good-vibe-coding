@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { AppError } from './lib/validators.js';
+import { config } from './lib/config.js';
 
 const HANDLERS = {
   project: () => import('./handlers/project.js'),
@@ -18,27 +19,81 @@ const HANDLERS = {
   recommendation: () => import('./handlers/recommendation.js'),
 };
 
+/** 커맨드 → 핸들러 모듈 O(1) 매핑 테이블 */
+const COMMAND_MAP = {
+  // project
+  'create-project': 'project', 'get-project': 'project', 'list-projects': 'project',
+  'update-status': 'project', 'set-team': 'project', 'execution-progress': 'project', 'report': 'project',
+  // team
+  'recommend-team': 'team', 'optimized-team': 'team', 'build-team': 'team',
+  'role-catalog': 'team', 'project-types': 'team', 'team-summary': 'team',
+  // discussion
+  'discussion-prompt': 'discussion', 'plan-document': 'discussion',
+  'single-agent-discussion-prompt': 'discussion', 'agent-analysis-prompt': 'discussion',
+  'synthesis-prompt': 'discussion', 'review-prompt': 'discussion',
+  'check-convergence': 'discussion', 'group-agents': 'discussion',
+  'discussion-dispatch-plan': 'discussion', 'execution-dispatch-plan': 'discussion',
+  // execution
+  'init-execution': 'execution', 'next-step': 'execution', 'advance-execution': 'execution',
+  'execution-summary': 'execution', 'task-distribution-prompt': 'execution',
+  'execution-prompt': 'execution', 'execution-plan': 'execution',
+  'execution-plan-with-reviews': 'execution',
+  // review
+  'select-reviewers': 'review', 'task-review-prompt': 'review',
+  'check-quality-gate': 'review', 'enhanced-quality-gate': 'review',
+  'revision-prompt': 'review', 'verify-execution': 'review', 'analyze-efficiency': 'review',
+  // build
+  'materialize-code': 'build', 'materialize-batch': 'build',
+  'verify-and-materialize': 'build', 'extract-materializable-blocks': 'build', 'commit-phase': 'build',
+  // eval
+  'eval-create': 'eval', 'eval-record': 'eval', 'eval-compare': 'eval',
+  'eval-report': 'eval', 'eval-list': 'eval', 'eval-baseline-prompt': 'eval',
+  'complexity-analysis': 'eval', 'parse-complexity': 'eval', 'complexity-defaults': 'eval',
+  // auth
+  'connect': 'auth', 'disconnect': 'auth', 'providers': 'auth',
+  'connected-providers': 'auth', 'set-review-strategy': 'auth',
+  'verify-provider': 'auth', 'cross-model-review': 'auth',
+  'resolve-review-assignments': 'auth', 'gemini-review': 'auth',
+  // feedback
+  'extract-performance': 'feedback', 'improvement-prompt': 'feedback',
+  'parse-suggestions': 'feedback', 'save-agent-override': 'feedback',
+  'load-agent-override': 'feedback', 'list-agent-overrides': 'feedback',
+  'merge-agent-override': 'feedback', 'save-project-override': 'feedback',
+  'load-project-override': 'feedback', 'list-project-overrides': 'feedback',
+  'merge-all-overrides': 'feedback',
+  // infra
+  'setup-project-infra': 'infra', 'check-gh-status': 'infra',
+  'create-github-repo': 'infra', 'git-init-push': 'infra', 'append-claude-md': 'infra',
+  // metrics
+  'record-metrics': 'metrics', 'project-metrics': 'metrics', 'cost-summary': 'metrics',
+  // template
+  'list-templates': 'template', 'get-template': 'template', 'scaffold': 'template',
+  // task
+  'add-discussion-round': 'task', 'add-task-reviews': 'task',
+  'update-task-status': 'task', 'save-task-output': 'task',
+  'add-task-materialization': 'task', 'build-phase-context': 'task',
+  'tdd-execution-prompt': 'task', 'is-code-task': 'task',
+  // recommendation
+  'recommend-setup': 'recommendation', 'install-setup': 'recommendation',
+  'list-installed': 'recommendation', 'recommendation-catalog': 'recommendation',
+};
+
 async function resolveCommand(name) {
-  for (const loader of Object.values(HANDLERS)) {
-    const mod = await loader();
-    if (mod.commands[name]) return mod.commands[name];
-  }
-  return null;
+  const handlerKey = COMMAND_MAP[name];
+  if (!handlerKey) return null;
+  const mod = await HANDLERS[handlerKey]();
+  return mod.commands[name] || null;
 }
 
-async function listAllCommands() {
-  const all = [];
-  for (const loader of Object.values(HANDLERS)) {
-    const mod = await loader();
-    all.push(...Object.keys(mod.commands));
-  }
-  return all;
+function listAllCommands() {
+  return Object.keys(COMMAND_MAP);
 }
 
 function suggestSimilar(input, candidates) {
+  const threshold = config.cli?.suggestionThreshold ?? 3;
   return candidates
     .map(c => ({ name: c, dist: levenshtein(input, c) }))
-    .filter(c => c.dist <= 3)
+    .filter(c => c.dist <= threshold)
     .sort((a, b) => a.dist - b.dist)
     .slice(0, 3)
     .map(c => c.name);
@@ -62,13 +117,19 @@ function levenshtein(a, b) {
   return dp[m][n];
 }
 
+const ERROR_HINTS = {
+  INPUT_ERROR: '💡 입력 형식을 확인한 후 다시 시도하세요.',
+  NOT_FOUND: '💡 /projects 또는 /status로 목록을 확인하세요.',
+  SYSTEM_ERROR: '💡 설정을 확인하거나 Claude Code를 다시 시작하세요.',
+};
+
 async function main() {
   const [,, command] = process.argv;
 
   const handler = command ? await resolveCommand(command) : null;
 
   if (!handler) {
-    const available = await listAllCommands();
+    const available = listAllCommands();
     let msg = `사용법: cli.js <command>\n사용 가능한 명령 (${available.length}개): ${available.join(', ')}\n`;
     if (command) {
       const similar = suggestSimilar(command, available);
@@ -85,7 +146,8 @@ async function main() {
   } catch (err) {
     const code = err instanceof AppError ? err.code : 'SYSTEM_ERROR';
     const exitCode = code === 'INPUT_ERROR' ? 2 : code === 'NOT_FOUND' ? 3 : 1;
-    process.stderr.write(`오류 [${code}]: ${err.message}\n`);
+    const hint = ERROR_HINTS[code] || '';
+    process.stderr.write(`오류 [${code}]: ${err.message}\n${hint}\n`);
     process.exit(exitCode);
   }
 }

@@ -82,6 +82,24 @@ export async function readJsonFile(filePath) {
 }
 
 /**
+ * 디렉토리 내 특정 확장자 파일 목록을 반환한다.
+ * 디렉토리가 없으면 빈 배열을 반환한다.
+ * @param {string} dir - 디렉토리 경로
+ * @param {string} ext - 확장자 (예: '.json', '.md')
+ * @returns {Promise<string[]>} 파일명 목록
+ */
+export async function listFilesByExtension(dir, ext) {
+  try {
+    const { readdir } = await import('fs/promises');
+    const entries = await readdir(dir);
+    return entries.filter(f => f.endsWith(ext));
+  } catch (err) {
+    if (err.code === 'ENOENT') return [];
+    throw err;
+  }
+}
+
+/**
  * 여러 파일을 한번에 쓴다.
  * @param {Array<{path: string, content: string}>} files - 파일 목록
  * @param {object} options - safeWriteFile 옵션

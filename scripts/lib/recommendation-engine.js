@@ -3,12 +3,12 @@
  * 프로젝트 컨텍스트 기반 멀티시그널 스코어링. LLM 호출 없음.
  */
 
-import { readFile } from 'fs/promises';
 import { resolve } from 'path';
 import { LazyCache } from './cache.js';
 import { config } from './config.js';
 import { requireString, requireOneOf, inputError } from './validators.js';
 import { validate } from './schema-validator.js';
+import { readJsonFile } from './file-writer.js';
 import { pluginRoot } from './app-paths.js';
 
 const VALID_COMPLEXITIES = ['simple', 'medium', 'complex'];
@@ -48,8 +48,8 @@ function validateCatalog(catalog) {
 }
 
 const catalogCache = new LazyCache(async () => {
-  const raw = await readFile(CATALOG_PATH, 'utf-8');
-  const catalog = JSON.parse(raw);
+  const catalog = await readJsonFile(CATALOG_PATH);
+  if (!catalog) throw inputError(`카탈로그 파일을 찾을 수 없습니다: ${CATALOG_PATH}`);
   return validateCatalog(catalog);
 });
 
