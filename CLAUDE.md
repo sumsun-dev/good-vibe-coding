@@ -23,7 +23,7 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 - **모델 다양성**: opus/sonnet/haiku — 역할 카테고리별 자동 배분
 - **관측성**: 비용/토큰 추적, 에이전트 기여도 자동 수집, 대시보드
 - **팀 설정 공유**: 프로젝트 레벨 에이전트 오버라이드 (.good-vibe/ 디렉토리)
-- **15개 역할 x 30 페르소나**: CTO, PO, Full-stack, Frontend, Backend, QA, UI/UX, DevOps, Data, Security, Tech Writer, Market/Business/Tech/Design Researcher
+- **15개 역할**: CTO, PO, Full-stack, Frontend, Backend, QA, UI/UX, DevOps, Data, Security, Tech Writer, Market/Business/Tech/Design Researcher
 - **스킬/에이전트 추천**: /new에서 프로젝트 컨텍스트 기반 추천 → 설치
 
 ## 커맨드 우선순위
