@@ -13,7 +13,8 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 ## 아키텍처
 
 - **CEO 모드**: 사용자가 CEO로 프로젝트를 정의하면, AI 팀이 토론 → 기획 → 실행 → 보고
-- **세 가지 모드**: plan-only / plan-execute / quick-build
+- **세 가지 프로젝트 모드**: plan-only (토론→승인→실행) / plan-execute (토론→자동실행) / quick-build (CTO 분석→즉시실행)
+- **실행 모드**: interactive (Phase마다 CEO 확인) / auto (에스컬레이션만 멈춤) — `/execute` 시작 시 선택, SDK는 auto 고정
 - **멀티에이전트 오케스트레이션**: 역할별 독립 Task 에이전트로 병렬 디스패치, 결과 종합, 수렴까지 반복 (최대 3라운드)
 - **크로스 리뷰**: 작업 후 다른 역할 에이전트가 리뷰하고 품질 게이트 체크
 - **실패 복구**: 품질 게이트 실패 시 7개 카테고리 분류 → 이력 추적 → 수정 프롬프트에 이전 시도 주입 → CEO 에스컬레이션
@@ -43,6 +44,8 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 | `/new` vs `/new-project` | 자동(복잡도 분석 → 추천) vs 수동(직접 선택) |
 | `/hello` vs `/onboarding` | 프로젝트별 세팅 vs 사용자 환경 설정(1회) |
 | `/status` vs `/projects` | 현재 프로젝트만 vs 전체 목록 |
+| `project.mode` vs `executionState.mode` | 프로젝트 모드(plan-only/plan-execute/quick-build) vs 실행 모드(interactive/auto) |
+| plan-only vs plan-execute | 둘 다 실행까지 감. plan-only는 /approve 후 수동 /execute, plan-execute는 자동 연결 |
 
 ## 기술 스택
 
