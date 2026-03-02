@@ -10,7 +10,7 @@
 ### 1. 프로젝트 폴더 생성
 - 프로젝트명 기반 디렉토리 생성
 - CLAUDE.md, README.md, .gitignore 자동 생성
-- .claude/agents/ 디렉토리에 기본 에이전트 배치
+- .good-vibe/agents/ 디렉토리에 기본 에이전트 배치
 
 ### 2. CLAUDE.md 초기화
 - 프로젝트명, 설명, 기술 스택 포함

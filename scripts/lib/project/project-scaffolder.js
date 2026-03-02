@@ -97,7 +97,7 @@ export function buildGitignore(techStack) {
  */
 export function buildProjectAgents(_techStack) {
   return Object.entries(DEFAULT_AGENTS).map(([name, content]) => ({
-    path: `.claude/agents/${name}.md`,
+    path: `.good-vibe/agents/${name}.md`,
     content,
   }));
 }
@@ -130,7 +130,7 @@ export async function buildProjectReadme(options) {
 
 /**
  * 프로젝트 인프라를 생성한다.
- * 폴더, CLAUDE.md, README.md, .gitignore, .claude/agents/ 를 생성.
+ * 폴더, CLAUDE.md, README.md, .gitignore, .good-vibe/agents/ 를 생성.
  * @param {object} options - 프로젝트 옵션
  * @param {string} options.name - 프로젝트명
  * @param {string} options.description - 프로젝트 설명

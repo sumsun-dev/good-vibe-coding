@@ -150,8 +150,8 @@ echo '{"name":"{이름}","description":"{설명}","techStack":"{스택}"}' | nod
 - `CLAUDE.md` — AI 에이전트 컨텍스트 (플레이스홀더 섹션 포함)
 - `README.md` — 프로젝트 문서
 - `.gitignore` — 스택별 제외 파일
-- `.claude/agents/code-reviewer.md` — 코드 리뷰 에이전트
-- `.claude/agents/tdd-coach.md` — TDD 코치 에이전트
+- `.good-vibe/agents/code-reviewer.md` — 코드 리뷰 에이전트
+- `.good-vibe/agents/tdd-coach.md` — TDD 코치 에이전트
 
 ## Step 4: GitHub 연결 (선택)
 
@@ -177,8 +177,8 @@ echo '{"projectDir":"{경로}","remoteUrl":"{URL}"}' | node ${CLAUDE_PLUGIN_ROOT
   - CLAUDE.md
   - README.md
   - .gitignore
-  - .claude/agents/code-reviewer.md
-  - .claude/agents/tdd-coach.md
+  - .good-vibe/agents/code-reviewer.md
+  - .good-vibe/agents/tdd-coach.md
 
 {GitHub 연결 시: 🔗 GitHub: {url}}
 

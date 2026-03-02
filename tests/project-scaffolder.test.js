@@ -64,8 +64,8 @@ describe('project-scaffolder', () => {
       expect(agents.length).toBeGreaterThanOrEqual(2);
 
       const paths = agents.map((a) => a.path);
-      expect(paths).toContain('.claude/agents/code-reviewer.md');
-      expect(paths).toContain('.claude/agents/tdd-coach.md');
+      expect(paths).toContain('.good-vibe/agents/code-reviewer.md');
+      expect(paths).toContain('.good-vibe/agents/tdd-coach.md');
     });
 
     it('각 에이전트에 path와 content가 있다', () => {
