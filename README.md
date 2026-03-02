@@ -263,6 +263,12 @@ good-vibe-coding/
 │   ├── cli.js       내부 API 라우터 (101개 커맨드)
 │   ├── handlers/    14개 핸들러 모듈
 │   └── lib/         41개 코어 라이브러리
+│       ├── core/        기반 유틸 (validators, config, cache 등)
+│       ├── project/     프로젝트 관리 (project-manager, scaffolder 등)
+│       ├── engine/      실행 엔진 (orchestrator, execution-loop, review 등)
+│       ├── llm/         LLM 연동 (llm-provider, gemini-bridge 등)
+│       ├── agent/       에이전트/팀 (team-builder, optimizer 등)
+│       └── output/      보고/환경 (report-generator, env-checker 등)
 ├── presets/         역할, 프로젝트 타입, 템플릿
 ├── guides/          사용자 가이드
 ├── templates/       Handlebars 템플릿
