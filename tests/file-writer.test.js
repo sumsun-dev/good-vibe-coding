@@ -145,12 +145,12 @@ describe('file-writer', () => {
       expect(result).toBeNull();
     });
 
-    it('잘못된 JSON이면 SyntaxError를 throw한다', async () => {
+    it('잘못된 JSON이면 AppError(SYSTEM_ERROR)를 throw한다', async () => {
       const filePath = resolve(TMP_DIR, 'bad.json');
       const { writeFile: wf } = await import('fs/promises');
       await wf(filePath, '{ invalid json', 'utf-8');
 
-      await expect(readJsonFile(filePath)).rejects.toThrow(SyntaxError);
+      await expect(readJsonFile(filePath)).rejects.toThrow('JSON 파일 읽기 오류');
     });
   });
 
