@@ -7,7 +7,7 @@ import { readFile, writeFile, readdir } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { ensureDir, fileExists } from '../core/file-writer.js';
 import { claudeDir, userSkillsDir, userAgentsDir, pluginRoot } from '../core/app-paths.js';
-import { assertWithinRoot } from '../core/validators.js';
+import { assertWithinRoot, AppError } from '../core/validators.js';
 
 const PLUGIN_ROOT = pluginRoot();
 
@@ -30,7 +30,7 @@ async function scanSkills() {
       .map(e => e.name);
   } catch (err) {
     if (err.code === 'ENOENT') return [];
-    throw err;
+    throw new AppError(`스킬 디렉토리 읽기 오류: ${err.message}`, 'SYSTEM_ERROR');
   }
 }
 
@@ -43,7 +43,7 @@ async function scanAgents() {
       .map(e => e.name.replace(/\.md$/, ''));
   } catch (err) {
     if (err.code === 'ENOENT') return [];
-    throw err;
+    throw new AppError(`에이전트 디렉토리 읽기 오류: ${err.message}`, 'SYSTEM_ERROR');
   }
 }
 

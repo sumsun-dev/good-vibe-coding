@@ -56,7 +56,7 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 
 ## 코어 모듈 (`scripts/lib/`)
 
-**`core/`** — 기반 유틸리티 (10개)
+**`core/`** — 기반 유틸리티 (11개)
 - `validators.js` — 입력 검증 + AppError (inputError/notFoundError/systemError)
 - `config.js` — 중앙 설정 (Object.freeze, 전체 정책 상수)
 - `schema-validator.js` — 경량 스키마 검증 (외부 의존성 0)
@@ -67,6 +67,7 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 - `domain-parsers.js` — 도메인별 파서 + 스키마 검증 (리뷰, 복잡도, 태스크, 제안)
 - `cache.js` — 지연 로딩 캐시
 - `preset-loader.js` — 프리셋 JSON 로딩
+- `prompt-builder.js` — 프롬프트 조합 유틸리티 (순수 마크다운 포맷팅)
 
 **`project/`** — 프로젝트 관리 (7개)
 - `project-manager.js` — CRUD + 상태 관리 (원자적 잠금, AppError, 기여도 기록)
@@ -89,9 +90,8 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 - `dispatch-plan-generator.js` — JSON 디스패치 계획 생성 (토론/실행 모두, 플레이스홀더 템플릿 계약)
 - `eval-engine.js` — A/B 평가 프레임워크
 
-**`llm/`** — LLM/외부 연동 (4개)
+**`llm/`** — LLM/외부 연동 (3개)
 - `llm-provider.js` — LLM 프로바이더 추상화 (Claude/OpenAI/Gemini)
-- `prompt-builder.js` — 프롬프트 조합 유틸리티
 - `gemini-bridge.js` — Gemini CLI 래퍼 (shell injection 방지)
 - `auth-manager.js` — 멀티프로바이더 인증 (크레덴셜 CRUD)
 

@@ -10,7 +10,7 @@ import { ensureDir, fileExists, listFilesByExtension } from '../core/file-writer
 import { parseJsonArray } from '../core/json-parser.js';
 import { validateRoleId } from '../core/validators.js';
 import { agentOverridesDir } from '../core/app-paths.js';
-import { buildSectioned, toMarkdownList } from '../llm/prompt-builder.js';
+import { buildSectioned, toMarkdownList } from '../core/prompt-builder.js';
 
 const DEFAULT_OVERRIDES_DIR = agentOverridesDir();
 let overridesDir = DEFAULT_OVERRIDES_DIR;

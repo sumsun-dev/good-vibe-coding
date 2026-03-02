@@ -1,7 +1,7 @@
 import { writeFile, readdir } from 'fs/promises';
 import { resolve } from 'path';
 import { ensureDir, fileExists, readJsonFile } from '../core/file-writer.js';
-import { inputError, notFoundError } from '../core/validators.js';
+import { inputError, notFoundError, AppError } from '../core/validators.js';
 import { createMetricsSnapshot, recordAgentCall, recordPhaseCompletion } from './project-metrics.js';
 import { projectsDir } from '../core/app-paths.js';
 import { config } from '../core/config.js';
@@ -176,7 +176,7 @@ export async function listProjects() {
     return projects;
   } catch (err) {
     if (err.code === 'ENOENT') return [];
-    throw err;
+    throw new AppError(`프로젝트 목록 읽기 오류: ${err.message}`, 'SYSTEM_ERROR');
   }
 }
 

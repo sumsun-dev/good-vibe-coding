@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildSectioned, toMarkdownList, jsonOutputSection } from '../scripts/lib/llm/prompt-builder.js';
+import { buildSectioned, toMarkdownList, jsonOutputSection } from '../scripts/lib/core/prompt-builder.js';
 
 describe('buildSectioned', () => {
   it('intro와 섹션들을 조합한다', () => {

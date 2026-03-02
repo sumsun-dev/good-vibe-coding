@@ -1,5 +1,6 @@
 import { writeFile as fsWriteFile, readFile, mkdir, copyFile, access } from 'fs/promises';
 import { dirname } from 'path';
+import { AppError } from './validators.js';
 
 /**
  * 디렉토리가 없으면 생성한다.
@@ -20,7 +21,7 @@ export async function fileExists(filePath) {
     return true;
   } catch (err) {
     if (err.code === 'ENOENT') return false;
-    throw err;
+    throw new AppError(`파일 접근 오류 (${filePath}): ${err.message}`, 'SYSTEM_ERROR');
   }
 }
 
@@ -77,7 +78,7 @@ export async function readJsonFile(filePath) {
     return JSON.parse(content);
   } catch (err) {
     if (err.code === 'ENOENT') return null;
-    throw err;
+    throw new AppError(`JSON 파일 읽기 오류 (${filePath}): ${err.message}`, 'SYSTEM_ERROR');
   }
 }
 
@@ -95,7 +96,7 @@ export async function listFilesByExtension(dir, ext) {
     return entries.filter(f => f.endsWith(ext));
   } catch (err) {
     if (err.code === 'ENOENT') return [];
-    throw err;
+    throw new AppError(`디렉토리 읽기 오류 (${dir}): ${err.message}`, 'SYSTEM_ERROR');
   }
 }
 

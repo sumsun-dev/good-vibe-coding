@@ -10,7 +10,7 @@
 import { readFile, writeFile, mkdir, chmod } from 'fs/promises';
 import { resolve } from 'path';
 import { authDir as getAuthDir } from '../core/app-paths.js';
-import { inputError } from '../core/validators.js';
+import { inputError, AppError } from '../core/validators.js';
 
 const DEFAULT_AUTH_DIR = getAuthDir();
 const DEFAULT_PROVIDERS_DIR = DEFAULT_AUTH_DIR;
@@ -62,7 +62,7 @@ async function loadAllAuth() {
     return JSON.parse(content);
   } catch (err) {
     if (err.code === 'ENOENT') return {};
-    throw err;
+    throw new AppError(`인증 데이터 읽기 오류: ${err.message}`, 'SYSTEM_ERROR');
   }
 }
 
@@ -134,7 +134,7 @@ export async function loadProvidersConfig() {
     return JSON.parse(content);
   } catch (err) {
     if (err.code === 'ENOENT') return { ...DEFAULT_PROVIDERS_CONFIG };
-    throw err;
+    throw new AppError(`프로바이더 설정 읽기 오류: ${err.message}`, 'SYSTEM_ERROR');
   }
 }
 

@@ -9,7 +9,7 @@ import { mkdtempSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync 
 import { tmpdir } from 'os';
 import { join, dirname, resolve } from 'path';
 import { config } from '../core/config.js';
-import { assertWithinRoot } from '../core/validators.js';
+import { assertWithinRoot, AppError } from '../core/validators.js';
 
 /** 실행 가능 언어 목록 */
 const EXECUTABLE_LANGUAGES = [
@@ -445,7 +445,7 @@ function findFilesByExtension(dir, ext) {
       }
     }
   } catch (err) {
-    if (err.code !== 'ENOENT') throw err;
+    if (err.code !== 'ENOENT') throw new AppError(`파일 검색 오류 (${dir}): ${err.message}`, 'SYSTEM_ERROR');
   }
 
   return results;
