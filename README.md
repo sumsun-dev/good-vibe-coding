@@ -46,7 +46,7 @@ claude plugin update sumsun-dev/good-vibe-coding
 - [Claude Code](https://claude.ai/code) 2.0 이상
 - Node.js 18 이상
 - (선택) [GitHub CLI](https://cli.github.com/) — 저장소 자동 생성에 쓰임
-- (선택) [Gemini CLI](https://github.com/anthropics/gemini-cli) — 크로스 모델 리뷰에 쓰임
+- (선택) [Gemini CLI](https://github.com/google-gemini/gemini-cli) — 크로스 모델 리뷰에 쓰임
 
 ## 시작하기
 

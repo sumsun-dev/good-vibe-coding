@@ -76,7 +76,7 @@ Claude Code 대화창에서 슬래시와 함께 입력합니다:
 1. **자동**: 특정 키워드나 커맨드를 인식하면 알아서 작동
    - 예: "워크플로우 보여줘" → `korean-workflow` 자동 활성화
 2. **수동**: `/add-skill`로 설치한 뒤 직접 호출
-   - 예: `/add-skill tdd-workflow` → TDD 스킬 설치
+   - 예: `/add-skill beginner-guide` → 입문자 가이드 스킬 설치
 
 ---
 
@@ -92,14 +92,13 @@ Claude Code 대화창에서 슬래시와 함께 입력합니다:
 
 ## 역할별 추천 조합
 
-| 역할 | 추천 커맨드 | 추천 스킬 |
+| 역할 | 추천 커맨드 | 추천 에이전트/스킬 |
 |------|-----------|----------|
-| 개발자 | `/add-skill`, `/add-agent` | tdd-workflow, code-review |
-| PM/기획자 | `/preset`, `/learn` | prd-writer, issue-tracker |
-| 디자이너 | `/add-agent`, `/learn` | design-system, css-helper |
-| 리서처 | `/learn`, `/preset` | data-collector, report-writer |
-| 콘텐츠 | `/add-skill`, `/learn` | blog-writer, seo-checker |
-| 학생 | `/learn`, `/onboarding` | beginner-guide |
+| 개발자 | `/add-agent`, `/add-skill` | tdd-coach-kr, code-reviewer-kr |
+| PM/기획자 | `/preset`, `/learn` | korean-workflow, doc-reviewer-kr |
+| 디자이너 | `/add-agent`, `/learn` | accessibility-checker, mentor-kr |
+| 리서처 | `/learn`, `/preset` | data-analyst-kr, content-editor-kr |
+| 학생 | `/learn`, `/onboarding` | beginner-guide, mentor-kr |
 
 ---
 

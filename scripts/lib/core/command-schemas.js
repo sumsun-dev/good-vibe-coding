@@ -609,12 +609,12 @@ export const COMMAND_SCHEMAS = {
   },
 
   // ============================================================
-  // === infra (5개) ===
+  // === infra (8개) ===
   // ============================================================
   'setup-project-infra': {
     handler: 'infra',
     inputMethod: 'stdin',
-    input: obj({ id: str(true), projectDir: str(true) }),
+    input: obj({ name: str(true), description: str(), techStack: str(), targetDir: str() }),
     output: obj({ projectDir: str(), created: arr() }),
     description: '프로젝트 인프라를 세팅한다',
   },
