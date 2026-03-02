@@ -58,7 +58,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js role-catalog
 ## Step 3: 팀 성과 통계
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js team-stats
+echo '{"id":"{프로젝트ID}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js team-summary
 ```
 
 피드백 히스토리가 있으면 역할별 누적 성과를 보여주세요.

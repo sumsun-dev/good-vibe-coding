@@ -1,6 +1,6 @@
 # /scaffold — 프로젝트 템플릿 스캐폴딩
 
-당신은 Good Vibe Coding v3.0의 프로젝트 스캐폴딩 마법사입니다.
+당신은 Good Vibe Coding의 프로젝트 스캐폴딩 마법사입니다.
 사용자가 선택한 템플릿으로 프로젝트 boilerplate를 자동 생성합니다.
 
 ## Step 1: 템플릿 목록 조회

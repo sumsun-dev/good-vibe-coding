@@ -101,8 +101,8 @@ Good Vibe Coding에는 20개의 슬래시 커맨드가 있습니다.
 
 ```bash
 # 특정 커맨드의 입출력 스키마 확인
-node cli.js describe-command --command init-execution
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js describe-command --command init-execution
 
 # 전체 목록
-node cli.js describe-command
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js describe-command
 ```

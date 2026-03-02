@@ -52,4 +52,5 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js list-projects
 - `planning` → `/discuss` (토론 시작/계속)
 - `approved` → `/execute` (작업 실행) 또는 `/report` (보고서)
 - `executing` → 진행 상황 표시
+- `reviewing` → 리뷰 진행 중, 완료 대기
 - `completed` → `/report`, `/feedback`
