@@ -67,7 +67,7 @@ Claude Code 대화창에서 슬래시와 함께 입력합니다:
 | 스킬 | 뭘 하나요? | 언제 켜지나요? |
 |------|-----------|---------------|
 | `onboarding-wizard` | 대화형 온보딩 진행 | `/onboarding` 입력 시 |
-| `config-generator` | 설정 파일 생성 | 온보딩 완료 후 자동 |
+| `project-setup` | 프로젝트 폴더/파일 생성 | `/hello` 입력 시 |
 | `korean-workflow` | 역할별 워크플로우 안내 | "워크플로우 보여줘" 같은 질문 시 |
 | `beginner-guide` | 입문자 학습 가이드 | `/learn` 입력 시 |
 

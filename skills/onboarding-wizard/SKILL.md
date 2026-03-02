@@ -165,7 +165,7 @@ options:
 ```
 
 ### 5단계: 설정 생성
-- `config-generator` 스킬을 호출하여 파일 생성
+- `project-setup` 스킬을 호출하여 파일 생성
 - 생성된 파일 목록을 보여줌
 - 다음 단계 안내 (/learn, /my-config, /add-skill, /add-agent)
 

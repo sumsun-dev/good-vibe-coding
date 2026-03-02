@@ -3,8 +3,8 @@
  * getProject + notFoundError 반복 패턴을 캡슐화한다.
  */
 
-import { getProject } from '../project/project-manager.js';
-import { notFoundError } from './validators.js';
+import { getProject } from './project-manager.js';
+import { notFoundError } from '../core/validators.js';
 
 /**
  * 프로젝트를 조회하고 없으면 NOT_FOUND를 던진다.

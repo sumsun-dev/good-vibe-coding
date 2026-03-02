@@ -34,8 +34,8 @@
 
 ## 라이브러리
 
-- `scripts/lib/project-scaffolder.js` — 폴더/파일 생성 로직
-- `scripts/lib/github-manager.js` — gh CLI 래퍼
+- `scripts/lib/project/project-scaffolder.js` — 폴더/파일 생성 로직
+- `scripts/lib/project/github-manager.js` — gh CLI 래퍼
 
 ## 중요 규칙
 - 기존 파일이 있으면 덮어쓰지 않음 (안전)

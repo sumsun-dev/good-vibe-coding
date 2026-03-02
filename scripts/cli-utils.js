@@ -2,6 +2,8 @@
  * cli-utils — CLI 유틸리티 함수
  */
 
+import { inputError } from './lib/core/validators.js';
+
 /**
  * stdin에서 JSON을 읽는다.
  */
@@ -15,7 +17,7 @@ export async function readStdin() {
   try {
     return JSON.parse(raw);
   } catch (err) {
-    throw new Error(`잘못된 JSON 입력: ${err.message}`);
+    throw inputError(`잘못된 JSON 입력: ${err.message}`);
   }
 }
 

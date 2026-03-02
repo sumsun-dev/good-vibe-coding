@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { withProject } from '../scripts/lib/core/handler-helpers.js';
+import { withProject } from '../scripts/lib/project/handler-helpers.js';
 
 vi.mock('../scripts/lib/project/project-manager.js', () => ({
   getProject: vi.fn(),

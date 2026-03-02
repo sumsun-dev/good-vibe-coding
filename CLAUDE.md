@@ -56,24 +56,24 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 
 ## 코어 모듈 (`scripts/lib/`)
 
-**`core/`** — 기반 유틸리티 (11개)
+**`core/`** — 기반 유틸리티 (10개)
 - `validators.js` — 입력 검증 + AppError (inputError/notFoundError/systemError)
 - `config.js` — 중앙 설정 (Object.freeze, 전체 정책 상수)
 - `schema-validator.js` — 경량 스키마 검증 (외부 의존성 0)
 - `command-schemas.js` — 커맨드 스키마 레지스트리 (에이전트용 입출력 조회)
 - `app-paths.js` — 경로 중앙 관리 (SDK용 configure() 지원)
-- `handler-helpers.js` — 핸들러 공통 유틸리티 (withProject)
 - `file-writer.js` — 파일 시스템 유틸리티
 - `json-parser.js` — 3-tier LLM JSON 응답 파싱
 - `domain-parsers.js` — 도메인별 파서 + 스키마 검증 (리뷰, 복잡도, 태스크, 제안)
 - `cache.js` — 지연 로딩 캐시
 - `preset-loader.js` — 프리셋 JSON 로딩
 
-**`project/`** — 프로젝트 관리 (6개)
+**`project/`** — 프로젝트 관리 (7개)
 - `project-manager.js` — CRUD + 상태 관리 (원자적 잠금, AppError, 기여도 기록)
 - `project-scaffolder.js` — 프로젝트 인프라 생성 (폴더, CLAUDE.md, README.md, 에이전트)
 - `project-metrics.js` — 비용/토큰 추적, 에이전트 기여도, 대시보드
 - `github-manager.js` — gh CLI 래퍼 (저장소 생성, git init, push)
+- `handler-helpers.js` — 핸들러 공통 유틸리티 (withProject)
 - `template-scaffolder.js` — 프로젝트 템플릿 스캐폴딩 (5개 built-in + custom)
 - `template-engine.js` — Handlebars 엔진
 
