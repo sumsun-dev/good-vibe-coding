@@ -6,7 +6,7 @@ import {
   readJsonFile,
   listFilesByExtension,
 } from '../core/file-writer.js';
-import { notFoundError } from '../core/validators.js';
+import { notFoundError, assertWithinRoot } from '../core/validators.js';
 import { pluginRoot } from '../core/app-paths.js';
 
 const BUILTIN_TEMPLATES_DIR = resolve(pluginRoot(), 'presets/templates');
@@ -171,7 +171,9 @@ export async function scaffold(templateName, targetDir, userVars = {}, options =
   await ensureDir(targetDir);
   if (Array.isArray(template.directories)) {
     for (const dir of template.directories) {
-      await ensureDir(resolve(targetDir, dir));
+      const fullDir = resolve(targetDir, dir);
+      assertWithinRoot(fullDir, targetDir, 'template directory');
+      await ensureDir(fullDir);
     }
   }
 
@@ -179,6 +181,7 @@ export async function scaffold(templateName, targetDir, userVars = {}, options =
   const results = [];
   for (const file of renderedFiles) {
     const fullPath = resolve(targetDir, file.path);
+    assertWithinRoot(fullPath, targetDir, 'template file path');
     const result = await safeWriteFile(fullPath, file.content, { overwrite, backup });
     results.push({ path: file.path, ...result });
   }

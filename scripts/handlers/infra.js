@@ -2,6 +2,7 @@
  * handlers/infra — 프로젝트 인프라 셋업 + GitHub 커맨드
  */
 import { readStdin, output } from '../cli-utils.js';
+import { requireFields } from '../lib/core/validators.js';
 import { setupProjectInfra, appendToClaudeMd } from '../lib/project/project-scaffolder.js';
 import { checkGhStatus, createGithubRepo, gitInitAndPush } from '../lib/project/github-manager.js';
 import {
@@ -29,6 +30,7 @@ import { getVersionInfo } from '../lib/output/update-checker.js';
 export const commands = {
   'setup-project-infra': async () => {
     const data = await readStdin();
+    requireFields(data, ['name', 'targetDir']);
     const result = await setupProjectInfra({
       name: data.name,
       description: data.description,
@@ -45,6 +47,7 @@ export const commands = {
 
   'create-github-repo': async () => {
     const data = await readStdin();
+    requireFields(data, ['repoName']);
     const result = createGithubRepo(data.repoName, {
       visibility: data.visibility,
       description: data.description,
@@ -54,6 +57,7 @@ export const commands = {
 
   'git-init-push': async () => {
     const data = await readStdin();
+    requireFields(data, ['projectDir', 'remoteUrl']);
     const result = gitInitAndPush(data.projectDir, data.remoteUrl);
     output(result);
   },
@@ -65,6 +69,7 @@ export const commands = {
 
   'append-claude-md': async () => {
     const data = await readStdin();
+    requireFields(data, ['claudeMdPath', 'sectionName', 'content']);
     const result = await appendToClaudeMd(data.claudeMdPath, data.sectionName, data.content);
     output(result);
   },
@@ -81,6 +86,7 @@ export const commands = {
 
   'create-branch': async () => {
     const data = await readStdin();
+    requireFields(data, ['projectDir', 'projectSlug']);
     const result = createFeatureBranch(data.projectDir, {
       projectSlug: data.projectSlug,
       baseBranch: data.baseBranch,
@@ -92,18 +98,21 @@ export const commands = {
 
   'push-branch': async () => {
     const data = await readStdin();
+    requireFields(data, ['projectDir', 'branchName']);
     const result = pushBranch(data.projectDir, data.branchName);
     output(result);
   },
 
   'current-branch': async () => {
     const data = await readStdin();
+    requireFields(data, ['projectDir']);
     const branch = getCurrentBranch(data.projectDir);
     output({ branch });
   },
 
   'create-pr': async () => {
     const data = await readStdin();
+    requireFields(data, ['projectDir', 'branchName', 'baseBranch', 'title', 'body']);
     const result = createPullRequest(data.projectDir, {
       branchName: data.branchName,
       baseBranch: data.baseBranch,
@@ -125,6 +134,7 @@ export const commands = {
 
   'finalize-pr': async () => {
     const data = await readStdin();
+    requireFields(data, ['projectDir']);
     const result = await finalizeWithPR(data.projectDir, {
       project: data.project,
       executionState: data.executionState,
@@ -141,6 +151,7 @@ export const commands = {
 
   'generate-ci': async () => {
     const data = await readStdin();
+    requireFields(data, ['projectDir', 'techStack']);
     const strategy = resolveCIStrategy({
       techStack: data.techStack,
       codebaseInfo: data.codebaseInfo,
