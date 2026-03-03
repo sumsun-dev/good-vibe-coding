@@ -3,6 +3,7 @@ import { checkGhStatus, createGithubRepo, gitInitAndPush, commitPhase, MINIMAL_G
 import { execFileSync } from 'child_process';
 import { existsSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import { config } from '../scripts/lib/core/config.js';
 
 vi.mock('child_process', () => ({
   execFileSync: vi.fn(),
@@ -21,7 +22,7 @@ describe('github-manager', () => {
   describe('checkGhStatus', () => {
     it('gh가 설치되고 인증된 경우 정보를 반환한다', () => {
       execFileSync
-        .mockReturnValueOnce(Buffer.from('/usr/local/bin/gh'))
+        .mockReturnValueOnce('gh version 2.40.0')
         .mockReturnValueOnce('Logged in to github.com account testuser');
 
       const result = checkGhStatus();
@@ -43,7 +44,7 @@ describe('github-manager', () => {
 
     it('gh가 설치됐지만 미인증인 경우를 처리한다', () => {
       execFileSync
-        .mockReturnValueOnce(Buffer.from('/usr/local/bin/gh'))
+        .mockReturnValueOnce('gh version 2.40.0')
         .mockImplementationOnce(() => {
           const err = new Error('not logged in');
           err.stderr = Buffer.from('You are not logged in');
@@ -58,7 +59,7 @@ describe('github-manager', () => {
 
     it('stderr에서 인증 정보를 파싱한다', () => {
       execFileSync
-        .mockReturnValueOnce(Buffer.from('/usr/local/bin/gh'))
+        .mockReturnValueOnce('gh version 2.40.0')
         .mockImplementationOnce(() => {
           const err = new Error('');
           err.stderr = Buffer.from('Logged in to github.com account stderrUser');
@@ -141,7 +142,7 @@ describe('github-manager', () => {
         ['git', ['add', '.']],
         ['git', ['commit', '-m', 'Initial commit']],
         ['git', ['remote', 'add', 'origin', 'https://github.com/user/repo.git']],
-        ['git', ['push', '-u', 'origin', 'main']],
+        ['git', ['push', '-u', 'origin', config.github.baseBranch]],
       ]);
 
       expect(execFileSync.mock.calls[0][2].cwd).toBe('/tmp/my-project');

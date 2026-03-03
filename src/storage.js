@@ -43,7 +43,7 @@ export class FileStorage {
     await this._initialized;
     const { resolve } = await import('path');
     const { writeFile, mkdir } = await import('fs/promises');
-    const dir = resolve(this._baseDir, 'projects', id);
+    const dir = resolve(this._baseDir, id);
     await mkdir(dir, { recursive: true });
     await writeFile(resolve(dir, 'project.json'), JSON.stringify(data, null, 2), 'utf-8');
   }

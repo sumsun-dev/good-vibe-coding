@@ -128,6 +128,22 @@ describe('file-writer', () => {
       const content = await readFile(filePath, 'utf-8');
       expect(content).toBe('깊은 파일');
     });
+
+    it.skipIf(process.platform === 'win32')('심링크 대상에 쓰기를 차단한다', async () => {
+      const { writeFile: wf, symlink } = await import('fs/promises');
+      const realFile = resolve(TMP_DIR, 'real-target.txt');
+      const linkFile = resolve(TMP_DIR, 'link-to-target.txt');
+
+      await wf(realFile, '원본', 'utf-8');
+      await symlink(realFile, linkFile);
+
+      await expect(
+        safeWriteFile(linkFile, '악의적 내용', { overwrite: true })
+      ).rejects.toThrow('심링크 대상에 쓰기가 차단되었습니다');
+
+      const content = await readFile(realFile, 'utf-8');
+      expect(content).toBe('원본');
+    });
   });
 
   describe('readJsonFile', () => {

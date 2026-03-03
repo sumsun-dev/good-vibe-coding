@@ -233,12 +233,12 @@ describe('Executor._handleStep', () => {
     });
   });
 
-  it('escalate: 훅 없으면 skip 결정을 반환한다', async () => {
+  it('escalate: 훅 없으면 abort 결정을 반환한다 (안전한 기본값)', async () => {
     const step = { action: 'escalate', context: { reason: 'test' } };
     const result = await executor._handleStep(step, {});
     expect(result).toEqual({
       completedAction: 'escalation-response',
-      escalationDecision: 'skip',
+      escalationDecision: 'abort',
     });
   });
 

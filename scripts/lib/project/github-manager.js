@@ -1,6 +1,8 @@
 import { execFileSync } from 'child_process';
 import { existsSync, writeFileSync } from 'fs';
 import { join } from 'path';
+import { buildCommitMessage } from './commit-message-builder.js';
+import { config } from '../core/config.js';
 
 /**
  * gh CLI 설치 및 인증 상태를 확인한다.
@@ -12,7 +14,7 @@ export function checkGhStatus() {
   let username = null;
 
   try {
-    execFileSync('which', ['gh'], { stdio: 'pipe' });
+    execFileSync('gh', ['--version'], { stdio: 'pipe' });
     installed = true;
   } catch {
     return { installed: false, authenticated: false, username: null };
@@ -128,6 +130,34 @@ export function commitPhase(projectDir, phase, message) {
 }
 
 /**
+ * conventional commit 메시지로 Phase를 커밋한다.
+ * 기존 commitPhase()에 buildCommitMessage()를 결합.
+ * @param {string} projectDir - 프로젝트 디렉토리 경로
+ * @param {object} options - 옵션
+ * @param {number} options.phase - Phase 번호
+ * @param {Array} [options.tasks] - 태스크 배열
+ * @param {object} [options.project] - 프로젝트 객체
+ * @param {Array} [options.team] - 팀 배열
+ * @param {number} [options.totalPhases] - 전체 Phase 수
+ * @param {object} [options.qualityGate] - 품질 게이트 결과
+ * @returns {{success: boolean, message: string|null, error: string|null}}
+ */
+export function commitPhaseEnhanced(projectDir, options = {}) {
+  const { phase, tasks = [], project = {}, team = [], totalPhases = 1, qualityGate } = options;
+
+  if (!projectDir || typeof projectDir !== 'string') {
+    return { success: false, message: null, error: 'projectDir이 필요합니다' };
+  }
+  if (phase === undefined || phase === null || typeof phase !== 'number') {
+    return { success: false, message: null, error: 'phase가 필요합니다 (숫자)' };
+  }
+
+  const message = buildCommitMessage({ phase, tasks, project, team, totalPhases, qualityGate });
+  const result = commitPhase(projectDir, phase, message);
+  return { ...result, message: result.success ? message : null };
+}
+
+/**
  * 프로젝트 디렉토리에서 git init, add, commit, remote add, push를 실행한다.
  * @param {string} projectDir - 프로젝트 디렉토리 경로
  * @param {string} remoteUrl - GitHub 원격 저장소 URL
@@ -148,7 +178,7 @@ export function gitInitAndPush(projectDir, remoteUrl) {
     execFileSync('git', ['add', '.'], opts);
     execFileSync('git', ['commit', '-m', 'Initial commit'], opts);
     execFileSync('git', ['remote', 'add', 'origin', remoteUrl], opts);
-    execFileSync('git', ['push', '-u', 'origin', 'main'], opts);
+    execFileSync('git', ['push', '-u', 'origin', config.github.baseBranch], opts);
 
     return { success: true, error: null };
   } catch (err) {
