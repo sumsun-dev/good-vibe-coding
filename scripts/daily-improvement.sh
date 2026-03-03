@@ -100,8 +100,8 @@ PROMPT_EOF
 # TMP_DIR 경로를 프롬프트에 주입
 PROMPT="${PROMPT//\{\{TMP_DIR\}\}/$TMP_DIR}"
 
-log "Claude Code 실행 (--max-turns 15)..."
-claude -p "$PROMPT" --max-turns 15 >> "$LOG_FILE" 2>&1 || true
+log "Claude Code 실행 (--max-turns 25)..."
+claude -p "$PROMPT" --max-turns 25 --dangerously-skip-permissions >> "$LOG_FILE" 2>&1 || true
 
 log "Claude Code 완료"
 
