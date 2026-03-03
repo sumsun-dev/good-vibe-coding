@@ -345,6 +345,37 @@ github.enabled = true
 - **수동 PR 생성**: `finalize-pr` 커맨드로 이미 완료된 프로젝트에 PR 생성 가능
 - **보고서만 생성**: `build-merge-report` 커맨드로 merge 보고서 미리보기 가능
 
+## Daily Improvement 자동화
+
+VPS + Claude Code CLI로 매일 KST 자정에 코드베이스를 자동 분석 → Issue 생성 + 코드 수정 + PR 생성. CEO는 GitHub에서 merge만 결정.
+
+```
+매일 KST 00:00 (cron: 0 15 * * *)
+  → git pull + npm ci
+  → ESLint + 테스트 커버리지 + 최근 변경 파일 수집
+  → Claude Code CLI가 코드 분석 (품질/보안/성능, CLAUDE.md 자동 참조)
+  → 기존 이슈 중복 확인 → critical/important만 처리
+  → gh issue create + 코드 수정 + PR 생성
+  → lint + test 통과 확인, 실패 시 롤백
+```
+
+- **스크립트**: `scripts/daily-improvement.sh` (VPS cron 실행)
+- **이슈 템플릿**: `.github/ISSUE_TEMPLATE/improvement.md`
+- **수동 실행**: `bash scripts/daily-improvement.sh`
+- **인증**: Claude Max Plan OAuth (별도 API key 불필요)
+
+| 안전장치 | 설정 | 역할 |
+|----------|------|------|
+| `--max-turns 15` | claude -p | Claude 호출 횟수 제한 |
+| `set -euo pipefail` | 스크립트 | 에러 시 즉시 중단 |
+| `\|\| true` | Claude 호출 | Claude 실패해도 스크립트 정상 종료 |
+| 중복 이슈 방지 | existing-issues.json | 열린 이슈 목록 전달 |
+| 빈 PR 방지 | 프롬프트 지시 | 변경사항 없으면 PR 미생성 |
+| 로그 자동 정리 | find -mtime +30 | 30일 이전 로그 자동 삭제 |
+
+**개발 로드맵**: Phase 1(수동 실행) → Phase 2(프롬프트 튜닝) → Phase 3(cron 자동화) → Phase 4(피드백 루프)
+**중단 기준**: 빈 결과 3회 연속, merge율 < 20%, 같은 이슈 3회+ 반복 중 2개 이상 해당 시
+
 ## 코드 구체화 파이프라인
 
 ```
