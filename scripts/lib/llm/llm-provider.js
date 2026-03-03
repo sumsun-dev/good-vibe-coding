@@ -11,6 +11,12 @@ import { callGeminiCli } from './gemini-bridge.js';
 import { config } from '../core/config.js';
 import { AppError, inputError, notFoundError } from '../core/validators.js';
 
+/** 재시도 가능한 HTTP 상태 코드 */
+const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
+
+/** 재시도 가능한 네트워크 에러 코드 */
+const RETRYABLE_ERROR_CODES = new Set(['ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'UND_ERR_CONNECT_TIMEOUT']);
+
 /** 프로바이더별 API 엔드포인트 */
 const PROVIDER_ENDPOINTS = {
   claude: 'https://api.anthropic.com/v1/messages',
@@ -54,25 +60,56 @@ export async function callLLM(providerId, prompt, options = {}) {
   const model = options.model || DEFAULT_MODELS[providerId];
   const request = buildProviderRequest(providerId, prompt, model, options);
   const headers = buildAuthHeaders(providerId, auth);
+  const maxRetries = config.llm.maxRetries;
+  let lastError;
 
-  const response = await fetch(request.url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...headers },
-    body: JSON.stringify(request.body),
-    signal: AbortSignal.timeout(options.timeout || config.llm.defaultTimeout),
-  });
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(request.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...headers },
+        body: JSON.stringify(request.body),
+        signal: AbortSignal.timeout(options.timeout || config.llm.defaultTimeout),
+      });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    const truncated = errorText.length > 200 ? errorText.slice(0, 200) + '...' : errorText;
-    throw new AppError(
-      `${providerId} API 호출 실패 (${response.status}): ${truncated}`,
-      'SYSTEM_ERROR',
-    );
+      if (!response.ok) {
+        const errorText = await response.text();
+        const truncated = errorText.length > 200 ? errorText.slice(0, 200) + '...' : errorText;
+        const err = new AppError(
+          `${providerId} API 호출 실패 (${response.status}): ${truncated}`,
+          'SYSTEM_ERROR',
+        );
+        err.statusCode = response.status;
+
+        // 재시도 불가 상태 코드(4xx, 429 제외)는 즉시 throw
+        if (!RETRYABLE_STATUS_CODES.has(response.status)) {
+          throw err;
+        }
+        lastError = err;
+      } else {
+        const data = await response.json();
+        return parseProviderResponse(providerId, data, model);
+      }
+    } catch (err) {
+      // 이미 재시도 불가로 판정된 에러는 즉시 재throw
+      if (err instanceof AppError && err.statusCode && !RETRYABLE_STATUS_CODES.has(err.statusCode)) {
+        throw err;
+      }
+      // 네트워크 에러 중 재시도 가능한 것만 재시도
+      if (!(err instanceof AppError) && !RETRYABLE_ERROR_CODES.has(err.cause?.code) && err.code !== 'UND_ERR_CONNECT_TIMEOUT' && err.name !== 'TimeoutError') {
+        throw err;
+      }
+      lastError = err;
+    }
+
+    // 마지막 시도면 재시도 안 함
+    if (attempt < maxRetries) {
+      const delay = Math.min(Math.pow(2, attempt) * 1000, 8000) + (Math.random() * 400 - 200);
+      await new Promise((r) => setTimeout(r, delay));
+    }
   }
 
-  const data = await response.json();
-  return parseProviderResponse(providerId, data, model);
+  throw lastError;
 }
 
 /**

@@ -333,4 +333,35 @@ describe('executeCrossModelReviews', () => {
     expect(results).toHaveLength(2);
     expect(results.every((r) => r.review.verdict === 'request-changes')).toBe(true);
   });
+
+  it('parse-error 시 1회 재시도한다 (#25)', async () => {
+    mockCallLLM
+      .mockResolvedValueOnce({ text: '잘 모르겠습니다', model: 'gpt-4o', tokenCount: 100 })
+      .mockResolvedValueOnce({
+        text: '{"verdict": "approve", "issues": []}',
+        model: 'gpt-4o',
+        tokenCount: 150,
+      });
+
+    const assignments = [{ reviewer: SAMPLE_REVIEWERS[0], provider: 'openai' }];
+    const task = { id: 'task-1', title: '테스트', assignee: 'backend' };
+    const results = await executeCrossModelReviews(assignments, task, '구현 결과');
+
+    expect(results).toHaveLength(1);
+    expect(results[0].review.verdict).toBe('approve');
+    expect(mockCallLLM).toHaveBeenCalledTimes(2);
+  });
+
+  it('2회 연속 parse-error 시 fallback을 반환한다 (#25)', async () => {
+    mockCallLLM.mockResolvedValue({ text: '파싱 불가 텍스트', model: 'gpt-4o', tokenCount: 100 });
+
+    const assignments = [{ reviewer: SAMPLE_REVIEWERS[0], provider: 'openai' }];
+    const task = { id: 'task-1', title: '테스트', assignee: 'backend' };
+    const results = await executeCrossModelReviews(assignments, task, '구현 결과');
+
+    expect(results).toHaveLength(1);
+    expect(results[0].review.verdict).toBe('request-changes');
+    expect(results[0].review.issues[0].description).toBe('리뷰 형식 파싱 실패');
+    expect(mockCallLLM).toHaveBeenCalledTimes(2);
+  });
 });

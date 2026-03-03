@@ -13,6 +13,7 @@ export const config = Object.freeze({
     defaultMaxTokens: 4096,
     pingTimeout: 15_000,
     pingMaxTokens: 16,
+    maxRetries: 3,
   }),
   review: Object.freeze({ minReviewers: 2, maxReviewers: 3, maxRevisionRounds: 2, maxImportantIssues: 10 }),
   quality: Object.freeze({

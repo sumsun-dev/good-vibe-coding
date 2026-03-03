@@ -270,6 +270,52 @@ describe('callLLM', () => {
     await callLLM('claude', '안녕', { timeout: 5000 });
     expect(fetchMock).toHaveBeenCalled();
   });
+
+  it('429 시 재시도 후 성공한다 (#29)', async () => {
+    mockLoadAuth.mockResolvedValue({ type: 'api-key', apiKey: 'sk-ant-test' });
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 429, text: async () => 'Rate limited' })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          content: [{ type: 'text', text: '성공' }],
+          model: 'claude-sonnet-4-6',
+          usage: { input_tokens: 5, output_tokens: 5 },
+        }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await callLLM('claude', '안녕');
+    expect(result.text).toBe('성공');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('401 시 즉시 throw한다 (#29)', async () => {
+    mockLoadAuth.mockResolvedValue({ type: 'api-key', apiKey: 'sk-ant-test' });
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      text: async () => 'Unauthorized',
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(callLLM('claude', '안녕')).rejects.toThrow('API 호출 실패 (401)');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('3회 실패 시 최종 에러를 던진다 (#29)', { timeout: 30000 }, async () => {
+    mockLoadAuth.mockResolvedValue({ type: 'api-key', apiKey: 'sk-ant-test' });
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      text: async () => 'Internal Server Error',
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(callLLM('claude', '안녕')).rejects.toThrow('API 호출 실패 (500)');
+    // maxRetries(3) + 1 initial = 4 calls
+    expect(fetchMock).toHaveBeenCalledTimes(4);
+  });
 });
 
 // --- verifyConnection ---

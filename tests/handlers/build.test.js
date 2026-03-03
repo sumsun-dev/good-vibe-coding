@@ -17,6 +17,7 @@ vi.mock('../../scripts/lib/engine/execution-verifier.js', () => ({
 
 vi.mock('../../scripts/lib/project/github-manager.js', () => ({
   commitPhase: vi.fn(),
+  commitPhaseEnhanced: vi.fn(),
 }));
 
 import { readStdin, output } from '../../scripts/cli-utils.js';
@@ -25,7 +26,7 @@ import {
   extractMaterializableBlocks,
 } from '../../scripts/lib/engine/code-materializer.js';
 import { verifyAndMaterialize } from '../../scripts/lib/engine/execution-verifier.js';
-import { commitPhase } from '../../scripts/lib/project/github-manager.js';
+import { commitPhase, commitPhaseEnhanced } from '../../scripts/lib/project/github-manager.js';
 import { commands } from '../../scripts/handlers/build.js';
 
 describe('build handler', () => {
@@ -80,6 +81,60 @@ describe('build handler', () => {
       await commands['commit-phase']();
       expect(commitPhase).toHaveBeenCalledWith('/tmp/p', 'phase-1', 'init');
       expect(output).toHaveBeenCalledWith(result);
+    });
+  });
+
+  describe('commit-phase-enhanced', () => {
+    it('강화 커밋 결과를 출력해야 한다', async () => {
+      const result = { committed: true };
+      readStdin.mockResolvedValue({
+        projectDir: '/tmp/p',
+        phase: 1,
+        tasks: [],
+        project: { name: 'test' },
+        team: [],
+      });
+      commitPhaseEnhanced.mockReturnValue(result);
+
+      await commands['commit-phase-enhanced']();
+      expect(output).toHaveBeenCalledWith(result);
+    });
+  });
+
+  describe('requireFields 검증 (#15)', () => {
+    it('materialize-code: taskOutput 누락 시 INPUT_ERROR', async () => {
+      readStdin.mockResolvedValue({ projectDir: '/tmp/p' });
+      await expect(commands['materialize-code']()).rejects.toThrow('taskOutput');
+    });
+
+    it('materialize-code: projectDir 누락 시 INPUT_ERROR', async () => {
+      readStdin.mockResolvedValue({ taskOutput: 'code' });
+      await expect(commands['materialize-code']()).rejects.toThrow('projectDir');
+    });
+
+    it('materialize-batch: taskOutputs 누락 시 INPUT_ERROR', async () => {
+      readStdin.mockResolvedValue({ projectDir: '/tmp/p' });
+      await expect(commands['materialize-batch']()).rejects.toThrow('taskOutputs');
+    });
+
+    it('verify-and-materialize: task 누락 시 INPUT_ERROR', async () => {
+      readStdin.mockResolvedValue({ taskOutput: 'code', projectDir: '/tmp/p' });
+      await expect(commands['verify-and-materialize']()).rejects.toThrow('task');
+    });
+
+    it('commit-phase: phase 누락 시 INPUT_ERROR', async () => {
+      readStdin.mockResolvedValue({ projectDir: '/tmp/p' });
+      await expect(commands['commit-phase']()).rejects.toThrow('phase');
+    });
+
+    it('commit-phase-enhanced: team 누락 시 INPUT_ERROR', async () => {
+      readStdin.mockResolvedValue({
+        projectDir: '/tmp/p',
+        phase: 1,
+        tasks: [],
+        project: {},
+      });
+      await expect(commands['commit-phase-enhanced']()).rejects.toThrow('team');
     });
   });
 });

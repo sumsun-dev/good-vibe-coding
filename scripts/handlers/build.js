@@ -2,6 +2,7 @@
  * handlers/build — 코드 구체화 + 빌드 검증 커맨드
  */
 import { readStdin, output } from '../cli-utils.js';
+import { requireFields } from '../lib/core/validators.js';
 import {
   materializeCode,
   materializeBatch,
@@ -13,18 +14,21 @@ import { commitPhase, commitPhaseEnhanced } from '../lib/project/github-manager.
 export const commands = {
   'materialize-code': async () => {
     const data = await readStdin();
+    requireFields(data, ['taskOutput', 'projectDir']);
     const result = await materializeCode(data.taskOutput, data.projectDir, data.options || {});
     output(result);
   },
 
   'materialize-batch': async () => {
     const data = await readStdin();
+    requireFields(data, ['taskOutputs', 'projectDir']);
     const result = await materializeBatch(data.taskOutputs, data.projectDir, data.options || {});
     output(result);
   },
 
   'verify-and-materialize': async () => {
     const data = await readStdin();
+    requireFields(data, ['taskOutput', 'task', 'projectDir']);
     const result = await verifyAndMaterialize(
       data.taskOutput,
       data.task,
@@ -42,12 +46,14 @@ export const commands = {
 
   'commit-phase': async () => {
     const data = await readStdin();
+    requireFields(data, ['projectDir', 'phase']);
     const result = commitPhase(data.projectDir, data.phase, data.message);
     output(result);
   },
 
   'commit-phase-enhanced': async () => {
     const data = await readStdin();
+    requireFields(data, ['projectDir', 'phase', 'tasks', 'project', 'team']);
     const result = commitPhaseEnhanced(data.projectDir, {
       phase: data.phase,
       tasks: data.tasks,

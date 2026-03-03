@@ -295,3 +295,106 @@ export function enrichDescription(original, answers) {
   }
   return parts.join('\n');
 }
+
+// --- Legacy v1 clarity functions (migrated from complexity-analyzer.js, #28) ---
+
+/** v1 명확성 체크 차원별 가중치 (3차원) */
+const CLARITY_WEIGHTS_V1 = { feature: 0.5, target: 0.25, tech: 0.25 };
+
+/** v1 명확성 질문 매핑 */
+const CLARITY_QUESTIONS_V1 = {
+  feature: '핵심 기능을 구체적으로 알려주세요. 어떤 기능이 가장 중요한가요?',
+  target: '타겟 사용자가 누구인가요? 어떤 환경에서 사용하나요?',
+  tech: '선호하는 기술 스택이나 기술적 제약이 있나요?',
+};
+
+/**
+ * [Legacy] 프로젝트 설명의 명확성을 체크하는 프롬프트를 생성한다 (3차원 버전).
+ * @param {string|null} description - 프로젝트 설명
+ * @returns {string} 명확성 체크 프롬프트 (빈 설명이면 빈 문자열)
+ */
+export function buildClarityCheckPromptV1(description) {
+  if (!description || description.trim() === '') return '';
+
+  return `다음 프로젝트 설명의 명확성을 분석하세요.
+
+## 프로젝트 설명
+${description}
+
+## 명확성 평가 차원
+
+3가지 차원에서 각각 0.0~1.0 점수를 매기세요:
+- **feature** (핵심 기능): 핵심 기능이 구체적으로 명시되어 있는가?
+- **target** (타겟 사용자/환경): 타겟 사용자나 사용 환경이 명확한가?
+- **tech** (기술 스택/제약): 기술적 요구사항이나 선호가 언급되어 있는가?
+
+## 출력 형식 (반드시 JSON)
+
+\`\`\`json
+{
+  "scores": { "feature": 0.0, "target": 0.0, "tech": 0.0 },
+  "clarityScore": 0.0,
+  "missingInfo": ["누락된 차원 키"],
+  "reasoning": "판단 근거"
+}
+\`\`\`
+
+- clarityScore = feature×0.5 + target×0.25 + tech×0.25 (가중 평균)
+- missingInfo: 0.5 미만인 차원의 키`;
+}
+
+/**
+ * [Legacy] 명확성 체크 결과를 파싱한다 (3차원 버전).
+ * @param {string|null} rawOutput - LLM 출력
+ * @returns {{ scores: object, clarityScore: number, missingInfo: string[], reasoning: string }}
+ */
+export function parseClarityCheckResult(rawOutput) {
+  const defaultResult = {
+    scores: { feature: 0.5, target: 0.5, tech: 0.5 },
+    clarityScore: 0.5,
+    missingInfo: [],
+    reasoning: '',
+  };
+
+  if (!rawOutput || rawOutput.trim() === '') return defaultResult;
+
+  const parsed = parseJsonObject(rawOutput);
+  if (!parsed) return defaultResult;
+
+  const scores = parsed.scores || defaultResult.scores;
+
+  const clarityScore =
+    (scores.feature || 0) * CLARITY_WEIGHTS_V1.feature +
+    (scores.target || 0) * CLARITY_WEIGHTS_V1.target +
+    (scores.tech || 0) * CLARITY_WEIGHTS_V1.tech;
+
+  const missingInfo = Array.isArray(parsed.missingInfo) ? parsed.missingInfo : [];
+
+  return {
+    scores,
+    clarityScore,
+    missingInfo,
+    reasoning: parsed.reasoning || '',
+  };
+}
+
+/**
+ * [Legacy] missingInfo 기반으로 사용자에게 물을 명확화 질문을 생성한다.
+ * @param {string[]|null} missingInfo - 누락된 차원 키 배열
+ * @param {number} [maxQuestions=3] - 최대 질문 수
+ * @returns {string[]} 질문 배열
+ */
+export function buildClarificationQuestions(missingInfo, maxQuestions = 3) {
+  if (!missingInfo || missingInfo.length === 0) return [];
+
+  const unique = [...new Set(missingInfo)];
+  const questions = [];
+
+  for (const key of unique) {
+    if (questions.length >= maxQuestions) break;
+    const question = CLARITY_QUESTIONS_V1[key];
+    if (question) questions.push(question);
+  }
+
+  return questions;
+}

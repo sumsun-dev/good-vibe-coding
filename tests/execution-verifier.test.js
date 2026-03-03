@@ -906,6 +906,40 @@ describe('writeTemporaryProject (다언어)', () => {
   });
 });
 
+// --- shell injection 방지 (#16) ---
+
+describe('shell injection 방지 (execFileSync)', () => {
+  const tempDirs = [];
+
+  afterEach(() => {
+    for (const dir of tempDirs) cleanup(dir);
+    tempDirs.length = 0;
+  });
+
+  it('shell 메타문자가 포함된 JS 파일명도 안전하게 syntax check 한다', () => {
+    const blocks = [
+      { language: 'javascript', filename: 'file$(whoami).js', content: 'const x = 1;\n' },
+    ];
+    const { tempDir } = writeTemporaryProject(blocks, 'cli-tool');
+    tempDirs.push(tempDir);
+
+    const result = attemptBuild(tempDir, 'cli-tool');
+    expect(result.success).toBe(true);
+    expect(result.exitCode).toBe(0);
+  });
+
+  it('공백이 포함된 JS 파일명도 안전하게 처리한다', () => {
+    const blocks = [
+      { language: 'javascript', filename: 'my file.js', content: 'const x = 1;\n' },
+    ];
+    const { tempDir } = writeTemporaryProject(blocks, 'cli-tool');
+    tempDirs.push(tempDir);
+
+    const result = attemptBuild(tempDir, 'cli-tool');
+    expect(result.success).toBe(true);
+  });
+});
+
 // --- classifyCodeBlocks (다언어 확장) ---
 
 describe('classifyCodeBlocks (다언어)', () => {

@@ -4,7 +4,7 @@
  * 빌드/테스트를 실행함으로써 코드의 실제 동작을 검증한다.
  */
 
-import { execSync } from 'child_process';
+import { execSync, execFileSync } from 'child_process';
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, dirname, resolve } from 'path';
@@ -80,16 +80,18 @@ export const BUILD_STRATEGIES = {
       if (jsFiles.length === 0) {
         return { success: false, output: 'no .js files found', exitCode: 1 };
       }
-      // SECURITY: jsFiles는 findFilesByExtension()에서 열거된 파일시스템 경로 (LLM 입력 아님)
-      // assertWithinRoot()로 tempDir 바깥 접근 차단됨
-      const checkCommands = jsFiles.map((f) => `node --check "${f}"`).join(' && ');
-      const output = execSync(checkCommands, {
-        cwd: tempDir,
-        timeout: config.build.defaultTimeout,
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-      return { success: true, output: output || 'syntax check passed', exitCode: 0 };
+      // SECURITY: execFileSync로 개별 실행하여 shell injection 방지
+      const outputs = [];
+      for (const f of jsFiles) {
+        const out = execFileSync('node', ['--check', f], {
+          cwd: tempDir,
+          timeout: config.build.defaultTimeout,
+          encoding: 'utf-8',
+          stdio: ['pipe', 'pipe', 'pipe'],
+        });
+        if (out) outputs.push(out);
+      }
+      return { success: true, output: outputs.join('\n') || 'syntax check passed', exitCode: 0 };
     },
     test: (tempDir) => {
       if (!existsSync(join(tempDir, 'package.json'))) {
@@ -112,15 +114,18 @@ export const BUILD_STRATEGIES = {
       if (pyFiles.length === 0) {
         return { success: false, output: 'no .py files found', exitCode: 1 };
       }
-      // SECURITY: pyFiles는 findFilesByExtension()에서 열거된 파일시스템 경로
-      const checkCommands = pyFiles.map((f) => `python3 -m py_compile "${f}"`).join(' && ');
-      const output = execSync(checkCommands, {
-        cwd: tempDir,
-        timeout: config.build.defaultTimeout,
-        encoding: 'utf-8',
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-      return { success: true, output: output || 'python compile check passed', exitCode: 0 };
+      // SECURITY: execFileSync로 개별 실행하여 shell injection 방지
+      const outputs = [];
+      for (const f of pyFiles) {
+        const out = execFileSync('python3', ['-m', 'py_compile', f], {
+          cwd: tempDir,
+          timeout: config.build.defaultTimeout,
+          encoding: 'utf-8',
+          stdio: ['pipe', 'pipe', 'pipe'],
+        });
+        if (out) outputs.push(out);
+      }
+      return { success: true, output: outputs.join('\n') || 'python compile check passed', exitCode: 0 };
     },
     test: (tempDir) => {
       const output = execSync('python3 -m pytest', {

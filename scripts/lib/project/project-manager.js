@@ -179,13 +179,10 @@ export async function listProjects() {
   if (!(await fileExists(baseDir))) return [];
   try {
     const dirs = await readdir(baseDir, { withFileTypes: true });
-    const projects = [];
-    for (const dir of dirs) {
-      if (!dir.isDirectory()) continue;
-      const project = await getProject(dir.name);
-      if (project) projects.push(project);
-    }
-    return projects;
+    const results = await Promise.all(
+      dirs.filter((d) => d.isDirectory()).map((d) => getProject(d.name)),
+    );
+    return results.filter(Boolean);
   } catch (err) {
     if (err.code === 'ENOENT' || err.code === 'EACCES' || err.code === 'EPERM') return [];
     throw new AppError(`프로젝트 목록 읽기 오류: ${err.message}`, 'SYSTEM_ERROR');

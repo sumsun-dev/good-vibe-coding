@@ -115,10 +115,10 @@ export async function listFilesByExtension(dir, ext) {
  * @returns {Promise<Array<{path: string, written: boolean, backupPath: string|null}>>}
  */
 export async function writeFiles(files, options = {}) {
-  const results = [];
-  for (const file of files) {
-    const result = await safeWriteFile(file.path, file.content, options);
-    results.push({ path: file.path, ...result });
-  }
-  return results;
+  return Promise.all(
+    files.map(async (file) => {
+      const result = await safeWriteFile(file.path, file.content, options);
+      return { path: file.path, ...result };
+    }),
+  );
 }

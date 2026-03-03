@@ -28,7 +28,7 @@ const UNIVERSAL_REVIEWER_ROLES = ['qa', 'security', 'cto'];
  * @param {Array<object>} team - 팀원 배열 (각 팀원: { roleId, workDomains?, reviewDomains?, skills?, ... })
  * @returns {Array<object>} 선정된 리뷰어 배열
  */
-export function selectReviewers(task, team) {
+export function selectReviewers(task, team, previousReviewerIds = []) {
   if (!task || !team || team.length === 0) return [];
 
   const assigneeId = task.assignee;
@@ -40,11 +40,13 @@ export function selectReviewers(task, team) {
   const candidates = team.filter((m) => m.roleId !== assigneeId);
   if (candidates.length === 0) return [];
 
+  const prevSet = new Set(previousReviewerIds);
   const scored = candidates.map((m) => {
     const reviewDomains = m.reviewDomains || m.skills || [];
     const overlap = assigneeDomains.filter((d) => reviewDomains.includes(d)).length;
     const bonus = UNIVERSAL_REVIEWER_ROLES.includes(m.roleId) ? 1 : 0;
-    return { member: m, score: overlap + bonus };
+    const fatiguePenalty = prevSet.has(m.roleId) ? 0.5 : 0;
+    return { member: m, score: overlap + bonus - fatiguePenalty };
   });
 
   scored.sort((a, b) => b.score - a.score);

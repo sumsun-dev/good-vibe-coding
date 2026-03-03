@@ -5,6 +5,9 @@
 import { parseJsonArray } from '../core/json-parser.js';
 import { config } from '../core/config.js';
 
+/** 영어 키워드 regex 사전 컴파일 캐시 (lazy init) */
+const COMPILED_KEYWORD_REGEXPS = new Map();
+
 /**
  * 기획서를 분석하여 작업 목록을 추출하는 프롬프트를 생성한다.
  * @param {object} project - 프로젝트 정보
@@ -170,7 +173,14 @@ export function isCodeTask(task) {
   if (koreanMatch) return true;
 
   // 영어: \b 단어 경계로 false positive 방지 (e.g. "classification" ≠ "class")
-  return englishKeywords.some((kw) => new RegExp(`\\b${kw}\\b`).test(searchText));
+  return englishKeywords.some((kw) => {
+    let re = COMPILED_KEYWORD_REGEXPS.get(kw);
+    if (!re) {
+      re = new RegExp(`\\b${kw}\\b`);
+      COMPILED_KEYWORD_REGEXPS.set(kw, re);
+    }
+    return re.test(searchText);
+  });
 }
 
 /**
