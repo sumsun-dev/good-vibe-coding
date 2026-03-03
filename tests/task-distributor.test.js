@@ -120,7 +120,12 @@ describe('parseTaskList', () => {
 
 describe('buildExecutionPrompt', () => {
   it('작업 내용을 포함한다', () => {
-    const task = { id: 'task-1', title: 'API 설계', description: 'REST API를 설계하세요', assignee: 'backend' };
+    const task = {
+      id: 'task-1',
+      title: 'API 설계',
+      description: 'REST API를 설계하세요',
+      assignee: 'backend',
+    };
     const prompt = buildExecutionPrompt(task, SAMPLE_TEAM_MEMBER);
     expect(prompt).toContain('API 설계');
     expect(prompt).toContain('REST API를 설계하세요');
@@ -146,7 +151,6 @@ describe('buildExecutionPrompt', () => {
     const prompt = buildExecutionPrompt(task, member);
     expect(prompt).toContain('도윤');
   });
-
 });
 
 describe('buildExecutionPlan', () => {
@@ -188,9 +192,7 @@ describe('buildExecutionPlan', () => {
   });
 
   it('의존관계가 없는 작업은 dependencies에 포함되지 않는다', () => {
-    const tasks = [
-      { id: 'task-1', title: 'A', assignee: 'cto', phase: 1, dependencies: [] },
-    ];
+    const tasks = [{ id: 'task-1', title: 'A', assignee: 'cto', phase: 1, dependencies: [] }];
     const plan = buildExecutionPlan(tasks, []);
     expect(plan.dependencies).toEqual({});
   });
@@ -232,7 +234,9 @@ describe('isCodeTask', () => {
   });
 
   it('키워드가 없고 비엔지니어면 false를 반환한다', () => {
-    expect(isCodeTask({ assignee: 'cto', title: '예산 검토', description: '분기별 예산 확인' })).toBe(false);
+    expect(
+      isCodeTask({ assignee: 'cto', title: '예산 검토', description: '분기별 예산 확인' }),
+    ).toBe(false);
   });
 });
 
@@ -280,7 +284,12 @@ describe('buildTddExecutionPrompt with context', () => {
 describe('buildPhaseContext', () => {
   it('완료된 태스크의 컨텍스트를 생성한다', () => {
     const tasks = [
-      { id: 'task-1', title: '아키텍처 설계', assignee: 'cto', taskOutput: '설계 완료\nREST API 구조' },
+      {
+        id: 'task-1',
+        title: '아키텍처 설계',
+        assignee: 'cto',
+        taskOutput: '설계 완료\nREST API 구조',
+      },
       { id: 'task-2', title: 'DB 설계', assignee: 'backend', taskOutput: 'PostgreSQL\n테이블 3개' },
     ];
     const context = buildPhaseContext(tasks);
@@ -307,12 +316,14 @@ describe('buildPhaseContext', () => {
   });
 
   it('maxLinesPerTask로 줄 수를 제한한다', () => {
-    const tasks = [{
-      id: 'task-1',
-      title: 'A',
-      assignee: 'cto',
-      taskOutput: 'line1\nline2\nline3\nline4\nline5',
-    }];
+    const tasks = [
+      {
+        id: 'task-1',
+        title: 'A',
+        assignee: 'cto',
+        taskOutput: 'line1\nline2\nline3\nline4\nline5',
+      },
+    ];
     const context = buildPhaseContext(tasks, { maxLinesPerTask: 2 });
     expect(context).toContain('line1');
     expect(context).toContain('line2');

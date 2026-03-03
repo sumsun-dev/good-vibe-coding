@@ -4,11 +4,11 @@
 import { readStdin, output, outputOk } from '../cli-utils.js';
 import { requireFields, requireArray } from '../lib/core/validators.js';
 import {
-  recommendSetup, formatRecommendations, getCatalog,
+  recommendSetup,
+  formatRecommendations,
+  getCatalog,
 } from '../lib/agent/recommendation-engine.js';
-import {
-  listInstalled, installItems, formatInstallResults,
-} from '../lib/agent/setup-installer.js';
+import { listInstalled, installItems, formatInstallResults } from '../lib/agent/setup-installer.js';
 
 export const commands = {
   /** 프로젝트 컨텍스트 기반 추천 */
@@ -43,7 +43,7 @@ export const commands = {
     const catalog = await getCatalog();
     const allItems = [...catalog.skills, ...catalog.agents];
     const itemIds = new Set(data.items);
-    const toInstall = allItems.filter(item => itemIds.has(item.id));
+    const toInstall = allItems.filter((item) => itemIds.has(item.id));
 
     const results = await installItems(toInstall);
     outputOk({ results, formatted: formatInstallResults(results) });

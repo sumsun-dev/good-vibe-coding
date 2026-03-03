@@ -5,12 +5,20 @@ import { readStdin, output, outputOk, parseArgs } from '../cli-utils.js';
 import { getProject } from '../lib/project/project-manager.js';
 import { inputError, notFoundError, requireFields } from '../lib/core/validators.js';
 import {
-  extractAgentPerformance, buildImprovementPrompt, parseImprovementSuggestions,
-  saveAgentOverride, loadAgentOverride, listAgentOverrides, mergeAgentWithOverride,
-  saveProjectOverride, loadProjectOverride, listProjectOverrides, mergeAgentWithOverrides,
+  extractAgentPerformance,
+  buildImprovementPrompt,
+  parseImprovementSuggestions,
+  saveAgentOverride,
+  loadAgentOverride,
+  listAgentOverrides,
+  mergeAgentWithOverride,
+  saveProjectOverride,
+  loadProjectOverride,
+  listProjectOverrides,
+  mergeAgentWithOverrides,
 } from '../lib/agent/agent-feedback.js';
 
-const [,, , ...args] = process.argv;
+const [, , , ...args] = process.argv;
 
 export const commands = {
   'extract-performance': async () => {

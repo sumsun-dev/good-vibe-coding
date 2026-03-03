@@ -90,23 +90,21 @@ export function checkAcceptanceCriteria(reviews, criteria) {
   if (!reviews || reviews.length === 0) {
     return {
       allPassed: false,
-      results: criteria.map(c => ({ ...c, status: 'pending' })),
+      results: criteria.map((c) => ({ ...c, status: 'pending' })),
       summary: '리뷰 결과 없음',
     };
   }
 
-  const hasCritical = reviews.some(r =>
-    (r.issues || []).some(i => i.severity === 'critical'),
-  );
-  const allApproved = reviews.every(r => r.verdict === 'approve');
+  const hasCritical = reviews.some((r) => (r.issues || []).some((i) => i.severity === 'critical'));
+  const allApproved = reviews.every((r) => r.verdict === 'approve');
   const allPassed = allApproved && !hasCritical;
 
-  const results = criteria.map(c => ({
+  const results = criteria.map((c) => ({
     ...c,
     status: allPassed ? 'passed' : 'pending',
   }));
 
-  const passedCount = results.filter(r => r.status === 'passed').length;
+  const passedCount = results.filter((r) => r.status === 'passed').length;
   const summary = allPassed
     ? `수락 기준 ${passedCount}/${criteria.length}개 통과`
     : `수락 기준 미충족 (critical 이슈 또는 미승인 리뷰 존재)`;
@@ -124,10 +122,12 @@ export function formatCriteriaForPrompt(criteria) {
 
   return `### 수락 기준 검증 체크리스트
 
-${criteria.map(c => {
+${criteria
+  .map((c) => {
     const check = c.status === 'passed' ? '[x]' : '[ ]';
     return `- ${check} **${c.id}**: ${c.description} (검증: ${c.measurementMethod}, 목표: ${c.targetValue})`;
-  }).join('\n')}
+  })
+  .join('\n')}
 
 각 기준에 대해 통과 여부를 판단하고, 미충족 시 이유를 기술하세요.`;
 }

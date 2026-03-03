@@ -7,19 +7,26 @@ import { mkdtempSync, existsSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import { cleanup, verifyAndMaterialize } from '../scripts/lib/engine/execution-verifier.js';
-import { materializeCode, materializeBatch, extractMaterializableBlocks } from '../scripts/lib/engine/code-materializer.js';
+import {
+  materializeCode,
+  materializeBatch,
+  extractMaterializableBlocks,
+} from '../scripts/lib/engine/code-materializer.js';
 import { checkQualityGate, checkEnhancedQualityGate } from '../scripts/lib/engine/review-engine.js';
-import { buildTddExecutionPrompt, buildExecutionPrompt, isCodeTask } from '../scripts/lib/engine/task-distributor.js';
 import {
-  SINGLE_FILE_OUTPUT, MULTI_FILE_OUTPUT, TEXT_ONLY_OUTPUT,
-  NESTED_DIR_OUTPUT, TDD_OUTPUT,
+  buildTddExecutionPrompt,
+  buildExecutionPrompt,
+  isCodeTask,
+} from '../scripts/lib/engine/task-distributor.js';
+import {
+  SINGLE_FILE_OUTPUT,
+  MULTI_FILE_OUTPUT,
+  TEXT_ONLY_OUTPUT,
+  NESTED_DIR_OUTPUT,
+  TDD_OUTPUT,
 } from './fixtures/index.js';
-import {
-  CODE_TASK, NON_CODE_TASK, PROJECT_WITH_TASKS,
-} from './fixtures/projects.js';
-import {
-  BACKEND_MEMBER, CTO_MEMBER, DEFAULT_TEAM,
-} from './fixtures/teams.js';
+import { CODE_TASK, NON_CODE_TASK, PROJECT_WITH_TASKS } from './fixtures/projects.js';
+import { BACKEND_MEMBER, CTO_MEMBER, DEFAULT_TEAM } from './fixtures/teams.js';
 
 const CLI_PATH = resolve('scripts/cli.js');
 
@@ -30,7 +37,7 @@ function cliExec(command, input) {
       input: inputJson,
       encoding: 'utf-8',
       timeout: 10_000,
-    })
+    }),
   );
 }
 
@@ -345,7 +352,9 @@ describe('E2E: TDD 프롬프트 생성', () => {
   });
 
   it('TDD 프롬프트에 프로젝트 유형 힌트', () => {
-    const prompt = buildTddExecutionPrompt(CODE_TASK, BACKEND_MEMBER, { projectType: 'api-server' });
+    const prompt = buildTddExecutionPrompt(CODE_TASK, BACKEND_MEMBER, {
+      projectType: 'api-server',
+    });
 
     expect(prompt).toContain('api-server');
   });
@@ -411,7 +420,8 @@ describe('E2E: 수정 루프', () => {
 
 describe('E2E: 오케스트레이션 라운드 (mock)', () => {
   it('분석 프롬프트 → mock 응답 → 리뷰 → 수렴 체크', async () => {
-    const { buildAgentAnalysisPrompt, buildSynthesisPrompt, buildReviewPrompt, checkConvergence } = await import('../scripts/lib/engine/orchestrator.js');
+    const { buildAgentAnalysisPrompt, buildSynthesisPrompt, buildReviewPrompt, checkConvergence } =
+      await import('../scripts/lib/engine/orchestrator.js');
 
     const project = {
       ...PROJECT_WITH_TASKS,
@@ -424,7 +434,7 @@ describe('E2E: 오케스트레이션 라운드 (mock)', () => {
     expect(analysisPrompt).toContain(project.name);
 
     // 2. Mock 에이전트 응답
-    const agentOutputs = DEFAULT_TEAM.map(member => ({
+    const agentOutputs = DEFAULT_TEAM.map((member) => ({
       roleId: member.roleId,
       role: member.role,
       emoji: member.emoji,
@@ -440,7 +450,7 @@ describe('E2E: 오케스트레이션 라운드 (mock)', () => {
     expect(reviewPrompt).toContain(CTO_MEMBER.displayName);
 
     // 5. 수렴 확인 (80% 이상 승인)
-    const reviews = DEFAULT_TEAM.map(member => ({
+    const reviews = DEFAULT_TEAM.map((member) => ({
       roleId: member.roleId,
       approved: true,
       feedback: '좋습니다',
@@ -459,9 +469,24 @@ describe('E2E: 오케스트레이션 라운드 (mock)', () => {
     const reviews = [
       { roleId: 'cto', approved: true, feedback: '승인', issues: [] },
       { roleId: 'backend', approved: true, feedback: '승인', issues: [] },
-      { roleId: 'frontend', approved: false, feedback: '반대', issues: [{ severity: 'critical', description: 'UI 누락' }] },
-      { roleId: 'qa', approved: false, feedback: '반대', issues: [{ severity: 'important', description: '테스트 부족' }] },
-      { roleId: 'security', approved: false, feedback: '반대', issues: [{ severity: 'critical', description: '보안 이슈' }] },
+      {
+        roleId: 'frontend',
+        approved: false,
+        feedback: '반대',
+        issues: [{ severity: 'critical', description: 'UI 누락' }],
+      },
+      {
+        roleId: 'qa',
+        approved: false,
+        feedback: '반대',
+        issues: [{ severity: 'important', description: '테스트 부족' }],
+      },
+      {
+        roleId: 'security',
+        approved: false,
+        feedback: '반대',
+        issues: [{ severity: 'critical', description: '보안 이슈' }],
+      },
     ];
 
     const convergence = checkConvergence(reviews);
@@ -517,7 +542,7 @@ describe('E2E: CLI 에러 경로', () => {
   });
 
   it('유사한 커맨드를 제안한다', () => {
-    const result = cliExecRaw('build-teem');  // build-team 유사
+    const result = cliExecRaw('build-teem'); // build-team 유사
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain('혹시 이 커맨드를 찾으셨나요?');
     expect(result.stderr).toContain('build-team');

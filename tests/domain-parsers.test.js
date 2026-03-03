@@ -41,7 +41,11 @@ describe('parseReviewResponse', () => {
 
 describe('parseComplexityResponse', () => {
   it('유효한 분석을 파싱한다', () => {
-    const raw = JSON.stringify({ level: 'complex', reasoning: '대규모', recommendations: ['팀 확대'] });
+    const raw = JSON.stringify({
+      level: 'complex',
+      reasoning: '대규모',
+      recommendations: ['팀 확대'],
+    });
     const result = parseComplexityResponse(raw);
     expect(result.level).toBe('complex');
     expect(result.reasoning).toBe('대규모');
@@ -133,9 +137,7 @@ describe('parseReviewResponse — 엣지케이스', () => {
 
 describe('parseSuggestionsResponse', () => {
   it('제안을 파싱한다', () => {
-    const raw = JSON.stringify([
-      { section: 'A', suggested: '개선', reason: '이유' },
-    ]);
+    const raw = JSON.stringify([{ section: 'A', suggested: '개선', reason: '이유' }]);
     const result = parseSuggestionsResponse(raw);
     expect(result.length).toBe(1);
     expect(result[0].suggested).toBe('개선');

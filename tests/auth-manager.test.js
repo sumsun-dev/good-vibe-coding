@@ -29,7 +29,9 @@ beforeEach(() => {
 
 afterEach(() => {
   resetDirs();
-  try { rmSync(tempDir, { recursive: true }); } catch {
+  try {
+    rmSync(tempDir, { recursive: true });
+  } catch {
     // expected
   }
 });
@@ -130,7 +132,11 @@ describe('loadProvidersConfig', () => {
   });
 
   it('저장된 설정을 로딩한다', async () => {
-    await saveProvidersConfig({ defaultProvider: 'openai', reviewStrategy: 'cross-model', providers: {} });
+    await saveProvidersConfig({
+      defaultProvider: 'openai',
+      reviewStrategy: 'cross-model',
+      providers: {},
+    });
     const config = await loadProvidersConfig();
     expect(config.defaultProvider).toBe('openai');
     expect(config.reviewStrategy).toBe('cross-model');
@@ -216,7 +222,9 @@ describe('connectWithApiKey', () => {
   });
 
   it('알 수 없는 프로바이더는 에러를 던진다', async () => {
-    await expect(connectWithApiKey('unknown-provider', 'sk-test')).rejects.toThrow('알 수 없는 프로바이더');
+    await expect(connectWithApiKey('unknown-provider', 'sk-test')).rejects.toThrow(
+      '알 수 없는 프로바이더',
+    );
   });
 
   it('null API Key는 에러를 던진다', async () => {

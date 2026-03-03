@@ -102,7 +102,7 @@ export function parseComplexityResponse(rawResponse) {
 export function parseTaskListResponse(rawResponse) {
   const parsed = parseJsonArray(rawResponse);
   return parsed
-    .filter(t => t && typeof t === 'object' && t.title)
+    .filter((t) => t && typeof t === 'object' && t.title)
     .map((t, i) => {
       const coerced = coerce(t, TASK_ITEM_SCHEMA);
       return {
@@ -122,8 +122,8 @@ export function parseTaskListResponse(rawResponse) {
 export function parseSuggestionsResponse(rawResponse) {
   const parsed = parseJsonArray(rawResponse);
   return parsed
-    .filter(s => s && typeof s === 'object' && s.suggested)
-    .map(s => {
+    .filter((s) => s && typeof s === 'object' && s.suggested)
+    .map((s) => {
       const coerced = coerce(s, SUGGESTION_ITEM_SCHEMA);
       return {
         section: coerced.section,
@@ -140,8 +140,8 @@ export function parseSuggestionsResponse(rawResponse) {
 function normalizeIssues(issues) {
   if (!Array.isArray(issues)) return [];
   return issues
-    .filter(i => i && typeof i === 'object')
-    .map(i => ({
+    .filter((i) => i && typeof i === 'object')
+    .map((i) => ({
       severity: i.severity || 'minor',
       description: i.description || '',
       file: i.file || null,

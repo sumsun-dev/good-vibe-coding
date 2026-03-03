@@ -5,14 +5,19 @@ import { readStdin, output, parseArgs } from '../cli-utils.js';
 import { getProject } from '../lib/project/project-manager.js';
 import { notFoundError, requireFields, inputError } from '../lib/core/validators.js';
 import {
-  initExecution, getNextExecutionStep, advanceExecution, getExecutionSummary,
+  initExecution,
+  getNextExecutionStep,
+  advanceExecution,
+  getExecutionSummary,
 } from '../lib/engine/execution-loop.js';
 import {
-  buildTaskDistributionPrompt, buildExecutionPrompt, buildExecutionPlan,
+  buildTaskDistributionPrompt,
+  buildExecutionPrompt,
+  buildExecutionPlan,
   buildExecutionPlanWithReviews,
 } from '../lib/engine/task-distributor.js';
 
-const [,, , ...args] = process.argv;
+const [, , , ...args] = process.argv;
 
 export const commands = {
   'init-execution': async () => {
@@ -87,7 +92,9 @@ export const commands = {
     requireFields(data, ['id', 'decision']);
     const validDecisions = ['continue', 'skip', 'abort'];
     if (!validDecisions.includes(data.decision)) {
-      throw inputError(`유효하지 않은 결정: ${data.decision}. 가능한 값: ${validDecisions.join(', ')}`);
+      throw inputError(
+        `유효하지 않은 결정: ${data.decision}. 가능한 값: ${validDecisions.join(', ')}`,
+      );
     }
     const result = await advanceExecution(data.id, {
       completedAction: 'escalation-response',

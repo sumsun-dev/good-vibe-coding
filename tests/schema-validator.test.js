@@ -75,17 +75,23 @@ describe('validate', () => {
       },
     };
 
-    const valid = validate({
-      approved: true,
-      feedback: 'Good',
-      issues: [{ severity: 'minor', description: 'Small issue' }],
-    }, schema);
+    const valid = validate(
+      {
+        approved: true,
+        feedback: 'Good',
+        issues: [{ severity: 'minor', description: 'Small issue' }],
+      },
+      schema,
+    );
     expect(valid.valid).toBe(true);
 
-    const invalid = validate({
-      approved: 'yes',
-      issues: [{ severity: 'unknown' }],
-    }, schema);
+    const invalid = validate(
+      {
+        approved: 'yes',
+        issues: [{ severity: 'unknown' }],
+      },
+      schema,
+    );
     expect(invalid.valid).toBe(false);
   });
 

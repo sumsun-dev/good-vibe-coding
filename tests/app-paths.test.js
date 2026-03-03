@@ -1,9 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { resolve, isAbsolute } from 'path';
 import {
-  baseDir, projectsDir, agentOverridesDir,
-  evaluationsDir, customTemplatesDir, authDir,
-  claudeDir, userSkillsDir, userAgentsDir,
+  baseDir,
+  projectsDir,
+  agentOverridesDir,
+  evaluationsDir,
+  customTemplatesDir,
+  authDir,
+  claudeDir,
+  userSkillsDir,
+  userAgentsDir,
 } from '../scripts/lib/core/app-paths.js';
 
 describe('app-paths', () => {
@@ -46,7 +52,16 @@ describe('app-paths', () => {
   });
 
   it('모든 경로가 절대 경로이다', () => {
-    const paths = [baseDir(), projectsDir(), agentOverridesDir(), evaluationsDir(), customTemplatesDir(), claudeDir(), userSkillsDir(), userAgentsDir()];
+    const paths = [
+      baseDir(),
+      projectsDir(),
+      agentOverridesDir(),
+      evaluationsDir(),
+      customTemplatesDir(),
+      claudeDir(),
+      userSkillsDir(),
+      userAgentsDir(),
+    ];
     for (const p of paths) {
       expect(isAbsolute(p)).toBe(true);
     }

@@ -29,17 +29,26 @@ export function getCurrentVersion() {
 export function checkForUpdates() {
   try {
     execFileSync('git', ['fetch', '--dry-run'], {
-      cwd: REPO_ROOT, stdio: 'pipe', encoding: 'utf-8', timeout: 10000,
+      cwd: REPO_ROOT,
+      stdio: 'pipe',
+      encoding: 'utf-8',
+      timeout: 10000,
     });
 
     const local = execFileSync('git', ['rev-parse', 'HEAD'], {
-      cwd: REPO_ROOT, stdio: 'pipe', encoding: 'utf-8', timeout: 5000,
+      cwd: REPO_ROOT,
+      stdio: 'pipe',
+      encoding: 'utf-8',
+      timeout: 5000,
     }).trim();
 
     let remote;
     try {
       remote = execFileSync('git', ['rev-parse', '@{u}'], {
-        cwd: REPO_ROOT, stdio: 'pipe', encoding: 'utf-8', timeout: 5000,
+        cwd: REPO_ROOT,
+        stdio: 'pipe',
+        encoding: 'utf-8',
+        timeout: 5000,
       }).trim();
     } catch {
       return { updateAvailable: false, local, remote: null };

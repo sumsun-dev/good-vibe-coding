@@ -34,7 +34,9 @@ describe('LazyCache', () => {
   });
 
   it('loader가 에러를 던지면 전파한다', async () => {
-    const cache = new LazyCache(async () => { throw new Error('fail'); });
+    const cache = new LazyCache(async () => {
+      throw new Error('fail');
+    });
     await expect(cache.get()).rejects.toThrow('fail');
     expect(cache.loaded).toBe(false);
   });

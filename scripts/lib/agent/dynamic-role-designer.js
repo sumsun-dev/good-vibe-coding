@@ -33,7 +33,7 @@ export function buildDynamicRolePrompt(description, existingRoles, codebaseInfo 
 ${description}
 
 ## 이미 구성된 역할
-${existingRoles.length > 0 ? existingRoles.map(r => `- ${r}`).join('\n') : '(없음)'}${codebaseSection}
+${existingRoles.length > 0 ? existingRoles.map((r) => `- ${r}`).join('\n') : '(없음)'}${codebaseSection}
 
 ## 설계 규칙
 
@@ -72,7 +72,7 @@ export function parseDynamicRoles(rawOutput) {
   const parsed = parseJsonArray(rawOutput);
   if (!parsed || parsed.length === 0) return [];
 
-  return parsed.map(role => ({
+  return parsed.map((role) => ({
     roleId: ensureDynamicPrefix(role.roleId || 'unknown'),
     displayName: role.displayName || '',
     dynamic: true,
@@ -122,7 +122,7 @@ ${role.description || ''}
 이 에이전트는 프로젝트 요구에 맞게 동적으로 생성되었습니다.
 
 ## 전문 영역
-${(role.skills || []).map(s => `- ${s}`).join('\n')}
+${(role.skills || []).map((s) => `- ${s}`).join('\n')}
 `;
 }
 

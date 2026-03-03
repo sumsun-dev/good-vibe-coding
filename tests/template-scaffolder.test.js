@@ -68,8 +68,8 @@ describe('template-scaffolder', () => {
       };
       const result = scaffolder.validateTemplate(template);
       expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('content'))).toBe(true);
-      expect(result.errors.some(e => e.includes('path'))).toBe(true);
+      expect(result.errors.some((e) => e.includes('content'))).toBe(true);
+      expect(result.errors.some((e) => e.includes('path'))).toBe(true);
     });
   });
 
@@ -89,10 +89,7 @@ describe('template-scaffolder', () => {
         files: [{ path: 'index.js', content: 'custom' }],
       };
       const { writeFile } = await import('fs/promises');
-      await writeFile(
-        resolve(CUSTOM_DIR, 'my-custom.json'),
-        JSON.stringify(customTemplate),
-      );
+      await writeFile(resolve(CUSTOM_DIR, 'my-custom.json'), JSON.stringify(customTemplate));
 
       const template = await scaffolder.loadTemplate('my-custom');
       expect(template.name).toBe('my-custom');
@@ -106,10 +103,7 @@ describe('template-scaffolder', () => {
         files: [{ path: 'custom.js', content: 'overridden' }],
       };
       const { writeFile } = await import('fs/promises');
-      await writeFile(
-        resolve(CUSTOM_DIR, 'next-app.json'),
-        JSON.stringify(customNextApp),
-      );
+      await writeFile(resolve(CUSTOM_DIR, 'next-app.json'), JSON.stringify(customNextApp));
 
       const template = await scaffolder.loadTemplate('next-app');
       expect(template.displayName).toBe('Custom Next.js');
@@ -125,7 +119,7 @@ describe('template-scaffolder', () => {
     it('built-in 5개 템플릿을 반환한다', async () => {
       const list = await scaffolder.listTemplates();
       expect(list.length).toBeGreaterThanOrEqual(5);
-      const names = list.map(t => t.name);
+      const names = list.map((t) => t.name);
       expect(names).toContain('next-app');
       expect(names).toContain('express-api');
       expect(names).toContain('cli-app');
@@ -141,13 +135,10 @@ describe('template-scaffolder', () => {
         files: [{ path: 'a.js', content: 'a' }],
       };
       const { writeFile } = await import('fs/promises');
-      await writeFile(
-        resolve(CUSTOM_DIR, 'my-special.json'),
-        JSON.stringify(customTemplate),
-      );
+      await writeFile(resolve(CUSTOM_DIR, 'my-special.json'), JSON.stringify(customTemplate));
 
       const list = await scaffolder.listTemplates();
-      expect(list.some(t => t.name === 'my-special')).toBe(true);
+      expect(list.some((t) => t.name === 'my-special')).toBe(true);
     });
 
     it('중복 시 custom이 우선한다', async () => {
@@ -158,40 +149,37 @@ describe('template-scaffolder', () => {
         files: [{ path: 'x.js', content: 'x' }],
       };
       const { writeFile } = await import('fs/promises');
-      await writeFile(
-        resolve(CUSTOM_DIR, 'next-app.json'),
-        JSON.stringify(customNextApp),
-      );
+      await writeFile(resolve(CUSTOM_DIR, 'next-app.json'), JSON.stringify(customNextApp));
 
       const list = await scaffolder.listTemplates();
-      const nextApp = list.find(t => t.name === 'next-app');
+      const nextApp = list.find((t) => t.name === 'next-app');
       expect(nextApp.displayName).toBe('Custom Next');
       // 중복 제거 확인
-      expect(list.filter(t => t.name === 'next-app').length).toBe(1);
+      expect(list.filter((t) => t.name === 'next-app').length).toBe(1);
     });
   });
 
   describe('getTemplatesForProjectType', () => {
     it('web-app 타입에 next-app이 매핑된다', async () => {
       const templates = await scaffolder.getTemplatesForProjectType('web-app');
-      expect(templates.some(t => t.name === 'next-app')).toBe(true);
+      expect(templates.some((t) => t.name === 'next-app')).toBe(true);
     });
 
     it('5개 프로젝트 타입에 매핑된 템플릿이 있다', async () => {
       const webApp = await scaffolder.getTemplatesForProjectType('web-app');
-      expect(webApp.some(t => t.name === 'next-app')).toBe(true);
+      expect(webApp.some((t) => t.name === 'next-app')).toBe(true);
 
       const api = await scaffolder.getTemplatesForProjectType('api-server');
-      expect(api.some(t => t.name === 'express-api')).toBe(true);
+      expect(api.some((t) => t.name === 'express-api')).toBe(true);
 
       const cli = await scaffolder.getTemplatesForProjectType('cli-tool');
-      expect(cli.some(t => t.name === 'cli-app')).toBe(true);
+      expect(cli.some((t) => t.name === 'cli-app')).toBe(true);
 
       const bot = await scaffolder.getTemplatesForProjectType('telegram-bot');
-      expect(bot.some(t => t.name === 'telegram-bot')).toBe(true);
+      expect(bot.some((t) => t.name === 'telegram-bot')).toBe(true);
 
       const lib = await scaffolder.getTemplatesForProjectType('library');
-      expect(lib.some(t => t.name === 'npm-library')).toBe(true);
+      expect(lib.some((t) => t.name === 'npm-library')).toBe(true);
     });
 
     it('매핑 없는 타입은 빈 배열을 반환한다', async () => {
@@ -234,9 +222,7 @@ describe('template-scaffolder', () => {
   describe('renderTemplateFiles', () => {
     it('변수가 치환된다', () => {
       const template = {
-        files: [
-          { path: 'README.md', content: '# {{projectName}}\n{{description}}' },
-        ],
+        files: [{ path: 'README.md', content: '# {{projectName}}\n{{description}}' }],
       };
       const result = scaffolder.renderTemplateFiles(template, {
         projectName: 'my-app',
@@ -247,9 +233,7 @@ describe('template-scaffolder', () => {
 
     it('파일 경로도 렌더링된다', () => {
       const template = {
-        files: [
-          { path: '{{projectName}}/index.js', content: 'hello' },
-        ],
+        files: [{ path: '{{projectName}}/index.js', content: 'hello' }],
       };
       const result = scaffolder.renderTemplateFiles(template, { projectName: 'my-app' });
       expect(result[0].path).toBe('my-app/index.js');
@@ -265,9 +249,12 @@ describe('template-scaffolder', () => {
   describe('scaffold', () => {
     it('파일이 생성된다', async () => {
       const targetDir = resolve(TMP_DIR, 'scaffold-test');
-      const result = await scaffolder.scaffold('next-app', targetDir, { projectName: 'test-app', description: 'desc' });
+      const result = await scaffolder.scaffold('next-app', targetDir, {
+        projectName: 'test-app',
+        description: 'desc',
+      });
       expect(result.files.length).toBeGreaterThan(0);
-      expect(result.files.every(f => f.written)).toBe(true);
+      expect(result.files.every((f) => f.written)).toBe(true);
 
       const pkg = await readFile(resolve(targetDir, 'package.json'), 'utf-8');
       expect(pkg).toContain('test-app');
@@ -288,7 +275,12 @@ describe('template-scaffolder', () => {
       const { writeFile } = await import('fs/promises');
       await writeFile(resolve(targetDir, 'README.md'), 'EXISTING');
 
-      await scaffolder.scaffold('next-app', targetDir, { projectName: 'app' }, { overwrite: false });
+      await scaffolder.scaffold(
+        'next-app',
+        targetDir,
+        { projectName: 'app' },
+        { overwrite: false },
+      );
 
       const content = await readFile(resolve(targetDir, 'README.md'), 'utf-8');
       expect(content).toBe('EXISTING');

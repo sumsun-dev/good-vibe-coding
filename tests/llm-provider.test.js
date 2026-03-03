@@ -52,7 +52,9 @@ describe('buildProviderRequest', () => {
   });
 
   it('지원하지 않는 프로바이더는 에러를 던진다', () => {
-    expect(() => buildProviderRequest('unknown', prompt, 'model')).toThrow('지원하지 않는 프로바이더');
+    expect(() => buildProviderRequest('unknown', prompt, 'model')).toThrow(
+      '지원하지 않는 프로바이더',
+    );
   });
 });
 
@@ -220,7 +222,11 @@ describe('callLLM', () => {
 
   it('Gemini CLI 인증 시 callGeminiCli로 분기한다', async () => {
     mockLoadAuth.mockResolvedValue({ type: 'cli' });
-    mockCallGeminiCli.mockResolvedValue({ text: 'Gemini 응답', model: 'gemini-2.0-flash', tokenCount: 40 });
+    mockCallGeminiCli.mockResolvedValue({
+      text: 'Gemini 응답',
+      model: 'gemini-2.0-flash',
+      tokenCount: 40,
+    });
 
     const result = await callLLM('gemini', '안녕하세요');
     expect(result.text).toBe('Gemini 응답');
@@ -279,7 +285,9 @@ describe('verifyConnection', () => {
       loadAuth: mockLoadAuth,
     }));
     vi.doMock('../scripts/lib/llm/gemini-bridge.js', () => ({
-      callGeminiCli: vi.fn().mockResolvedValue({ text: 'ok', model: 'gemini-2.0-flash', tokenCount: 5 }),
+      callGeminiCli: vi
+        .fn()
+        .mockResolvedValue({ text: 'ok', model: 'gemini-2.0-flash', tokenCount: 5 }),
     }));
 
     const mod = await import('../scripts/lib/llm/llm-provider.js');
@@ -292,14 +300,17 @@ describe('verifyConnection', () => {
 
   it('연결 성공 시 connected: true를 반환한다', async () => {
     mockLoadAuth.mockResolvedValue({ type: 'api-key', apiKey: 'sk-ant-test' });
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        content: [{ type: 'text', text: 'ok' }],
-        model: 'claude-sonnet-4-6',
-        usage: { input_tokens: 3, output_tokens: 1 },
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          content: [{ type: 'text', text: 'ok' }],
+          model: 'claude-sonnet-4-6',
+          usage: { input_tokens: 3, output_tokens: 1 },
+        }),
       }),
-    }));
+    );
 
     const result = await verifyConnection('claude');
     expect(result.connected).toBe(true);

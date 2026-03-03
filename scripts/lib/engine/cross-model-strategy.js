@@ -42,20 +42,20 @@ export function assignReviewProviders(reviewers, implementerProvider, providerCo
 
   // 프로바이더가 없으면 구현자 프로바이더 사용
   if (available.length === 0) {
-    return reviewers.map(reviewer => ({ reviewer, provider: implementerProvider }));
+    return reviewers.map((reviewer) => ({ reviewer, provider: implementerProvider }));
   }
 
   // 프로바이더가 1개면 단일 모델 리뷰
   if (available.length === 1) {
-    return reviewers.map(reviewer => ({ reviewer, provider: available[0] }));
+    return reviewers.map((reviewer) => ({ reviewer, provider: available[0] }));
   }
 
   // 구현자와 다른 프로바이더 우선 배정
-  const otherProviders = available.filter(p => p !== implementerProvider);
+  const otherProviders = available.filter((p) => p !== implementerProvider);
 
   // 다른 프로바이더가 없으면 (구현자 프로바이더만 활성) 전체 사용
   if (otherProviders.length === 0) {
-    return reviewers.map(reviewer => ({ reviewer, provider: implementerProvider }));
+    return reviewers.map((reviewer) => ({ reviewer, provider: implementerProvider }));
   }
 
   return reviewers.map((reviewer, idx) => ({
@@ -75,12 +75,12 @@ export function assignReviewProviders(reviewers, implementerProvider, providerCo
 export async function resolveReviewAssignments(reviewers, providerConfig = null) {
   if (!reviewers || reviewers.length === 0) return [];
 
-  const config = providerConfig || await loadProvidersConfig();
+  const config = providerConfig || (await loadProvidersConfig());
   const defaultProvider = config.defaultProvider || 'claude';
 
   if (config.reviewStrategy !== 'cross-model') {
     // single 전략: 모두 기본 프로바이더
-    return reviewers.map(reviewer => ({ reviewer, provider: defaultProvider }));
+    return reviewers.map((reviewer) => ({ reviewer, provider: defaultProvider }));
   }
 
   return assignReviewProviders(reviewers, defaultProvider, config);
@@ -114,7 +114,7 @@ export async function executeCrossModelReviews(assignments, task, taskOutput) {
         review,
         tokenCount: response.tokenCount,
       };
-    })
+    }),
   );
 
   return results.map((result, idx) => {
@@ -126,11 +126,13 @@ export async function executeCrossModelReviews(assignments, task, taskOutput) {
       model: '',
       review: {
         verdict: 'request-changes',
-        issues: [{
-          severity: 'important',
-          description: `${assignments[idx].provider} API 호출 실패: ${result.reason?.message || 'unknown error'}`,
-          suggestion: 'API 연결 확인 후 재시도',
-        }],
+        issues: [
+          {
+            severity: 'important',
+            description: `${assignments[idx].provider} API 호출 실패: ${result.reason?.message || 'unknown error'}`,
+            suggestion: 'API 연결 확인 후 재시도',
+          },
+        ],
       },
       tokenCount: 0,
     };

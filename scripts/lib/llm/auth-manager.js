@@ -19,9 +19,16 @@ let authDir = DEFAULT_AUTH_DIR;
 let providersDir = DEFAULT_PROVIDERS_DIR;
 
 /** 테스트용 디렉토리 오버라이드 */
-export function setAuthDir(dir) { authDir = dir; }
-export function setProvidersDir(dir) { providersDir = dir; }
-export function resetDirs() { authDir = DEFAULT_AUTH_DIR; providersDir = DEFAULT_PROVIDERS_DIR; }
+export function setAuthDir(dir) {
+  authDir = dir;
+}
+export function setProvidersDir(dir) {
+  providersDir = dir;
+}
+export function resetDirs() {
+  authDir = DEFAULT_AUTH_DIR;
+  providersDir = DEFAULT_PROVIDERS_DIR;
+}
 
 const AUTH_FILENAME = 'auth.json';
 const PROVIDERS_FILENAME = 'providers.json';
@@ -242,7 +249,7 @@ export async function connectGeminiCli() {
 export async function getProviderStatus() {
   const config = await loadProvidersConfig();
   const connected = await listConnectedProviders();
-  const connectedIds = new Set(connected.map(c => c.providerId));
+  const connectedIds = new Set(connected.map((c) => c.providerId));
 
   const status = {};
   for (const [id, provConfig] of Object.entries(config.providers)) {

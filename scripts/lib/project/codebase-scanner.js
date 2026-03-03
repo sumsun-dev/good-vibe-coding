@@ -9,32 +9,74 @@ import { AppError } from '../core/validators.js';
 import { config } from '../core/config.js';
 
 const IGNORED_DIRS = config.codebase?.ignoredDirs || [
-  'node_modules', '.git', '.svn', 'dist', 'build', 'coverage',
-  '__pycache__', '.next', '.nuxt', 'vendor', 'target', '.gradle',
+  'node_modules',
+  '.git',
+  '.svn',
+  'dist',
+  'build',
+  'coverage',
+  '__pycache__',
+  '.next',
+  '.nuxt',
+  'vendor',
+  'target',
+  '.gradle',
 ];
 
 const MANIFEST_FILES = [
-  'package.json', 'requirements.txt', 'pyproject.toml',
-  'go.mod', 'Cargo.toml', 'pom.xml', 'build.gradle',
+  'package.json',
+  'requirements.txt',
+  'pyproject.toml',
+  'go.mod',
+  'Cargo.toml',
+  'pom.xml',
+  'build.gradle',
 ];
 
 const EXT_TO_LANGUAGE = {
-  '.js': 'javascript', '.mjs': 'javascript', '.cjs': 'javascript',
-  '.ts': 'typescript', '.tsx': 'typescript', '.jsx': 'javascript',
-  '.py': 'python', '.go': 'go', '.rs': 'rust',
-  '.java': 'java', '.kt': 'kotlin', '.swift': 'swift',
-  '.rb': 'ruby', '.php': 'php', '.cs': 'csharp',
-  '.cpp': 'cpp', '.c': 'c', '.h': 'c',
-  '.vue': 'vue', '.svelte': 'svelte',
+  '.js': 'javascript',
+  '.mjs': 'javascript',
+  '.cjs': 'javascript',
+  '.ts': 'typescript',
+  '.tsx': 'typescript',
+  '.jsx': 'javascript',
+  '.py': 'python',
+  '.go': 'go',
+  '.rs': 'rust',
+  '.java': 'java',
+  '.kt': 'kotlin',
+  '.swift': 'swift',
+  '.rb': 'ruby',
+  '.php': 'php',
+  '.cs': 'csharp',
+  '.cpp': 'cpp',
+  '.c': 'c',
+  '.h': 'c',
+  '.vue': 'vue',
+  '.svelte': 'svelte',
 };
 
 /** 기술 스택 → 역할 매핑 */
 const TECH_STACK_ROLE_MAP = config.codebase?.techStackMap || {
-  react: 'frontend', vue: 'frontend', angular: 'frontend', svelte: 'frontend', nextjs: 'frontend',
-  express: 'backend', fastapi: 'backend', django: 'backend', flask: 'backend',
-  nestjs: 'backend', koa: 'backend', gin: 'backend', spring: 'backend',
-  docker: 'devops', kubernetes: 'devops', terraform: 'devops',
-  tensorflow: 'data', pytorch: 'data', pandas: 'data',
+  react: 'frontend',
+  vue: 'frontend',
+  angular: 'frontend',
+  svelte: 'frontend',
+  nextjs: 'frontend',
+  express: 'backend',
+  fastapi: 'backend',
+  django: 'backend',
+  flask: 'backend',
+  nestjs: 'backend',
+  koa: 'backend',
+  gin: 'backend',
+  spring: 'backend',
+  docker: 'devops',
+  kubernetes: 'devops',
+  terraform: 'devops',
+  tensorflow: 'data',
+  pytorch: 'data',
+  pandas: 'data',
 };
 
 /**
@@ -115,7 +157,11 @@ async function loadManifests(projectPath) {
     try {
       const content = await readFile(resolve(projectPath, name), 'utf-8');
       if (name === 'package.json') {
-        try { manifests[name] = JSON.parse(content); } catch { /* 손상된 package.json 무시 */ }
+        try {
+          manifests[name] = JSON.parse(content);
+        } catch {
+          /* 손상된 package.json 무시 */
+        }
       } else {
         manifests[name] = content;
       }
@@ -148,28 +194,35 @@ export function detectTechStack(files, manifests) {
     }
 
     const depNames = Object.keys(allDeps);
-    if (depNames.some(d => d === 'react' || d === 'react-dom')) techStack.add('react');
-    if (depNames.some(d => d === 'vue')) techStack.add('vue');
-    if (depNames.some(d => d === 'angular' || d === '@angular/core')) techStack.add('angular');
-    if (depNames.some(d => d === 'svelte')) techStack.add('svelte');
-    if (depNames.some(d => d === 'next')) techStack.add('nextjs');
-    if (depNames.some(d => d === 'express')) techStack.add('express');
-    if (depNames.some(d => d === '@nestjs/core')) techStack.add('nestjs');
-    if (depNames.some(d => d === 'koa')) techStack.add('koa');
-    if (depNames.includes('typescript') || depNames.includes('ts-node')) techStack.add('typescript');
+    if (depNames.some((d) => d === 'react' || d === 'react-dom')) techStack.add('react');
+    if (depNames.some((d) => d === 'vue')) techStack.add('vue');
+    if (depNames.some((d) => d === 'angular' || d === '@angular/core')) techStack.add('angular');
+    if (depNames.some((d) => d === 'svelte')) techStack.add('svelte');
+    if (depNames.some((d) => d === 'next')) techStack.add('nextjs');
+    if (depNames.some((d) => d === 'express')) techStack.add('express');
+    if (depNames.some((d) => d === '@nestjs/core')) techStack.add('nestjs');
+    if (depNames.some((d) => d === 'koa')) techStack.add('koa');
+    if (depNames.includes('typescript') || depNames.includes('ts-node')) {
+      techStack.add('typescript');
+    }
   }
 
   // requirements.txt 분석
   const reqTxt = manifests['requirements.txt'];
   if (reqTxt && typeof reqTxt === 'string') {
     techStack.add('python');
-    const lines = reqTxt.split('\n').filter(l => l.trim() && !l.startsWith('#'));
+    const lines = reqTxt.split('\n').filter((l) => l.trim() && !l.startsWith('#'));
     for (const line of lines) {
-      const name = line.split(/[=<>!~]/)[0].trim().toLowerCase();
+      const name = line
+        .split(/[=<>!~]/)[0]
+        .trim()
+        .toLowerCase();
       if (name === 'django') techStack.add('django');
       if (name === 'fastapi') techStack.add('fastapi');
       if (name === 'flask') techStack.add('flask');
-      if (name === 'tensorflow' || name === 'torch' || name === 'pytorch') techStack.add('tensorflow');
+      if (name === 'tensorflow' || name === 'torch' || name === 'pytorch') {
+        techStack.add('tensorflow');
+      }
       if (name === 'pandas') techStack.add('pandas');
     }
   }
@@ -197,7 +250,11 @@ export function detectTechStack(files, manifests) {
   }
 
   // Dockerfile 감지 (파일 목록에서)
-  if (files.some(f => f === 'Dockerfile' || f === 'docker-compose.yml' || f === 'docker-compose.yaml')) {
+  if (
+    files.some(
+      (f) => f === 'Dockerfile' || f === 'docker-compose.yml' || f === 'docker-compose.yaml',
+    )
+  ) {
     techStack.add('docker');
   }
 

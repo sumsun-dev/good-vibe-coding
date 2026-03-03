@@ -3,11 +3,16 @@
  */
 import { readStdin, output } from '../cli-utils.js';
 import {
-  addDiscussionRound, addTaskReviews, updateTaskStatus,
-  saveTaskOutput, addTaskMaterializationResult,
+  addDiscussionRound,
+  addTaskReviews,
+  updateTaskStatus,
+  saveTaskOutput,
+  addTaskMaterializationResult,
 } from '../lib/project/project-manager.js';
 import {
-  buildTddExecutionPrompt, isCodeTask, buildPhaseContext,
+  buildTddExecutionPrompt,
+  isCodeTask,
+  buildPhaseContext,
 } from '../lib/engine/task-distributor.js';
 import { requireFields } from '../lib/core/validators.js';
 
@@ -36,20 +41,28 @@ export const commands = {
   'save-task-output': async () => {
     const data = await readStdin();
     requireFields(data, ['id', 'taskId']);
-    const project = await saveTaskOutput(data.id, data.taskId, data.output, { maxLines: data.maxLines });
+    const project = await saveTaskOutput(data.id, data.taskId, data.output, {
+      maxLines: data.maxLines,
+    });
     output(project);
   },
 
   'add-task-materialization': async () => {
     const data = await readStdin();
     requireFields(data, ['id', 'taskId', 'materializeResult']);
-    const project = await addTaskMaterializationResult(data.id, data.taskId, data.materializeResult);
+    const project = await addTaskMaterializationResult(
+      data.id,
+      data.taskId,
+      data.materializeResult,
+    );
     output(project);
   },
 
   'build-phase-context': async () => {
     const data = await readStdin();
-    const context = buildPhaseContext(data.completedTasks, { maxLinesPerTask: data.maxLinesPerTask });
+    const context = buildPhaseContext(data.completedTasks, {
+      maxLinesPerTask: data.maxLinesPerTask,
+    });
     output({ phaseContext: context });
   },
 

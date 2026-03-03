@@ -110,7 +110,7 @@ export function buildSynthesisPrompt(project, agentOutputs, round) {
   }
 
   const analysisSection = agentOutputs
-    .map(o => `### ${o.emoji} ${o.role} (${o.roleId})\n${o.analysis}`)
+    .map((o) => `### ${o.emoji} ${o.role} (${o.roleId})\n${o.analysis}`)
     .join('\n\n---\n\n');
 
   return `다음은 프로젝트 "${project.name}"에 대한 ${agentOutputs.length}명의 팀원 분석 결과입니다.
@@ -222,7 +222,7 @@ function normalizeReviewResult(parsed) {
     approved: Boolean(parsed.approved),
     feedback: parsed.feedback || '',
     issues: Array.isArray(parsed.issues)
-      ? parsed.issues.map(i => ({
+      ? parsed.issues.map((i) => ({
           severity: i.severity || 'minor',
           description: i.description || '',
         }))
@@ -240,16 +240,14 @@ export function checkConvergence(reviews) {
     return { converged: false, approvalRate: 0, blockers: [] };
   }
 
-  const approvedCount = reviews.filter(r => r.approved).length;
+  const approvedCount = reviews.filter((r) => r.approved).length;
   const approvalRate = approvedCount / reviews.length;
   const converged = approvalRate >= config.convergence.threshold;
 
   const blockers = reviews
-    .filter(r => !r.approved)
-    .flatMap(r =>
-      (r.issues || [])
-        .filter(i => i.severity === 'critical')
-        .map(i => i.description)
+    .filter((r) => !r.approved)
+    .flatMap((r) =>
+      (r.issues || []).filter((i) => i.severity === 'critical').map((i) => i.description),
     );
 
   return { converged, approvalRate, blockers };
@@ -269,9 +267,9 @@ export function groupAgentsForParallelDispatch(team) {
   if (!team || team.length === 0) return [];
 
   const tierBounds = [
-    { max: 2 },  // Tier 1: priority 1-2
-    { max: 4 },  // Tier 2: priority 3-4
-    { max: 7 },  // Tier 3: priority 5-7
+    { max: 2 }, // Tier 1: priority 1-2
+    { max: 4 }, // Tier 2: priority 3-4
+    { max: 7 }, // Tier 3: priority 5-7
     { max: Infinity }, // Tier 4: priority 8+
   ];
 
@@ -279,10 +277,9 @@ export function groupAgentsForParallelDispatch(team) {
 
   for (const member of team) {
     const priority = member.discussionPriority || 5;
-    const tierIdx = tierBounds.findIndex(b => priority <= b.max);
+    const tierIdx = tierBounds.findIndex((b) => priority <= b.max);
     tiers[tierIdx >= 0 ? tierIdx : tiers.length - 1].push(member);
   }
 
-  return tiers.filter(tier => tier.length > 0);
+  return tiers.filter((tier) => tier.length > 0);
 }
-

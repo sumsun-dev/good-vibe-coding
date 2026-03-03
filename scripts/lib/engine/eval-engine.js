@@ -107,11 +107,16 @@ export function scoreCompleteness(output, _projectDescription) {
  */
 export function scoreTechnicalDepth(output) {
   return scoreByPatterns(output || '', {
-    specificLibraries: /react|vue|angular|express|fastify|next\.?js|nest\.?js|django|flask|spring|postgresql|mongodb|redis|docker|kubernetes|webpack|vite|tailwind|prisma|typeorm|sequelize|graphql|grpc/i,
-    codeExamples: /```[\s\S]*?```|`[^`]+`|function\s+\w+|const\s+\w+\s*=|import\s+.*from|class\s+\w+/,
-    apiDesign: /api|endpoint|엔드포인트|GET\s+\/|POST\s+\/|PUT\s+\/|DELETE\s+\/|REST|graphql|route|라우트/,
-    databaseSchema: /schema|스키마|table|테이블|column|컬럼|foreign\s*key|primary\s*key|index|relation|entity|ERD|모델\s*설계/i,
-    errorHandling: /error\s*handl|에러\s*처리|exception|예외|try\s*[-/]?\s*catch|fallback|retry|재시도|graceful|circuit\s*breaker|timeout|validation/i,
+    specificLibraries:
+      /react|vue|angular|express|fastify|next\.?js|nest\.?js|django|flask|spring|postgresql|mongodb|redis|docker|kubernetes|webpack|vite|tailwind|prisma|typeorm|sequelize|graphql|grpc/i,
+    codeExamples:
+      /```[\s\S]*?```|`[^`]+`|function\s+\w+|const\s+\w+\s*=|import\s+.*from|class\s+\w+/,
+    apiDesign:
+      /api|endpoint|엔드포인트|GET\s+\/|POST\s+\/|PUT\s+\/|DELETE\s+\/|REST|graphql|route|라우트/,
+    databaseSchema:
+      /schema|스키마|table|테이블|column|컬럼|foreign\s*key|primary\s*key|index|relation|entity|ERD|모델\s*설계/i,
+    errorHandling:
+      /error\s*handl|에러\s*처리|exception|예외|try\s*[-/]?\s*catch|fallback|retry|재시도|graceful|circuit\s*breaker|timeout|validation/i,
   });
 }
 
@@ -158,7 +163,7 @@ export function compareApproaches(session) {
   }
 
   // 각 접근법의 완성도 및 기술 깊이 점수 계산
-  const scores = approaches.map(approach => {
+  const scores = approaches.map((approach) => {
     const result = session.results[approach];
     const completeness = scoreCompleteness(result.output, session.projectDescription);
     const technicalDepth = scoreTechnicalDepth(result.output);
@@ -173,12 +178,12 @@ export function compareApproaches(session) {
   });
 
   // 비용 효율 점수 정규화 (비용이 낮을수록 높은 점수)
-  const maxCost = Math.max(...scores.map(s => s.estimatedCost));
+  const maxCost = Math.max(...scores.map((s) => s.estimatedCost));
 
-  const rankings = scores.map(s => {
+  const rankings = scores.map((s) => {
     const costEfficiency = normalizeCostScore(s.estimatedCost, maxCost);
     const overall = Math.round(
-      (s.completenessScore * 0.4) + (s.technicalDepthScore * 0.4) + (costEfficiency * 0.2)
+      s.completenessScore * 0.4 + s.technicalDepthScore * 0.4 + costEfficiency * 0.2,
     );
 
     return {
@@ -216,24 +221,28 @@ export function generateEvalReport(session, comparison) {
   const tableHeader = '| 접근법 | 완성도 | 기술 깊이 | 비용 효율 | 종합 |';
   const tableSeparator = '|--------|--------|-----------|-----------|------|';
   const tableRows = rankings
-    .map(r => `| ${r.approach} | ${r.completeness} | ${r.technicalDepth} | ${r.costEfficiency} | ${r.overall} |`)
+    .map(
+      (r) =>
+        `| ${r.approach} | ${r.completeness} | ${r.technicalDepth} | ${r.costEfficiency} | ${r.overall} |`,
+    )
     .join('\n');
 
-  const detailSections = rankings.map(r => {
-    const result = session.results[r.approach];
-    const completeness = scoreCompleteness(result.output, session.projectDescription);
-    const technicalDepth = scoreTechnicalDepth(result.output);
-    const costInfo = calculateCostEfficiency(result);
+  const detailSections = rankings
+    .map((r) => {
+      const result = session.results[r.approach];
+      const completeness = scoreCompleteness(result.output, session.projectDescription);
+      const technicalDepth = scoreTechnicalDepth(result.output);
+      const costInfo = calculateCostEfficiency(result);
 
-    const completenessList = Object.entries(completeness.breakdown)
-      .map(([key, val]) => `  - ${key}: ${val ? 'O' : 'X'}`)
-      .join('\n');
+      const completenessList = Object.entries(completeness.breakdown)
+        .map(([key, val]) => `  - ${key}: ${val ? 'O' : 'X'}`)
+        .join('\n');
 
-    const depthList = Object.entries(technicalDepth.breakdown)
-      .map(([key, val]) => `  - ${key}: ${val ? 'O' : 'X'}`)
-      .join('\n');
+      const depthList = Object.entries(technicalDepth.breakdown)
+        .map(([key, val]) => `  - ${key}: ${val ? 'O' : 'X'}`)
+        .join('\n');
 
-    return `### ${r.approach}
+      return `### ${r.approach}
 - 토큰 사용량: ${result.tokenCount || 0}
 - API 호출 수: ${result.apiCalls || 0}
 - 소요 시간: ${result.durationMs || 0}ms
@@ -245,7 +254,8 @@ ${completenessList}
 
 **기술 깊이 (${technicalDepth.score}/100)**
 ${depthList}`;
-  }).join('\n\n');
+    })
+    .join('\n\n');
 
   const winner = comparison.winner;
   let recommendation = '';

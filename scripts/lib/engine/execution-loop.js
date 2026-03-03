@@ -20,13 +20,38 @@
  */
 
 import { isCodeTask } from './task-distributor.js';
-import { getProject, updateExecutionState, recordMetrics, recordContributions } from '../project/project-manager.js';
+import {
+  getProject,
+  getProjectDir,
+  updateExecutionState,
+  recordMetrics,
+  recordContributions,
+  addPullRequest,
+} from '../project/project-manager.js';
 import { trackRoleContribution } from '../agent/agent-optimizer.js';
 import { config } from '../core/config.js';
 import { inputError, notFoundError } from '../core/validators.js';
+import { finalizeWithPR } from '../project/pr-manager.js';
 
-const VALID_STATUSES = ['idle', 'executing', 'reviewing', 'fixing', 'committing', 'paused', 'escalated', 'completed'];
-const VALID_PHASE_STEPS = ['execute-tasks', 'materialize', 'review', 'quality-gate', 'fix', 'commit', 'build-context'];
+const VALID_STATUSES = [
+  'idle',
+  'executing',
+  'reviewing',
+  'fixing',
+  'committing',
+  'paused',
+  'escalated',
+  'completed',
+];
+const VALID_PHASE_STEPS = [
+  'execute-tasks',
+  'materialize',
+  'review',
+  'quality-gate',
+  'fix',
+  'commit',
+  'build-context',
+];
 const MAX_FIX_ATTEMPTS = config.execution.maxFixAttempts;
 
 /** 실패 카테고리 — 이슈 분류용 키워드 매핑 */
@@ -46,12 +71,12 @@ const FAILURE_CATEGORY_KEYWORDS = {
  */
 export const PHASE_TRANSITIONS = {
   'execute-tasks': ['materialize'],
-  'materialize': ['review'],
-  'review': ['quality-gate'],
-  'quality-gate': ['commit', 'fix', 'escalated'],   // passed → commit, failed → fix/escalated
-  'fix': ['materialize'],                              // 수정 후 materialize로 재진입
-  'commit': ['build-context'],
-  'build-context': ['execute-tasks', 'completed'],     // 다음 phase 또는 완료
+  materialize: ['review'],
+  review: ['quality-gate'],
+  'quality-gate': ['commit', 'fix', 'escalated'], // passed → commit, failed → fix/escalated
+  fix: ['materialize'], // 수정 후 materialize로 재진입
+  commit: ['build-context'],
+  'build-context': ['execute-tasks', 'completed'], // 다음 phase 또는 완료
 };
 
 /**
@@ -74,7 +99,7 @@ export function isValidTransition(from, to) {
 export function categorizeFailure(issue) {
   const text = `${issue.description || ''} ${issue.suggestion || ''}`.toLowerCase();
   for (const [category, keywords] of Object.entries(FAILURE_CATEGORY_KEYWORDS)) {
-    if (keywords.some(kw => text.includes(kw))) return category;
+    if (keywords.some((kw) => text.includes(kw))) return category;
   }
   return 'logic';
 }
@@ -90,7 +115,7 @@ export function buildFailureContext(state, stepResult) {
   return {
     attempt: (state.fixAttempt || 0) + 1,
     maxAttempts: MAX_FIX_ATTEMPTS,
-    issues: issues.map(i => {
+    issues: issues.map((i) => {
       const issue = typeof i === 'string' ? { description: i, severity: 'critical' } : i;
       return { ...issue, category: categorizeFailure(issue) };
     }),
@@ -151,7 +176,7 @@ export function isValidExecutionState(state) {
  */
 function getTotalPhases(project) {
   const tasks = project.tasks || [];
-  const phases = new Set(tasks.map(t => t.phase).filter(Boolean));
+  const phases = new Set(tasks.map((t) => t.phase).filter(Boolean));
   return phases.size || 1;
 }
 
@@ -162,7 +187,7 @@ function getTotalPhases(project) {
  * @returns {Array}
  */
 function getTasksForPhase(project, phase) {
-  return (project.tasks || []).filter(t => (t.phase || 1) === phase);
+  return (project.tasks || []).filter((t) => (t.phase || 1) === phase);
 }
 
 /**
@@ -231,7 +256,7 @@ export function getNextExecutionStep(project) {
       return {
         action: 'materialize',
         phase: currentPhase,
-        tasks: phaseTasks.filter(t => isCodeTask(t)),
+        tasks: phaseTasks.filter((t) => isCodeTask(t)),
         description: `Phase ${currentPhase}: 코드 Materialization`,
       };
 
@@ -327,7 +352,12 @@ export function computeStateTransition(project, stepResult) {
 
   // phase 결과 캐시 초기화 (deep clone)
   if (!state.phaseResults[phase]) {
-    state.phaseResults[phase] = { taskResults: [], reviews: [], qualityGate: null, committed: false };
+    state.phaseResults[phase] = {
+      taskResults: [],
+      reviews: [],
+      qualityGate: null,
+      committed: false,
+    };
   } else {
     state.phaseResults[phase] = { ...state.phaseResults[phase] };
   }
@@ -452,7 +482,7 @@ export function computeStateTransition(project, stepResult) {
     phase: state.currentPhase,
   };
   if (stepResult.completedAction === 'quality-gate' && state.failureContext) {
-    const categories = [...new Set(state.failureContext.issues.map(i => i.category))];
+    const categories = [...new Set(state.failureContext.issues.map((i) => i.category))];
     journalEntry.failureSummary = {
       issueCount: state.failureContext.issues.length,
       categories,
@@ -499,6 +529,25 @@ export async function advanceExecution(projectId, stepResult) {
     }
   }
 
+  // 실행 완료 시 PR 자동 생성 (fire-and-forget)
+  if (updatedProject.executionState.status === 'completed' && config.github.enabled) {
+    const projectDir = getProjectDir(projectId);
+    finalizeWithPR(projectDir, {
+      project: updatedProject,
+      executionState: updatedProject.executionState,
+      githubConfig: config.github,
+    })
+      .then((result) => {
+        if (result.pr && result.pr.url) {
+          return addPullRequest(projectId, {
+            url: result.pr.url,
+            branchName: updatedProject.executionState.branchName,
+          });
+        }
+      })
+      .catch(() => {});
+  }
+
   return {
     project: updatedProject,
     nextStep: getNextExecutionStep(updatedProject),
@@ -520,7 +569,12 @@ export function extractContributions(reviews) {
   }
   return Object.entries(byRole).map(([roleId, roleReviews]) => {
     const c = trackRoleContribution(roleId, roleReviews);
-    return { roleId, contributionScore: c.contributionScore, uniqueIssues: c.uniqueIssues, criticalsCaught: c.criticalsCaught };
+    return {
+      roleId,
+      contributionScore: c.contributionScore,
+      uniqueIssues: c.uniqueIssues,
+      criticalsCaught: c.criticalsCaught,
+    };
   });
 }
 
@@ -590,19 +644,20 @@ export function getExecutionSummary(project) {
   }
 
   const completedCount = state.completedPhases.length;
-  const percentage = state.status === 'completed'
-    ? 100
-    : totalPhases > 0
-      ? Math.round((completedCount / totalPhases) * 100)
-      : 0;
+  const percentage =
+    state.status === 'completed'
+      ? 100
+      : totalPhases > 0
+        ? Math.round((completedCount / totalPhases) * 100)
+        : 0;
 
   const stepLabels = {
     'execute-tasks': '태스크 실행',
-    'materialize': '코드 구체화',
-    'review': '크로스 리뷰',
+    materialize: '코드 구체화',
+    review: '크로스 리뷰',
     'quality-gate': '품질 게이트',
-    'fix': '수정',
-    'commit': '커밋',
+    fix: '수정',
+    commit: '커밋',
     'build-context': '컨텍스트 생성',
   };
 
@@ -643,8 +698,8 @@ export function isStaleExecution(state, maxAgeMs) {
   if (!state || !state.journal || state.journal.length === 0) {
     // 저널이 없으면 startedAt 기준
     if (!state || !state.startedAt) return true;
-    return (Date.now() - new Date(state.startedAt).getTime()) > maxAgeMs;
+    return Date.now() - new Date(state.startedAt).getTime() > maxAgeMs;
   }
   const lastEntry = state.journal[state.journal.length - 1];
-  return (Date.now() - new Date(lastEntry.timestamp).getTime()) > maxAgeMs;
+  return Date.now() - new Date(lastEntry.timestamp).getTime() > maxAgeMs;
 }

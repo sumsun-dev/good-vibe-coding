@@ -22,10 +22,13 @@ afterEach(async () => {
 
 describe('scanCodebase', () => {
   it('Node.js + React 프로젝트를 감지한다', async () => {
-    await writeFile(resolve(TMP_DIR, 'package.json'), JSON.stringify({
-      dependencies: { react: '18.2.0', express: '4.18.0' },
-      devDependencies: { typescript: '5.0.0' },
-    }));
+    await writeFile(
+      resolve(TMP_DIR, 'package.json'),
+      JSON.stringify({
+        dependencies: { react: '18.2.0', express: '4.18.0' },
+        devDependencies: { typescript: '5.0.0' },
+      }),
+    );
     await mkdir(resolve(TMP_DIR, 'src'), { recursive: true });
     await writeFile(resolve(TMP_DIR, 'src', 'app.tsx'), 'export default function App() {}');
     await writeFile(resolve(TMP_DIR, 'src', 'server.js'), 'const express = require("express")');
@@ -76,8 +79,7 @@ describe('scanCodebase', () => {
   });
 
   it('존재하지 않는 경로에서 AppError를 던진다', async () => {
-    await expect(scanCodebase('/nonexistent/path/xyz'))
-      .rejects.toThrow();
+    await expect(scanCodebase('/nonexistent/path/xyz')).rejects.toThrow();
   });
 });
 
@@ -180,7 +182,7 @@ describe('mapTechStackToRoles', () => {
 
   it('중복 역할을 제거한다', () => {
     const roles = mapTechStackToRoles(['react', 'vue', 'angular']);
-    const frontendCount = roles.filter(r => r === 'frontend').length;
+    const frontendCount = roles.filter((r) => r === 'frontend').length;
     expect(frontendCount).toBe(1);
   });
 

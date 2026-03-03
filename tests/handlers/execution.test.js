@@ -13,7 +13,7 @@ function cliExec(command, input) {
       input: JSON.stringify(input),
       encoding: 'utf-8',
       timeout: 10_000,
-    })
+    }),
   );
 }
 
@@ -37,7 +37,9 @@ describe('handlers/execution', () => {
     for (const id of createdIds) {
       try {
         cliExec('update-status', { id, status: 'archived' });
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     createdIds.length = 0;
   });

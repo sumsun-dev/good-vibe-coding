@@ -72,13 +72,13 @@ export function extractKeywords(description) {
   const tokens = description
     .replace(/[.,!?;:()[\]{}"'`~@#$%^&*+=<>/\\|]/g, ' ')
     .split(/\s+/)
-    .filter(t => t.length >= 1)
-    .map(t => {
+    .filter((t) => t.length >= 1)
+    .map((t) => {
       const stripped = t.replace(KOREAN_PARTICLES, '');
       const token = stripped.length >= 1 ? stripped : t;
       return token.toLowerCase();
     })
-    .filter(t => t.length >= 2 || HAS_HANGUL.test(t));
+    .filter((t) => t.length >= 2 || HAS_HANGUL.test(t));
 
   return new Set(tokens);
 }
@@ -111,7 +111,7 @@ export function scoreItem(item, context) {
 
   // 3. 키워드 교집합
   const descKeywords = extractKeywords(context.description);
-  const itemKeywords = new Set(item.keywords.map(k => k.toLowerCase()));
+  const itemKeywords = new Set(item.keywords.map((k) => k.toLowerCase()));
   let keywordHits = 0;
   for (const kw of descKeywords) {
     if (itemKeywords.has(kw)) keywordHits++;
@@ -152,7 +152,7 @@ export function buildReasonText(item, context) {
 
   if (item.targetRoles.length > 0 && context.teamRoles) {
     const teamSet = new Set(context.teamRoles);
-    const matched = item.targetRoles.filter(r => teamSet.has(r));
+    const matched = item.targetRoles.filter((r) => teamSet.has(r));
     if (matched.length > 0) {
       reasons.push(`${matched.join(', ')} 역할과 연관`);
     }
@@ -184,13 +184,13 @@ export async function recommendSetup(context) {
 
   function processItems(items) {
     return items
-      .filter(item => !installed.has(item.id))
-      .map(item => ({
+      .filter((item) => !installed.has(item.id))
+      .map((item) => ({
         ...item,
         score: scoreItem(item, context),
         reason: buildReasonText(item, context),
       }))
-      .filter(item => item.score >= minScore)
+      .filter((item) => item.score >= minScore)
       .sort((a, b) => {
         if (b.score !== a.score) return b.score - a.score;
         return (PRIORITY_ORDER[a.priority] ?? 2) - (PRIORITY_ORDER[b.priority] ?? 2);

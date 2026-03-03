@@ -3,7 +3,9 @@
  */
 import { readStdin, output } from '../cli-utils.js';
 import {
-  materializeCode, materializeBatch, extractMaterializableBlocks,
+  materializeCode,
+  materializeBatch,
+  extractMaterializableBlocks,
 } from '../lib/engine/code-materializer.js';
 import { verifyAndMaterialize } from '../lib/engine/execution-verifier.js';
 import { commitPhase, commitPhaseEnhanced } from '../lib/project/github-manager.js';
@@ -23,7 +25,12 @@ export const commands = {
 
   'verify-and-materialize': async () => {
     const data = await readStdin();
-    const result = await verifyAndMaterialize(data.taskOutput, data.task, data.projectDir, data.options || {});
+    const result = await verifyAndMaterialize(
+      data.taskOutput,
+      data.task,
+      data.projectDir,
+      data.options || {},
+    );
     output(result);
   },
 

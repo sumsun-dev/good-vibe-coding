@@ -14,8 +14,8 @@ export function generateReport(project) {
   const team = project.team || [];
   const tasks = project.tasks || [];
   const roleSummaries = team
-    .map(member => {
-      const memberTasks = tasks.filter(t => t.assignee === member.roleId);
+    .map((member) => {
+      const memberTasks = tasks.filter((t) => t.assignee === member.roleId);
       return generateRoleSummary(member, memberTasks);
     })
     .join('\n\n');
@@ -41,7 +41,9 @@ ${project.discussion.planDocument || '(기획서 없음)'}
 
 | 역할 | 작업 수 |
 |------|---------|
-${Object.entries(stats.byRole).map(([role, count]) => `| ${role} | ${count} |`).join('\n')}`;
+${Object.entries(stats.byRole)
+  .map(([role, count]) => `| ${role} | ${count} |`)
+  .join('\n')}`;
 
   // Phase 실행 기록 섹션 (executionState가 있을 때만)
   const executionSection = generateExecutionSummary(project);
@@ -54,10 +56,11 @@ ${Object.entries(stats.byRole).map(([role, count]) => `| ${role} | ${count} |`).
     const costSummary = getCostSummary(project.metrics);
     const contributions = {};
     for (const member of project.team) {
-      const memberTasks = project.tasks.filter(t => t.assignee === member.roleId);
-      const completedRatio = memberTasks.length > 0
-        ? memberTasks.filter(t => t.status === 'completed').length / memberTasks.length
-        : 0;
+      const memberTasks = project.tasks.filter((t) => t.assignee === member.roleId);
+      const completedRatio =
+        memberTasks.length > 0
+          ? memberTasks.filter((t) => t.status === 'completed').length / memberTasks.length
+          : 0;
       contributions[member.roleId] = Math.round(completedRatio * 100) / 100;
     }
     const agentPerf = getAgentPerformanceSummary(project.metrics, contributions);
@@ -71,10 +74,14 @@ ${Object.entries(stats.byRole).map(([role, count]) => `| ${role} | ${count} |`).
 | 출력 토큰 | ${costSummary.totalOutputTokens.toLocaleString()} |`;
 
     if (agentPerf.length > 0) {
-      report += '\n\n### 에이전트 기여도\n\n| 역할 | 호출 수 | 비용 | 기여도 |\n|------|---------|------|--------|\n';
+      report +=
+        '\n\n### 에이전트 기여도\n\n| 역할 | 호출 수 | 비용 | 기여도 |\n|------|---------|------|--------|\n';
       report += agentPerf
         .sort((a, b) => b.contributionScore - a.contributionScore)
-        .map(a => `| ${a.roleId} | ${a.callCount} | $${a.costUsd.toFixed(4)} | ${(a.contributionScore * 100).toFixed(0)}% |`)
+        .map(
+          (a) =>
+            `| ${a.roleId} | ${a.callCount} | $${a.costUsd.toFixed(4)} | ${(a.contributionScore * 100).toFixed(0)}% |`,
+        )
         .join('\n');
     }
   }
@@ -89,10 +96,11 @@ ${Object.entries(stats.byRole).map(([role, count]) => `| ${role} | ${count} |`).
  * @returns {string} 역할 요약 마크다운
  */
 export function generateRoleSummary(teamMember, tasks) {
-  const completedCount = tasks.filter(t => t.status === 'completed').length;
-  const taskList = tasks.length > 0
-    ? tasks.map(t => `  - ${t.title} (${t.status})`).join('\n')
-    : '  - (담당 작업 없음)';
+  const completedCount = tasks.filter((t) => t.status === 'completed').length;
+  const taskList =
+    tasks.length > 0
+      ? tasks.map((t) => `  - ${t.title} (${t.status})`).join('\n')
+      : '  - (담당 작업 없음)';
 
   return `### ${teamMember.emoji} ${teamMember.displayName} (${teamMember.role})
 - 담당 작업: ${tasks.length}개 (완료: ${completedCount})
@@ -118,13 +126,13 @@ export function generateExecutionSummary(project) {
     const taskCount = (pr.taskResults || []).length;
     const reviews = pr.reviews || [];
     const criticalCount = reviews.reduce(
-      (sum, r) => sum + (r.issues || []).filter(i => i.severity === 'critical').length,
+      (sum, r) => sum + (r.issues || []).filter((i) => i.severity === 'critical').length,
       0,
     );
     const gate = pr.qualityGate;
     const gateStatus = gate ? (gate.passed ? 'PASS' : 'FAIL') : '-';
     const fixAttempts = (state.journal || []).filter(
-      j => j.phase === Number(phase) && j.action === 'fix',
+      (j) => j.phase === Number(phase) && j.action === 'fix',
     ).length;
 
     section += `\n| ${phase} | ${taskCount}개 | ${reviews.length}건 (critical ${criticalCount}) | ${gateStatus} | ${fixAttempts}회 |`;
@@ -158,7 +166,7 @@ export function generateProjectStats(project) {
 
   return {
     totalTasks: tasks.length,
-    completed: tasks.filter(t => t.status === 'completed').length,
+    completed: tasks.filter((t) => t.status === 'completed').length,
     byRole,
   };
 }

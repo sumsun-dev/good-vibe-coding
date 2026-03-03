@@ -141,7 +141,13 @@ describe('trackRoleContribution', () => {
   it('이슈를 정확히 카운트한다', () => {
     const reviews = [
       { approved: false, issues: [{ severity: 'critical', description: 'SQL 인젝션' }] },
-      { approved: false, issues: [{ severity: 'minor', description: '코드 스타일' }, { severity: 'important', description: '에러 처리' }] },
+      {
+        approved: false,
+        issues: [
+          { severity: 'minor', description: '코드 스타일' },
+          { severity: 'important', description: '에러 처리' },
+        ],
+      },
     ];
     const result = trackRoleContribution('qa', reviews);
     expect(result.roleId).toBe('qa');
@@ -273,7 +279,7 @@ describe('recommendOptimalTeam', () => {
     const result = recommendOptimalTeam(outputs, contributions);
     expect(result.keep).toContain('cto');
     expect(result.keep).toContain('qa');
-    expect(result.reasoning.some(r => r.includes('기여도가 낮습니다'))).toBe(true);
+    expect(result.reasoning.some((r) => r.includes('기여도가 낮습니다'))).toBe(true);
   });
 
   it('teamSize 제약을 적용한다', () => {

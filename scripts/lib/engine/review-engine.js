@@ -31,25 +31,28 @@ export function selectReviewers(task, team) {
   if (!task || !team || team.length === 0) return [];
 
   const assigneeId = task.assignee;
-  const assignee = team.find(m => m.roleId === assigneeId);
+  const assignee = team.find((m) => m.roleId === assigneeId);
   const assigneeDomains = assignee
-    ? (assignee.workDomains || assignee.reviewDomains || assignee.skills || [])
+    ? assignee.workDomains || assignee.reviewDomains || assignee.skills || []
     : [];
 
-  const candidates = team.filter(m => m.roleId !== assigneeId);
+  const candidates = team.filter((m) => m.roleId !== assigneeId);
   if (candidates.length === 0) return [];
 
-  const scored = candidates.map(m => {
+  const scored = candidates.map((m) => {
     const reviewDomains = m.reviewDomains || m.skills || [];
-    const overlap = assigneeDomains.filter(d => reviewDomains.includes(d)).length;
+    const overlap = assigneeDomains.filter((d) => reviewDomains.includes(d)).length;
     const bonus = UNIVERSAL_REVIEWER_ROLES.includes(m.roleId) ? 1 : 0;
     return { member: m, score: overlap + bonus };
   });
 
   scored.sort((a, b) => b.score - a.score);
 
-  const count = Math.max(config.review.minReviewers, Math.min(config.review.maxReviewers, scored.length));
-  return scored.slice(0, count).map(s => s.member);
+  const count = Math.max(
+    config.review.minReviewers,
+    Math.min(config.review.maxReviewers, scored.length),
+  );
+  return scored.slice(0, count).map((s) => s.member);
 }
 
 /**
@@ -64,7 +67,7 @@ export function buildTaskReviewPrompt(reviewer, task, taskOutput, acceptanceCrit
 
   let acSection = '';
   if (acceptanceCriteria && acceptanceCriteria.length > 0) {
-    acSection = `\n\n## 수락 기준 검증\n다음 수락 기준에 대해서도 충족 여부를 판단하세요:\n\n${acceptanceCriteria.map(c => `- **${c.id}**: ${c.description} (검증: ${c.measurementMethod})`).join('\n')}\n`;
+    acSection = `\n\n## 수락 기준 검증\n다음 수락 기준에 대해서도 충족 여부를 판단하세요:\n\n${acceptanceCriteria.map((c) => `- **${c.id}**: ${c.description} (검증: ${c.measurementMethod})`).join('\n')}\n`;
   }
 
   return `당신은 ${reviewer.emoji} **${reviewer.displayName}** (${reviewer.role})입니다.
@@ -124,7 +127,7 @@ export function parseTaskReview(rawReview) {
     return {
       verdict: parsed.verdict === 'approve' ? 'approve' : 'request-changes',
       issues: Array.isArray(parsed.issues)
-        ? parsed.issues.map(i => ({
+        ? parsed.issues.map((i) => ({
             severity: i.severity || 'minor',
             description: i.description || '',
             suggestion: i.suggestion || '',
@@ -146,9 +149,9 @@ export function checkQualityGate(reviews) {
     return { passed: false, criticalCount: 0, importantCount: 0, summary: '리뷰 결과 없음' };
   }
 
-  const allIssues = reviews.flatMap(r => r.issues || []);
-  const criticalCount = allIssues.filter(i => i.severity === 'critical').length;
-  const importantCount = allIssues.filter(i => i.severity === 'important').length;
+  const allIssues = reviews.flatMap((r) => r.issues || []);
+  const criticalCount = allIssues.filter((i) => i.severity === 'critical').length;
+  const importantCount = allIssues.filter((i) => i.severity === 'important').length;
   const passed = criticalCount === 0;
 
   let summary;
@@ -175,9 +178,12 @@ export function buildRevisionPrompt(task, implementer, reviews, failureContext =
   if (!reviews || reviews.length === 0) return '';
 
   const issuesList = reviews
-    .flatMap(r => r.issues || [])
-    .filter(i => i.severity === 'critical' || i.severity === 'important')
-    .map((i, idx) => `${idx + 1}. [${i.severity.toUpperCase()}] ${i.description}${i.suggestion ? `\n   수정 방안: ${i.suggestion}` : ''}`)
+    .flatMap((r) => r.issues || [])
+    .filter((i) => i.severity === 'critical' || i.severity === 'important')
+    .map(
+      (i, idx) =>
+        `${idx + 1}. [${i.severity.toUpperCase()}] ${i.description}${i.suggestion ? `\n   수정 방안: ${i.suggestion}` : ''}`,
+    )
     .join('\n');
 
   if (!issuesList) return '';
@@ -197,14 +203,16 @@ ${issuesList}`;
     if (failureContext.previousAttempts && failureContext.previousAttempts.length > 0) {
       prompt += '\n\n### 이전 시도';
       for (const prev of failureContext.previousAttempts) {
-        const categories = prev.issues ? [...new Set(prev.issues.map(i => i.category))].join(', ') : '없음';
+        const categories = prev.issues
+          ? [...new Set(prev.issues.map((i) => i.category))].join(', ')
+          : '없음';
         const issueCount = prev.issues ? prev.issues.length : 0;
         prompt += `\n- 시도 ${prev.attempt}: ${issueCount}건 (카테고리: ${categories})`;
       }
       prompt += '\n\n**이전 시도에서 해결되지 않은 이슈에 주의하세요.**';
     }
     if (failureContext.issues && failureContext.issues.length > 0) {
-      const categories = [...new Set(failureContext.issues.map(i => i.category))];
+      const categories = [...new Set(failureContext.issues.map((i) => i.category))];
       prompt += `\n\n### 이슈 카테고리 분포: ${categories.join(', ')}`;
     }
   }

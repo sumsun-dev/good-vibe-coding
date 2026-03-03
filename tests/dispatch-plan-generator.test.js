@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { buildDiscussionDispatchPlan, buildExecutionDispatchPlan } from '../scripts/lib/engine/dispatch-plan-generator.js';
+import {
+  buildDiscussionDispatchPlan,
+  buildExecutionDispatchPlan,
+} from '../scripts/lib/engine/dispatch-plan-generator.js';
 
 const SAMPLE_PROJECT = {
   id: 'test-2025-01',
@@ -51,9 +54,33 @@ const SAMPLE_TEAM = [
 ];
 
 const SAMPLE_TASKS = [
-  { id: 'task-1', title: 'API 설계', assignee: 'backend', description: 'REST API 설계', phase: 1, dependencies: [], status: 'pending' },
-  { id: 'task-2', title: '테스트 전략', assignee: 'qa', description: '테스트 계획 수립', phase: 1, dependencies: [], status: 'pending' },
-  { id: 'task-3', title: 'API 구현', assignee: 'backend', description: 'API 엔드포인트 구현', phase: 2, dependencies: ['task-1'], status: 'pending' },
+  {
+    id: 'task-1',
+    title: 'API 설계',
+    assignee: 'backend',
+    description: 'REST API 설계',
+    phase: 1,
+    dependencies: [],
+    status: 'pending',
+  },
+  {
+    id: 'task-2',
+    title: '테스트 전략',
+    assignee: 'qa',
+    description: '테스트 계획 수립',
+    phase: 1,
+    dependencies: [],
+    status: 'pending',
+  },
+  {
+    id: 'task-3',
+    title: 'API 구현',
+    assignee: 'backend',
+    description: 'API 엔드포인트 구현',
+    phase: 2,
+    dependencies: ['task-1'],
+    status: 'pending',
+  },
 ];
 
 // --- buildDiscussionDispatchPlan ---
@@ -74,9 +101,9 @@ describe('buildDiscussionDispatchPlan', () => {
   it('tier별로 에이전트를 그룹화한다', () => {
     const plan = buildDiscussionDispatchPlan(SAMPLE_PROJECT, SAMPLE_TEAM);
     // CTO: priority 1 → tier 1, backend: priority 3 → tier 2, qa: priority 5 → tier 3
-    const allAgents = plan.tiers.flatMap(t => t.agents);
+    const allAgents = plan.tiers.flatMap((t) => t.agents);
     expect(allAgents).toHaveLength(3);
-    expect(allAgents.find(a => a.roleId === 'cto')).toBeTruthy();
+    expect(allAgents.find((a) => a.roleId === 'cto')).toBeTruthy();
   });
 
   it('각 에이전트에 프롬프트를 포함한다', () => {
@@ -104,7 +131,7 @@ describe('buildDiscussionDispatchPlan', () => {
       round: 2,
       previousSynthesis: '이전 기획서 내용',
     });
-    const allAgents = plan.tiers.flatMap(t => t.agents);
+    const allAgents = plan.tiers.flatMap((t) => t.agents);
     expect(allAgents[0].prompt).toContain('이전 기획서 내용');
   });
 
@@ -141,7 +168,7 @@ describe('buildExecutionDispatchPlan', () => {
 
   it('execute와 review 페이즈를 교대로 생성한다', () => {
     const plan = buildExecutionDispatchPlan(SAMPLE_PROJECT, SAMPLE_TASKS, SAMPLE_TEAM);
-    const types = plan.phases.map(p => p.type);
+    const types = plan.phases.map((p) => p.type);
     // 각 execute 페이즈 뒤에 review 페이즈가 있다
     for (let i = 0; i < types.length - 1; i += 2) {
       expect(types[i]).toBe('execute');
@@ -151,8 +178,8 @@ describe('buildExecutionDispatchPlan', () => {
 
   it('코드 태스크에 TDD 프롬프트를 사용한다', () => {
     const plan = buildExecutionDispatchPlan(SAMPLE_PROJECT, SAMPLE_TASKS, SAMPLE_TEAM);
-    const executPhase = plan.phases.find(p => p.type === 'execute');
-    const apiTask = executPhase.tasks.find(t => t.id === 'task-3');
+    const executPhase = plan.phases.find((p) => p.type === 'execute');
+    const apiTask = executPhase.tasks.find((t) => t.id === 'task-3');
     if (apiTask && apiTask.isCodeTask) {
       expect(apiTask.prompt).toContain('TDD');
     }
@@ -160,7 +187,7 @@ describe('buildExecutionDispatchPlan', () => {
 
   it('리뷰 페이즈에 리뷰어 정보를 포함한다', () => {
     const plan = buildExecutionDispatchPlan(SAMPLE_PROJECT, SAMPLE_TASKS, SAMPLE_TEAM);
-    const reviewPhase = plan.phases.find(p => p.type === 'review');
+    const reviewPhase = plan.phases.find((p) => p.type === 'review');
     expect(reviewPhase).toBeTruthy();
     for (const task of reviewPhase.tasks) {
       expect(task.reviewers).toBeTruthy();
@@ -194,23 +221,32 @@ describe('buildExecutionDispatchPlan', () => {
     const plan = buildExecutionDispatchPlan(SAMPLE_PROJECT, SAMPLE_TASKS, SAMPLE_TEAM, {
       planExcerpt: 'REST API 사용',
     });
-    const executPhase = plan.phases.find(p => p.type === 'execute');
-    const taskWithPrompt = executPhase.tasks.find(t => t.prompt);
+    const executPhase = plan.phases.find((p) => p.type === 'execute');
+    const taskWithPrompt = executPhase.tasks.find((t) => t.prompt);
     if (taskWithPrompt) {
       expect(taskWithPrompt.prompt).toContain('REST API 사용');
     }
   });
 
   it('팀에 없는 assignee의 태스크도 처리한다', () => {
-    const tasks = [{ id: 'task-x', title: '디자인', assignee: 'uiux', description: 'UI 설계', phase: 1, dependencies: [] }];
+    const tasks = [
+      {
+        id: 'task-x',
+        title: '디자인',
+        assignee: 'uiux',
+        description: 'UI 설계',
+        phase: 1,
+        dependencies: [],
+      },
+    ];
     const plan = buildExecutionDispatchPlan(SAMPLE_PROJECT, tasks, SAMPLE_TEAM);
-    const executPhase = plan.phases.find(p => p.type === 'execute');
+    const executPhase = plan.phases.find((p) => p.type === 'execute');
     expect(executPhase.tasks[0].prompt).toBeNull();
   });
 
   it('실행 계획 태스크에 model 필드가 포함된다', () => {
     const plan = buildExecutionDispatchPlan(SAMPLE_PROJECT, SAMPLE_TASKS, SAMPLE_TEAM);
-    const executPhase = plan.phases.find(p => p.type === 'execute');
+    const executPhase = plan.phases.find((p) => p.type === 'execute');
     for (const task of executPhase.tasks) {
       expect(task.model).toBeTruthy();
       expect(typeof task.model).toBe('string');
@@ -219,7 +255,7 @@ describe('buildExecutionDispatchPlan', () => {
 
   it('리뷰어에 model 필드가 포함된다', () => {
     const plan = buildExecutionDispatchPlan(SAMPLE_PROJECT, SAMPLE_TASKS, SAMPLE_TEAM);
-    const reviewPhase = plan.phases.find(p => p.type === 'review');
+    const reviewPhase = plan.phases.find((p) => p.type === 'review');
     for (const task of reviewPhase.tasks) {
       for (const reviewer of task.reviewers) {
         expect(reviewer.model).toBeTruthy();
@@ -229,9 +265,18 @@ describe('buildExecutionDispatchPlan', () => {
   });
 
   it('팀에 없는 assignee의 model은 sonnet 기본값이다', () => {
-    const tasks = [{ id: 'task-x', title: '디자인', assignee: 'uiux', description: 'UI 설계', phase: 1, dependencies: [] }];
+    const tasks = [
+      {
+        id: 'task-x',
+        title: '디자인',
+        assignee: 'uiux',
+        description: 'UI 설계',
+        phase: 1,
+        dependencies: [],
+      },
+    ];
     const plan = buildExecutionDispatchPlan(SAMPLE_PROJECT, tasks, SAMPLE_TEAM);
-    const executPhase = plan.phases.find(p => p.type === 'execute');
+    const executPhase = plan.phases.find((p) => p.type === 'execute');
     expect(executPhase.tasks[0].model).toBe('sonnet');
   });
 });

@@ -4,6 +4,8 @@ import {
   buildPRBody,
   buildPRLabels,
   createPullRequest,
+  buildMergeReport,
+  finalizeWithPR,
 } from '../scripts/lib/project/pr-manager.js';
 import { execFileSync } from 'child_process';
 
@@ -29,7 +31,9 @@ describe('pr-manager', () => {
     });
 
     it('70자 이하로 유지한다', () => {
-      const title = buildPRTitle({ name: '매우 긴 프로젝트 이름인데 이것은 정말로 아주 매우 길어서 잘려야 합니다' });
+      const title = buildPRTitle({
+        name: '매우 긴 프로젝트 이름인데 이것은 정말로 아주 매우 길어서 잘려야 합니다',
+      });
       expect(title.length).toBeLessThanOrEqual(70);
     });
   });
@@ -39,11 +43,7 @@ describe('pr-manager', () => {
       const project = {
         name: '팀 관리 웹앱',
         mode: 'plan-execute',
-        team: [
-          { roleId: 'cto' },
-          { roleId: 'backend' },
-          { roleId: 'qa' },
-        ],
+        team: [{ roleId: 'cto' }, { roleId: 'backend' }, { roleId: 'qa' }],
       };
       const executionState = {
         completedPhases: [1, 2, 3],
@@ -123,7 +123,7 @@ describe('pr-manager', () => {
       expect(execFileSync).toHaveBeenCalledWith(
         'gh',
         expect.arrayContaining(['--draft']),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
@@ -141,7 +141,7 @@ describe('pr-manager', () => {
       expect(execFileSync).toHaveBeenCalledWith(
         'gh',
         expect.arrayContaining(['--label', 'good-vibe,plan-execute']),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
@@ -180,6 +180,245 @@ describe('pr-manager', () => {
 
       expect(result.success).toBe(false);
       expect(result.skipped).toBe(false);
+    });
+  });
+
+  describe('buildMergeReport', () => {
+    const baseProject = {
+      name: '팀 관리 웹앱',
+      mode: 'plan-execute',
+      team: [{ roleId: 'cto' }, { roleId: 'backend' }, { roleId: 'qa' }],
+    };
+
+    const baseExecutionState = {
+      mode: 'auto',
+      startedAt: '2026-03-03T10:00:00Z',
+      completedAt: '2026-03-03T12:00:00Z',
+      completedPhases: [1, 2],
+      phaseResults: {
+        1: {
+          taskResults: [{}, {}, {}],
+          qualityGate: { passed: true, criticalCount: 0, importantCount: 1 },
+          reviews: [
+            { reviewerId: 'qa', issues: [{ severity: 'important' }], approved: true },
+            { reviewerId: 'cto', issues: [], approved: true },
+          ],
+        },
+        2: {
+          taskResults: [{}, {}],
+          qualityGate: { passed: true, criticalCount: 0, importantCount: 0 },
+          reviews: [
+            { reviewerId: 'qa', issues: [], approved: true },
+            { reviewerId: 'security', issues: [], approved: true },
+          ],
+        },
+      },
+      journal: [
+        { action: 'execute-tasks', phase: 1 },
+        { action: 'quality-gate', phase: 1 },
+        { action: 'commit', phase: 1 },
+        { action: 'build-context', phase: 1 },
+        { action: 'execute-tasks', phase: 2 },
+        {
+          action: 'quality-gate',
+          phase: 2,
+          failureSummary: { issueCount: 1, categories: ['logic'] },
+        },
+        { action: 'fix', phase: 2, fixAttempt: 1 },
+        { action: 'quality-gate', phase: 2 },
+        { action: 'commit', phase: 2 },
+        { action: 'build-context', phase: 2 },
+      ],
+      materializedFiles: [
+        { filePath: 'src/routes/api.js', status: 'created' },
+        { filePath: 'src/middleware/auth.js', status: 'created' },
+        { filePath: 'tests/api.test.js', status: 'created' },
+      ],
+    };
+
+    it('품질 게이트 결과 테이블을 포함한다', () => {
+      const report = buildMergeReport(baseProject, baseExecutionState);
+      expect(report).toContain('품질 게이트 결과');
+      expect(report).toContain('Critical');
+      expect(report).toContain('Important');
+      expect(report).toContain('통과');
+    });
+
+    it('리뷰 요약 섹션을 포함한다', () => {
+      const report = buildMergeReport(baseProject, baseExecutionState);
+      expect(report).toContain('리뷰 요약');
+      expect(report).toContain('qa');
+    });
+
+    it('실행 이력 섹션을 포함한다', () => {
+      const report = buildMergeReport(baseProject, baseExecutionState);
+      expect(report).toContain('실행 이력');
+    });
+
+    it('journal에 fix가 있으면 fix 시도 횟수를 표시한다', () => {
+      const report = buildMergeReport(baseProject, baseExecutionState);
+      expect(report).toMatch(/fix.*1회/i);
+    });
+
+    it('생성된 파일 목록 섹션을 포함한다', () => {
+      const report = buildMergeReport(baseProject, baseExecutionState);
+      expect(report).toContain('생성된 파일');
+      expect(report).toContain('src/routes/api.js');
+      expect(report).toContain('src/middleware/auth.js');
+    });
+
+    it('CEO 체크리스트를 포함한다', () => {
+      const report = buildMergeReport(baseProject, baseExecutionState);
+      expect(report).toContain('CEO 체크리스트');
+      expect(report).toContain('[ ]');
+    });
+
+    it('실행 요약 헤더를 포함한다', () => {
+      const report = buildMergeReport(baseProject, baseExecutionState);
+      expect(report).toContain('## [GoodVibe]');
+      expect(report).toContain('팀 관리 웹앱');
+      expect(report).toContain('plan-execute');
+    });
+
+    it('팀 정보를 포함한다', () => {
+      const report = buildMergeReport(baseProject, baseExecutionState);
+      expect(report).toContain('cto');
+      expect(report).toContain('backend');
+      expect(report).toContain('qa');
+    });
+
+    it('executionState가 비어있어도 에러 없이 동작한다', () => {
+      const report = buildMergeReport({ name: 'test', team: [] }, {});
+      expect(report).toContain('[GoodVibe]');
+      expect(report).toContain('Generated by good-vibe-coding');
+    });
+
+    it('materializedFiles가 없어도 동작한다', () => {
+      const stateNoFiles = { ...baseExecutionState, materializedFiles: undefined };
+      const report = buildMergeReport(baseProject, stateNoFiles);
+      expect(report).toContain('[GoodVibe]');
+    });
+
+    it('Generated by good-vibe-coding 푸터를 포함한다', () => {
+      const report = buildMergeReport(baseProject, baseExecutionState);
+      expect(report).toContain('Generated by good-vibe-coding');
+    });
+  });
+
+  describe('finalizeWithPR', () => {
+    it('github.enabled=false이면 skipped를 반환한다', async () => {
+      const result = await finalizeWithPR('/tmp/proj', {
+        project: { name: 'test', team: [] },
+        executionState: { branchName: 'gv/test' },
+        githubConfig: { enabled: false },
+      });
+      expect(result.pr.skipped).toBe(true);
+      expect(result.pr.reason).toContain('비활성화');
+    });
+
+    it('branchName이 없으면 skipped를 반환한다', async () => {
+      const result = await finalizeWithPR('/tmp/proj', {
+        project: { name: 'test', team: [] },
+        executionState: {},
+        githubConfig: { enabled: true, baseBranch: 'main' },
+      });
+      expect(result.pr.skipped).toBe(true);
+      expect(result.pr.reason).toContain('branch');
+    });
+
+    it('정상 흐름에서 push → PR 생성 → URL 반환', async () => {
+      execFileSync
+        .mockReturnValueOnce('origin\tgit@github.com:u/r.git (fetch)\n') // hasRemote: git remote -v (non-empty → has remote)
+        .mockReturnValueOnce('') // pushBranch: git push -u origin
+        .mockReturnValueOnce('https://github.com/user/repo/pull/99\n'); // createPullRequest: gh pr create
+
+      const result = await finalizeWithPR('/tmp/proj', {
+        project: {
+          name: '팀 관리 웹앱',
+          mode: 'plan-execute',
+          team: [{ roleId: 'cto' }],
+        },
+        executionState: {
+          branchName: 'gv/team-mgmt-20260303',
+          completedPhases: [1],
+          phaseResults: {},
+        },
+        githubConfig: {
+          enabled: true,
+          baseBranch: 'main',
+          autoPush: true,
+          autoCreatePR: true,
+          prDraft: false,
+        },
+      });
+
+      expect(result.pr.success).toBe(true);
+      expect(result.pr.url).toBe('https://github.com/user/repo/pull/99');
+    });
+
+    it('gh 미설치 시 graceful skip', async () => {
+      execFileSync.mockImplementation(() => {
+        const err = new Error('gh not found');
+        err.code = 'ENOENT';
+        throw err;
+      });
+
+      const result = await finalizeWithPR('/tmp/proj', {
+        project: { name: 'test', team: [] },
+        executionState: { branchName: 'gv/test' },
+        githubConfig: {
+          enabled: true,
+          baseBranch: 'main',
+          autoPush: true,
+          autoCreatePR: true,
+          prDraft: false,
+        },
+      });
+
+      expect(result.pr.skipped).toBe(true);
+    });
+
+    it('autoPush=false이면 push를 건너뛴다', async () => {
+      execFileSync.mockReturnValueOnce('https://github.com/user/repo/pull/100\n');
+
+      const result = await finalizeWithPR('/tmp/proj', {
+        project: { name: 'test', mode: 'quick-build', team: [] },
+        executionState: {
+          branchName: 'gv/test',
+          completedPhases: [],
+          phaseResults: {},
+        },
+        githubConfig: {
+          enabled: true,
+          baseBranch: 'main',
+          autoPush: false,
+          autoCreatePR: true,
+          prDraft: false,
+        },
+      });
+
+      expect(result.pr.success).toBe(true);
+    });
+
+    it('autoCreatePR=false이면 PR 생성을 건너뛴다', async () => {
+      execFileSync
+        .mockReturnValueOnce('origin\tgit@github.com:u/r.git (fetch)') // git remote -v
+        .mockReturnValueOnce(''); // git push
+
+      const result = await finalizeWithPR('/tmp/proj', {
+        project: { name: 'test', team: [] },
+        executionState: { branchName: 'gv/test' },
+        githubConfig: {
+          enabled: true,
+          baseBranch: 'main',
+          autoPush: true,
+          autoCreatePR: false,
+          prDraft: false,
+        },
+      });
+
+      expect(result.pr.skipped).toBe(true);
+      expect(result.pr.reason).toContain('비활성화');
     });
   });
 });

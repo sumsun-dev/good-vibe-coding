@@ -190,7 +190,7 @@ describe('scoreCompleteness', () => {
   it('빈 출력을 처리한다', () => {
     const result = scoreCompleteness(SAMPLE_OUTPUT_EMPTY, '프로젝트');
     expect(result.score).toBe(0);
-    expect(Object.values(result.breakdown).every(v => v === false)).toBe(true);
+    expect(Object.values(result.breakdown).every((v) => v === false)).toBe(true);
   });
 
   it('부분 출력의 점수를 계산한다', () => {
@@ -210,7 +210,8 @@ describe('scoreCompleteness', () => {
   });
 
   it('영어 키워드를 감지한다', () => {
-    const output = 'System Design architecture. Task breakdown with steps. Tech stack includes tools. Risk analysis section. Timeline and milestones.';
+    const output =
+      'System Design architecture. Task breakdown with steps. Tech stack includes tools. Risk analysis section. Timeline and milestones.';
     const result = scoreCompleteness(output, '프로젝트');
     expect(result.score).toBe(100);
   });
@@ -238,7 +239,7 @@ describe('scoreTechnicalDepth', () => {
   it('빈 출력을 처리한다', () => {
     const result = scoreTechnicalDepth(SAMPLE_OUTPUT_EMPTY);
     expect(result.score).toBe(0);
-    expect(Object.values(result.breakdown).every(v => v === false)).toBe(true);
+    expect(Object.values(result.breakdown).every((v) => v === false)).toBe(true);
   });
 
   it('특정 라이브러리를 감지한다 (일반 단어 제외)', () => {
@@ -353,8 +354,8 @@ describe('compareApproaches', () => {
     expect(comparison.rankings[0].approach).toBe(comparison.winner);
 
     // multi-agent는 완성도/기술 깊이가 더 높아야 함
-    const multiRank = comparison.rankings.find(r => r.approach === 'multi-agent');
-    const singleRank = comparison.rankings.find(r => r.approach === 'single-prompt');
+    const multiRank = comparison.rankings.find((r) => r.approach === 'multi-agent');
+    const singleRank = comparison.rankings.find((r) => r.approach === 'single-prompt');
     expect(multiRank.completeness).toBeGreaterThan(singleRank.completeness);
     expect(multiRank.technicalDepth).toBeGreaterThan(singleRank.technicalDepth);
   });
@@ -375,7 +376,7 @@ describe('compareApproaches', () => {
     // 단일 접근법이면 비용 효율 100 (비용이 maxCost와 같으므로 0)
     // 단일일 때 normalizeCostScore는 (1 - cost/maxCost) * 100 = 0
     const expectedOverall = Math.round(
-      (ranking.completeness * 0.4) + (ranking.technicalDepth * 0.4) + (ranking.costEfficiency * 0.2)
+      ranking.completeness * 0.4 + ranking.technicalDepth * 0.4 + ranking.costEfficiency * 0.2,
     );
     expect(ranking.overall).toBe(expectedOverall);
   });
@@ -398,7 +399,13 @@ describe('compareApproaches', () => {
 
   it('동일 점수일 때 첫 번째를 승자로 선정한다', () => {
     let session = createEvalSession('프로젝트', ['a', 'b']);
-    const sameResult = { output: SAMPLE_OUTPUT_FULL, tokenCount: 5000, apiCalls: 3, durationMs: 10000, agentCount: 1 };
+    const sameResult = {
+      output: SAMPLE_OUTPUT_FULL,
+      tokenCount: 5000,
+      apiCalls: 3,
+      durationMs: 10000,
+      agentCount: 1,
+    };
     session = recordApproachResult(session, 'a', sameResult);
     session = recordApproachResult(session, 'b', sameResult);
 
@@ -486,7 +493,13 @@ describe('generateEvalReport', () => {
 
   it('완성도 breakdown을 O/X로 표시한다', () => {
     let session = createEvalSession('프로젝트', ['a']);
-    session = recordApproachResult(session, 'a', { output: SAMPLE_OUTPUT_FULL, tokenCount: 1000, apiCalls: 1, durationMs: 5000, agentCount: 1 });
+    session = recordApproachResult(session, 'a', {
+      output: SAMPLE_OUTPUT_FULL,
+      tokenCount: 1000,
+      apiCalls: 1,
+      durationMs: 5000,
+      agentCount: 1,
+    });
 
     const comparison = compareApproaches(session);
     const report = generateEvalReport(session, comparison);
@@ -545,7 +558,7 @@ describe('listEvalSessions', () => {
     const list = await listEvalSessions();
     expect(list).toHaveLength(2);
 
-    const ids = list.map(s => s.sessionId);
+    const ids = list.map((s) => s.sessionId);
     expect(ids).toContain(session1.sessionId);
     expect(ids).toContain(session2.sessionId);
   });
@@ -555,7 +568,7 @@ describe('listEvalSessions', () => {
     await saveEvalSession(session);
 
     const list = await listEvalSessions();
-    const item = list.find(s => s.sessionId === session.sessionId);
+    const item = list.find((s) => s.sessionId === session.sessionId);
 
     expect(item.projectDescription).toBe('메타 테스트');
     expect(item.createdAt).toBe(session.createdAt);
@@ -612,9 +625,27 @@ describe('buildSinglePromptBaseline', () => {
 describe('Edge cases', () => {
   it('세 개 이상의 접근법을 비교한다', () => {
     let session = createEvalSession('프로젝트', ['a', 'b', 'c']);
-    session = recordApproachResult(session, 'a', { output: SAMPLE_OUTPUT_FULL, tokenCount: 5000, apiCalls: 3, durationMs: 10000, agentCount: 1 });
-    session = recordApproachResult(session, 'b', { output: SAMPLE_OUTPUT_PARTIAL, tokenCount: 2000, apiCalls: 1, durationMs: 3000, agentCount: 1 });
-    session = recordApproachResult(session, 'c', { output: SAMPLE_OUTPUT_EMPTY, tokenCount: 500, apiCalls: 1, durationMs: 1000, agentCount: 1 });
+    session = recordApproachResult(session, 'a', {
+      output: SAMPLE_OUTPUT_FULL,
+      tokenCount: 5000,
+      apiCalls: 3,
+      durationMs: 10000,
+      agentCount: 1,
+    });
+    session = recordApproachResult(session, 'b', {
+      output: SAMPLE_OUTPUT_PARTIAL,
+      tokenCount: 2000,
+      apiCalls: 1,
+      durationMs: 3000,
+      agentCount: 1,
+    });
+    session = recordApproachResult(session, 'c', {
+      output: SAMPLE_OUTPUT_EMPTY,
+      tokenCount: 500,
+      apiCalls: 1,
+      durationMs: 1000,
+      agentCount: 1,
+    });
 
     const comparison = compareApproaches(session);
     expect(comparison.rankings).toHaveLength(3);
@@ -664,6 +695,6 @@ describe('Edge cases', () => {
     // 6. 목록 확인
     const list = await listEvalSessions();
     expect(list.length).toBeGreaterThanOrEqual(1);
-    expect(list.find(s => s.sessionId === step2.sessionId)).toBeDefined();
+    expect(list.find((s) => s.sessionId === step2.sessionId)).toBeDefined();
   });
 });

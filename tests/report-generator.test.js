@@ -56,7 +56,12 @@ describe('generateReport', () => {
 
 describe('generateRoleSummary', () => {
   it('역할별 요약을 생성한다', () => {
-    const member = { roleId: 'backend', displayName: '도윤', emoji: '🔧', role: 'Backend Developer' };
+    const member = {
+      roleId: 'backend',
+      displayName: '도윤',
+      emoji: '🔧',
+      role: 'Backend Developer',
+    };
     const tasks = [
       { id: 'task-2', title: 'API 구현', assignee: 'backend', status: 'completed' },
       { id: 'task-3', title: 'DB 설계', assignee: 'backend', status: 'completed' },
@@ -109,7 +114,9 @@ describe('generateReport (비용/성능)', () => {
           cto: { callCount: 2, inputTokens: 2000, outputTokens: 1000, costUsd: 0.02 },
           backend: { callCount: 3, inputTokens: 3000, outputTokens: 1000, costUsd: 0.025 },
         },
-        byProvider: { claude: { callCount: 5, inputTokens: 5000, outputTokens: 2000, costUsd: 0.045 } },
+        byProvider: {
+          claude: { callCount: 5, inputTokens: 5000, outputTokens: 2000, costUsd: 0.045 },
+        },
       },
     };
     const report = generateReport(project);
@@ -125,4 +132,3 @@ describe('generateReport (비용/성능)', () => {
     expect(report).not.toContain('비용/성능');
   });
 });
-

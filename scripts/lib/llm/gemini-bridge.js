@@ -84,7 +84,9 @@ export function callGeminiCli(prompt, options = {}) {
   const timeout = options.timeout || DEFAULT_TIMEOUT_MS;
 
   if (!isGeminiCliInstalled(cliPath)) {
-    throw notFoundError('Gemini CLI가 설치되지 않았습니다. `npm install -g @google/gemini-cli` 또는 brew로 설치하세요.');
+    throw notFoundError(
+      'Gemini CLI가 설치되지 않았습니다. `npm install -g @google/gemini-cli` 또는 brew로 설치하세요.',
+    );
   }
 
   const args = ['-p', prompt, '-o', 'json', '-m', model];

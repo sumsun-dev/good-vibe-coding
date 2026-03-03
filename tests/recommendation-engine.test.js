@@ -168,27 +168,52 @@ describe('recommendation-engine', () => {
     };
 
     it('프로젝트 타입 매칭 이유를 포함한다', () => {
-      const item = { applicableProjectTypes: ['web-app'], complexityRange: [], targetRoles: [], description: 'test' };
+      const item = {
+        applicableProjectTypes: ['web-app'],
+        complexityRange: [],
+        targetRoles: [],
+        description: 'test',
+      };
       expect(buildReasonText(item, baseContext)).toContain('web-app');
     });
 
     it('범용 항목은 "모든 프로젝트에 유용"을 반환한다', () => {
-      const item = { applicableProjectTypes: [], complexityRange: [], targetRoles: [], description: 'test' };
+      const item = {
+        applicableProjectTypes: [],
+        complexityRange: [],
+        targetRoles: [],
+        description: 'test',
+      };
       expect(buildReasonText(item, baseContext)).toContain('모든 프로젝트에 유용');
     });
 
     it('복잡도 이유를 포함한다', () => {
-      const item = { applicableProjectTypes: [], complexityRange: ['medium'], targetRoles: [], description: 'test' };
+      const item = {
+        applicableProjectTypes: [],
+        complexityRange: ['medium'],
+        targetRoles: [],
+        description: 'test',
+      };
       expect(buildReasonText(item, baseContext)).toContain('medium');
     });
 
     it('역할 이유를 포함한다', () => {
-      const item = { applicableProjectTypes: [], complexityRange: [], targetRoles: ['fullstack', 'backend'], description: 'test' };
+      const item = {
+        applicableProjectTypes: [],
+        complexityRange: [],
+        targetRoles: ['fullstack', 'backend'],
+        description: 'test',
+      };
       expect(buildReasonText(item, baseContext)).toContain('fullstack');
     });
 
     it('매칭 없으면 description을 반환한다', () => {
-      const item = { applicableProjectTypes: ['cli-tool'], complexityRange: ['complex'], targetRoles: ['devops'], description: '기본 설명' };
+      const item = {
+        applicableProjectTypes: ['cli-tool'],
+        complexityRange: ['complex'],
+        targetRoles: ['devops'],
+        description: '기본 설명',
+      };
       expect(buildReasonText(item, baseContext)).toBe('기본 설명');
     });
   });
@@ -216,7 +241,7 @@ describe('recommendation-engine', () => {
         teamRoles: ['fullstack'],
         installedItems: new Set(['code-reviewer-kr', 'project-setup']),
       });
-      const ids = [...result.skills, ...result.agents].map(i => i.id);
+      const ids = [...result.skills, ...result.agents].map((i) => i.id);
       expect(ids).not.toContain('code-reviewer-kr');
       expect(ids).not.toContain('project-setup');
     });

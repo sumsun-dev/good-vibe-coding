@@ -129,7 +129,14 @@ ${project.codebaseInfo ? `\n## 코드베이스 정보\n- 기술 스택: ${(proje
 
   if (context.priorTierOutputs && context.priorTierOutputs.length > 0) {
     const priorSection = context.priorTierOutputs
-      .map(o => `- **${o.role}** (${o.roleId}):\n${(o.analysis || '').split('\n').filter(l => l.trim()).slice(0, 5).join('\n')}`)
+      .map(
+        (o) =>
+          `- **${o.role}** (${o.roleId}):\n${(o.analysis || '')
+            .split('\n')
+            .filter((l) => l.trim())
+            .slice(0, 5)
+            .join('\n')}`,
+      )
       .join('\n\n');
     prompt += `\n\n## 이전 tier 팀원 분석 요약\n${priorSection}\n\n위 분석을 참고하여 당신의 관점을 보완하세요.`;
   }
@@ -146,9 +153,10 @@ ${project.codebaseInfo ? `\n## 코드베이스 정보\n- 기술 스택: ${(proje
 }
 
 export function buildPlanDocument(project, discussions) {
-  const discussionSummary = discussions.length > 0
-    ? discussions.map(d => `- **${d.role}**: ${d.content}`).join('\n')
-    : '(토론 내용 없음)';
+  const discussionSummary =
+    discussions.length > 0
+      ? discussions.map((d) => `- **${d.role}**: ${d.content}`).join('\n')
+      : '(토론 내용 없음)';
 
   return `# 기획서: ${project.name}
 

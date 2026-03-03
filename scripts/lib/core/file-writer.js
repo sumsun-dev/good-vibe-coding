@@ -101,7 +101,7 @@ export async function listFilesByExtension(dir, ext) {
   try {
     const { readdir } = await import('fs/promises');
     const entries = await readdir(dir);
-    return entries.filter(f => f.endsWith(ext));
+    return entries.filter((f) => f.endsWith(ext));
   } catch (err) {
     if (err.code === 'ENOENT') return [];
     throw new AppError(`디렉토리 읽기 오류 (${dir}): ${err.message}`, 'SYSTEM_ERROR');

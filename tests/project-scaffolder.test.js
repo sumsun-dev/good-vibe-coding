@@ -63,7 +63,7 @@ describe('project-scaffolder', () => {
       expect(agents).toBeInstanceOf(Array);
       expect(agents.length).toBeGreaterThanOrEqual(2);
 
-      const paths = agents.map(a => a.path);
+      const paths = agents.map((a) => a.path);
       expect(paths).toContain('.claude/agents/code-reviewer.md');
       expect(paths).toContain('.claude/agents/tdd-coach.md');
     });
@@ -131,13 +131,15 @@ describe('project-scaffolder', () => {
       expect(result.files).toBeInstanceOf(Array);
       expect(result.files.length).toBeGreaterThanOrEqual(5);
 
-      const writtenPaths = result.files.filter(f => f.written).map(f => f.path);
-      expect(writtenPaths.some(p => p.endsWith('CLAUDE.md'))).toBe(true);
-      expect(writtenPaths.some(p => p.endsWith('README.md'))).toBe(true);
-      expect(writtenPaths.some(p => p.endsWith('.gitignore'))).toBe(true);
-      expect(writtenPaths.some(p => p.includes('code-reviewer.md'))).toBe(true);
-      expect(writtenPaths.some(p => p.includes('tdd-coach.md'))).toBe(true);
-      expect(writtenPaths.some(p => p.includes('.good-vibe') && p.endsWith('README.md'))).toBe(true);
+      const writtenPaths = result.files.filter((f) => f.written).map((f) => f.path);
+      expect(writtenPaths.some((p) => p.endsWith('CLAUDE.md'))).toBe(true);
+      expect(writtenPaths.some((p) => p.endsWith('README.md'))).toBe(true);
+      expect(writtenPaths.some((p) => p.endsWith('.gitignore'))).toBe(true);
+      expect(writtenPaths.some((p) => p.includes('code-reviewer.md'))).toBe(true);
+      expect(writtenPaths.some((p) => p.includes('tdd-coach.md'))).toBe(true);
+      expect(writtenPaths.some((p) => p.includes('.good-vibe') && p.endsWith('README.md'))).toBe(
+        true,
+      );
     });
 
     it('CLAUDE.md 내용이 올바르다', async () => {
@@ -156,8 +158,9 @@ describe('project-scaffolder', () => {
     });
 
     it('name이 없으면 에러를 발생시킨다', async () => {
-      await expect(setupProjectInfra({ description: 'test', techStack: 'Node' }))
-        .rejects.toThrow('name 필드가 필요합니다');
+      await expect(setupProjectInfra({ description: 'test', techStack: 'Node' })).rejects.toThrow(
+        'name 필드가 필요합니다',
+      );
     });
 
     it('targetDir 미지정 시 ~/projects/ 하위에 생성한다', async () => {
@@ -189,7 +192,7 @@ describe('project-scaffolder', () => {
         targetDir,
       });
 
-      const claudeFile = result.files.find(f => f.path.endsWith('CLAUDE.md'));
+      const claudeFile = result.files.find((f) => f.path.endsWith('CLAUDE.md'));
       expect(claudeFile.written).toBe(false);
 
       const content = await readFile(resolve(targetDir, 'CLAUDE.md'), 'utf-8');
@@ -200,9 +203,17 @@ describe('project-scaffolder', () => {
   describe('appendToClaudeMd', () => {
     it('플레이스홀더를 내용으로 교체한다', async () => {
       const claudeMdPath = resolve(TMP_DIR, 'CLAUDE.md');
-      await writeFile(claudeMdPath, `# Test\n\n## Architecture\n<!-- architecture-placeholder -->\n\n## End`, 'utf-8');
+      await writeFile(
+        claudeMdPath,
+        `# Test\n\n## Architecture\n<!-- architecture-placeholder -->\n\n## End`,
+        'utf-8',
+      );
 
-      const result = await appendToClaudeMd(claudeMdPath, 'architecture-placeholder', '### 시스템 아키텍처\n- 모놀리식 구조');
+      const result = await appendToClaudeMd(
+        claudeMdPath,
+        'architecture-placeholder',
+        '### 시스템 아키텍처\n- 모놀리식 구조',
+      );
 
       expect(result.success).toBe(true);
 

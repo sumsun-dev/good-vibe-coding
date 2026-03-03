@@ -22,7 +22,7 @@ export function extractMaterializableBlocks(taskOutput) {
   const blocks = extractCodeBlocks(taskOutput);
   const classified = classifyCodeBlocks(blocks);
 
-  return classified.filter(block => block.filename);
+  return classified.filter((block) => block.filename);
 }
 
 /**
@@ -58,7 +58,7 @@ export async function materializeCode(taskOutput, projectDir, options = {}) {
   const allBlocks = extractCodeBlocks(taskOutput);
   const totalBlocks = allBlocks.length;
   const classified = classifyCodeBlocks(allBlocks);
-  const materializableBlocks = classified.filter(block => block.filename);
+  const materializableBlocks = classified.filter((block) => block.filename);
   const unmaterializableCount = totalBlocks - materializableBlocks.length;
 
   if (materializableBlocks.length === 0) {

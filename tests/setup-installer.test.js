@@ -136,18 +136,34 @@ describe('setup-installer', () => {
   describe('installItems', () => {
     it('여러 항목을 배치 설치한다', async () => {
       const items = [
-        { id: 'project-setup', sourcePath: 'skills/project-setup/SKILL.md', installPath: 'skills/project-setup/SKILL.md' },
-        { id: 'code-reviewer-kr', sourcePath: 'agents/code-reviewer-kr.md', installPath: 'agents/code-reviewer-kr.md' },
+        {
+          id: 'project-setup',
+          sourcePath: 'skills/project-setup/SKILL.md',
+          installPath: 'skills/project-setup/SKILL.md',
+        },
+        {
+          id: 'code-reviewer-kr',
+          sourcePath: 'agents/code-reviewer-kr.md',
+          installPath: 'agents/code-reviewer-kr.md',
+        },
       ];
       const results = await installItems(items);
       expect(results).toHaveLength(2);
-      expect(results.every(r => r.installed)).toBe(true);
+      expect(results.every((r) => r.installed)).toBe(true);
     });
 
     it('에러 발생 시 나머지 항목을 계속 설치한다', async () => {
       const items = [
-        { id: 'nonexistent', sourcePath: 'agents/does-not-exist.md', installPath: 'agents/does-not-exist.md' },
-        { id: 'code-reviewer-kr', sourcePath: 'agents/code-reviewer-kr.md', installPath: 'agents/code-reviewer-kr.md' },
+        {
+          id: 'nonexistent',
+          sourcePath: 'agents/does-not-exist.md',
+          installPath: 'agents/does-not-exist.md',
+        },
+        {
+          id: 'code-reviewer-kr',
+          sourcePath: 'agents/code-reviewer-kr.md',
+          installPath: 'agents/code-reviewer-kr.md',
+        },
       ];
       const results = await installItems(items);
       expect(results).toHaveLength(2);
@@ -162,8 +178,16 @@ describe('setup-installer', () => {
       await writeFile(resolve(targetDir, 'SKILL.md'), 'existing');
 
       const items = [
-        { id: 'project-setup', sourcePath: 'skills/project-setup/SKILL.md', installPath: 'skills/project-setup/SKILL.md' },
-        { id: 'code-reviewer-kr', sourcePath: 'agents/code-reviewer-kr.md', installPath: 'agents/code-reviewer-kr.md' },
+        {
+          id: 'project-setup',
+          sourcePath: 'skills/project-setup/SKILL.md',
+          installPath: 'skills/project-setup/SKILL.md',
+        },
+        {
+          id: 'code-reviewer-kr',
+          sourcePath: 'agents/code-reviewer-kr.md',
+          installPath: 'agents/code-reviewer-kr.md',
+        },
       ];
       const results = await installItems(items);
       expect(results[0].skipped).toBe(true);
@@ -213,9 +237,7 @@ describe('setup-installer', () => {
     });
 
     it('전체 스킵 결과를 포맷한다', () => {
-      const results = [
-        { id: 'a', installed: false, skipped: true, path: '/p/a' },
-      ];
+      const results = [{ id: 'a', installed: false, skipped: true, path: '/p/a' }];
       const out = formatInstallResults(results);
       expect(out).toContain('설치: 0개');
       expect(out).toContain('건너뜀: 1개');

@@ -6,6 +6,7 @@
  */
 
 import { execFileSync } from 'child_process';
+import { pushBranch } from './branch-manager.js';
 
 const MAX_TITLE_LENGTH = 70;
 
@@ -37,14 +38,9 @@ export function buildPRTitle(project, options = {}) {
 export function buildPRBody(project, executionState) {
   const name = project.name || 'Untitled';
   const mode = project.mode || 'unknown';
-  const teamNames = (project.team || []).map(t => t.roleId || t.name || 'unknown');
+  const teamNames = (project.team || []).map((t) => t.roleId || t.name || 'unknown');
 
-  const lines = [
-    `## [GoodVibe] ${name}`,
-    '',
-    '### 실행 요약',
-    `- 모드: ${mode}`,
-  ];
+  const lines = [`## [GoodVibe] ${name}`, '', '### 실행 요약', `- 모드: ${mode}`];
 
   if (executionState) {
     const completedCount = (executionState.completedPhases || []).length;
@@ -67,7 +63,9 @@ export function buildPRBody(project, executionState) {
         const pr = executionState.phaseResults[p];
         const taskCount = (pr.taskResults || []).length;
         const qg = pr.qualityGate || {};
-        lines.push(`| ${p} | ${taskCount} | ${qg.criticalCount ?? '-'} | ${qg.importantCount ?? '-'} |`);
+        lines.push(
+          `| ${p} | ${taskCount} | ${qg.criticalCount ?? '-'} | ${qg.importantCount ?? '-'} |`,
+        );
       }
     }
   }
@@ -106,11 +104,17 @@ export function buildPRLabels(project) {
 export function createPullRequest(projectDir, options = {}) {
   const { branchName, baseBranch = 'main', title, body, labels, draft = false } = options;
 
-  const args = ['pr', 'create',
-    '--head', branchName,
-    '--base', baseBranch,
-    '--title', title,
-    '--body', body,
+  const args = [
+    'pr',
+    'create',
+    '--head',
+    branchName,
+    '--base',
+    baseBranch,
+    '--title',
+    title,
+    '--body',
+    body,
   ];
 
   if (draft) args.push('--draft');
@@ -118,7 +122,9 @@ export function createPullRequest(projectDir, options = {}) {
 
   try {
     const output = execFileSync('gh', args, {
-      cwd: projectDir, stdio: 'pipe', encoding: 'utf-8',
+      cwd: projectDir,
+      stdio: 'pipe',
+      encoding: 'utf-8',
     });
 
     const urlMatch = output.match(/(https:\/\/github\.com\/[^\s)]+)/);
@@ -127,9 +133,204 @@ export function createPullRequest(projectDir, options = {}) {
     return { success: true, url, skipped: false, reason: null, error: null };
   } catch (err) {
     if (err.code === 'ENOENT') {
-      return { success: true, url: null, skipped: true, reason: 'gh CLI가 설치되지 않았습니다', error: null };
+      return {
+        success: true,
+        url: null,
+        skipped: true,
+        reason: 'gh CLI가 설치되지 않았습니다',
+        error: null,
+      };
     }
     const message = err.stderr ? err.stderr.toString() : err.message;
     return { success: false, url: null, skipped: false, reason: null, error: message };
   }
+}
+
+/**
+ * Merge 판단용 상세 보고서를 생성한다 (pure).
+ * PR body로 사용되며, CEO가 merge 결정을 내릴 수 있도록 품질/리뷰/실행 이력을 포함한다.
+ * @param {object} project - 프로젝트 객체
+ * @param {object} executionState - 실행 상태
+ * @returns {string} 마크다운 보고서
+ */
+export function buildMergeReport(project, executionState) {
+  const name = project.name || 'Untitled';
+  const mode = project.mode || 'unknown';
+  const teamNames = (project.team || []).map((t) => t.roleId || t.name || 'unknown');
+  const phaseResults = executionState.phaseResults || {};
+  const phases = Object.keys(phaseResults).sort((a, b) => a - b);
+  const journal = executionState.journal || [];
+
+  const lines = [`## [GoodVibe] ${name}`, '', '### 실행 요약', `- 모드: ${mode}`];
+
+  const completedCount = (executionState.completedPhases || []).length;
+  if (completedCount > 0) lines.push(`- Phase: ${completedCount}개 완료`);
+  if (teamNames.length > 0) lines.push(`- 팀: ${teamNames.join(', ')}`);
+  if (executionState.startedAt) {
+    lines.push(
+      `- 실행 시간: ${executionState.startedAt.slice(0, 10)}${executionState.completedAt ? ` ~ ${executionState.completedAt.slice(0, 10)}` : ''}`,
+    );
+  }
+
+  // 품질 게이트 결과
+  if (phases.length > 0) {
+    lines.push('');
+    lines.push('### 품질 게이트 결과');
+    lines.push('| Phase | 태스크 | Critical | Important | 통과 |');
+    lines.push('|-------|--------|----------|-----------|------|');
+
+    for (const p of phases) {
+      const pr = phaseResults[p];
+      const taskCount = (pr.taskResults || []).length;
+      const qg = pr.qualityGate || {};
+      const passed = qg.passed ? '\u2705' : qg.passed === false ? '\u274c' : '-';
+      lines.push(
+        `| ${p} | ${taskCount} | ${qg.criticalCount ?? '-'} | ${qg.importantCount ?? '-'} | ${passed} |`,
+      );
+    }
+  }
+
+  // 리뷰 요약
+  const reviewerStats = {};
+  for (const p of phases) {
+    const reviews = phaseResults[p].reviews || [];
+    for (const r of reviews) {
+      const id = r.reviewerId || r.roleId || 'unknown';
+      if (!reviewerStats[id]) reviewerStats[id] = { count: 0, criticals: 0, importants: 0 };
+      reviewerStats[id].count += 1;
+      const issues = r.issues || [];
+      for (const issue of issues) {
+        if (issue.severity === 'critical') reviewerStats[id].criticals += 1;
+        if (issue.severity === 'important') reviewerStats[id].importants += 1;
+      }
+    }
+  }
+
+  const reviewerIds = Object.keys(reviewerStats);
+  if (reviewerIds.length > 0) {
+    lines.push('');
+    lines.push('### 리뷰 요약');
+    for (const id of reviewerIds) {
+      const s = reviewerStats[id];
+      const parts = [`${s.count}회 리뷰`];
+      parts.push(`critical ${s.criticals}건`);
+      if (s.importants > 0) parts.push(`important ${s.importants}건 발견`);
+      lines.push(`- ${id}: ${parts.join(', ')}`);
+    }
+  }
+
+  // 실행 이력
+  if (journal.length > 0) {
+    lines.push('');
+    lines.push('### 실행 이력');
+    const phaseJournal = {};
+    for (const entry of journal) {
+      const p = entry.phase || 1;
+      if (!phaseJournal[p]) phaseJournal[p] = { fixes: 0, escalated: false };
+      if (entry.action === 'fix') phaseJournal[p].fixes += 1;
+      if (entry.action === 'escalation-response') phaseJournal[p].escalated = true;
+    }
+    for (const [p, info] of Object.entries(phaseJournal)) {
+      if (info.fixes > 0) {
+        lines.push(
+          `- Phase ${p}: fix ${info.fixes}회 시도 후 ${info.escalated ? '에스컬레이션' : '통과'}`,
+        );
+      } else {
+        lines.push(`- Phase ${p}: 정상 완료`);
+      }
+    }
+  }
+
+  // 생성된 파일
+  const files = executionState.materializedFiles || [];
+  if (files.length > 0) {
+    lines.push('');
+    lines.push('### 생성된 파일');
+    for (const f of files) {
+      const status = f.status === 'created' ? '신규' : f.status || '';
+      lines.push(`- \`${f.filePath}\` (${status})`);
+    }
+  }
+
+  // CEO 체크리스트
+  lines.push('');
+  lines.push('### CEO 체크리스트');
+  lines.push('- [ ] 품질 게이트 전체 통과 확인');
+  lines.push('- [ ] 생성된 파일 목록 검토');
+  lines.push('- [ ] 로컬에서 테스트 실행 확인');
+
+  lines.push('');
+  lines.push('---');
+  lines.push('Generated by good-vibe-coding');
+
+  return lines.join('\n');
+}
+
+/**
+ * 실행 완료 후 push → PR 생성 오케스트레이션.
+ * github.enabled=false이거나 branchName이 없으면 graceful skip.
+ * @param {string} projectDir - 프로젝트 디렉토리
+ * @param {object} context
+ * @param {object} context.project - 프로젝트 객체
+ * @param {object} context.executionState - 실행 상태
+ * @param {object} context.githubConfig - github 설정
+ * @returns {Promise<{pr: {success: boolean, url: string|null, skipped: boolean, reason: string|null}}>}
+ */
+export async function finalizeWithPR(projectDir, context) {
+  const { project, executionState, githubConfig } = context;
+
+  if (!githubConfig.enabled) {
+    return {
+      pr: {
+        success: true,
+        url: null,
+        skipped: true,
+        reason: 'GitHub 기능이 비활성화되어 있습니다',
+      },
+    };
+  }
+
+  const branchName = executionState.branchName;
+  if (!branchName) {
+    return {
+      pr: { success: true, url: null, skipped: true, reason: 'branch가 생성되지 않았습니다' },
+    };
+  }
+
+  // 1. push (autoPush=true일 때만)
+  if (githubConfig.autoPush) {
+    const pushResult = pushBranch(projectDir, branchName);
+    if (!pushResult.success && !pushResult.skipped) {
+      return { pr: { success: false, url: null, skipped: false, reason: pushResult.error } };
+    }
+  }
+
+  // 2. autoCreatePR=false이면 skip
+  if (!githubConfig.autoCreatePR) {
+    return {
+      pr: {
+        success: true,
+        url: null,
+        skipped: true,
+        reason: 'PR 자동 생성이 비활성화되어 있습니다',
+      },
+    };
+  }
+
+  // 3. PR 콘텐츠 생성
+  const title = buildPRTitle(project);
+  const body = buildMergeReport(project, executionState);
+  const labels = buildPRLabels(project);
+
+  // 4. PR 생성
+  const prResult = createPullRequest(projectDir, {
+    branchName,
+    baseBranch: githubConfig.baseBranch || 'main',
+    title,
+    body,
+    labels,
+    draft: githubConfig.prDraft || false,
+  });
+
+  return { pr: prResult };
 }

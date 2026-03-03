@@ -75,7 +75,9 @@ describe('branch-manager', () => {
     });
 
     it('git 명령 실패 시 false를 반환한다', () => {
-      execFileSync.mockImplementation(() => { throw new Error('not a repo'); });
+      execFileSync.mockImplementation(() => {
+        throw new Error('not a repo');
+      });
       expect(hasRemote('/tmp/proj')).toBe(false);
     });
   });
@@ -87,7 +89,9 @@ describe('branch-manager', () => {
     });
 
     it('git 실패 시 null을 반환한다', () => {
-      execFileSync.mockImplementation(() => { throw new Error('fail'); });
+      execFileSync.mockImplementation(() => {
+        throw new Error('fail');
+      });
       expect(getCurrentBranch('/tmp/proj')).toBeNull();
     });
   });
@@ -106,8 +110,9 @@ describe('branch-manager', () => {
       expect(result.success).toBe(true);
       expect(result.branchName).toBe('gv/my-app-phase-1');
       expect(execFileSync).toHaveBeenCalledWith(
-        'git', ['checkout', '-b', 'gv/my-app-phase-1'],
-        expect.objectContaining({ cwd: '/tmp/proj' })
+        'git',
+        ['checkout', '-b', 'gv/my-app-phase-1'],
+        expect.objectContaining({ cwd: '/tmp/proj' }),
       );
     });
 
@@ -131,7 +136,7 @@ describe('branch-manager', () => {
       });
 
       // checkout baseBranch first, then create new branch
-      const calls = execFileSync.mock.calls.map(c => c[1]);
+      const calls = execFileSync.mock.calls.map((c) => c[1]);
       expect(calls[0]).toEqual(['checkout', 'develop']);
       expect(calls[1]).toEqual(['checkout', '-b', 'gv/app-phase-1']);
     });
@@ -143,13 +148,16 @@ describe('branch-manager', () => {
       const result = checkoutBranch('/tmp/proj', 'feature/test');
       expect(result.success).toBe(true);
       expect(execFileSync).toHaveBeenCalledWith(
-        'git', ['checkout', 'feature/test'],
-        expect.objectContaining({ cwd: '/tmp/proj' })
+        'git',
+        ['checkout', 'feature/test'],
+        expect.objectContaining({ cwd: '/tmp/proj' }),
       );
     });
 
     it('실패 시 에러를 반환한다', () => {
-      execFileSync.mockImplementation(() => { throw new Error('no such branch'); });
+      execFileSync.mockImplementation(() => {
+        throw new Error('no such branch');
+      });
       const result = checkoutBranch('/tmp/proj', 'nonexistent');
       expect(result.success).toBe(false);
     });
@@ -178,7 +186,9 @@ describe('branch-manager', () => {
     it('push 실패 시 에러를 반환한다', () => {
       execFileSync
         .mockReturnValueOnce('origin\thttps://github.com/user/repo.git (fetch)\n')
-        .mockImplementationOnce(() => { throw new Error('push failed'); });
+        .mockImplementationOnce(() => {
+          throw new Error('push failed');
+        });
 
       const result = pushBranch('/tmp/proj', 'gv/branch');
       expect(result.success).toBe(false);

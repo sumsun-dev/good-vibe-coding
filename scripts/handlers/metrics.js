@@ -6,7 +6,7 @@ import { getProject, recordMetrics } from '../lib/project/project-manager.js';
 import { inputError, notFoundError } from '../lib/core/validators.js';
 import { getCostSummary, buildMetricsDashboard } from '../lib/project/project-metrics.js';
 
-const [,, , ...args] = process.argv;
+const [, , , ...args] = process.argv;
 
 export const commands = {
   'record-metrics': async () => {

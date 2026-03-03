@@ -27,7 +27,7 @@ function createHandlebarsInstance() {
 
   hbs.registerHelper('bullet', function (arr) {
     if (!Array.isArray(arr)) return '';
-    return arr.map(item => `- ${item}`).join('\n');
+    return arr.map((item) => `- ${item}`).join('\n');
   });
 
   hbs.registerHelper('add', function (a, b) {
@@ -62,4 +62,3 @@ export function renderString(source, data) {
   const template = hbs.compile(source, { noEscape: true });
   return template(data);
 }
-

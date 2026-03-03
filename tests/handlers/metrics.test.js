@@ -24,7 +24,10 @@ vi.mock('../../scripts/lib/project/project-metrics.js', () => ({
 
 import { readStdin, output, outputOk, parseArgs } from '../../scripts/cli-utils.js';
 import { getProject, recordMetrics } from '../../scripts/lib/project/project-manager.js';
-import { getCostSummary, buildMetricsDashboard } from '../../scripts/lib/project/project-metrics.js';
+import {
+  getCostSummary,
+  buildMetricsDashboard,
+} from '../../scripts/lib/project/project-metrics.js';
 import { commands } from '../../scripts/handlers/metrics.js';
 
 describe('metrics handler', () => {

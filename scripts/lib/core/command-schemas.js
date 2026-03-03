@@ -16,12 +16,21 @@
 
 // === 경량 스키마 빌더 (반복 줄이기) ===
 const obj = (properties) => ({ type: 'object', properties });
-const str = (required = false) => (required ? { type: 'string', required: true } : { type: 'string' });
-const num = (required = false) => (required ? { type: 'number', required: true } : { type: 'number' });
-const bool = (required = false) => (required ? { type: 'boolean', required: true } : { type: 'boolean' });
-const arr = (required = false) => (required ? { type: 'array', required: true } : { type: 'array' });
-const objField = (required = false) => (required ? { type: 'object', required: true } : { type: 'object' });
-const strEnum = (values, required = false) => ({ type: 'string', enum: values, ...(required ? { required: true } : {}) });
+const str = (required = false) =>
+  required ? { type: 'string', required: true } : { type: 'string' };
+const num = (required = false) =>
+  required ? { type: 'number', required: true } : { type: 'number' };
+const bool = (required = false) =>
+  required ? { type: 'boolean', required: true } : { type: 'boolean' };
+const arr = (required = false) =>
+  required ? { type: 'array', required: true } : { type: 'array' };
+const objField = (required = false) =>
+  required ? { type: 'object', required: true } : { type: 'object' };
+const strEnum = (values, required = false) => ({
+  type: 'string',
+  enum: values,
+  ...(required ? { required: true } : {}),
+});
 
 const promptOutput = obj({ prompt: str() });
 const projectAndNextStep = obj({ project: objField(), nextStep: objField() });
@@ -78,10 +87,16 @@ export const COMMAND_SCHEMAS = {
     handler: 'project',
     inputMethod: 'args',
     input: idArgsInput,
-    output: obj({ totalTasks: num(), completedTasks: num(), currentPhase: num(), totalPhases: num(), percentage: num() }),
+    output: obj({
+      totalTasks: num(),
+      completedTasks: num(),
+      currentPhase: num(),
+      totalPhases: num(),
+      percentage: num(),
+    }),
     description: '프로젝트 실행 진행률을 반환한다',
   },
-  'report': {
+  report: {
     handler: 'project',
     inputMethod: 'args',
     input: idArgsInput,
@@ -92,7 +107,14 @@ export const COMMAND_SCHEMAS = {
     handler: 'project',
     inputMethod: 'args',
     input: obj({ path: str(true) }),
-    output: obj({ techStack: arr(), languages: objField(), dependencies: objField(), fileStructure: str(), suggestedRoles: arr(), scannedAt: str() }),
+    output: obj({
+      techStack: arr(),
+      languages: objField(),
+      dependencies: objField(),
+      fileStructure: str(),
+      suggestedRoles: arr(),
+      scannedAt: str(),
+    }),
     description: '프로젝트 폴더를 스캔하여 기술 스택과 구조를 파악한다',
   },
   'describe-command': {
@@ -293,7 +315,13 @@ export const COMMAND_SCHEMAS = {
     handler: 'execution',
     inputMethod: 'args',
     input: idArgsInput,
-    output: obj({ status: str(), currentPhase: num(), totalPhases: num(), percentage: num(), display: str() }),
+    output: obj({
+      status: str(),
+      currentPhase: num(),
+      totalPhases: num(),
+      percentage: num(),
+      display: str(),
+    }),
     description: '실행 진행 요약을 반환한다',
   },
   'task-distribution-prompt': {
@@ -328,7 +356,14 @@ export const COMMAND_SCHEMAS = {
     handler: 'execution',
     inputMethod: 'args',
     input: idArgsInput,
-    output: obj({ status: str(), phase: num(), fixAttempt: num(), failureContext: objField(), failureHistory: arr(), pendingEscalation: objField() }),
+    output: obj({
+      status: str(),
+      phase: num(),
+      fixAttempt: num(),
+      failureContext: objField(),
+      failureHistory: arr(),
+      pendingEscalation: objField(),
+    }),
     description: '실패 컨텍스트를 조회한다',
   },
   'handle-escalation': {
@@ -371,13 +406,24 @@ export const COMMAND_SCHEMAS = {
     handler: 'review',
     inputMethod: 'stdin',
     input: obj({ reviews: arr(true), executionResult: objField() }),
-    output: obj({ passed: bool(), criticalCount: num(), importantCount: num(), executionVerified: bool(), summary: str() }),
+    output: obj({
+      passed: bool(),
+      criticalCount: num(),
+      importantCount: num(),
+      executionVerified: bool(),
+      summary: str(),
+    }),
     description: '강화된 품질 게이트를 확인한다 (텍스트 + 실행 검증)',
   },
   'revision-prompt': {
     handler: 'review',
     inputMethod: 'stdin',
-    input: obj({ task: objField(true), implementer: objField(true), reviews: arr(true), failureContext: objField() }),
+    input: obj({
+      task: objField(true),
+      implementer: objField(true),
+      reviews: arr(true),
+      failureContext: objField(),
+    }),
     output: promptOutput,
     description: '수정 프롬프트를 생성한다',
   },
@@ -437,7 +483,15 @@ export const COMMAND_SCHEMAS = {
   'commit-phase-enhanced': {
     handler: 'build',
     inputMethod: 'stdin',
-    input: obj({ projectDir: str(true), phase: num(true), tasks: arr(), project: objField(), team: arr(), totalPhases: num(), qualityGate: objField() }),
+    input: obj({
+      projectDir: str(true),
+      phase: num(true),
+      tasks: arr(),
+      project: objField(),
+      team: arr(),
+      totalPhases: num(),
+      qualityGate: objField(),
+    }),
     output: obj({ success: bool(), message: str(), error: str() }),
     description: 'conventional commit 메시지로 Phase를 커밋한다',
   },
@@ -505,28 +559,33 @@ export const COMMAND_SCHEMAS = {
     handler: 'eval',
     inputMethod: 'args',
     input: obj({ level: str(true) }),
-    output: obj({ teamSize: objField(), discussionRounds: num(), reviewRounds: num(), suggestedRoles: arr() }),
+    output: obj({
+      teamSize: objField(),
+      discussionRounds: num(),
+      reviewRounds: num(),
+      suggestedRoles: arr(),
+    }),
     description: '복잡도별 기본값을 반환한다',
   },
 
   // ============================================================
   // === auth (9개) ===
   // ============================================================
-  'connect': {
+  connect: {
     handler: 'auth',
     inputMethod: 'stdin',
     input: obj({ provider: str(true), apiKey: str(), type: str() }),
     output: obj({ providerId: str(), type: str() }),
     description: 'LLM 프로바이더를 연결한다',
   },
-  'disconnect': {
+  disconnect: {
     handler: 'auth',
     inputMethod: 'stdin',
     input: obj({ provider: str(true) }),
     output: obj({ providerId: str() }),
     description: 'LLM 프로바이더 연결을 해제한다',
   },
-  'providers': {
+  providers: {
     handler: 'auth',
     inputMethod: 'none',
     input: obj({}),
@@ -571,8 +630,19 @@ export const COMMAND_SCHEMAS = {
   'gemini-review': {
     handler: 'auth',
     inputMethod: 'stdin',
-    input: obj({ reviewer: objField(true), task: objField(true), taskOutput: str(true), model: str() }),
-    output: obj({ reviewer: objField(), provider: str(), model: str(), review: objField(), tokenCount: num() }),
+    input: obj({
+      reviewer: objField(true),
+      task: objField(true),
+      taskOutput: str(true),
+      model: str(),
+    }),
+    output: obj({
+      reviewer: objField(),
+      provider: str(),
+      model: str(),
+      review: objField(),
+      tokenCount: num(),
+    }),
     description: 'Gemini로 리뷰를 실행한다',
   },
 
@@ -707,8 +777,12 @@ export const COMMAND_SCHEMAS = {
     inputMethod: 'none',
     input: obj({}),
     output: obj({
-      node: objField(), npm: objField(), git: objField(),
-      gh: objField(), gemini: objField(), handlebars: objField(),
+      node: objField(),
+      npm: objField(),
+      git: objField(),
+      gh: objField(),
+      gemini: objField(),
+      handlebars: objField(),
       healthy: bool(),
     }),
     description: '개발 환경의 필수/선택 도구 설치 상태를 확인한다',
@@ -723,7 +797,13 @@ export const COMMAND_SCHEMAS = {
   'create-branch': {
     handler: 'infra',
     inputMethod: 'stdin',
-    input: obj({ projectDir: str(true), projectSlug: str(true), baseBranch: str(), strategy: strEnum(['timestamp', 'phase', 'custom']), context: objField() }),
+    input: obj({
+      projectDir: str(true),
+      projectSlug: str(true),
+      baseBranch: str(),
+      strategy: strEnum(['timestamp', 'phase', 'custom']),
+      context: objField(),
+    }),
     output: obj({ success: bool(), branchName: str(), error: str() }),
     description: 'feature branch를 생성한다',
   },
@@ -744,7 +824,15 @@ export const COMMAND_SCHEMAS = {
   'create-pr': {
     handler: 'infra',
     inputMethod: 'stdin',
-    input: obj({ projectDir: str(true), branchName: str(true), baseBranch: str(), title: str(true), body: str(true), labels: arr(), draft: bool() }),
+    input: obj({
+      projectDir: str(true),
+      branchName: str(true),
+      baseBranch: str(),
+      title: str(true),
+      body: str(true),
+      labels: arr(),
+      draft: bool(),
+    }),
     output: obj({ success: bool(), url: str(), skipped: bool(), reason: str(), error: str() }),
     description: 'Pull Request를 생성한다',
   },
@@ -758,7 +846,12 @@ export const COMMAND_SCHEMAS = {
   'generate-ci': {
     handler: 'infra',
     inputMethod: 'stdin',
-    input: obj({ projectDir: str(true), techStack: arr(), codebaseInfo: objField(), packageJson: objField() }),
+    input: obj({
+      projectDir: str(true),
+      techStack: arr(),
+      codebaseInfo: objField(),
+      packageJson: objField(),
+    }),
     output: obj({ success: bool(), filePath: str(), strategy: objField(), commands: objField() }),
     description: 'GitHub Actions CI 워크플로우를 생성한다',
   },
@@ -805,10 +898,16 @@ export const COMMAND_SCHEMAS = {
     output: obj({ name: str(), content: objField() }),
     description: '템플릿 상세를 반환한다',
   },
-  'scaffold': {
+  scaffold: {
     handler: 'template',
     inputMethod: 'stdin',
-    input: obj({ template: str(true), targetDir: str(true), variables: objField(), overwrite: bool(), backup: bool() }),
+    input: obj({
+      template: str(true),
+      targetDir: str(true),
+      variables: objField(),
+      overwrite: bool(),
+      backup: bool(),
+    }),
     output: obj({ filesCreated: arr() }),
     description: '템플릿으로 프로젝트를 스캐폴딩한다',
   },
@@ -879,7 +978,12 @@ export const COMMAND_SCHEMAS = {
   'recommend-setup': {
     handler: 'recommendation',
     inputMethod: 'stdin',
-    input: obj({ projectType: str(true), complexity: str(true), description: str(true), teamRoles: arr() }),
+    input: obj({
+      projectType: str(true),
+      complexity: str(true),
+      description: str(true),
+      teamRoles: arr(),
+    }),
     output: obj({ skills: arr(), agents: arr() }),
     description: '프로젝트에 맞는 스킬/에이전트를 추천한다',
   },

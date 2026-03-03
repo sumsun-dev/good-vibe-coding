@@ -1,5 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { safeWriteFile, fileExists, backupFile, ensureDir, writeFiles, readJsonFile, listFilesByExtension } from '../scripts/lib/core/file-writer.js';
+import {
+  safeWriteFile,
+  fileExists,
+  backupFile,
+  ensureDir,
+  writeFiles,
+  readJsonFile,
+  listFilesByExtension,
+} from '../scripts/lib/core/file-writer.js';
 import { readFile, rm, mkdir } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -136,9 +144,9 @@ describe('file-writer', () => {
       await wf(realFile, '원본', 'utf-8');
       await symlink(realFile, linkFile);
 
-      await expect(
-        safeWriteFile(linkFile, '악의적 내용', { overwrite: true })
-      ).rejects.toThrow('심링크 대상에 쓰기가 차단되었습니다');
+      await expect(safeWriteFile(linkFile, '악의적 내용', { overwrite: true })).rejects.toThrow(
+        '심링크 대상에 쓰기가 차단되었습니다',
+      );
 
       const content = await readFile(realFile, 'utf-8');
       expect(content).toBe('원본');
@@ -178,7 +186,7 @@ describe('file-writer', () => {
 
       const results = await writeFiles(files);
       expect(results).toHaveLength(2);
-      expect(results.every(r => r.written)).toBe(true);
+      expect(results.every((r) => r.written)).toBe(true);
 
       const contentA = await readFile(files[0].path, 'utf-8');
       expect(contentA).toBe('파일 A');

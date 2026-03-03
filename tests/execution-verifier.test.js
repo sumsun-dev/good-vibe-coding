@@ -145,7 +145,7 @@ describe('classifyCodeBlocks', () => {
       { language: 'bash', filename: null, content: '' },
     ];
     const classified = classifyCodeBlocks(blocks);
-    expect(classified.every(b => b.type === 'executable')).toBe(true);
+    expect(classified.every((b) => b.type === 'executable')).toBe(true);
   });
 
   it('설정 파일 언어를 올바르게 분류한다', () => {
@@ -155,7 +155,7 @@ describe('classifyCodeBlocks', () => {
       { language: 'toml', filename: null, content: '' },
     ];
     const classified = classifyCodeBlocks(blocks);
-    expect(classified.every(b => b.type === 'config')).toBe(true);
+    expect(classified.every((b) => b.type === 'config')).toBe(true);
   });
 
   it('마크업 언어를 올바르게 분류한다', () => {
@@ -165,7 +165,7 @@ describe('classifyCodeBlocks', () => {
       { language: 'md', filename: null, content: '' },
     ];
     const classified = classifyCodeBlocks(blocks);
-    expect(classified.every(b => b.type === 'markup')).toBe(true);
+    expect(classified.every((b) => b.type === 'markup')).toBe(true);
   });
 
   it('알 수 없는 언어는 unknown으로 분류한다', () => {
@@ -174,7 +174,7 @@ describe('classifyCodeBlocks', () => {
       { language: '', filename: null, content: '' },
     ];
     const classified = classifyCodeBlocks(blocks);
-    expect(classified.every(b => b.type === 'unknown')).toBe(true);
+    expect(classified.every((b) => b.type === 'unknown')).toBe(true);
   });
 
   it('빈 입력은 빈 배열을 반환한다', () => {
@@ -208,9 +208,7 @@ describe('writeTemporaryProject', () => {
   });
 
   it('임시 디렉토리에 파일을 생성한다', () => {
-    const blocks = [
-      { language: 'javascript', filename: 'index.js', content: 'const x = 1;' },
-    ];
+    const blocks = [{ language: 'javascript', filename: 'index.js', content: 'const x = 1;' }];
     const { tempDir, files } = writeTemporaryProject(blocks, 'cli-tool');
     tempDirs.push(tempDir);
 
@@ -233,9 +231,7 @@ describe('writeTemporaryProject', () => {
   });
 
   it('파일명이 없으면 자동 생성한다', () => {
-    const blocks = [
-      { language: 'javascript', filename: null, content: 'const x = 1;' },
-    ];
+    const blocks = [{ language: 'javascript', filename: null, content: 'const x = 1;' }];
     const { tempDir, files } = writeTemporaryProject(blocks, 'cli-tool');
     tempDirs.push(tempDir);
 
@@ -280,9 +276,7 @@ describe('attemptBuild', () => {
   });
 
   it('package.json이 없어도 JS 파일 syntax check로 빌드한다 (web-app)', () => {
-    const blocks = [
-      { language: 'javascript', filename: 'index.js', content: 'const x = 1;\n' },
-    ];
+    const blocks = [{ language: 'javascript', filename: 'index.js', content: 'const x = 1;\n' }];
     const { tempDir } = writeTemporaryProject(blocks, 'web-app');
     tempDirs.push(tempDir);
 
@@ -292,9 +286,7 @@ describe('attemptBuild', () => {
   });
 
   it('package.json이 없어도 JS 파일 syntax check로 빌드한다 (api-server)', () => {
-    const blocks = [
-      { language: 'javascript', filename: 'server.js', content: 'const x = 1;\n' },
-    ];
+    const blocks = [{ language: 'javascript', filename: 'server.js', content: 'const x = 1;\n' }];
     const { tempDir } = writeTemporaryProject(blocks, 'api-server');
     tempDirs.push(tempDir);
 
@@ -303,9 +295,7 @@ describe('attemptBuild', () => {
   });
 
   it('올바른 JS 파일에 대해 syntax check를 통과한다 (cli-tool)', () => {
-    const blocks = [
-      { language: 'javascript', filename: 'index.js', content: 'const x = 1;\n' },
-    ];
+    const blocks = [{ language: 'javascript', filename: 'index.js', content: 'const x = 1;\n' }];
     const { tempDir } = writeTemporaryProject(blocks, 'cli-tool');
     tempDirs.push(tempDir);
 
@@ -315,9 +305,7 @@ describe('attemptBuild', () => {
   });
 
   it('구문 오류가 있는 JS 파일은 실패한다 (cli-tool)', () => {
-    const blocks = [
-      { language: 'javascript', filename: 'broken.js', content: 'const x = {{\n' },
-    ];
+    const blocks = [{ language: 'javascript', filename: 'broken.js', content: 'const x = {{\n' }];
     const { tempDir } = writeTemporaryProject(blocks, 'cli-tool');
     tempDirs.push(tempDir);
 
@@ -327,9 +315,7 @@ describe('attemptBuild', () => {
   });
 
   it('JS 파일이 없으면 실패한다 (cli-tool)', () => {
-    const blocks = [
-      { language: 'json', filename: 'config.json', content: '{}' },
-    ];
+    const blocks = [{ language: 'json', filename: 'config.json', content: '{}' }];
     const { tempDir } = writeTemporaryProject(blocks, 'cli-tool');
     tempDirs.push(tempDir);
 
@@ -339,9 +325,7 @@ describe('attemptBuild', () => {
   });
 
   it('지원하지 않는 프로젝트 유형이지만 JS 파일이 있으면 node 전략으로 빌드한다', () => {
-    const blocks = [
-      { language: 'javascript', filename: 'index.js', content: 'const x = 1;\n' },
-    ];
+    const blocks = [{ language: 'javascript', filename: 'index.js', content: 'const x = 1;\n' }];
     const { tempDir } = writeTemporaryProject(blocks, 'unknown-type');
     tempDirs.push(tempDir);
 
@@ -350,9 +334,7 @@ describe('attemptBuild', () => {
   });
 
   it('감지할 수 없는 파일만 있으면 unsupported를 반환한다', () => {
-    const blocks = [
-      { language: 'xml', filename: 'data.xml', content: '<root/>' },
-    ];
+    const blocks = [{ language: 'xml', filename: 'data.xml', content: '<root/>' }];
     const { tempDir } = writeTemporaryProject(blocks, 'unknown-type');
     tempDirs.push(tempDir);
 
@@ -362,9 +344,7 @@ describe('attemptBuild', () => {
   });
 
   it('결과 형식이 올바르다', () => {
-    const blocks = [
-      { language: 'javascript', filename: 'index.js', content: 'const x = 1;\n' },
-    ];
+    const blocks = [{ language: 'javascript', filename: 'index.js', content: 'const x = 1;\n' }];
     const { tempDir } = writeTemporaryProject(blocks, 'cli-tool');
     tempDirs.push(tempDir);
 
@@ -391,9 +371,7 @@ describe('attemptTests', () => {
   });
 
   it('테스트 파일이 없으면 null 결과를 반환한다', () => {
-    const blocks = [
-      { language: 'javascript', filename: 'index.js', content: 'const x = 1;' },
-    ];
+    const blocks = [{ language: 'javascript', filename: 'index.js', content: 'const x = 1;' }];
     const { tempDir } = writeTemporaryProject(blocks, 'cli-tool');
     tempDirs.push(tempDir);
 
@@ -500,9 +478,7 @@ describe('verifyExecution', () => {
 
 describe('cleanup', () => {
   it('임시 디렉토리를 삭제한다', () => {
-    const blocks = [
-      { language: 'javascript', filename: 'index.js', content: 'const x = 1;' },
-    ];
+    const blocks = [{ language: 'javascript', filename: 'index.js', content: 'const x = 1;' }];
     const { tempDir } = writeTemporaryProject(blocks, 'cli-tool');
     expect(existsSync(tempDir)).toBe(true);
 
@@ -584,7 +560,8 @@ describe('verifyAndMaterialize', () => {
 
   it('codeBlockCount를 올바르게 보고한다', async () => {
     const dir = createTempDir();
-    const md = '```javascript src/a.js\nconst a = 1;\n```\n```javascript src/b.js\nconst b = 2;\n```';
+    const md =
+      '```javascript src/a.js\nconst a = 1;\n```\n```javascript src/b.js\nconst b = 2;\n```';
     const task = { id: 'task-1', projectType: 'cli-tool' };
 
     const result = await verifyAndMaterialize(md, task, dir);
@@ -641,7 +618,8 @@ describe('verifyAndMaterialize', () => {
 
   it('다중 파일 검증+기록', async () => {
     const dir = createTempDir();
-    const md = '```javascript src/a.js\nconst a = 1;\n```\n```javascript src/b.js\nconst b = 2;\n```';
+    const md =
+      '```javascript src/a.js\nconst a = 1;\n```\n```javascript src/b.js\nconst b = 2;\n```';
     const task = { id: 'task-1', projectType: 'cli-tool' };
 
     const result = await verifyAndMaterialize(md, task, dir);
@@ -766,7 +744,9 @@ describe('attemptTests — 에러 경로', () => {
     const enoentError = new Error('npm not found');
     enoentError.code = 'ENOENT';
     enoentError.path = 'npm';
-    vi.spyOn(BUILD_STRATEGIES.node, 'test').mockImplementation(() => { throw enoentError; });
+    vi.spyOn(BUILD_STRATEGIES.node, 'test').mockImplementation(() => {
+      throw enoentError;
+    });
 
     const result = attemptTests(tempDir, 'cli-tool');
     expect(result.success).toBe(false);
@@ -784,7 +764,9 @@ describe('attemptTests — 에러 경로', () => {
 
     const enoentError = new Error('command not found');
     enoentError.code = 'ENOENT';
-    vi.spyOn(BUILD_STRATEGIES.node, 'test').mockImplementation(() => { throw enoentError; });
+    vi.spyOn(BUILD_STRATEGIES.node, 'test').mockImplementation(() => {
+      throw enoentError;
+    });
 
     const result = attemptTests(tempDir, 'cli-tool');
     expect(result.output).toBe('runtime not found');
@@ -801,7 +783,9 @@ describe('attemptTests — 에러 경로', () => {
     const error = new Error('tests failed');
     error.stderr = 'AssertionError: expected true';
     error.status = 1;
-    vi.spyOn(BUILD_STRATEGIES.node, 'test').mockImplementation(() => { throw error; });
+    vi.spyOn(BUILD_STRATEGIES.node, 'test').mockImplementation(() => {
+      throw error;
+    });
 
     const result = attemptTests(tempDir, 'cli-tool');
     expect(result.success).toBe(false);
@@ -818,7 +802,9 @@ describe('attemptTests — 에러 경로', () => {
     tempDirs.push(tempDir);
 
     const error = new Error('unknown failure');
-    vi.spyOn(BUILD_STRATEGIES.node, 'test').mockImplementation(() => { throw error; });
+    vi.spyOn(BUILD_STRATEGIES.node, 'test').mockImplementation(() => {
+      throw error;
+    });
 
     const result = attemptTests(tempDir, 'cli-tool');
     expect(result.output).toBe('unknown failure');
@@ -931,6 +917,6 @@ describe('classifyCodeBlocks (다언어)', () => {
       { language: 'rust', filename: null, content: '' },
     ];
     const classified = classifyCodeBlocks(blocks);
-    expect(classified.every(b => b.type === 'executable')).toBe(true);
+    expect(classified.every((b) => b.type === 'executable')).toBe(true);
   });
 });

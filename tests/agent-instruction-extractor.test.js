@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { extractInstructions, extractAllInstructions } from '../scripts/lib/agent/agent-instruction-extractor.js';
+import {
+  extractInstructions,
+  extractAllInstructions,
+} from '../scripts/lib/agent/agent-instruction-extractor.js';
 
 describe('agent-instruction-extractor', () => {
   describe('extractInstructions', () => {
@@ -104,10 +107,7 @@ describe('agent-instruction-extractor', () => {
 
   describe('extractAllInstructions', () => {
     it('여러 에이전트의 지시사항을 일괄 추출한다', async () => {
-      const agents = [
-        { template: 'code-reviewer-kr' },
-        { template: 'tdd-coach-kr' },
-      ];
+      const agents = [{ template: 'code-reviewer-kr' }, { template: 'tdd-coach-kr' }];
 
       const result = await extractAllInstructions(agents);
 
@@ -116,9 +116,7 @@ describe('agent-instruction-extractor', () => {
     });
 
     it('존재하지 않는 에이전트는 빈 문자열을 반환한다', async () => {
-      const agents = [
-        { template: 'nonexistent-agent' },
-      ];
+      const agents = [{ template: 'nonexistent-agent' }];
 
       const result = await extractAllInstructions(agents);
       expect(result['nonexistent-agent']).toBe('');

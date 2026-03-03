@@ -64,7 +64,7 @@ afterEach(async () => {
       await rm(TMP_DIR, { recursive: true, force: true });
       break;
     } catch {
-      await new Promise(r => setTimeout(r, 100));
+      await new Promise((r) => setTimeout(r, 100));
     }
   }
 });
@@ -347,7 +347,10 @@ describe('getExecutionSummary', () => {
     const state = createInitialExecutionState();
     state.status = 'paused';
     const project = {
-      tasks: [{ id: 't1', phase: 1 }, { id: 't2', phase: 2 }],
+      tasks: [
+        { id: 't1', phase: 1 },
+        { id: 't2', phase: 2 },
+      ],
       executionState: state,
     };
     const summary = getExecutionSummary(project);
@@ -409,17 +412,29 @@ describe('initExecution', () => {
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review', reviews: [] });
     // fixAttempt 2회까지 채우기
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: false, issues: ['bug'] } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: false, issues: ['bug'] },
+    });
     await advanceExecution(project.id, { completedAction: 'fix' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review', reviews: [] });
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: false, issues: ['bug'] } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: false, issues: ['bug'] },
+    });
     await advanceExecution(project.id, { completedAction: 'fix' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review', reviews: [] });
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: false, issues: ['bug'] } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: false, issues: ['bug'] },
+    });
     // 이제 escalated 상태
-    await advanceExecution(project.id, { completedAction: 'escalation-response', escalationDecision: 'abort' });
+    await advanceExecution(project.id, {
+      completedAction: 'escalation-response',
+      escalationDecision: 'abort',
+    });
 
     const paused = await getProject(project.id);
     expect(paused.executionState.status).toBe('paused');
@@ -437,7 +452,10 @@ describe('advanceExecution', () => {
   it('execute-tasks → materialize 전이', async () => {
     const project = await createTestProject();
     await initExecution(project.id);
-    const result = await advanceExecution(project.id, { completedAction: 'execute-tasks', taskResults: ['r1'] });
+    const result = await advanceExecution(project.id, {
+      completedAction: 'execute-tasks',
+      taskResults: ['r1'],
+    });
     expect(result.project.executionState.phaseStep).toBe('materialize');
     expect(result.project.executionState.phaseResults[1].taskResults).toEqual(['r1']);
   });
@@ -456,7 +474,10 @@ describe('advanceExecution', () => {
     await initExecution(project.id);
     await advanceExecution(project.id, { completedAction: 'execute-tasks' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
-    const result = await advanceExecution(project.id, { completedAction: 'review', reviews: [{ score: 8 }] });
+    const result = await advanceExecution(project.id, {
+      completedAction: 'review',
+      reviews: [{ score: 8 }],
+    });
     expect(result.project.executionState.phaseStep).toBe('quality-gate');
     expect(result.project.executionState.phaseResults[1].reviews).toEqual([{ score: 8 }]);
   });
@@ -496,12 +517,18 @@ describe('advanceExecution', () => {
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
     // 1차 실패 → fix
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: false, issues: ['bug'] } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: false, issues: ['bug'] },
+    });
     await advanceExecution(project.id, { completedAction: 'fix' }); // fixAttempt=1
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
     // 2차 실패 → fix
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: false, issues: ['bug'] } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: false, issues: ['bug'] },
+    });
     await advanceExecution(project.id, { completedAction: 'fix' }); // fixAttempt=2
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
@@ -512,7 +539,9 @@ describe('advanceExecution', () => {
     });
     expect(result.project.executionState.status).toBe('escalated');
     expect(result.project.executionState.pendingEscalation.reason).toContain('2회');
-    expect(result.project.executionState.pendingEscalation.unresolvedIssues).toContain('persistent-bug');
+    expect(result.project.executionState.pendingEscalation.unresolvedIssues).toContain(
+      'persistent-bug',
+    );
   });
 
   it('fix → materialize 전이 + fixAttempt 증가', async () => {
@@ -521,7 +550,10 @@ describe('advanceExecution', () => {
     await advanceExecution(project.id, { completedAction: 'execute-tasks' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: false, issues: [] } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: false, issues: [] },
+    });
 
     const before = await getProject(project.id);
     expect(before.executionState.fixAttempt).toBe(0);
@@ -537,7 +569,10 @@ describe('advanceExecution', () => {
     await advanceExecution(project.id, { completedAction: 'execute-tasks' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: true } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: true },
+    });
     const result = await advanceExecution(project.id, { completedAction: 'commit' });
     expect(result.project.executionState.phaseStep).toBe('build-context');
     expect(result.project.executionState.phaseResults[1].committed).toBe(true);
@@ -549,7 +584,10 @@ describe('advanceExecution', () => {
     await advanceExecution(project.id, { completedAction: 'execute-tasks' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: true } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: true },
+    });
     await advanceExecution(project.id, { completedAction: 'commit' });
     const result = await advanceExecution(project.id, { completedAction: 'build-context' });
 
@@ -565,7 +603,10 @@ describe('advanceExecution', () => {
     await advanceExecution(project.id, { completedAction: 'execute-tasks' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: true } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: true },
+    });
     await advanceExecution(project.id, { completedAction: 'commit' });
     const result = await advanceExecution(project.id, { completedAction: 'build-context' });
 
@@ -581,17 +622,29 @@ describe('advanceExecution', () => {
     await advanceExecution(project.id, { completedAction: 'execute-tasks' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: false, issues: [] } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: false, issues: [] },
+    });
     await advanceExecution(project.id, { completedAction: 'fix' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: false, issues: [] } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: false, issues: [] },
+    });
     await advanceExecution(project.id, { completedAction: 'fix' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: false, issues: [] } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: false, issues: [] },
+    });
 
-    const result = await advanceExecution(project.id, { completedAction: 'escalation-response', escalationDecision: 'continue' });
+    const result = await advanceExecution(project.id, {
+      completedAction: 'escalation-response',
+      escalationDecision: 'continue',
+    });
     expect(result.project.executionState.status).toBe('fixing');
     expect(result.project.executionState.phaseStep).toBe('fix');
     expect(result.project.executionState.fixAttempt).toBe(0);
@@ -604,17 +657,29 @@ describe('advanceExecution', () => {
     await advanceExecution(project.id, { completedAction: 'execute-tasks' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: false, issues: [] } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: false, issues: [] },
+    });
     await advanceExecution(project.id, { completedAction: 'fix' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: false, issues: [] } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: false, issues: [] },
+    });
     await advanceExecution(project.id, { completedAction: 'fix' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: false, issues: [] } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: false, issues: [] },
+    });
 
-    const result = await advanceExecution(project.id, { completedAction: 'escalation-response', escalationDecision: 'skip' });
+    const result = await advanceExecution(project.id, {
+      completedAction: 'escalation-response',
+      escalationDecision: 'skip',
+    });
     expect(result.project.executionState.phaseStep).toBe('commit');
     expect(result.project.executionState.status).toBe('committing');
   });
@@ -625,17 +690,29 @@ describe('advanceExecution', () => {
     await advanceExecution(project.id, { completedAction: 'execute-tasks' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: false, issues: [] } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: false, issues: [] },
+    });
     await advanceExecution(project.id, { completedAction: 'fix' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: false, issues: [] } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: false, issues: [] },
+    });
     await advanceExecution(project.id, { completedAction: 'fix' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: false, issues: [] } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: false, issues: [] },
+    });
 
-    const result = await advanceExecution(project.id, { completedAction: 'escalation-response', escalationDecision: 'abort' });
+    const result = await advanceExecution(project.id, {
+      completedAction: 'escalation-response',
+      escalationDecision: 'abort',
+    });
     expect(result.project.executionState.status).toBe('paused');
   });
 
@@ -653,27 +730,31 @@ describe('advanceExecution', () => {
     const project = await createTestProject();
     await initExecution(project.id);
     await expect(
-      advanceExecution(project.id, { completedAction: 'unknown-action' })
+      advanceExecution(project.id, { completedAction: 'unknown-action' }),
     ).rejects.toThrow('알 수 없는 completedAction');
   });
 
   it('executionState 없이 advance하면 에러', async () => {
     const project = await createTestProject();
     await expect(
-      advanceExecution(project.id, { completedAction: 'execute-tasks' })
+      advanceExecution(project.id, { completedAction: 'execute-tasks' }),
     ).rejects.toThrow('실행 상태가 초기화되지 않았습니다');
   });
 
   it('stepResult가 null이면 에러', async () => {
     const project = await createTestProject();
     await initExecution(project.id);
-    await expect(advanceExecution(project.id, null)).rejects.toThrow('stepResult 객체가 필요합니다');
+    await expect(advanceExecution(project.id, null)).rejects.toThrow(
+      'stepResult 객체가 필요합니다',
+    );
   });
 
   it('stepResult.completedAction이 없으면 에러', async () => {
     const project = await createTestProject();
     await initExecution(project.id);
-    await expect(advanceExecution(project.id, {})).rejects.toThrow('stepResult.completedAction 문자열이 필요합니다');
+    await expect(advanceExecution(project.id, {})).rejects.toThrow(
+      'stepResult.completedAction 문자열이 필요합니다',
+    );
   });
 
   it('escalation-response with invalid decision throws error', async () => {
@@ -682,18 +763,30 @@ describe('advanceExecution', () => {
     await advanceExecution(project.id, { completedAction: 'execute-tasks' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: false, issues: [] } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: false, issues: [] },
+    });
     await advanceExecution(project.id, { completedAction: 'fix' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: false, issues: [] } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: false, issues: [] },
+    });
     await advanceExecution(project.id, { completedAction: 'fix' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: false, issues: [] } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: false, issues: [] },
+    });
 
     await expect(
-      advanceExecution(project.id, { completedAction: 'escalation-response', escalationDecision: 'invalid' })
+      advanceExecution(project.id, {
+        completedAction: 'escalation-response',
+        escalationDecision: 'invalid',
+      }),
     ).rejects.toThrow('알 수 없는 에스컬레이션 결정');
   });
 });
@@ -712,15 +805,23 @@ describe('initExecution - edge cases', () => {
     const { updateExecutionState } = await import('../scripts/lib/project/project-manager.js');
     await updateExecutionState(project.id, { status: 'invalid', phaseStep: 'bad' });
 
-    await expect(
-      initExecution(project.id, { mode: 'interactive', resume: true })
-    ).rejects.toThrow('기존 실행 상태가 손상되었습니다');
+    await expect(initExecution(project.id, { mode: 'interactive', resume: true })).rejects.toThrow(
+      '기존 실행 상태가 손상되었습니다',
+    );
   });
 });
 
 describe('PHASE_TRANSITIONS', () => {
   it('모든 유효한 phaseStep에 대한 전이가 정의되어 있다', () => {
-    const steps = ['execute-tasks', 'materialize', 'review', 'quality-gate', 'fix', 'commit', 'build-context'];
+    const steps = [
+      'execute-tasks',
+      'materialize',
+      'review',
+      'quality-gate',
+      'fix',
+      'commit',
+      'build-context',
+    ];
     for (const step of steps) {
       expect(PHASE_TRANSITIONS[step]).toBeDefined();
       expect(Array.isArray(PHASE_TRANSITIONS[step])).toBe(true);
@@ -825,7 +926,9 @@ describe('advanceExecution journal 기록', () => {
     const project = await createTestProject(1);
     await initExecution(project.id, { mode: 'auto' });
     await advanceExecution(project.id, { completedAction: 'execute-tasks' });
-    const { project: updated } = await advanceExecution(project.id, { completedAction: 'materialize' });
+    const { project: updated } = await advanceExecution(project.id, {
+      completedAction: 'materialize',
+    });
     expect(updated.executionState.journal).toHaveLength(2);
     expect(updated.executionState.journal[1].action).toBe('materialize');
   });
@@ -838,7 +941,9 @@ describe('advanceExecution journal 기록', () => {
     delete p.executionState.journal;
     const { updateExecutionState } = await import('../scripts/lib/project/project-manager.js');
     await updateExecutionState(project.id, p.executionState);
-    const { project: updated } = await advanceExecution(project.id, { completedAction: 'execute-tasks' });
+    const { project: updated } = await advanceExecution(project.id, {
+      completedAction: 'execute-tasks',
+    });
     expect(updated.executionState.journal).toHaveLength(1);
   });
 });
@@ -904,7 +1009,9 @@ describe('categorizeFailure', () => {
   });
 
   it('아키텍처 관련 이슈를 architecture로 분류한다', () => {
-    expect(categorizeFailure({ description: 'architecture 문제: tight coupling' })).toBe('architecture');
+    expect(categorizeFailure({ description: 'architecture 문제: tight coupling' })).toBe(
+      'architecture',
+    );
     expect(categorizeFailure({ description: '설계 패턴 위반' })).toBe('architecture');
   });
 
@@ -1006,7 +1113,10 @@ describe('advanceExecution - 실패 컨텍스트', () => {
     await advanceExecution(project.id, { completedAction: 'review' });
     const result = await advanceExecution(project.id, {
       completedAction: 'quality-gate',
-      qualityGateResult: { passed: false, issues: [{ severity: 'critical', description: 'security 취약점' }] },
+      qualityGateResult: {
+        passed: false,
+        issues: [{ severity: 'critical', description: 'security 취약점' }],
+      },
     });
     expect(result.project.executionState.failureContext).toBeTruthy();
     expect(result.project.executionState.failureContext.attempt).toBe(1);
@@ -1034,7 +1144,10 @@ describe('advanceExecution - 실패 컨텍스트', () => {
     await advanceExecution(project.id, { completedAction: 'review' });
     await advanceExecution(project.id, {
       completedAction: 'quality-gate',
-      qualityGateResult: { passed: false, issues: [{ severity: 'critical', description: 'test 부족' }] },
+      qualityGateResult: {
+        passed: false,
+        issues: [{ severity: 'critical', description: 'test 부족' }],
+      },
     });
     const result = await advanceExecution(project.id, { completedAction: 'fix' });
     expect(result.project.executionState.failureHistory).toHaveLength(1);
@@ -1048,11 +1161,17 @@ describe('advanceExecution - 실패 컨텍스트', () => {
     await advanceExecution(project.id, { completedAction: 'execute-tasks' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: false, issues: ['bug'] } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: false, issues: ['bug'] },
+    });
     await advanceExecution(project.id, { completedAction: 'fix' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: false, issues: ['bug'] } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: false, issues: ['bug'] },
+    });
     await advanceExecution(project.id, { completedAction: 'fix' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
@@ -1074,7 +1193,10 @@ describe('advanceExecution - 저널 보강', () => {
     await advanceExecution(project.id, { completedAction: 'review' });
     const result = await advanceExecution(project.id, {
       completedAction: 'quality-gate',
-      qualityGateResult: { passed: false, issues: [{ severity: 'critical', description: 'security 문제' }] },
+      qualityGateResult: {
+        passed: false,
+        issues: [{ severity: 'critical', description: 'security 문제' }],
+      },
     });
     const lastJournal = result.project.executionState.journal.at(-1);
     expect(lastJournal.failureSummary).toBeTruthy();
@@ -1088,7 +1210,10 @@ describe('advanceExecution - 저널 보강', () => {
     await advanceExecution(project.id, { completedAction: 'execute-tasks' });
     await advanceExecution(project.id, { completedAction: 'materialize' });
     await advanceExecution(project.id, { completedAction: 'review' });
-    await advanceExecution(project.id, { completedAction: 'quality-gate', qualityGateResult: { passed: false, issues: [] } });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: false, issues: [] },
+    });
     const result = await advanceExecution(project.id, { completedAction: 'fix' });
     const lastJournal = result.project.executionState.journal.at(-1);
     expect(lastJournal.fixAttempt).toBe(1);
@@ -1115,19 +1240,31 @@ describe('extractContributions', () => {
   it('역할별 기여도를 추출한다', () => {
     const reviews = [
       { reviewerId: 'qa', approved: false, issues: [{ severity: 'critical', description: 'bug' }] },
-      { reviewerId: 'security', approved: true, issues: [{ severity: 'important', description: '개선점' }] },
+      {
+        reviewerId: 'security',
+        approved: true,
+        issues: [{ severity: 'important', description: '개선점' }],
+      },
     ];
     const result = extractContributions(reviews);
     expect(result).toHaveLength(2);
-    const qa = result.find(c => c.roleId === 'qa');
+    const qa = result.find((c) => c.roleId === 'qa');
     expect(qa.criticalsCaught).toBe(1);
     expect(qa.uniqueIssues).toBe(1);
   });
 
   it('동일 역할의 여러 리뷰를 합산한다', () => {
     const reviews = [
-      { reviewerId: 'qa', approved: false, issues: [{ severity: 'critical', description: 'bug1' }] },
-      { reviewerId: 'qa', approved: false, issues: [{ severity: 'important', description: 'issue2' }] },
+      {
+        reviewerId: 'qa',
+        approved: false,
+        issues: [{ severity: 'critical', description: 'bug1' }],
+      },
+      {
+        reviewerId: 'qa',
+        approved: false,
+        issues: [{ severity: 'important', description: 'issue2' }],
+      },
     ];
     const result = extractContributions(reviews);
     expect(result).toHaveLength(1);
@@ -1150,9 +1287,7 @@ describe('extractContributions', () => {
   });
 
   it('roleId 대신 reviewerId를 사용한다', () => {
-    const reviews = [
-      { roleId: 'backend', approved: true, issues: [] },
-    ];
+    const reviews = [{ roleId: 'backend', approved: true, issues: [] }];
     const result = extractContributions(reviews);
     expect(result).toHaveLength(1);
     expect(result[0].roleId).toBe('backend');

@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { loadPreset, mergePresets, listPresets, validatePreset } from '../scripts/lib/core/preset-loader.js';
+import {
+  loadPreset,
+  mergePresets,
+  listPresets,
+  validatePreset,
+} from '../scripts/lib/core/preset-loader.js';
 
 describe('preset-loader', () => {
   describe('loadPreset', () => {
@@ -115,18 +120,12 @@ describe('preset-loader', () => {
         name: 'nextjs-supabase',
         displayName: 'Next.js + Supabase',
         agents: [],
-        stackRules: [
-          'Next.js App Router 사용',
-          'Supabase RLS 정책 필수',
-        ],
+        stackRules: ['Next.js App Router 사용', 'Supabase RLS 정책 필수'],
       };
 
       const result = mergePresets(rolePreset, stackPreset);
 
-      expect(result.stackRules).toEqual([
-        'Next.js App Router 사용',
-        'Supabase RLS 정책 필수',
-      ]);
+      expect(result.stackRules).toEqual(['Next.js App Router 사용', 'Supabase RLS 정책 필수']);
       expect(result.skills).toEqual(['tdd']);
     });
 
@@ -183,12 +182,18 @@ describe('preset-loader', () => {
     });
 
     it('roles 카테고리에서 category가 누락되면 에러를 발생시킨다', () => {
-      expect(() => validatePreset({ name: 'test', displayName: 'Test' }, 'roles')).toThrow('역할 프리셋 category');
+      expect(() => validatePreset({ name: 'test', displayName: 'Test' }, 'roles')).toThrow(
+        '역할 프리셋 category',
+      );
     });
 
     it('stacks 카테고리는 stackRules가 필수이다', () => {
-      expect(() => validatePreset({ name: 'test', displayName: 'Test' }, 'stacks')).toThrow('stackRules');
-      expect(() => validatePreset({ name: 'test', displayName: 'Test', stackRules: [] }, 'stacks')).not.toThrow();
+      expect(() => validatePreset({ name: 'test', displayName: 'Test' }, 'stacks')).toThrow(
+        'stackRules',
+      );
+      expect(() =>
+        validatePreset({ name: 'test', displayName: 'Test', stackRules: [] }, 'stacks'),
+      ).not.toThrow();
     });
   });
 });

@@ -21,7 +21,11 @@ export function buildComplexityAnalysisPrompt(description, codebaseInfo = null) 
     codebaseSection = `\n\n## 코드베이스 정보
 - 기술 스택: ${(codebaseInfo.techStack || []).join(', ') || '없음'}
 - 파일 구조: ${codebaseInfo.fileStructure || '없음'}
-- 주요 언어: ${Object.entries(codebaseInfo.languages || {}).map(([l, c]) => `${l}(${c})`).join(', ') || '없음'}`;
+- 주요 언어: ${
+      Object.entries(codebaseInfo.languages || {})
+        .map(([l, c]) => `${l}(${c})`)
+        .join(', ') || '없음'
+    }`;
   }
 
   return `다음 프로젝트 설명을 분석하여 복잡도를 판단하세요.
@@ -84,7 +88,9 @@ export function parseComplexityAnalysis(rawOutput) {
 
     return {
       level: validLevels.includes(parsed.level) ? parsed.level : 'medium',
-      suggestedMode: validModes.includes(parsed.suggestedMode) ? parsed.suggestedMode : 'plan-execute',
+      suggestedMode: validModes.includes(parsed.suggestedMode)
+        ? parsed.suggestedMode
+        : 'plan-execute',
       reasoning: parsed.reasoning || '',
     };
   }

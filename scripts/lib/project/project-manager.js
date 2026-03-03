@@ -2,7 +2,11 @@ import { writeFile, readdir } from 'fs/promises';
 import { resolve } from 'path';
 import { ensureDir, fileExists, readJsonFile } from '../core/file-writer.js';
 import { inputError, notFoundError, AppError } from '../core/validators.js';
-import { createMetricsSnapshot, recordAgentCall, recordPhaseCompletion } from './project-metrics.js';
+import {
+  createMetricsSnapshot,
+  recordAgentCall,
+  recordPhaseCompletion,
+} from './project-metrics.js';
 import { projectsDir } from '../core/app-paths.js';
 import { config } from '../core/config.js';
 
@@ -90,7 +94,9 @@ async function writeProjectFile(projectId, project) {
 async function withProjectLock(projectId, fn) {
   const prev = writeLocks.get(projectId) || Promise.resolve();
   let resolveLock;
-  const lockPromise = new Promise(r => { resolveLock = r; });
+  const lockPromise = new Promise((r) => {
+    resolveLock = r;
+  });
   writeLocks.set(projectId, lockPromise);
 
   await prev;
@@ -191,7 +197,7 @@ export async function updateProjectStatus(projectId, status) {
   if (!VALID_STATUSES.includes(status)) {
     throw inputError(`유효하지 않은 상태: ${status}. 가능한 값: ${VALID_STATUSES.join(', ')}`);
   }
-  return withProjectLock(projectId, project => ({ ...project, status }));
+  return withProjectLock(projectId, (project) => ({ ...project, status }));
 }
 
 /**
@@ -201,7 +207,7 @@ export async function updateProjectStatus(projectId, status) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function setProjectTeam(projectId, team) {
-  return withProjectLock(projectId, project => ({ ...project, team }));
+  return withProjectLock(projectId, (project) => ({ ...project, team }));
 }
 
 /**
@@ -211,7 +217,7 @@ export async function setProjectTeam(projectId, team) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function setProjectPlan(projectId, planDocument) {
-  return withProjectLock(projectId, project => ({
+  return withProjectLock(projectId, (project) => ({
     ...project,
     discussion: { ...project.discussion, planDocument },
   }));
@@ -224,7 +230,7 @@ export async function setProjectPlan(projectId, planDocument) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function addProjectTasks(projectId, tasks) {
-  return withProjectLock(projectId, project => ({
+  return withProjectLock(projectId, (project) => ({
     ...project,
     tasks: [...project.tasks, ...tasks],
   }));
@@ -237,7 +243,7 @@ export async function addProjectTasks(projectId, tasks) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function setProjectReport(projectId, report) {
-  return withProjectLock(projectId, project => ({ ...project, report }));
+  return withProjectLock(projectId, (project) => ({ ...project, report }));
 }
 
 /**
@@ -252,7 +258,7 @@ export async function setProjectReport(projectId, report) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function addDiscussionRound(projectId, roundData) {
-  return withProjectLock(projectId, project => {
+  return withProjectLock(projectId, (project) => {
     const rounds = [...(project.discussion.rounds || []), roundData];
     const planDocument = roundData.synthesis || project.discussion.planDocument;
     return {
@@ -270,12 +276,10 @@ export async function addDiscussionRound(projectId, roundData) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 async function updateTaskField(projectId, taskId, updaterFn) {
-  return withProjectLock(projectId, project => {
-    const task = project.tasks.find(t => t.id === taskId);
+  return withProjectLock(projectId, (project) => {
+    const task = project.tasks.find((t) => t.id === taskId);
     if (!task) throw notFoundError(`태스크를 찾을 수 없습니다: ${taskId}`);
-    const updatedTasks = project.tasks.map(t =>
-      t.id === taskId ? updaterFn(t) : t
-    );
+    const updatedTasks = project.tasks.map((t) => (t.id === taskId ? updaterFn(t) : t));
     return { ...project, tasks: updatedTasks };
   });
 }
@@ -288,8 +292,9 @@ async function updateTaskField(projectId, taskId, updaterFn) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function addTaskReviews(projectId, taskId, reviews) {
-  return updateTaskField(projectId, taskId, t => ({
-    ...t, reviews: [...(t.reviews || []), ...reviews],
+  return updateTaskField(projectId, taskId, (t) => ({
+    ...t,
+    reviews: [...(t.reviews || []), ...reviews],
   }));
 }
 
@@ -301,7 +306,7 @@ export async function addTaskReviews(projectId, taskId, reviews) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function updateTaskStatus(projectId, taskId, status) {
-  return updateTaskField(projectId, taskId, t => ({ ...t, status }));
+  return updateTaskField(projectId, taskId, (t) => ({ ...t, status }));
 }
 
 /**
@@ -312,7 +317,7 @@ export async function updateTaskStatus(projectId, taskId, status) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function addTaskMaterializationResult(projectId, taskId, materializeResult) {
-  return updateTaskField(projectId, taskId, t => ({
+  return updateTaskField(projectId, taskId, (t) => ({
     ...t,
     materialization: [
       ...(t.materialization || []),
@@ -331,13 +336,12 @@ export async function addTaskMaterializationResult(projectId, taskId, materializ
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function saveTaskOutput(projectId, taskId, taskOutput, options = {}) {
-  return updateTaskField(projectId, taskId, t => {
+  return updateTaskField(projectId, taskId, (t) => {
     const output = taskOutput || '';
     const maxLines = options.maxLines || config.execution.maxOutputLines;
     const lines = output.split('\n');
-    const truncatedOutput = lines.length > maxLines
-      ? lines.slice(0, maxLines).join('\n') + '\n...(truncated)'
-      : output;
+    const truncatedOutput =
+      lines.length > maxLines ? lines.slice(0, maxLines).join('\n') + '\n...(truncated)' : output;
     return { ...t, taskOutput: truncatedOutput };
   });
 }
@@ -349,7 +353,7 @@ export async function saveTaskOutput(projectId, taskId, taskOutput, options = {}
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function updateExecutionState(projectId, executionState) {
-  return withProjectLock(projectId, project => ({ ...project, executionState }));
+  return withProjectLock(projectId, (project) => ({ ...project, executionState }));
 }
 
 /**
@@ -360,26 +364,25 @@ export async function updateExecutionState(projectId, executionState) {
 export function getExecutionProgress(project) {
   const tasks = project.tasks || [];
   const totalTasks = tasks.length;
-  const completedTasks = tasks.filter(t => t.status === 'completed').length;
+  const completedTasks = tasks.filter((t) => t.status === 'completed').length;
 
-  const phases = new Set(tasks.map(t => t.phase).filter(Boolean));
+  const phases = new Set(tasks.map((t) => t.phase).filter(Boolean));
   const totalPhases = phases.size || 1;
 
   const completedPhases = new Set(
-    tasks
-      .filter(t => t.status === 'completed' && t.phase)
-      .map(t => t.phase)
+    tasks.filter((t) => t.status === 'completed' && t.phase).map((t) => t.phase),
   );
 
   const inProgressPhases = tasks
-    .filter(t => t.status !== 'completed' && t.phase)
-    .map(t => t.phase);
+    .filter((t) => t.status !== 'completed' && t.phase)
+    .map((t) => t.phase);
 
-  const currentPhase = inProgressPhases.length > 0
-    ? Math.min(...inProgressPhases)
-    : completedPhases.size > 0
-      ? Math.max(...completedPhases) + 1
-      : 1;
+  const currentPhase =
+    inProgressPhases.length > 0
+      ? Math.min(...inProgressPhases)
+      : completedPhases.size > 0
+        ? Math.max(...completedPhases) + 1
+        : 1;
 
   const percentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
@@ -393,7 +396,7 @@ export function getExecutionProgress(project) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function recordContributions(projectId, contributions) {
-  return withProjectLock(projectId, project => {
+  return withProjectLock(projectId, (project) => {
     const existing = project.contributions || {};
     const updated = { ...existing };
     for (const c of contributions) {
@@ -415,9 +418,12 @@ export async function recordContributions(projectId, contributions) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function addPullRequest(projectId, prInfo) {
-  return withProjectLock(projectId, project => ({
+  return withProjectLock(projectId, (project) => ({
     ...project,
-    pullRequests: [...(project.pullRequests || []), { ...prInfo, recordedAt: new Date().toISOString() }],
+    pullRequests: [
+      ...(project.pullRequests || []),
+      { ...prInfo, recordedAt: new Date().toISOString() },
+    ],
   }));
 }
 
@@ -429,7 +435,7 @@ export async function addPullRequest(projectId, prInfo) {
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 export async function recordMetrics(projectId, event) {
-  return withProjectLock(projectId, project => {
+  return withProjectLock(projectId, (project) => {
     const base = project.metrics || createMetricsSnapshot();
 
     let metrics;

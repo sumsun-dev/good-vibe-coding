@@ -19,8 +19,22 @@ function makeProject(overrides = {}) {
     type: 'custom',
     status: 'executing',
     team: [
-      { roleId: 'cto', displayName: 'CTO', emoji: '🧑‍💻', role: 'CTO', skills: ['architecture'], reviewDomains: ['architecture'] },
-      { roleId: 'qa', displayName: 'QA', emoji: '🧪', role: 'QA', skills: ['testing'], reviewDomains: ['testing'] },
+      {
+        roleId: 'cto',
+        displayName: 'CTO',
+        emoji: '🧑‍💻',
+        role: 'CTO',
+        skills: ['architecture'],
+        reviewDomains: ['architecture'],
+      },
+      {
+        roleId: 'qa',
+        displayName: 'QA',
+        emoji: '🧪',
+        role: 'QA',
+        skills: ['testing'],
+        reviewDomains: ['testing'],
+      },
     ],
     tasks: [
       { id: 'task-1', title: 'Build feature', assignee: 'cto', phase: 1, description: 'Build it' },
@@ -108,9 +122,7 @@ describe('Executor', () => {
       completedPhases: [1],
     };
 
-    storage.read = vi.fn()
-      .mockResolvedValueOnce(project)
-      .mockResolvedValue(completedProject);
+    storage.read = vi.fn().mockResolvedValueOnce(project).mockResolvedValue(completedProject);
     storage.write = vi.fn();
 
     const executor = new Executor({
@@ -133,9 +145,10 @@ describe('Executor', () => {
       completedAt: new Date().toISOString(),
     };
 
-    storage.read = vi.fn()
-      .mockResolvedValueOnce(project)       // yield에서 읽기
-      .mockResolvedValueOnce(project)       // proceed 내부에서 읽기
+    storage.read = vi
+      .fn()
+      .mockResolvedValueOnce(project) // yield에서 읽기
+      .mockResolvedValueOnce(project) // proceed 내부에서 읽기
       .mockResolvedValue(completedProject); // 다음 루프
     storage.write = vi.fn();
 

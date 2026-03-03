@@ -10,10 +10,7 @@ import {
 
 describe('buildDynamicRolePrompt', () => {
   it('프로젝트 설명과 기존 역할을 포함한다', () => {
-    const prompt = buildDynamicRolePrompt(
-      'PG사 결제 연동 서비스',
-      ['cto', 'backend', 'qa'],
-    );
+    const prompt = buildDynamicRolePrompt('PG사 결제 연동 서비스', ['cto', 'backend', 'qa']);
 
     expect(prompt).toContain('PG사 결제 연동 서비스');
     expect(prompt).toContain('cto');
@@ -22,11 +19,10 @@ describe('buildDynamicRolePrompt', () => {
   });
 
   it('codebaseInfo가 있으면 기술 스택 정보를 포함한다', () => {
-    const prompt = buildDynamicRolePrompt(
-      '서비스 구현',
-      ['cto'],
-      { techStack: ['node', 'react'], fileStructure: 'src/ (10)' },
-    );
+    const prompt = buildDynamicRolePrompt('서비스 구현', ['cto'], {
+      techStack: ['node', 'react'],
+      fileStructure: 'src/ (10)',
+    });
 
     expect(prompt).toContain('node');
     expect(prompt).toContain('react');

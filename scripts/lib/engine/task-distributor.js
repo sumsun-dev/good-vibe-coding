@@ -112,7 +112,7 @@ export function buildExecutionPlanWithReviews(tasks, team) {
     phasesWithReviews.push({
       type: 'review',
       phase: phase.phase,
-      tasks: phase.tasks.map(t => ({
+      tasks: phase.tasks.map((t) => ({
         ...t,
         reviewType: 'cross-review',
       })),
@@ -159,7 +159,7 @@ export function isCodeTask(task) {
 
   // dynamic role: workDomains에 코드 관련 도메인이 포함되면 코드 태스크
   const codeDomains = ['frontend', 'backend', 'api', 'database', 'fullstack'];
-  if (task.assigneeWorkDomains && task.assigneeWorkDomains.some(d => codeDomains.includes(d))) {
+  if (task.assigneeWorkDomains && task.assigneeWorkDomains.some((d) => codeDomains.includes(d))) {
     return true;
   }
 
@@ -167,16 +167,46 @@ export function isCodeTask(task) {
   const koreanKeywords = ['구현', '개발', '코딩'];
   // 영어: \b 단어 경계로 false positive 방지 (e.g. "classification" ≠ "class")
   const englishKeywords = [
-    'implement', 'implements', 'implementation',
-    'develop', 'developer', 'code', 'coding',
-    'build', 'builds', 'create', 'creates',
-    'api', 'apis', 'endpoint', 'endpoints',
-    'component', 'components', 'function', 'functions',
-    'module', 'modules', 'class', 'classes',
-    'service', 'services', 'controller', 'controllers',
-    'middleware', 'route', 'routes', 'router',
-    'schema', 'schemas', 'migration', 'migrations',
-    'test', 'tests', 'testing', 'spec', 'specs',
+    'implement',
+    'implements',
+    'implementation',
+    'develop',
+    'developer',
+    'code',
+    'coding',
+    'build',
+    'builds',
+    'create',
+    'creates',
+    'api',
+    'apis',
+    'endpoint',
+    'endpoints',
+    'component',
+    'components',
+    'function',
+    'functions',
+    'module',
+    'modules',
+    'class',
+    'classes',
+    'service',
+    'services',
+    'controller',
+    'controllers',
+    'middleware',
+    'route',
+    'routes',
+    'router',
+    'schema',
+    'schemas',
+    'migration',
+    'migrations',
+    'test',
+    'tests',
+    'testing',
+    'spec',
+    'specs',
   ];
 
   const searchText = `${task.title || ''} ${task.description || ''}`.toLowerCase();
@@ -265,12 +295,13 @@ export function buildPhaseContext(completedTasks, options = {}) {
   const maxLines = options.maxLinesPerTask || 15;
 
   return completedTasks
-    .filter(t => t.taskOutput && t.taskOutput.trim())
-    .map(t => {
-      const lines = t.taskOutput.split('\n').filter(l => l.trim());
-      const truncated = lines.length > maxLines
-        ? lines.slice(0, maxLines).join('\n') + '\n...(truncated)'
-        : lines.join('\n');
+    .filter((t) => t.taskOutput && t.taskOutput.trim())
+    .map((t) => {
+      const lines = t.taskOutput.split('\n').filter((l) => l.trim());
+      const truncated =
+        lines.length > maxLines
+          ? lines.slice(0, maxLines).join('\n') + '\n...(truncated)'
+          : lines.join('\n');
       return `### ${t.id}: ${t.title} (${t.assignee})\n${truncated}`;
     })
     .join('\n\n');

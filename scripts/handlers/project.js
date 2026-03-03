@@ -3,21 +3,27 @@
  */
 import { readStdin, output, parseArgs } from '../cli-utils.js';
 import {
-  createProject, getProject, listProjects, updateProjectStatus,
-  setProjectTeam, getExecutionProgress,
+  createProject,
+  getProject,
+  listProjects,
+  updateProjectStatus,
+  setProjectTeam,
+  getExecutionProgress,
 } from '../lib/project/project-manager.js';
 import { generateReport } from '../lib/output/report-generator.js';
 import { scanCodebase } from '../lib/project/codebase-scanner.js';
 import { requireFields, notFoundError } from '../lib/core/validators.js';
 import { getCommandSchema, listCommandSchemas } from '../lib/core/command-schemas.js';
 
-const [,, , ...args] = process.argv;
+const [, , , ...args] = process.argv;
 
 export const commands = {
   'create-project': async () => {
     const data = await readStdin();
     requireFields(data, ['name', 'type']);
-    const project = await createProject(data.name, data.type, data.description, { mode: data.mode });
+    const project = await createProject(data.name, data.type, data.description, {
+      mode: data.mode,
+    });
     output(project);
   },
 
@@ -55,7 +61,7 @@ export const commands = {
     output(progress);
   },
 
-  'report': async () => {
+  report: async () => {
     const opts = parseArgs(args);
     const project = await getProject(opts.id);
     if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${opts.id}`);

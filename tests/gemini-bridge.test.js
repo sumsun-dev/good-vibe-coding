@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { parseGeminiCliOutput, isGeminiCliInstalled, callGeminiCli } from '../scripts/lib/llm/gemini-bridge.js';
+import {
+  parseGeminiCliOutput,
+  isGeminiCliInstalled,
+  callGeminiCli,
+} from '../scripts/lib/llm/gemini-bridge.js';
 import { spawnSync } from 'child_process';
 
 vi.mock('child_process', () => ({
@@ -130,21 +134,37 @@ describe('isGeminiCliInstalled', () => {
 
   it('CLI가 설치되어 있으면 true를 반환한다', () => {
     vi.mocked(spawnSync).mockReturnValue({
-      status: 0, stdout: '1.0.0', stderr: '', pid: 1, output: [], signal: null,
+      status: 0,
+      stdout: '1.0.0',
+      stderr: '',
+      pid: 1,
+      output: [],
+      signal: null,
     });
     expect(isGeminiCliInstalled('/usr/bin/gemini')).toBe(true);
-    expect(spawnSync).toHaveBeenCalledWith('/usr/bin/gemini', ['--version'], expect.objectContaining({ timeout: 5000 }));
+    expect(spawnSync).toHaveBeenCalledWith(
+      '/usr/bin/gemini',
+      ['--version'],
+      expect.objectContaining({ timeout: 5000 }),
+    );
   });
 
   it('CLI가 없으면 false를 반환한다', () => {
     vi.mocked(spawnSync).mockReturnValue({
-      status: 1, stdout: '', stderr: 'not found', pid: 1, output: [], signal: null,
+      status: 1,
+      stdout: '',
+      stderr: 'not found',
+      pid: 1,
+      output: [],
+      signal: null,
     });
     expect(isGeminiCliInstalled()).toBe(false);
   });
 
   it('spawnSync가 에러를 던지면 false를 반환한다', () => {
-    vi.mocked(spawnSync).mockImplementation(() => { throw new Error('ENOENT'); });
+    vi.mocked(spawnSync).mockImplementation(() => {
+      throw new Error('ENOENT');
+    });
     expect(isGeminiCliInstalled()).toBe(false);
   });
 });
@@ -159,13 +179,30 @@ describe('callGeminiCli', () => {
   /** isGeminiCliInstalled + callGeminiCli 모두 spawnSync를 호출하므로 2번 mock */
   function mockInstalledThenCall(callResult) {
     vi.mocked(spawnSync)
-      .mockReturnValueOnce({ status: 0, stdout: '1.0.0', stderr: '', pid: 1, output: [], signal: null })
+      .mockReturnValueOnce({
+        status: 0,
+        stdout: '1.0.0',
+        stderr: '',
+        pid: 1,
+        output: [],
+        signal: null,
+      })
       .mockReturnValueOnce(callResult);
   }
 
   it('정상 호출 시 파싱된 결과를 반환한다', () => {
-    const cliOutput = JSON.stringify({ response: '리뷰 완료', stats: { models: { 'gemini-2.5-flash': { tokens: { total: 100 } } } } });
-    mockInstalledThenCall({ status: 0, stdout: cliOutput, stderr: '', pid: 2, output: [], signal: null });
+    const cliOutput = JSON.stringify({
+      response: '리뷰 완료',
+      stats: { models: { 'gemini-2.5-flash': { tokens: { total: 100 } } } },
+    });
+    mockInstalledThenCall({
+      status: 0,
+      stdout: cliOutput,
+      stderr: '',
+      pid: 2,
+      output: [],
+      signal: null,
+    });
 
     const result = callGeminiCli('리뷰해줘', { model: 'gemini-2.5-flash' });
     expect(result.text).toBe('리뷰 완료');
@@ -176,7 +213,14 @@ describe('callGeminiCli', () => {
 
   it('올바른 인자로 spawnSync를 호출한다', () => {
     const cliOutput = JSON.stringify({ response: 'ok' });
-    mockInstalledThenCall({ status: 0, stdout: cliOutput, stderr: '', pid: 2, output: [], signal: null });
+    mockInstalledThenCall({
+      status: 0,
+      stdout: cliOutput,
+      stderr: '',
+      pid: 2,
+      output: [],
+      signal: null,
+    });
 
     callGeminiCli('테스트 프롬프트', { model: 'gemini-2.0-flash', cliPath: '/custom/gemini' });
 
@@ -187,7 +231,12 @@ describe('callGeminiCli', () => {
 
   it('CLI 미설치 시 에러를 던진다', () => {
     vi.mocked(spawnSync).mockReturnValue({
-      status: 1, stdout: '', stderr: '', pid: 1, output: [], signal: null,
+      status: 1,
+      stdout: '',
+      stderr: '',
+      pid: 1,
+      output: [],
+      signal: null,
     });
     expect(() => callGeminiCli('hello')).toThrow('Gemini CLI가 설치되지 않았습니다');
   });
@@ -195,26 +244,58 @@ describe('callGeminiCli', () => {
   it('타임아웃 시 에러를 던진다', () => {
     const timedOutError = new Error('spawnSync ETIMEDOUT');
     timedOutError.code = 'ETIMEDOUT';
-    mockInstalledThenCall({ status: null, stdout: '', stderr: '', pid: 2, output: [], signal: null, error: timedOutError });
+    mockInstalledThenCall({
+      status: null,
+      stdout: '',
+      stderr: '',
+      pid: 2,
+      output: [],
+      signal: null,
+      error: timedOutError,
+    });
 
     expect(() => callGeminiCli('느린 프롬프트', { timeout: 5000 })).toThrow('타임아웃');
   });
 
   it('비정상 종료 시 stderr를 포함한 에러를 던진다', () => {
-    mockInstalledThenCall({ status: 2, stdout: '', stderr: 'authentication failed', pid: 2, output: [], signal: null });
+    mockInstalledThenCall({
+      status: 2,
+      stdout: '',
+      stderr: 'authentication failed',
+      pid: 2,
+      output: [],
+      signal: null,
+    });
 
-    expect(() => callGeminiCli('실패 프롬프트')).toThrow('비정상 종료 (exit 2): authentication failed');
+    expect(() => callGeminiCli('실패 프롬프트')).toThrow(
+      '비정상 종료 (exit 2): authentication failed',
+    );
   });
 
   it('일반 spawnSync 에러 시 메시지를 전달한다', () => {
-    mockInstalledThenCall({ status: null, stdout: '', stderr: '', pid: 2, output: [], signal: null, error: new Error('unknown failure') });
+    mockInstalledThenCall({
+      status: null,
+      stdout: '',
+      stderr: '',
+      pid: 2,
+      output: [],
+      signal: null,
+      error: new Error('unknown failure'),
+    });
 
     expect(() => callGeminiCli('에러 프롬프트')).toThrow('Gemini CLI 실행 실패: unknown failure');
   });
 
   it('기본 모델과 타임아웃을 사용한다', () => {
     const cliOutput = JSON.stringify({ response: 'default' });
-    mockInstalledThenCall({ status: 0, stdout: cliOutput, stderr: '', pid: 2, output: [], signal: null });
+    mockInstalledThenCall({
+      status: 0,
+      stdout: cliOutput,
+      stderr: '',
+      pid: 2,
+      output: [],
+      signal: null,
+    });
 
     callGeminiCli('기본값 테스트');
 
@@ -233,14 +314,28 @@ describe('callGeminiCli — 보안', () => {
 
   function mockInstalledThenCall(callResult) {
     vi.mocked(spawnSync)
-      .mockReturnValueOnce({ status: 0, stdout: '1.0.0', stderr: '', pid: 1, output: [], signal: null })
+      .mockReturnValueOnce({
+        status: 0,
+        stdout: '1.0.0',
+        stderr: '',
+        pid: 1,
+        output: [],
+        signal: null,
+      })
       .mockReturnValueOnce(callResult);
   }
 
   it('shell 메타문자가 포함된 프롬프트가 args 배열로 전달된다 (injection 방지)', () => {
     const malicious = '$(rm -rf /) && echo pwned; cat /etc/passwd';
     const cliOutput = JSON.stringify({ response: 'safe' });
-    mockInstalledThenCall({ status: 0, stdout: cliOutput, stderr: '', pid: 2, output: [], signal: null });
+    mockInstalledThenCall({
+      status: 0,
+      stdout: cliOutput,
+      stderr: '',
+      pid: 2,
+      output: [],
+      signal: null,
+    });
 
     callGeminiCli(malicious);
 
@@ -253,7 +348,14 @@ describe('callGeminiCli — 보안', () => {
 
   it('spawnSync에 shell: true가 전달되지 않는다', () => {
     const cliOutput = JSON.stringify({ response: 'ok' });
-    mockInstalledThenCall({ status: 0, stdout: cliOutput, stderr: '', pid: 2, output: [], signal: null });
+    mockInstalledThenCall({
+      status: 0,
+      stdout: cliOutput,
+      stderr: '',
+      pid: 2,
+      output: [],
+      signal: null,
+    });
 
     callGeminiCli('normal prompt');
 

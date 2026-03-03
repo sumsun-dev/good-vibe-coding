@@ -110,7 +110,7 @@ export async function listPresets(category) {
   const { listFilesByExtension } = await import('./file-writer.js');
   const dirPath = resolve(PRESETS_DIR, category);
   const files = await listFilesByExtension(dirPath, '.json');
-  return files.map(f => f.replace('.json', ''));
+  return files.map((f) => f.replace('.json', ''));
 }
 
 export { PRESETS_DIR, validatePreset };

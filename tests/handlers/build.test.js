@@ -20,7 +20,10 @@ vi.mock('../../scripts/lib/project/github-manager.js', () => ({
 }));
 
 import { readStdin, output } from '../../scripts/cli-utils.js';
-import { materializeCode, extractMaterializableBlocks } from '../../scripts/lib/engine/code-materializer.js';
+import {
+  materializeCode,
+  extractMaterializableBlocks,
+} from '../../scripts/lib/engine/code-materializer.js';
 import { verifyAndMaterialize } from '../../scripts/lib/engine/execution-verifier.js';
 import { commitPhase } from '../../scripts/lib/project/github-manager.js';
 import { commands } from '../../scripts/handlers/build.js';
@@ -33,7 +36,10 @@ describe('build handler', () => {
   describe('materialize-code', () => {
     it('코드 구체화 결과를 출력해야 한다', async () => {
       const result = { totalBlocks: 2, materializedCount: 2 };
-      readStdin.mockResolvedValue({ taskOutput: '```js\nconsole.log("hi")\n```', projectDir: '/tmp/p' });
+      readStdin.mockResolvedValue({
+        taskOutput: '```js\nconsole.log("hi")\n```',
+        projectDir: '/tmp/p',
+      });
       materializeCode.mockResolvedValue(result);
 
       await commands['materialize-code']();

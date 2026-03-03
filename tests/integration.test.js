@@ -2,15 +2,28 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdir, rm } from 'fs/promises';
 import { resolve } from 'path';
 import {
-  createProject, getProject, updateProjectStatus, setProjectTeam,
-  setProjectPlan, addProjectTasks, listProjects, setBaseDir,
+  createProject,
+  getProject,
+  updateProjectStatus,
+  setProjectTeam,
+  setProjectPlan,
+  addProjectTasks,
+  listProjects,
+  setBaseDir,
 } from '../scripts/lib/project/project-manager.js';
 import { recommendTeam, buildTeam, clearCaches } from '../scripts/lib/agent/team-builder.js';
-import { buildDiscussionPrompt, buildPlanDocument } from '../scripts/lib/engine/discussion-engine.js';
+import {
+  buildDiscussionPrompt,
+  buildPlanDocument,
+} from '../scripts/lib/engine/discussion-engine.js';
 import { buildExecutionPlan } from '../scripts/lib/engine/task-distributor.js';
 import { generateReport, generateProjectStats } from '../scripts/lib/output/report-generator.js';
 import {
-  scaffold, loadTemplate, listTemplates, validateTemplate, setCustomTemplatesDir,
+  scaffold,
+  loadTemplate,
+  listTemplates,
+  validateTemplate,
+  setCustomTemplatesDir,
 } from '../scripts/lib/project/template-scaffolder.js';
 
 const TMP_DIR = resolve('.tmp-test-integration');
@@ -36,13 +49,17 @@ describe('통합 테스트: 전체 프로젝트 플로우', () => {
     expect(team.length).toBe(3);
 
     // 3. 프로젝트 생성
-    const project = await createProject('텔레그램 봇', 'telegram-bot', '날씨 봇', { mode: 'plan-only' });
+    const project = await createProject('텔레그램 봇', 'telegram-bot', '날씨 봇', {
+      mode: 'plan-only',
+    });
     expect(project.status).toBe('planning');
 
     // 4. 팀 설정
-    const teamData = team.map(m => ({
-      roleId: m.roleId, personalityVariant: m.personalityVariant,
-      displayName: m.displayName, emoji: m.emoji,
+    const teamData = team.map((m) => ({
+      roleId: m.roleId,
+      personalityVariant: m.personalityVariant,
+      displayName: m.displayName,
+      emoji: m.emoji,
     }));
     await setProjectTeam(project.id, teamData);
 
@@ -63,15 +80,41 @@ describe('통합 테스트: 전체 프로젝트 플로우', () => {
 
     // 8. 작업 추가
     const tasks = [
-      { id: 'task-1', title: '아키텍처 설계', assignee: 'cto', phase: 1, dependencies: [], status: 'completed' },
-      { id: 'task-2', title: 'API 연동', assignee: 'backend', phase: 2, dependencies: ['task-1'], status: 'completed' },
-      { id: 'task-3', title: '테스트', assignee: 'qa', phase: 3, dependencies: ['task-2'], status: 'pending' },
+      {
+        id: 'task-1',
+        title: '아키텍처 설계',
+        assignee: 'cto',
+        phase: 1,
+        dependencies: [],
+        status: 'completed',
+      },
+      {
+        id: 'task-2',
+        title: 'API 연동',
+        assignee: 'backend',
+        phase: 2,
+        dependencies: ['task-1'],
+        status: 'completed',
+      },
+      {
+        id: 'task-3',
+        title: '테스트',
+        assignee: 'qa',
+        phase: 3,
+        dependencies: ['task-2'],
+        status: 'pending',
+      },
     ];
     await addProjectTasks(project.id, tasks);
 
     // 9. 보고서 생성
     const finalProject = await getProject(project.id);
-    finalProject.team = team.map(m => ({ roleId: m.roleId, displayName: m.displayName, emoji: m.emoji, role: m.role }));
+    finalProject.team = team.map((m) => ({
+      roleId: m.roleId,
+      displayName: m.displayName,
+      emoji: m.emoji,
+      role: m.role,
+    }));
     const report = generateReport(finalProject);
     expect(report).toContain('텔레그램 봇');
     expect(report).toContain('민준');
@@ -124,7 +167,7 @@ describe('통합 테스트: 전체 프로젝트 플로우', () => {
     });
 
     expect(result.files.length).toBeGreaterThan(0);
-    expect(result.files.every(f => f.written)).toBe(true);
+    expect(result.files.every((f) => f.written)).toBe(true);
     expect(result.postScaffoldMessage).toContain('npm install');
 
     const { readFile } = await import('fs/promises');
@@ -145,7 +188,7 @@ describe('통합 테스트: 전체 프로젝트 플로우', () => {
       port: '8080',
     });
 
-    expect(result.files.every(f => f.written)).toBe(true);
+    expect(result.files.every((f) => f.written)).toBe(true);
 
     const { readFile } = await import('fs/promises');
     const indexJs = await readFile(resolve(targetDir, 'src/index.js'), 'utf-8');
@@ -186,7 +229,7 @@ describe('통합 테스트: 전체 프로젝트 플로우', () => {
     const templates = await listTemplates();
     const builtinNames = ['next-app', 'express-api', 'cli-app', 'telegram-bot', 'npm-library'];
     for (const name of builtinNames) {
-      const template = templates.find(t => t.name === name);
+      const template = templates.find((t) => t.name === name);
       expect(template).toBeDefined();
       const result = validateTemplate(template);
       expect(result.valid).toBe(true);

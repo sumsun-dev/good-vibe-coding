@@ -20,16 +20,17 @@ const JAVA_STACKS = ['java', 'spring', 'kotlin', 'gradle', 'maven'];
  * @returns {object} CI 전략
  */
 export function resolveCIStrategy(options = {}) {
-  const stacks = (options.techStack || options.codebaseInfo?.techStack || [])
-    .map(s => s.toLowerCase());
+  const stacks = (options.techStack || options.codebaseInfo?.techStack || []).map((s) =>
+    s.toLowerCase(),
+  );
 
-  if (stacks.some(s => PYTHON_STACKS.includes(s))) {
+  if (stacks.some((s) => PYTHON_STACKS.includes(s))) {
     return { type: 'python', pythonVersions: ['3.10', '3.11', '3.12'] };
   }
-  if (stacks.some(s => GO_STACKS.includes(s))) {
+  if (stacks.some((s) => GO_STACKS.includes(s))) {
     return { type: 'go', goVersion: '1.21' };
   }
-  if (stacks.some(s => JAVA_STACKS.includes(s))) {
+  if (stacks.some((s) => JAVA_STACKS.includes(s))) {
     return { type: 'java', javaVersion: '17' };
   }
 
@@ -97,13 +98,15 @@ function buildWorkflowYaml(strategy, commands) {
 }
 
 function buildNodeWorkflow(strategy, commands) {
-  const versions = (strategy.nodeVersions || ['18', '20', '22']).map(v => `'${v}'`).join(', ');
-  const steps = ['      - uses: actions/checkout@v4',
+  const versions = (strategy.nodeVersions || ['18', '20', '22']).map((v) => `'${v}'`).join(', ');
+  const steps = [
+    '      - uses: actions/checkout@v4',
     '      - uses: actions/setup-node@v4',
     '        with:',
     '          node-version: ${{ matrix.node-version }}',
     '          cache: npm',
-    '      - run: npm ci'];
+    '      - run: npm ci',
+  ];
 
   if (commands.lint) steps.push(`      - run: ${commands.lint}`);
   if (commands.build) steps.push(`      - run: ${commands.build}`);
@@ -129,12 +132,14 @@ ${steps.join('\n')}
 }
 
 function buildPythonWorkflow(strategy, commands) {
-  const versions = (strategy.pythonVersions || ['3.11']).map(v => `'${v}'`).join(', ');
-  const steps = ['      - uses: actions/checkout@v4',
+  const versions = (strategy.pythonVersions || ['3.11']).map((v) => `'${v}'`).join(', ');
+  const steps = [
+    '      - uses: actions/checkout@v4',
     '      - uses: actions/setup-python@v5',
     '        with:',
     '          python-version: ${{ matrix.python-version }}',
-    '      - run: pip install -r requirements.txt'];
+    '      - run: pip install -r requirements.txt',
+  ];
 
   if (commands.lint) steps.push(`      - run: ${commands.lint}`);
   steps.push(`      - run: ${commands.test}`);
@@ -160,10 +165,12 @@ ${steps.join('\n')}
 
 function buildGoWorkflow(strategy, commands) {
   const version = strategy.goVersion || '1.21';
-  const steps = ['      - uses: actions/checkout@v4',
+  const steps = [
+    '      - uses: actions/checkout@v4',
     '      - uses: actions/setup-go@v5',
     '        with:',
-    `          go-version: '${version}'`];
+    `          go-version: '${version}'`,
+  ];
 
   if (commands.lint) steps.push(`      - run: ${commands.lint}`);
   if (commands.build) steps.push(`      - run: ${commands.build}`);
@@ -187,11 +194,13 @@ ${steps.join('\n')}
 
 function buildJavaWorkflow(strategy, commands) {
   const version = strategy.javaVersion || '17';
-  const steps = ['      - uses: actions/checkout@v4',
+  const steps = [
+    '      - uses: actions/checkout@v4',
     '      - uses: actions/setup-java@v4',
     '        with:',
     `          java-version: '${version}'`,
-    '          distribution: temurin'];
+    '          distribution: temurin',
+  ];
 
   if (commands.build) steps.push(`      - run: ${commands.build}`);
   steps.push(`      - run: ${commands.test}`);

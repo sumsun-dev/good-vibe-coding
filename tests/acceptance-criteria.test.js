@@ -10,10 +10,10 @@ import {
 
 describe('buildAcceptanceCriteriaPrompt', () => {
   it('기획서 내용을 포함한다', () => {
-    const prompt = buildAcceptanceCriteriaPrompt(
-      '## 기술 스택\nReact + Express',
-      { name: 'Test', type: 'web-app' },
-    );
+    const prompt = buildAcceptanceCriteriaPrompt('## 기술 스택\nReact + Express', {
+      name: 'Test',
+      type: 'web-app',
+    });
 
     expect(prompt).toContain('React + Express');
     expect(prompt).toContain('Test');
@@ -39,7 +39,12 @@ describe('buildAcceptanceCriteriaPrompt', () => {
 describe('parseAcceptanceCriteria', () => {
   it('정상 JSON 배열을 파싱한다', () => {
     const raw = JSON.stringify([
-      { id: 'ac-1', description: 'JWT 인증 구현됨', measurementMethod: 'review', targetValue: '리뷰어 확인' },
+      {
+        id: 'ac-1',
+        description: 'JWT 인증 구현됨',
+        measurementMethod: 'review',
+        targetValue: '리뷰어 확인',
+      },
       { id: 'ac-2', description: '빌드 성공', measurementMethod: 'build', targetValue: 'exit 0' },
     ]);
 
@@ -74,8 +79,20 @@ describe('parseAcceptanceCriteria', () => {
 
 describe('checkAcceptanceCriteria', () => {
   const criteria = [
-    { id: 'ac-1', description: 'JWT', measurementMethod: 'review', targetValue: '확인', status: 'pending' },
-    { id: 'ac-2', description: '빌드', measurementMethod: 'build', targetValue: 'OK', status: 'pending' },
+    {
+      id: 'ac-1',
+      description: 'JWT',
+      measurementMethod: 'review',
+      targetValue: '확인',
+      status: 'pending',
+    },
+    {
+      id: 'ac-2',
+      description: '빌드',
+      measurementMethod: 'build',
+      targetValue: 'OK',
+      status: 'pending',
+    },
   ];
 
   it('모든 기준 통과 시 allPassed=true', () => {
@@ -115,8 +132,20 @@ describe('checkAcceptanceCriteria', () => {
 describe('formatCriteriaForPrompt', () => {
   it('마크다운 체크리스트 형식을 반환한다', () => {
     const criteria = [
-      { id: 'ac-1', description: 'JWT 인증', measurementMethod: 'review', targetValue: '리뷰어 확인', status: 'pending' },
-      { id: 'ac-2', description: '빌드 성공', measurementMethod: 'build', targetValue: 'exit 0', status: 'passed' },
+      {
+        id: 'ac-1',
+        description: 'JWT 인증',
+        measurementMethod: 'review',
+        targetValue: '리뷰어 확인',
+        status: 'pending',
+      },
+      {
+        id: 'ac-2',
+        description: '빌드 성공',
+        measurementMethod: 'build',
+        targetValue: 'exit 0',
+        status: 'passed',
+      },
     ];
 
     const md = formatCriteriaForPrompt(criteria);

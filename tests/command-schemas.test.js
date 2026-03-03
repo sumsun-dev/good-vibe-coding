@@ -2,22 +2,26 @@ import { describe, it, expect } from 'vitest';
 import { execSync } from 'child_process';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { COMMAND_SCHEMAS, getCommandSchema, listCommandSchemas } from '../scripts/lib/core/command-schemas.js';
+import {
+  COMMAND_SCHEMAS,
+  getCommandSchema,
+  listCommandSchemas,
+} from '../scripts/lib/core/command-schemas.js';
 
 const CLI_PATH = resolve('scripts/cli.js');
 
 // cli.js의 COMMAND_MAP 키를 정적 파싱으로 추출
 function getCommandMapKeys() {
   const cliSource = readFileSync(CLI_PATH, 'utf-8');
-  // COMMAND_MAP = { ... } 블록 내의 모든 'key': 'handler' 패턴 추출
+  // COMMAND_MAP = { ... } 블록 내의 모든 키 추출 (따옴표 있는/없는 키 모두)
   const mapMatch = cliSource.match(/const COMMAND_MAP\s*=\s*\{([\s\S]*?)\};/);
   if (!mapMatch) return [];
   const mapBlock = mapMatch[1];
   const keys = [];
-  const regex = /'([a-z][\w-]*)'\s*:/g;
+  const regex = /(?:'([a-z][\w-]*)'|([a-z][\w-]*))\s*:/g;
   let match;
   while ((match = regex.exec(mapBlock)) !== null) {
-    keys.push(match[1]);
+    keys.push(match[1] || match[2]);
   }
   return keys;
 }
@@ -32,7 +36,9 @@ describe('COMMAND_SCHEMAS 레지스트리', () => {
     for (const [command, schema] of Object.entries(COMMAND_SCHEMAS)) {
       expect(schema.handler, `${command}: handler 누락`).toBeTruthy();
       expect(schema.inputMethod, `${command}: inputMethod 누락`).toBeTruthy();
-      expect(['stdin', 'args', 'none'], `${command}: 유효하지 않은 inputMethod`).toContain(schema.inputMethod);
+      expect(['stdin', 'args', 'none'], `${command}: 유효하지 않은 inputMethod`).toContain(
+        schema.inputMethod,
+      );
       expect(schema.input, `${command}: input 누락`).toBeTruthy();
       expect(schema.output, `${command}: output 누락`).toBeTruthy();
       expect(schema.description, `${command}: description 누락`).toBeTruthy();
@@ -84,14 +90,14 @@ describe('listCommandSchemas', () => {
   it('project 핸들러 그룹에 create-project이 포함된다', () => {
     const grouped = listCommandSchemas();
     expect(grouped.project).toBeDefined();
-    const commands = grouped.project.map(e => e.command);
+    const commands = grouped.project.map((e) => e.command);
     expect(commands).toContain('create-project');
   });
 
   it('execution 핸들러 그룹에 init-execution이 포함된다', () => {
     const grouped = listCommandSchemas();
     expect(grouped.execution).toBeDefined();
-    const commands = grouped.execution.map(e => e.command);
+    const commands = grouped.execution.map((e) => e.command);
     expect(commands).toContain('init-execution');
   });
 
@@ -113,7 +119,7 @@ describe('describe-command CLI 핸들러 (e2e)', () => {
         input: '',
         encoding: 'utf-8',
         timeout: 10_000,
-      })
+      }),
     );
   }
 

@@ -19,7 +19,9 @@ import { isGeminiCliInstalled } from '../llm/gemini-bridge.js';
 export function checkCommand(cmd, args = ['--version'], timeout = 5000) {
   try {
     const output = execFileSync(cmd, args, {
-      stdio: 'pipe', encoding: 'utf-8', timeout,
+      stdio: 'pipe',
+      encoding: 'utf-8',
+      timeout,
     }).trim();
     const versionMatch = output.match(/(\d+\.\d+[\d.]*)/);
     return { installed: true, version: versionMatch ? versionMatch[1] : output };

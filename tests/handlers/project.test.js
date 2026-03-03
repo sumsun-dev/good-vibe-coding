@@ -13,7 +13,7 @@ function cliExec(command, input) {
       input: JSON.stringify(input),
       encoding: 'utf-8',
       timeout: 10_000,
-    })
+    }),
   );
 }
 
@@ -38,7 +38,9 @@ describe('handlers/project', () => {
     for (const id of createdIds) {
       try {
         cliExec('update-status', { id, status: 'archived' });
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     createdIds.length = 0;
   });
@@ -62,7 +64,7 @@ describe('handlers/project', () => {
     // 목록
     const list = cliExec('list-projects', {});
     expect(Array.isArray(list)).toBe(true);
-    expect(list.some(p => p.id === project.id)).toBe(true);
+    expect(list.some((p) => p.id === project.id)).toBe(true);
   });
 
   it('create-project 필수 필드 누락 시 INPUT_ERROR', () => {

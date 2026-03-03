@@ -39,22 +39,33 @@ const SAMPLE_PROJECT = {
   ],
   tasks: [
     {
-      id: 'task-1', title: '아키텍처 설계', assignee: 'cto', status: 'completed',
+      id: 'task-1',
+      title: '아키텍처 설계',
+      assignee: 'cto',
+      status: 'completed',
       reviews: [{ approved: true, feedback: '좋습니다', issues: [] }],
     },
     {
-      id: 'task-2', title: 'API 구현', assignee: 'backend', status: 'completed',
-      reviews: [{
-        approved: false,
-        feedback: '에러 처리 부족',
-        issues: [
-          { severity: 'critical', description: 'SQL injection 취약점' },
-          { severity: 'important', description: '에러 응답 형식 불일치' },
-        ],
-      }],
+      id: 'task-2',
+      title: 'API 구현',
+      assignee: 'backend',
+      status: 'completed',
+      reviews: [
+        {
+          approved: false,
+          feedback: '에러 처리 부족',
+          issues: [
+            { severity: 'critical', description: 'SQL injection 취약점' },
+            { severity: 'important', description: '에러 응답 형식 불일치' },
+          ],
+        },
+      ],
     },
     {
-      id: 'task-3', title: '테스트 작성', assignee: 'qa', status: 'completed',
+      id: 'task-3',
+      title: '테스트 작성',
+      assignee: 'qa',
+      status: 'completed',
       reviews: [{ approved: true, feedback: '커버리지 충분', issues: [] }],
     },
   ],
@@ -66,11 +77,11 @@ describe('extractAgentPerformance', () => {
     const performances = extractAgentPerformance(SAMPLE_PROJECT);
     expect(performances.length).toBe(3);
 
-    const cto = performances.find(p => p.roleId === 'cto');
+    const cto = performances.find((p) => p.roleId === 'cto');
     expect(cto.tasks.length).toBe(1);
     expect(cto.issues.length).toBe(0);
 
-    const backend = performances.find(p => p.roleId === 'backend');
+    const backend = performances.find((p) => p.roleId === 'backend');
     expect(backend.tasks.length).toBe(1);
     expect(backend.issues.length).toBe(2);
     expect(backend.issues[0].severity).toBe('critical');
@@ -99,14 +110,21 @@ describe('extractAgentPerformance', () => {
   it('minor 이슈는 필터링한다', () => {
     const project = {
       team: [{ roleId: 'backend' }],
-      tasks: [{
-        id: 't-1', title: 'A', assignee: 'backend', status: 'completed',
-        reviews: [{
-          approved: true,
-          feedback: 'OK',
-          issues: [{ severity: 'minor', description: '변수명 개선' }],
-        }],
-      }],
+      tasks: [
+        {
+          id: 't-1',
+          title: 'A',
+          assignee: 'backend',
+          status: 'completed',
+          reviews: [
+            {
+              approved: true,
+              feedback: 'OK',
+              issues: [{ severity: 'minor', description: '변수명 개선' }],
+            },
+          ],
+        },
+      ],
     };
     const performances = extractAgentPerformance(project);
     expect(performances[0].issues.length).toBe(0);
@@ -228,7 +246,7 @@ describe('listAgentOverrides', () => {
     await saveAgentOverride('backend', '# Backend 개선');
     const list = await listAgentOverrides();
     expect(list.length).toBe(2);
-    expect(list.map(l => l.roleId).sort()).toEqual(['backend', 'cto']);
+    expect(list.map((l) => l.roleId).sort()).toEqual(['backend', 'cto']);
     expect(list[0].updatedAt).toBeTruthy();
   });
 
@@ -283,8 +301,12 @@ describe('saveProjectOverride / loadProjectOverride', () => {
   });
 
   it('경로 순회 roleId를 거부한다', async () => {
-    await expect(saveProjectOverride(TMP_DIR, '../etc/passwd', 'x')).rejects.toThrow('유효하지 않은 roleId');
-    await expect(loadProjectOverride(TMP_DIR, '../../etc/passwd')).rejects.toThrow('유효하지 않은 roleId');
+    await expect(saveProjectOverride(TMP_DIR, '../etc/passwd', 'x')).rejects.toThrow(
+      '유효하지 않은 roleId',
+    );
+    await expect(loadProjectOverride(TMP_DIR, '../../etc/passwd')).rejects.toThrow(
+      '유효하지 않은 roleId',
+    );
   });
 });
 
@@ -294,7 +316,7 @@ describe('listProjectOverrides', () => {
     await saveProjectOverride(TMP_DIR, 'backend', '# Backend');
     const list = await listProjectOverrides(TMP_DIR);
     expect(list.length).toBe(2);
-    expect(list.map(l => l.roleId).sort()).toEqual(['backend', 'cto']);
+    expect(list.map((l) => l.roleId).sort()).toEqual(['backend', 'cto']);
   });
 
   it('디렉토리가 없으면 빈 배열을 반환한다', async () => {

@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { checkGhStatus, createGithubRepo, gitInitAndPush, commitPhase, MINIMAL_GITIGNORE } from '../scripts/lib/project/github-manager.js';
+import {
+  checkGhStatus,
+  createGithubRepo,
+  gitInitAndPush,
+  commitPhase,
+  MINIMAL_GITIGNORE,
+} from '../scripts/lib/project/github-manager.js';
 import { execFileSync } from 'child_process';
 import { existsSync, writeFileSync } from 'fs';
 import { join } from 'path';
@@ -43,13 +49,11 @@ describe('github-manager', () => {
     });
 
     it('gh가 설치됐지만 미인증인 경우를 처리한다', () => {
-      execFileSync
-        .mockReturnValueOnce('gh version 2.40.0')
-        .mockImplementationOnce(() => {
-          const err = new Error('not logged in');
-          err.stderr = Buffer.from('You are not logged in');
-          throw err;
-        });
+      execFileSync.mockReturnValueOnce('gh version 2.40.0').mockImplementationOnce(() => {
+        const err = new Error('not logged in');
+        err.stderr = Buffer.from('You are not logged in');
+        throw err;
+      });
 
       const result = checkGhStatus();
       expect(result.installed).toBe(true);
@@ -58,13 +62,11 @@ describe('github-manager', () => {
     });
 
     it('stderr에서 인증 정보를 파싱한다', () => {
-      execFileSync
-        .mockReturnValueOnce('gh version 2.40.0')
-        .mockImplementationOnce(() => {
-          const err = new Error('');
-          err.stderr = Buffer.from('Logged in to github.com account stderrUser');
-          throw err;
-        });
+      execFileSync.mockReturnValueOnce('gh version 2.40.0').mockImplementationOnce(() => {
+        const err = new Error('');
+        err.stderr = Buffer.from('Logged in to github.com account stderrUser');
+        throw err;
+      });
 
       const result = checkGhStatus();
       expect(result.installed).toBe(true);
@@ -84,7 +86,7 @@ describe('github-manager', () => {
       expect(execFileSync).toHaveBeenCalledWith(
         'gh',
         expect.arrayContaining(['--public']),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
@@ -95,7 +97,7 @@ describe('github-manager', () => {
       expect(execFileSync).toHaveBeenCalledWith(
         'gh',
         expect.arrayContaining(['--private']),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
@@ -106,7 +108,7 @@ describe('github-manager', () => {
       expect(execFileSync).toHaveBeenCalledWith(
         'gh',
         expect.arrayContaining(['--description', 'A test repo']),
-        expect.any(Object)
+        expect.any(Object),
       );
     });
 
@@ -136,7 +138,7 @@ describe('github-manager', () => {
       const result = gitInitAndPush('/tmp/my-project', 'https://github.com/user/repo.git');
       expect(result.success).toBe(true);
 
-      const calls = execFileSync.mock.calls.map(c => [c[0], c[1]]);
+      const calls = execFileSync.mock.calls.map((c) => [c[0], c[1]]);
       expect(calls).toEqual([
         ['git', ['init']],
         ['git', ['add', '.']],
@@ -184,11 +186,13 @@ describe('github-manager', () => {
       expect(writeFileSync).toHaveBeenCalledWith(
         join('/tmp/project', '.gitignore'),
         MINIMAL_GITIGNORE,
-        'utf-8'
+        'utf-8',
       );
       expect(execFileSync).toHaveBeenCalledWith('git', ['add', '-A'], expect.any(Object));
       expect(execFileSync).toHaveBeenCalledWith(
-        'git', ['commit', '-m', 'Phase 1 완료', '--allow-empty'], expect.any(Object)
+        'git',
+        ['commit', '-m', 'Phase 1 완료', '--allow-empty'],
+        expect.any(Object),
       );
     });
 
@@ -216,7 +220,9 @@ describe('github-manager', () => {
       commitPhase('/tmp/project', 1, 'Phase 1: API 구현');
 
       expect(execFileSync).toHaveBeenCalledWith(
-        'git', ['commit', '-m', 'Phase 1: API 구현', '--allow-empty'], expect.any(Object)
+        'git',
+        ['commit', '-m', 'Phase 1: API 구현', '--allow-empty'],
+        expect.any(Object),
       );
     });
 

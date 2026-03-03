@@ -43,7 +43,9 @@ describe('env-checker', () => {
     });
 
     it('없는 커맨드는 installed: false', () => {
-      execFileSync.mockImplementation(() => { throw new Error('not found'); });
+      execFileSync.mockImplementation(() => {
+        throw new Error('not found');
+      });
       const result = checkCommand('nonexistent');
       expect(result.installed).toBe(false);
       expect(result.version).toBeNull();
@@ -92,7 +94,9 @@ describe('env-checker', () => {
     });
 
     it('Node 미설치 시 전부 false', () => {
-      execFileSync.mockImplementation(() => { throw new Error(); });
+      execFileSync.mockImplementation(() => {
+        throw new Error();
+      });
       const result = checkNodeVersion();
       expect(result.installed).toBe(false);
       expect(result.meetsMinimum).toBe(false);
@@ -108,10 +112,10 @@ describe('env-checker', () => {
   describe('checkEnvironment', () => {
     it('node 18+, npm, git 있으면 healthy: true', () => {
       execFileSync
-        .mockReturnValueOnce('v20.10.0\n')          // node --version
-        .mockReturnValueOnce('10.2.0\n')             // npm --version
+        .mockReturnValueOnce('v20.10.0\n') // node --version
+        .mockReturnValueOnce('10.2.0\n') // npm --version
         .mockReturnValueOnce('git version 2.40.0\n') // git --version
-        .mockReturnValueOnce('4.7.8\n');             // handlebars version
+        .mockReturnValueOnce('4.7.8\n'); // handlebars version
 
       checkGhStatus.mockReturnValue({ installed: true, authenticated: true, username: 'user' });
       isGeminiCliInstalled.mockReturnValue(true);
@@ -146,7 +150,9 @@ describe('env-checker', () => {
         .mockReturnValueOnce('v20.0.0\n')
         .mockReturnValueOnce('10.0.0\n')
         .mockReturnValueOnce('git version 2.40.0\n')
-        .mockImplementationOnce(() => { throw new Error(); }); // handlebars 없음
+        .mockImplementationOnce(() => {
+          throw new Error();
+        }); // handlebars 없음
 
       checkGhStatus.mockReturnValue({ installed: false, authenticated: false, username: null });
       isGeminiCliInstalled.mockReturnValue(false);

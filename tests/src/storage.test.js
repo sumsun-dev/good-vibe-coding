@@ -39,7 +39,7 @@ describe('MemoryStorage', () => {
     await storage.write('b', { id: 'b' });
     const list = await storage.list();
     expect(list).toHaveLength(2);
-    expect(list.map(d => d.id).sort()).toEqual(['a', 'b']);
+    expect(list.map((d) => d.id).sort()).toEqual(['a', 'b']);
   });
 
   it('list: 빈 스토리지는 빈 배열을 반환한다', async () => {

@@ -1,6 +1,11 @@
 import { resolve } from 'path';
 import { renderString } from './template-engine.js';
-import { ensureDir, safeWriteFile, readJsonFile, listFilesByExtension } from '../core/file-writer.js';
+import {
+  ensureDir,
+  safeWriteFile,
+  readJsonFile,
+  listFilesByExtension,
+} from '../core/file-writer.js';
 import { notFoundError } from '../core/validators.js';
 import { pluginRoot } from '../core/app-paths.js';
 
@@ -110,7 +115,7 @@ export async function listTemplates() {
  */
 export async function getTemplatesForProjectType(projectType) {
   const all = await listTemplates();
-  return all.filter(t => t.projectType === projectType);
+  return all.filter((t) => t.projectType === projectType);
 }
 
 /**
@@ -139,7 +144,7 @@ export function resolveVariables(template, userVars) {
  */
 export function renderTemplateFiles(template, variables) {
   if (!template.files || template.files.length === 0) return [];
-  return template.files.map(file => ({
+  return template.files.map((file) => ({
     path: renderString(file.path, variables),
     content: renderString(file.content, variables),
   }));

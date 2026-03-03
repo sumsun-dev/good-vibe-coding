@@ -12,7 +12,11 @@ vi.mock('child_process', async () => {
 
 import { readFileSync } from 'fs';
 import { execFileSync } from 'child_process';
-import { getCurrentVersion, checkForUpdates, getVersionInfo } from '../scripts/lib/output/update-checker.js';
+import {
+  getCurrentVersion,
+  checkForUpdates,
+  getVersionInfo,
+} from '../scripts/lib/output/update-checker.js';
 
 describe('update-checker', () => {
   beforeEach(() => {
@@ -53,7 +57,9 @@ describe('update-checker', () => {
       execFileSync
         .mockReturnValueOnce('')
         .mockReturnValueOnce('abc123\n')
-        .mockImplementationOnce(() => { throw new Error('no upstream'); });
+        .mockImplementationOnce(() => {
+          throw new Error('no upstream');
+        });
 
       const result = checkForUpdates();
       expect(result.updateAvailable).toBe(false);
@@ -62,7 +68,9 @@ describe('update-checker', () => {
     });
 
     it('git fetch 실패 시 updateAvailable: false', () => {
-      execFileSync.mockImplementation(() => { throw new Error('not a git repo'); });
+      execFileSync.mockImplementation(() => {
+        throw new Error('not a git repo');
+      });
 
       const result = checkForUpdates();
       expect(result.updateAvailable).toBe(false);

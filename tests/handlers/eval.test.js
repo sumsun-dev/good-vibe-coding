@@ -28,8 +28,15 @@ vi.mock('../../scripts/lib/core/validators.js', () => ({
 }));
 
 import { readStdin, output, parseArgs } from '../../scripts/cli-utils.js';
-import { createEvalSession, compareApproaches, loadEvalSession } from '../../scripts/lib/engine/eval-engine.js';
-import { parseComplexityAnalysis, getDefaultsForComplexity } from '../../scripts/lib/agent/complexity-analyzer.js';
+import {
+  createEvalSession,
+  compareApproaches,
+  loadEvalSession,
+} from '../../scripts/lib/engine/eval-engine.js';
+import {
+  parseComplexityAnalysis,
+  getDefaultsForComplexity,
+} from '../../scripts/lib/agent/complexity-analyzer.js';
 import { commands } from '../../scripts/handlers/eval.js';
 
 describe('eval handler', () => {

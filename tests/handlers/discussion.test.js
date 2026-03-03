@@ -36,7 +36,11 @@ vi.mock('../../scripts/lib/engine/dispatch-plan-generator.js', () => ({
 
 import { readStdin, output } from '../../scripts/cli-utils.js';
 import { buildPlanDocument } from '../../scripts/lib/engine/discussion-engine.js';
-import { buildSynthesisPrompt, checkConvergence, groupAgentsForParallelDispatch } from '../../scripts/lib/engine/orchestrator.js';
+import {
+  buildSynthesisPrompt,
+  checkConvergence,
+  groupAgentsForParallelDispatch,
+} from '../../scripts/lib/engine/orchestrator.js';
 import { commands } from '../../scripts/handlers/discussion.js';
 
 describe('discussion handler', () => {

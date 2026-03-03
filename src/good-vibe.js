@@ -117,16 +117,18 @@ export class GoodVibe {
    */
   report(result) {
     // result가 프로젝트 형태가 아니면 최소 구조를 만들어줌
-    const project = result.name ? result : {
-      name: 'SDK Project',
-      type: 'custom',
-      mode: 'plan-execute',
-      status: result.status || 'completed',
-      team: result.team || [],
-      tasks: result.tasks || [],
-      discussion: result.discussion || { planDocument: '', rounds: [] },
-      metrics: result.metrics || null,
-    };
+    const project = result.name
+      ? result
+      : {
+          name: 'SDK Project',
+          type: 'custom',
+          mode: 'plan-execute',
+          status: result.status || 'completed',
+          team: result.team || [],
+          tasks: result.tasks || [],
+          discussion: result.discussion || { planDocument: '', rounds: [] },
+          metrics: result.metrics || null,
+        };
     return generateReport(project);
   }
 }

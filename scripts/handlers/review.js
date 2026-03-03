@@ -3,12 +3,17 @@
  */
 import { readStdin, output } from '../cli-utils.js';
 import {
-  selectReviewers, buildTaskReviewPrompt,
-  checkQualityGate, buildRevisionPrompt, checkEnhancedQualityGate,
+  selectReviewers,
+  buildTaskReviewPrompt,
+  checkQualityGate,
+  buildRevisionPrompt,
+  checkEnhancedQualityGate,
 } from '../lib/engine/review-engine.js';
 import { verifyExecution } from '../lib/engine/execution-verifier.js';
 import {
-  detectRedundantAgents, recommendOptimalTeam, buildOptimizationReport,
+  detectRedundantAgents,
+  recommendOptimalTeam,
+  buildOptimizationReport,
 } from '../lib/agent/agent-optimizer.js';
 import { getProject } from '../lib/project/project-manager.js';
 
@@ -39,7 +44,12 @@ export const commands = {
 
   'revision-prompt': async () => {
     const data = await readStdin();
-    const prompt = buildRevisionPrompt(data.task, data.implementer, data.reviews, data.failureContext || null);
+    const prompt = buildRevisionPrompt(
+      data.task,
+      data.implementer,
+      data.reviews,
+      data.failureContext || null,
+    );
     output({ prompt });
   },
 

@@ -4,19 +4,25 @@
 import { readStdin, output, outputOk } from '../cli-utils.js';
 import { inputError } from '../lib/core/validators.js';
 import {
-  connectWithApiKey, connectGeminiCli, removeAuth, listConnectedProviders,
-  loadProvidersConfig, setReviewStrategy, getProviderStatus,
+  connectWithApiKey,
+  connectGeminiCli,
+  removeAuth,
+  listConnectedProviders,
+  loadProvidersConfig,
+  setReviewStrategy,
+  getProviderStatus,
 } from '../lib/llm/auth-manager.js';
 import {
-  resolveReviewAssignments, executeCrossModelReviews,
+  resolveReviewAssignments,
+  executeCrossModelReviews,
   summarizeCrossModelResults,
 } from '../lib/engine/cross-model-strategy.js';
 import { verifyConnection } from '../lib/llm/llm-provider.js';
 
-const [,, , ...args] = process.argv;
+const [, , , ...args] = process.argv;
 
 export const commands = {
-  'connect': async () => {
+  connect: async () => {
     const data = await readStdin();
     const providerId = data.provider || args[0];
     if (!providerId) throw inputError('프로바이더 ID가 필요합니다');
@@ -27,7 +33,9 @@ export const commands = {
       }
       const { isGeminiCliInstalled } = await import('../lib/llm/gemini-bridge.js');
       if (!isGeminiCliInstalled()) {
-        throw inputError('Gemini CLI가 설치되지 않았습니다. `npm install -g @google/gemini-cli` 로 설치하세요.');
+        throw inputError(
+          'Gemini CLI가 설치되지 않았습니다. `npm install -g @google/gemini-cli` 로 설치하세요.',
+        );
       }
       const auth = await connectGeminiCli();
       outputOk({ providerId, type: auth.type });
@@ -37,7 +45,7 @@ export const commands = {
     }
   },
 
-  'disconnect': async () => {
+  disconnect: async () => {
     const data = await readStdin();
     const providerId = data.provider || args[0];
     if (!providerId) throw inputError('프로바이더 ID가 필요합니다');
@@ -45,7 +53,7 @@ export const commands = {
     outputOk({ providerId });
   },
 
-  'providers': async () => {
+  providers: async () => {
     const status = await getProviderStatus();
     output(status);
   },
@@ -70,7 +78,7 @@ export const commands = {
 
   'cross-model-review': async () => {
     const data = await readStdin();
-    const config = data.providerConfig || await loadProvidersConfig();
+    const config = data.providerConfig || (await loadProvidersConfig());
     const assignments = await resolveReviewAssignments(data.reviewers, config);
     const results = await executeCrossModelReviews(assignments, data.task, data.taskOutput);
     const summary = summarizeCrossModelResults(results);
@@ -79,18 +87,25 @@ export const commands = {
 
   'resolve-review-assignments': async () => {
     const data = await readStdin();
-    const config = data.providerConfig || await loadProvidersConfig();
+    const config = data.providerConfig || (await loadProvidersConfig());
     const assignments = await resolveReviewAssignments(data.reviewers, config);
     output({ assignments });
   },
 
   'gemini-review': async () => {
     const data = await readStdin();
-    const { buildTaskReviewPrompt, parseTaskReview } = await import('../lib/engine/review-engine.js');
+    const { buildTaskReviewPrompt, parseTaskReview } =
+      await import('../lib/engine/review-engine.js');
     const { callGeminiCli } = await import('../lib/llm/gemini-bridge.js');
     const prompt = buildTaskReviewPrompt(data.reviewer, data.task, data.taskOutput);
     const response = callGeminiCli(prompt, { model: data.model });
     const review = parseTaskReview(response.text);
-    output({ reviewer: data.reviewer, provider: 'gemini', model: response.model, review, tokenCount: response.tokenCount });
+    output({
+      reviewer: data.reviewer,
+      provider: 'gemini',
+      model: response.model,
+      review,
+      tokenCount: response.tokenCount,
+    });
   },
 };

@@ -89,7 +89,7 @@ function coerceNode(data, schema) {
   }
 
   if (schema.type === 'array' && schema.items && Array.isArray(data)) {
-    return data.map(item => coerceNode(item, schema.items));
+    return data.map((item) => coerceNode(item, schema.items));
   }
 
   return data;

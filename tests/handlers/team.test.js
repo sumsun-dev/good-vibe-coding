@@ -13,7 +13,7 @@ function cliExec(command, input) {
       input: JSON.stringify(input),
       encoding: 'utf-8',
       timeout: 10_000,
-    })
+    }),
   );
 }
 

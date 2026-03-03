@@ -15,9 +15,7 @@ const SAMPLE_REVIEWERS = [
 const makeConfig = (enabled) => ({
   defaultProvider: 'claude',
   reviewStrategy: 'cross-model',
-  providers: Object.fromEntries(
-    Object.entries(enabled).map(([id, on]) => [id, { enabled: on }])
-  ),
+  providers: Object.fromEntries(Object.entries(enabled).map(([id, on]) => [id, { enabled: on }])),
 });
 
 // --- getEnabledProviders ---
@@ -59,21 +57,21 @@ describe('assignReviewProviders', () => {
     const config = makeConfig({ claude: true, openai: true });
     const assignments = assignReviewProviders(SAMPLE_REVIEWERS, 'claude', config);
 
-    expect(assignments.every(a => a.provider === 'openai')).toBe(true);
+    expect(assignments.every((a) => a.provider === 'openai')).toBe(true);
   });
 
   it('프로바이더가 1개면 단일 모델 배정', () => {
     const config = makeConfig({ claude: true });
     const assignments = assignReviewProviders(SAMPLE_REVIEWERS, 'claude', config);
 
-    expect(assignments.every(a => a.provider === 'claude')).toBe(true);
+    expect(assignments.every((a) => a.provider === 'claude')).toBe(true);
   });
 
   it('가용 프로바이더가 없으면 구현자 프로바이더 사용', () => {
     const config = makeConfig({});
     const assignments = assignReviewProviders(SAMPLE_REVIEWERS, 'claude', config);
 
-    expect(assignments.every(a => a.provider === 'claude')).toBe(true);
+    expect(assignments.every((a) => a.provider === 'claude')).toBe(true);
   });
 
   it('빈 리뷰어 배열이면 빈 배열 반환', () => {
@@ -86,7 +84,7 @@ describe('assignReviewProviders', () => {
     const config = makeConfig({ openai: true });
     const assignments = assignReviewProviders(SAMPLE_REVIEWERS, 'openai', config);
 
-    expect(assignments.every(a => a.provider === 'openai')).toBe(true);
+    expect(assignments.every((a) => a.provider === 'openai')).toBe(true);
   });
 });
 
@@ -100,7 +98,7 @@ describe('resolveReviewAssignments', () => {
 
     const assignments = await resolveReviewAssignments(SAMPLE_REVIEWERS, config);
     // 구현자(claude) 제외, openai/gemini 배정
-    const providers = assignments.map(a => a.provider);
+    const providers = assignments.map((a) => a.provider);
     expect(providers).not.toContain('claude');
   });
 
@@ -110,7 +108,7 @@ describe('resolveReviewAssignments', () => {
     config.defaultProvider = 'claude';
 
     const assignments = await resolveReviewAssignments(SAMPLE_REVIEWERS, config);
-    expect(assignments.every(a => a.provider === 'claude')).toBe(true);
+    expect(assignments.every((a) => a.provider === 'claude')).toBe(true);
   });
 
   it('빈 리뷰어면 빈 배열 반환', async () => {
@@ -125,8 +123,18 @@ describe('resolveReviewAssignments', () => {
 describe('summarizeCrossModelResults', () => {
   it('크로스 모델 결과를 요약한다', () => {
     const results = [
-      { reviewer: SAMPLE_REVIEWERS[0], provider: 'openai', review: { verdict: 'approve', issues: [] }, tokenCount: 500 },
-      { reviewer: SAMPLE_REVIEWERS[1], provider: 'gemini', review: { verdict: 'approve', issues: [{ severity: 'minor' }] }, tokenCount: 300 },
+      {
+        reviewer: SAMPLE_REVIEWERS[0],
+        provider: 'openai',
+        review: { verdict: 'approve', issues: [] },
+        tokenCount: 500,
+      },
+      {
+        reviewer: SAMPLE_REVIEWERS[1],
+        provider: 'gemini',
+        review: { verdict: 'approve', issues: [{ severity: 'minor' }] },
+        tokenCount: 300,
+      },
     ];
 
     const summary = summarizeCrossModelResults(results);
@@ -140,8 +148,18 @@ describe('summarizeCrossModelResults', () => {
 
   it('단일 모델 결과를 요약한다', () => {
     const results = [
-      { reviewer: SAMPLE_REVIEWERS[0], provider: 'claude', review: { verdict: 'approve', issues: [] }, tokenCount: 400 },
-      { reviewer: SAMPLE_REVIEWERS[1], provider: 'claude', review: { verdict: 'approve', issues: [] }, tokenCount: 350 },
+      {
+        reviewer: SAMPLE_REVIEWERS[0],
+        provider: 'claude',
+        review: { verdict: 'approve', issues: [] },
+        tokenCount: 400,
+      },
+      {
+        reviewer: SAMPLE_REVIEWERS[1],
+        provider: 'claude',
+        review: { verdict: 'approve', issues: [] },
+        tokenCount: 350,
+      },
     ];
 
     const summary = summarizeCrossModelResults(results);
@@ -161,7 +179,11 @@ describe('summarizeCrossModelResults', () => {
 
   it('토큰 카운트가 없어도 처리한다', () => {
     const results = [
-      { reviewer: SAMPLE_REVIEWERS[0], provider: 'openai', review: { verdict: 'approve', issues: [] } },
+      {
+        reviewer: SAMPLE_REVIEWERS[0],
+        provider: 'openai',
+        review: { verdict: 'approve', issues: [] },
+      },
     ];
 
     const summary = summarizeCrossModelResults(results);
@@ -171,9 +193,27 @@ describe('summarizeCrossModelResults', () => {
 
   it('3개 프로바이더 결과를 요약한다', () => {
     const results = [
-      { reviewer: SAMPLE_REVIEWERS[0], provider: 'claude', review: { verdict: 'approve', issues: [] }, tokenCount: 100 },
-      { reviewer: SAMPLE_REVIEWERS[1], provider: 'openai', review: { verdict: 'approve', issues: [{ severity: 'critical' }] }, tokenCount: 200 },
-      { reviewer: SAMPLE_REVIEWERS[2], provider: 'gemini', review: { verdict: 'request-changes', issues: [{ severity: 'important' }, { severity: 'minor' }] }, tokenCount: 150 },
+      {
+        reviewer: SAMPLE_REVIEWERS[0],
+        provider: 'claude',
+        review: { verdict: 'approve', issues: [] },
+        tokenCount: 100,
+      },
+      {
+        reviewer: SAMPLE_REVIEWERS[1],
+        provider: 'openai',
+        review: { verdict: 'approve', issues: [{ severity: 'critical' }] },
+        tokenCount: 200,
+      },
+      {
+        reviewer: SAMPLE_REVIEWERS[2],
+        provider: 'gemini',
+        review: {
+          verdict: 'request-changes',
+          issues: [{ severity: 'important' }, { severity: 'minor' }],
+        },
+        tokenCount: 150,
+      },
     ];
 
     const summary = summarizeCrossModelResults(results);
@@ -291,6 +331,6 @@ describe('executeCrossModelReviews', () => {
     const results = await executeCrossModelReviews(assignments, task, '구현 결과');
 
     expect(results).toHaveLength(2);
-    expect(results.every(r => r.review.verdict === 'request-changes')).toBe(true);
+    expect(results.every((r) => r.review.verdict === 'request-changes')).toBe(true);
   });
 });

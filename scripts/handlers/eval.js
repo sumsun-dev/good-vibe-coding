@@ -3,16 +3,23 @@
  */
 import { readStdin, output, parseArgs } from '../cli-utils.js';
 import {
-  createEvalSession, recordApproachResult, compareApproaches,
-  generateEvalReport, saveEvalSession, loadEvalSession, listEvalSessions,
+  createEvalSession,
+  recordApproachResult,
+  compareApproaches,
+  generateEvalReport,
+  saveEvalSession,
+  loadEvalSession,
+  listEvalSessions,
   buildSinglePromptBaseline,
 } from '../lib/engine/eval-engine.js';
 import {
-  buildComplexityAnalysisPrompt, parseComplexityAnalysis, getDefaultsForComplexity,
+  buildComplexityAnalysisPrompt,
+  parseComplexityAnalysis,
+  getDefaultsForComplexity,
 } from '../lib/agent/complexity-analyzer.js';
 import { inputError } from '../lib/core/validators.js';
 
-const [,, , ...args] = process.argv;
+const [, , , ...args] = process.argv;
 
 export const commands = {
   'eval-create': async () => {

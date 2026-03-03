@@ -9,8 +9,12 @@ const PROJECT_TYPES_PATH = resolve(pluginRoot(), 'presets', 'project-types.json'
 const PERSONALITIES_PATH = resolve(pluginRoot(), 'presets', 'team-personalities.json');
 
 const catalogCache = new LazyCache(async () => JSON.parse(await readFile(CATALOG_PATH, 'utf-8')));
-const projectTypesCache = new LazyCache(async () => JSON.parse(await readFile(PROJECT_TYPES_PATH, 'utf-8')));
-const personalitiesCache = new LazyCache(async () => JSON.parse(await readFile(PERSONALITIES_PATH, 'utf-8')));
+const projectTypesCache = new LazyCache(async () =>
+  JSON.parse(await readFile(PROJECT_TYPES_PATH, 'utf-8')),
+);
+const personalitiesCache = new LazyCache(async () =>
+  JSON.parse(await readFile(PERSONALITIES_PATH, 'utf-8')),
+);
 
 /**
  * 캐시를 초기화한다 (테스트용).
@@ -72,8 +76,8 @@ export async function buildTeam(roleIds, personalityChoices = {}, options = {}) 
   const personalities = await loadTeamPersonalities();
 
   return roleIds
-    .filter(id => catalog.roles[id])
-    .map(id => {
+    .filter((id) => catalog.roles[id])
+    .map((id) => {
       const role = catalog.roles[id];
       const persona = personalities[id];
       const model = resolveModel(role, options.complexity);
@@ -97,7 +101,7 @@ export async function buildTeam(roleIds, personalityChoices = {}, options = {}) 
         };
       } else {
         const chosenId = personalityChoices[id] || persona.default;
-        const variant = persona.variants.find(v => v.id === chosenId) || persona.variants[0];
+        const variant = persona.variants.find((v) => v.id === chosenId) || persona.variants[0];
         member = {
           roleId: id,
           personalityVariant: variant.id,
@@ -153,7 +157,7 @@ export function resolveModel(role, complexity, taskType) {
 export function getTeamSummary(team) {
   if (!team || team.length === 0) return '';
   return team
-    .map(m => `${m.emoji} **${m.displayName}** (${m.role}) — "${m.greeting}"`)
+    .map((m) => `${m.emoji} **${m.displayName}** (${m.role}) — "${m.greeting}"`)
     .join('\n');
 }
 
@@ -167,7 +171,7 @@ export function getTeamSummary(team) {
 export async function buildTeamWithDynamic(roleIds, dynamicRoles = [], options = {}) {
   const catalogMembers = await buildTeam(roleIds, {}, options);
 
-  const dynamicMembers = dynamicRoles.map(role => ({
+  const dynamicMembers = dynamicRoles.map((role) => ({
     roleId: role.roleId,
     personalityVariant: 'dynamic',
     displayName: role.displayName,
@@ -191,13 +195,21 @@ export async function buildTeamWithDynamic(roleIds, dynamicRoles = [], options =
 
 // 역할 우선순위 — 낮을수록 core에 우선 배치
 const ROLE_PRIORITY = {
-  cto: 0, po: 1,
-  backend: 2, frontend: 3, fullstack: 4,
-  qa: 5, security: 6,
-  uiux: 7, devops: 8, data: 9,
+  cto: 0,
+  po: 1,
+  backend: 2,
+  frontend: 3,
+  fullstack: 4,
+  qa: 5,
+  security: 6,
+  uiux: 7,
+  devops: 8,
+  data: 9,
   'tech-writer': 10,
-  'market-researcher': 11, 'business-researcher': 12,
-  'tech-researcher': 13, 'design-researcher': 14,
+  'market-researcher': 11,
+  'business-researcher': 12,
+  'tech-researcher': 13,
+  'design-researcher': 14,
 };
 
 /**
@@ -224,9 +236,7 @@ export async function getOptimizedTeam(projectType, complexity, codebaseInfo = n
   }
 
   // 우선순위 정렬 (낮을수록 core 우선)
-  const sorted = [...baseRoles].sort((a, b) =>
-    (ROLE_PRIORITY[a] ?? 99) - (ROLE_PRIORITY[b] ?? 99)
-  );
+  const sorted = [...baseRoles].sort((a, b) => (ROLE_PRIORITY[a] ?? 99) - (ROLE_PRIORITY[b] ?? 99));
 
   // Rule 2: max size 제한
   const coreRoles = sorted.slice(0, defaults.teamSize.max);

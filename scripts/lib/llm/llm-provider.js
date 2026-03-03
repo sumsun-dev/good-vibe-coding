@@ -65,7 +65,10 @@ export async function callLLM(providerId, prompt, options = {}) {
   if (!response.ok) {
     const errorText = await response.text();
     const truncated = errorText.length > 200 ? errorText.slice(0, 200) + '...' : errorText;
-    throw new AppError(`${providerId} API 호출 실패 (${response.status}): ${truncated}`, 'SYSTEM_ERROR');
+    throw new AppError(
+      `${providerId} API 호출 실패 (${response.status}): ${truncated}`,
+      'SYSTEM_ERROR',
+    );
   }
 
   const data = await response.json();
@@ -129,7 +132,7 @@ export function buildAuthHeaders(providerId, auth) {
         'anthropic-version': '2023-06-01',
       };
     case 'openai':
-      return { 'Authorization': `Bearer ${auth.apiKey}` };
+      return { Authorization: `Bearer ${auth.apiKey}` };
     case 'gemini':
       return { 'x-goog-api-key': auth.apiKey };
     default:
@@ -169,13 +172,21 @@ export function parseProviderResponse(providerId, data, model) {
         text: data.candidates?.[0]?.content?.parts?.[0]?.text || '',
         provider: 'gemini',
         model: model,
-        tokenCount: (data.usageMetadata?.promptTokenCount || 0) +
-                    (data.usageMetadata?.candidatesTokenCount || 0),
+        tokenCount:
+          (data.usageMetadata?.promptTokenCount || 0) +
+          (data.usageMetadata?.candidatesTokenCount || 0),
         inputTokens: data.usageMetadata?.promptTokenCount || 0,
         outputTokens: data.usageMetadata?.candidatesTokenCount || 0,
       };
     default:
-      return { text: '', provider: providerId, model: model || '', tokenCount: 0, inputTokens: 0, outputTokens: 0 };
+      return {
+        text: '',
+        provider: providerId,
+        model: model || '',
+        tokenCount: 0,
+        inputTokens: 0,
+        outputTokens: 0,
+      };
   }
 }
 

@@ -152,7 +152,8 @@ export async function setupProjectInfra(options) {
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
 
-  const projectDir = targetDir || resolve(process.env.HOME || process.env.USERPROFILE, 'projects', slug);
+  const projectDir =
+    targetDir || resolve(process.env.HOME || process.env.USERPROFILE, 'projects', slug);
 
   await ensureDir(projectDir);
 
@@ -180,7 +181,7 @@ export async function setupProjectInfra(options) {
     { path: resolve(projectDir, 'README.md'), content: readme },
     { path: resolve(projectDir, '.gitignore'), content: gitignore },
     { path: resolve(projectDir, '.good-vibe', 'README.md'), content: goodVibeReadme },
-    ...agents.map(a => ({ path: resolve(projectDir, a.path), content: a.content })),
+    ...agents.map((a) => ({ path: resolve(projectDir, a.path), content: a.content })),
   ];
 
   const results = await writeFiles(filesToWrite);
@@ -188,7 +189,7 @@ export async function setupProjectInfra(options) {
   let ciResult = null;
   if (withCI) {
     try {
-      const techArray = techStack ? techStack.split(',').map(s => s.trim()) : [];
+      const techArray = techStack ? techStack.split(',').map((s) => s.trim()) : [];
       const strategy = resolveCIStrategy({ techStack: techArray });
       const commands = inferCommands(strategy.type);
       ciResult = await generateCIWorkflow(projectDir, strategy, commands);
@@ -198,7 +199,7 @@ export async function setupProjectInfra(options) {
   }
 
   return {
-    files: results.map(r => ({ path: r.path, written: r.written })),
+    files: results.map((r) => ({ path: r.path, written: r.written })),
     projectDir,
     ci: ciResult,
   };

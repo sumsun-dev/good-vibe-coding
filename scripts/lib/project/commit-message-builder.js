@@ -21,14 +21,17 @@ const MAX_SUBJECT_LENGTH = 72;
 export function resolveCommitType(tasks, phase, totalPhases) {
   if (!tasks || tasks.length === 0) return 'feat';
 
-  const titles = tasks.map(t => (t.title || '').toLowerCase()).join(' ');
-  const roles = tasks.map(t => (t.assignedTo || '').toLowerCase());
+  const titles = tasks.map((t) => (t.title || '').toLowerCase()).join(' ');
+  const roles = tasks.map((t) => (t.assignedTo || '').toLowerCase());
 
-  if (FIX_KEYWORDS.some(kw => titles.includes(kw))) return 'fix';
-  if (roles.every(r => TEST_ROLES.includes(r)) || TEST_KEYWORDS.some(kw => titles.includes(kw) && !titles.includes('구현'))) {
-    if (roles.every(r => TEST_ROLES.includes(r))) return 'test';
+  if (FIX_KEYWORDS.some((kw) => titles.includes(kw))) return 'fix';
+  if (
+    roles.every((r) => TEST_ROLES.includes(r)) ||
+    TEST_KEYWORDS.some((kw) => titles.includes(kw) && !titles.includes('구현'))
+  ) {
+    if (roles.every((r) => TEST_ROLES.includes(r))) return 'test';
   }
-  if (REFACTOR_KEYWORDS.some(kw => titles.includes(kw))) return 'refactor';
+  if (REFACTOR_KEYWORDS.some((kw) => titles.includes(kw))) return 'refactor';
   if (phase === totalPhases && totalPhases > 1) return 'chore';
 
   return 'feat';
@@ -43,8 +46,8 @@ export function resolveCommitType(tasks, phase, totalPhases) {
 export function buildCoAuthoredBy(tasks, _team) {
   if (!tasks || tasks.length === 0) return [];
 
-  const uniqueRoles = [...new Set(tasks.map(t => t.assignedTo).filter(Boolean))];
-  return uniqueRoles.map(roleId => {
+  const uniqueRoles = [...new Set(tasks.map((t) => t.assignedTo).filter(Boolean))];
+  return uniqueRoles.map((roleId) => {
     return `Co-authored-by: ${roleId} (AI) <noreply@good-vibe.dev>`;
   });
 }
@@ -60,7 +63,9 @@ export function buildCommitBody(tasks, qualityGate) {
 
   const lines = ['Tasks:'];
   for (const t of tasks) {
-    lines.push(`- [${t.id || 'unknown'}] ${t.assignedTo || 'unassigned'}: ${t.title || 'untitled'}`);
+    lines.push(
+      `- [${t.id || 'unknown'}] ${t.assignedTo || 'unassigned'}: ${t.title || 'untitled'}`,
+    );
   }
 
   if (qualityGate) {
@@ -85,8 +90,7 @@ export function buildCommitBody(tasks, qualityGate) {
  * @returns {string} 커밋 메시지
  */
 export function buildCommitMessage(options) {
-  // eslint-disable-next-line no-unused-vars
-  const { phase, tasks = [], project: _project = {}, team = [], totalPhases = 1, qualityGate } = options;
+  const { phase, tasks = [], team = [], totalPhases = 1, qualityGate } = options;
 
   const type = resolveCommitType(tasks, phase, totalPhases);
   const scope = `phase-${phase}`;
@@ -94,9 +98,8 @@ export function buildCommitMessage(options) {
 
   const prefix = `${type}(${scope}): `;
   const maxSummaryLen = MAX_SUBJECT_LENGTH - prefix.length;
-  const truncatedSummary = summary.length > maxSummaryLen
-    ? summary.slice(0, maxSummaryLen - 3) + '...'
-    : summary;
+  const truncatedSummary =
+    summary.length > maxSummaryLen ? summary.slice(0, maxSummaryLen - 3) + '...' : summary;
 
   const parts = [`${prefix}${truncatedSummary}`];
 
@@ -123,7 +126,7 @@ export function buildCommitMessage(options) {
 function buildSummaryLine(tasks) {
   if (!tasks || tasks.length === 0) return 'Phase 완료';
 
-  const titles = tasks.map(t => t.title || 'untitled').filter(Boolean);
+  const titles = tasks.map((t) => t.title || 'untitled').filter(Boolean);
   if (titles.length === 0) return 'Phase 완료';
   if (titles.length === 1) return titles[0];
 

@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { buildSectioned, toMarkdownList, jsonOutputSection } from '../scripts/lib/core/prompt-builder.js';
+import {
+  buildSectioned,
+  toMarkdownList,
+  jsonOutputSection,
+} from '../scripts/lib/core/prompt-builder.js';
 
 describe('buildSectioned', () => {
   it('intro와 섹션들을 조합한다', () => {
@@ -43,7 +47,7 @@ describe('toMarkdownList', () => {
   });
 
   it('커스텀 포맷터를 적용한다', () => {
-    const result = toMarkdownList([1, 2], n => `항목 ${n}`);
+    const result = toMarkdownList([1, 2], (n) => `항목 ${n}`);
     expect(result).toBe('- 항목 1\n- 항목 2');
   });
 });

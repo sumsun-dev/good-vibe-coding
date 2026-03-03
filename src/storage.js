@@ -74,6 +74,6 @@ export class MemoryStorage {
   }
 
   async list() {
-    return [...this._store.values()].map(v => structuredClone(v));
+    return [...this._store.values()].map((v) => structuredClone(v));
   }
 }

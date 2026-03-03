@@ -5,8 +5,18 @@
  * 토론/실행에 필요한 모든 정보를 하나의 JSON 계획으로 구조화한다.
  */
 
-import { buildAgentAnalysisPrompt, buildSynthesisPrompt, buildReviewPrompt, groupAgentsForParallelDispatch } from './orchestrator.js';
-import { buildExecutionPlanWithReviews, buildExecutionPrompt, buildTddExecutionPrompt, isCodeTask } from './task-distributor.js';
+import {
+  buildAgentAnalysisPrompt,
+  buildSynthesisPrompt,
+  buildReviewPrompt,
+  groupAgentsForParallelDispatch,
+} from './orchestrator.js';
+import {
+  buildExecutionPlanWithReviews,
+  buildExecutionPrompt,
+  buildTddExecutionPrompt,
+  isCodeTask,
+} from './task-distributor.js';
 import { selectReviewers, buildTaskReviewPrompt } from './review-engine.js';
 import { config } from '../core/config.js';
 
@@ -29,7 +39,10 @@ export function buildDiscussionDispatchPlan(project, team, context = {}) {
       project: null,
       tiers: [],
       synthesisPrompt: '',
-      convergenceConfig: { threshold: config.convergence.threshold, maxRounds: config.convergence.maxRounds },
+      convergenceConfig: {
+        threshold: config.convergence.threshold,
+        maxRounds: config.convergence.maxRounds,
+      },
     };
   }
 
@@ -40,7 +53,7 @@ export function buildDiscussionDispatchPlan(project, team, context = {}) {
 
   const tieredAgents = tiers.map((tierMembers, idx) => ({
     tier: idx + 1,
-    agents: tierMembers.map(member => ({
+    agents: tierMembers.map((member) => ({
       roleId: member.roleId,
       displayName: member.displayName,
       emoji: member.emoji,
@@ -55,16 +68,16 @@ export function buildDiscussionDispatchPlan(project, team, context = {}) {
 
   const synthesisPrompt = buildSynthesisPrompt(
     project,
-    team.map(m => ({
+    team.map((m) => ({
       roleId: m.roleId,
       role: m.role,
       emoji: m.emoji,
       analysis: `{{${m.roleId}_output}}`,
     })),
-    round
+    round,
   );
 
-  const reviewPrompts = team.map(member => ({
+  const reviewPrompts = team.map((member) => ({
     roleId: member.roleId,
     displayName: member.displayName,
     emoji: member.emoji,
@@ -103,19 +116,22 @@ export function buildExecutionDispatchPlan(project, tasks, team, context = {}) {
       type: 'execution',
       project: null,
       phases: [],
-      reviewConfig: { minReviewers: config.review.minReviewers, maxRevisionRounds: config.review.maxRevisionRounds },
+      reviewConfig: {
+        minReviewers: config.review.minReviewers,
+        maxRevisionRounds: config.review.maxRevisionRounds,
+      },
     };
   }
 
   const executionPlan = buildExecutionPlanWithReviews(tasks, team);
-  const teamMap = Object.fromEntries(team.map(m => [m.roleId, m]));
+  const teamMap = Object.fromEntries(team.map((m) => [m.roleId, m]));
 
-  const phases = executionPlan.phases.map(phase => {
+  const phases = executionPlan.phases.map((phase) => {
     if (phase.type === 'execute') {
       return {
         type: 'execute',
         phase: phase.phase,
-        tasks: phase.tasks.map(task => {
+        tasks: phase.tasks.map((task) => {
           const member = teamMap[task.assignee];
           const codeTask = isCodeTask(task);
 
@@ -150,13 +166,13 @@ export function buildExecutionDispatchPlan(project, tasks, team, context = {}) {
     return {
       type: 'review',
       phase: phase.phase,
-      tasks: phase.tasks.map(task => {
+      tasks: phase.tasks.map((task) => {
         const reviewers = selectReviewers(task, team);
         return {
           id: task.id,
           title: task.title,
           assignee: task.assignee,
-          reviewers: reviewers.map(r => ({
+          reviewers: reviewers.map((r) => ({
             roleId: r.roleId,
             displayName: r.displayName,
             emoji: r.emoji,

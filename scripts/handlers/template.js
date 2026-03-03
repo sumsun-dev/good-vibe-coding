@@ -3,20 +3,37 @@
  */
 import { readStdin, output, parseArgs } from '../cli-utils.js';
 import {
-  listTemplates, loadTemplate, scaffold, getTemplatesForProjectType,
+  listTemplates,
+  loadTemplate,
+  scaffold,
+  getTemplatesForProjectType,
 } from '../lib/project/template-scaffolder.js';
 
-const [,, , ...args] = process.argv;
+const [, , , ...args] = process.argv;
 
 export const commands = {
   'list-templates': async () => {
     const opts = parseArgs(args);
     if (opts.type) {
       const templates = await getTemplatesForProjectType(opts.type);
-      output(templates.map(t => ({ name: t.name, displayName: t.displayName, description: t.description, projectType: t.projectType })));
+      output(
+        templates.map((t) => ({
+          name: t.name,
+          displayName: t.displayName,
+          description: t.description,
+          projectType: t.projectType,
+        })),
+      );
     } else {
       const templates = await listTemplates();
-      output(templates.map(t => ({ name: t.name, displayName: t.displayName, description: t.description, projectType: t.projectType })));
+      output(
+        templates.map((t) => ({
+          name: t.name,
+          displayName: t.displayName,
+          description: t.description,
+          projectType: t.projectType,
+        })),
+      );
     }
   },
 
@@ -26,7 +43,7 @@ export const commands = {
     output(template);
   },
 
-  'scaffold': async () => {
+  scaffold: async () => {
     const data = await readStdin();
     const result = await scaffold(data.template, data.targetDir, data.variables || {}, {
       overwrite: data.overwrite || false,

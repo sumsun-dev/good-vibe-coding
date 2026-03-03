@@ -63,7 +63,9 @@ describe('task handler', () => {
       buildPhaseContext.mockReturnValue('Phase 1 요약');
 
       await commands['build-phase-context']();
-      expect(buildPhaseContext).toHaveBeenCalledWith([{ id: 't1', output: 'done' }], { maxLinesPerTask: undefined });
+      expect(buildPhaseContext).toHaveBeenCalledWith([{ id: 't1', output: 'done' }], {
+        maxLinesPerTask: undefined,
+      });
       expect(output).toHaveBeenCalledWith({ phaseContext: 'Phase 1 요약' });
     });
   });

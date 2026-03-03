@@ -40,7 +40,7 @@ export class Executor {
    * @returns {Promise<{ status: string, projectId: string, journal: Array }>}
    */
   async run(plan) {
-    const projectId = plan.projectId || await this._initProject(plan);
+    const projectId = plan.projectId || (await this._initProject(plan));
     const journal = [];
     let stepCount = 0;
 
@@ -146,7 +146,7 @@ export class Executor {
 
     for (const task of tasks) {
       const reviewers = selectReviewers(task, team);
-      const taskOutput = phaseResults.taskResults?.find(r => r.taskId === task.id)?.output || '';
+      const taskOutput = phaseResults.taskResults?.find((r) => r.taskId === task.id)?.output || '';
 
       const reviews = await Promise.all(
         reviewers.map(async (r) => {
@@ -171,7 +171,10 @@ export class Executor {
     const gate = checkQualityGate(reviews);
     return {
       completedAction: 'quality-gate',
-      qualityGateResult: { ...gate, issues: gate.criticalCount > 0 ? reviews.flatMap(r => r.issues || []) : [] },
+      qualityGateResult: {
+        ...gate,
+        issues: gate.criticalCount > 0 ? reviews.flatMap((r) => r.issues || []) : [],
+      },
     };
   }
 
@@ -187,7 +190,7 @@ export class Executor {
 
     const taskResults = await Promise.all(
       tasks.map(async (task) => {
-        const implementer = (project.team || []).find(m => m.roleId === task.assignee) || {};
+        const implementer = (project.team || []).find((m) => m.roleId === task.assignee) || {};
         const prompt = buildRevisionPrompt(task, implementer, reviews, failureContext);
         if (!prompt) return { taskId: task.id, output: '' };
         const response = await callLLM(this.provider, prompt, { model: this.model });
@@ -230,7 +233,7 @@ export class Executor {
    * @yields {{ action: string, phase: number, proceed: Function, decide: Function }}
    */
   async *steps(plan) {
-    const projectId = plan.projectId || await this._initProject(plan);
+    const projectId = plan.projectId || (await this._initProject(plan));
     let stepCount = 0;
 
     while (stepCount++ < DEFAULTS.maxExecutionSteps) {

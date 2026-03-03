@@ -14,7 +14,12 @@ vi.mock('../../scripts/lib/project/template-scaffolder.js', () => ({
 }));
 
 import { readStdin, output, parseArgs } from '../../scripts/cli-utils.js';
-import { listTemplates, loadTemplate, scaffold, getTemplatesForProjectType } from '../../scripts/lib/project/template-scaffolder.js';
+import {
+  listTemplates,
+  loadTemplate,
+  scaffold,
+  getTemplatesForProjectType,
+} from '../../scripts/lib/project/template-scaffolder.js';
 import { commands } from '../../scripts/handlers/template.js';
 
 describe('template handler', () => {
@@ -38,7 +43,12 @@ describe('template handler', () => {
 
     it('타입 필터가 있으면 해당 타입만 출력해야 한다', async () => {
       const templates = [
-        { name: 'express-api', displayName: 'Express', description: 'API 서버', projectType: 'api' },
+        {
+          name: 'express-api',
+          displayName: 'Express',
+          description: 'API 서버',
+          projectType: 'api',
+        },
       ];
       parseArgs.mockReturnValue({ type: 'api' });
       getTemplatesForProjectType.mockResolvedValue(templates);
@@ -46,7 +56,12 @@ describe('template handler', () => {
       await commands['list-templates']();
       expect(getTemplatesForProjectType).toHaveBeenCalledWith('api');
       expect(output).toHaveBeenCalledWith([
-        { name: 'express-api', displayName: 'Express', description: 'API 서버', projectType: 'api' },
+        {
+          name: 'express-api',
+          displayName: 'Express',
+          description: 'API 서버',
+          projectType: 'api',
+        },
       ]);
     });
   });
@@ -67,14 +82,22 @@ describe('template handler', () => {
     it('템플릿으로 프로젝트를 생성해야 한다', async () => {
       const result = { created: true, files: ['index.js', 'package.json'] };
       readStdin.mockResolvedValue({
-        template: 'next-app', targetDir: '/tmp/project', variables: { name: 'my-app' },
+        template: 'next-app',
+        targetDir: '/tmp/project',
+        variables: { name: 'my-app' },
       });
       scaffold.mockResolvedValue(result);
 
       await commands['scaffold']();
-      expect(scaffold).toHaveBeenCalledWith('next-app', '/tmp/project', { name: 'my-app' }, {
-        overwrite: false, backup: true,
-      });
+      expect(scaffold).toHaveBeenCalledWith(
+        'next-app',
+        '/tmp/project',
+        { name: 'my-app' },
+        {
+          overwrite: false,
+          backup: true,
+        },
+      );
       expect(output).toHaveBeenCalledWith(result);
     });
   });

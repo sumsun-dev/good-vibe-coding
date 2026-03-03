@@ -22,9 +22,7 @@ describe('commit-message-builder', () => {
     });
 
     it('QA/test 태스크만 있으면 test를 반환한다', () => {
-      const tasks = [
-        { assignedTo: 'qa', title: '통합 테스트 작성' },
-      ];
+      const tasks = [{ assignedTo: 'qa', title: '통합 테스트 작성' }];
       expect(resolveCommitType(tasks, 2, 3)).toBe('test');
     });
 
@@ -45,10 +43,7 @@ describe('commit-message-builder', () => {
 
   describe('buildCoAuthoredBy', () => {
     it('팀원 기반으로 Co-authored-by 라인을 생성한다', () => {
-      const tasks = [
-        { assignedTo: 'backend' },
-        { assignedTo: 'cto' },
-      ];
+      const tasks = [{ assignedTo: 'backend' }, { assignedTo: 'cto' }];
       const team = [
         { roleId: 'backend', name: 'Backend Developer' },
         { roleId: 'cto', name: 'CTO' },
@@ -65,10 +60,7 @@ describe('commit-message-builder', () => {
         { assignedTo: 'backend' },
         { assignedTo: 'frontend' },
       ];
-      const team = [
-        { roleId: 'backend' },
-        { roleId: 'frontend' },
-      ];
+      const team = [{ roleId: 'backend' }, { roleId: 'frontend' }];
       const lines = buildCoAuthoredBy(tasks, team);
       expect(lines).toHaveLength(2);
     });
@@ -99,7 +91,12 @@ describe('commit-message-builder', () => {
 
     it('품질 게이트 정보를 포함한다', () => {
       const tasks = [{ id: 'task-1', assignedTo: 'backend', title: 'API' }];
-      const qualityGate = { passed: true, criticalCount: 0, importantCount: 2, reviews: [{}, {}, {}] };
+      const qualityGate = {
+        passed: true,
+        criticalCount: 0,
+        importantCount: 2,
+        reviews: [{}, {}, {}],
+      };
       const body = buildCommitBody(tasks, qualityGate);
       expect(body).toContain('3 reviews');
       expect(body).toContain('0 critical');
@@ -126,10 +123,7 @@ describe('commit-message-builder', () => {
           { id: 'task-2', assignedTo: 'cto', title: '아키텍처 설계' },
         ],
         project: { name: '팀 관리 웹앱' },
-        team: [
-          { roleId: 'backend' },
-          { roleId: 'cto' },
-        ],
+        team: [{ roleId: 'backend' }, { roleId: 'cto' }],
         totalPhases: 3,
       };
 

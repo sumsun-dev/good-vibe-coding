@@ -28,17 +28,20 @@ describe('withProject', () => {
   it('프로젝트가 없으면 NOT_FOUND 에러를 던진다', async () => {
     getProject.mockResolvedValue(null);
 
-    await expect(withProject('missing-id', () => {}))
-      .rejects.toThrow('프로젝트를 찾을 수 없습니다: missing-id');
+    await expect(withProject('missing-id', () => {})).rejects.toThrow(
+      '프로젝트를 찾을 수 없습니다: missing-id',
+    );
   });
 
   it('콜백에서 발생한 에러를 전파한다', async () => {
     const mockProject = { id: 'test-id' };
     getProject.mockResolvedValue(mockProject);
 
-    await expect(withProject('test-id', () => {
-      throw new Error('콜백 에러');
-    })).rejects.toThrow('콜백 에러');
+    await expect(
+      withProject('test-id', () => {
+        throw new Error('콜백 에러');
+      }),
+    ).rejects.toThrow('콜백 에러');
   });
 
   it('async 콜백을 지원한다', async () => {

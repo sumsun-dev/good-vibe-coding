@@ -57,7 +57,10 @@ export function measureOutputSimilarity(outputA, outputB) {
  * @param {number} [threshold=0.7] - 유사도 임계값
  * @returns {Array<{roleId: string, similarTo: string, similarity: number}>} 중복 쌍 배열
  */
-export function detectRedundantAgents(agentOutputs, threshold = config.similarity.redundancyThreshold) {
+export function detectRedundantAgents(
+  agentOutputs,
+  threshold = config.similarity.redundancyThreshold,
+) {
   if (!agentOutputs || agentOutputs.length < 2) {
     return [];
   }
@@ -66,10 +69,7 @@ export function detectRedundantAgents(agentOutputs, threshold = config.similarit
 
   for (let i = 0; i < agentOutputs.length; i++) {
     for (let j = i + 1; j < agentOutputs.length; j++) {
-      const similarity = measureOutputSimilarity(
-        agentOutputs[i].output,
-        agentOutputs[j].output,
-      );
+      const similarity = measureOutputSimilarity(agentOutputs[i].output, agentOutputs[j].output);
 
       if (similarity > threshold) {
         redundant.push({
@@ -111,15 +111,13 @@ export function trackRoleContribution(roleId, reviews) {
       emptyReviews++;
     }
     uniqueIssues += issues.length;
-    criticalsCaught += issues.filter(i => i.severity === 'critical').length;
+    criticalsCaught += issues.filter((i) => i.severity === 'critical').length;
   }
 
   // contributionScore: critical 이슈는 3점, 일반 이슈는 1점, empty 리뷰는 -0.5점
   const totalReviews = reviews.length;
-  const rawScore = (criticalsCaught * 3) + (uniqueIssues - criticalsCaught) + (emptyReviews * -0.5);
-  const contributionScore = totalReviews > 0
-    ? Math.max(0, rawScore / totalReviews)
-    : 0;
+  const rawScore = criticalsCaught * 3 + (uniqueIssues - criticalsCaught) + emptyReviews * -0.5;
+  const contributionScore = totalReviews > 0 ? Math.max(0, rawScore / totalReviews) : 0;
 
   return {
     roleId,
@@ -142,12 +140,12 @@ export function recommendOptimalTeam(agentOutputs, roleContributions, teamSize) 
     return { keep: [], remove: [], reasoning: ['에이전트 출력 데이터가 없습니다.'] };
   }
 
-  const allRoleIds = agentOutputs.map(a => a.roleId);
+  const allRoleIds = agentOutputs.map((a) => a.roleId);
   const contributionMap = new Map(
-    (roleContributions || []).map(c => [c.roleId, c.contributionScore]),
+    (roleContributions || []).map((c) => [c.roleId, c.contributionScore]),
   );
   const redundancies = detectRedundantAgents(agentOutputs);
-  const redundantSet = new Set(redundancies.map(r => r.roleId));
+  const redundantSet = new Set(redundancies.map((r) => r.roleId));
 
   const keep = [];
   const remove = [];
@@ -167,7 +165,7 @@ export function recommendOptimalTeam(agentOutputs, roleContributions, teamSize) 
         );
       }
     } else if (isRedundant) {
-      const pair = redundancies.find(r => r.roleId === roleId);
+      const pair = redundancies.find((r) => r.roleId === roleId);
       if (contribution < config.similarity.contributionThreshold) {
         remove.push(roleId);
         reasoning.push(
@@ -187,7 +185,7 @@ export function recommendOptimalTeam(agentOutputs, roleContributions, teamSize) 
   // teamSize 제약 적용
   if (teamSize && keep.length > teamSize) {
     const nonUniversal = keep
-      .filter(id => !UNIVERSAL_REVIEWERS.includes(id))
+      .filter((id) => !UNIVERSAL_REVIEWERS.includes(id))
       .sort((a, b) => (contributionMap.get(a) ?? 0) - (contributionMap.get(b) ?? 0));
 
     while (keep.length > teamSize && nonUniversal.length > 0) {
@@ -196,9 +194,7 @@ export function recommendOptimalTeam(agentOutputs, roleContributions, teamSize) 
       if (idx !== -1) {
         keep.splice(idx, 1);
         remove.push(removed);
-        reasoning.push(
-          `${removed}: 팀 크기 제약 (${teamSize})에 의해 제거됨.`,
-        );
+        reasoning.push(`${removed}: 팀 크기 제약 (${teamSize})에 의해 제거됨.`);
       }
     }
   }

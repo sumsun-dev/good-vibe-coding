@@ -23,68 +23,135 @@ const HANDLERS = {
 /** 커맨드 → 핸들러 모듈 O(1) 매핑 테이블 */
 const COMMAND_MAP = {
   // project
-  'create-project': 'project', 'get-project': 'project', 'list-projects': 'project',
-  'update-status': 'project', 'set-team': 'project', 'execution-progress': 'project', 'report': 'project',
-  'describe-command': 'project', 'scan-codebase': 'project',
+  'create-project': 'project',
+  'get-project': 'project',
+  'list-projects': 'project',
+  'update-status': 'project',
+  'set-team': 'project',
+  'execution-progress': 'project',
+  report: 'project',
+  'describe-command': 'project',
+  'scan-codebase': 'project',
   // team
-  'recommend-team': 'team', 'optimized-team': 'team', 'build-team': 'team',
-  'role-catalog': 'team', 'project-types': 'team', 'team-summary': 'team',
-  'design-dynamic-roles': 'team', 'parse-dynamic-roles': 'team', 'build-team-with-dynamic': 'team',
+  'recommend-team': 'team',
+  'optimized-team': 'team',
+  'build-team': 'team',
+  'role-catalog': 'team',
+  'project-types': 'team',
+  'team-summary': 'team',
+  'design-dynamic-roles': 'team',
+  'parse-dynamic-roles': 'team',
+  'build-team-with-dynamic': 'team',
   // discussion
-  'discussion-prompt': 'discussion', 'plan-document': 'discussion',
-  'single-agent-discussion-prompt': 'discussion', 'agent-analysis-prompt': 'discussion',
-  'synthesis-prompt': 'discussion', 'review-prompt': 'discussion',
-  'check-convergence': 'discussion', 'group-agents': 'discussion',
-  'discussion-dispatch-plan': 'discussion', 'execution-dispatch-plan': 'discussion',
-  'generate-acceptance-criteria': 'discussion', 'parse-acceptance-criteria': 'discussion',
+  'discussion-prompt': 'discussion',
+  'plan-document': 'discussion',
+  'single-agent-discussion-prompt': 'discussion',
+  'agent-analysis-prompt': 'discussion',
+  'synthesis-prompt': 'discussion',
+  'review-prompt': 'discussion',
+  'check-convergence': 'discussion',
+  'group-agents': 'discussion',
+  'discussion-dispatch-plan': 'discussion',
+  'execution-dispatch-plan': 'discussion',
+  'generate-acceptance-criteria': 'discussion',
+  'parse-acceptance-criteria': 'discussion',
   // execution
-  'init-execution': 'execution', 'next-step': 'execution', 'advance-execution': 'execution',
-  'execution-summary': 'execution', 'task-distribution-prompt': 'execution',
-  'execution-prompt': 'execution', 'execution-plan': 'execution',
+  'init-execution': 'execution',
+  'next-step': 'execution',
+  'advance-execution': 'execution',
+  'execution-summary': 'execution',
+  'task-distribution-prompt': 'execution',
+  'execution-prompt': 'execution',
+  'execution-plan': 'execution',
   'execution-plan-with-reviews': 'execution',
-  'get-failure-context': 'execution', 'handle-escalation': 'execution',
+  'get-failure-context': 'execution',
+  'handle-escalation': 'execution',
   // review
-  'select-reviewers': 'review', 'task-review-prompt': 'review',
-  'check-quality-gate': 'review', 'enhanced-quality-gate': 'review',
-  'revision-prompt': 'review', 'verify-execution': 'review', 'analyze-efficiency': 'review',
+  'select-reviewers': 'review',
+  'task-review-prompt': 'review',
+  'check-quality-gate': 'review',
+  'enhanced-quality-gate': 'review',
+  'revision-prompt': 'review',
+  'verify-execution': 'review',
+  'analyze-efficiency': 'review',
   // build
-  'materialize-code': 'build', 'materialize-batch': 'build',
-  'verify-and-materialize': 'build', 'extract-materializable-blocks': 'build', 'commit-phase': 'build',
+  'materialize-code': 'build',
+  'materialize-batch': 'build',
+  'verify-and-materialize': 'build',
+  'extract-materializable-blocks': 'build',
+  'commit-phase': 'build',
   'commit-phase-enhanced': 'build',
   // eval
-  'eval-create': 'eval', 'eval-record': 'eval', 'eval-compare': 'eval',
-  'eval-report': 'eval', 'eval-list': 'eval', 'eval-baseline-prompt': 'eval',
-  'complexity-analysis': 'eval', 'parse-complexity': 'eval', 'complexity-defaults': 'eval',
+  'eval-create': 'eval',
+  'eval-record': 'eval',
+  'eval-compare': 'eval',
+  'eval-report': 'eval',
+  'eval-list': 'eval',
+  'eval-baseline-prompt': 'eval',
+  'complexity-analysis': 'eval',
+  'parse-complexity': 'eval',
+  'complexity-defaults': 'eval',
   // auth
-  'connect': 'auth', 'disconnect': 'auth', 'providers': 'auth',
-  'connected-providers': 'auth', 'set-review-strategy': 'auth',
-  'verify-provider': 'auth', 'cross-model-review': 'auth',
-  'resolve-review-assignments': 'auth', 'gemini-review': 'auth',
+  connect: 'auth',
+  disconnect: 'auth',
+  providers: 'auth',
+  'connected-providers': 'auth',
+  'set-review-strategy': 'auth',
+  'verify-provider': 'auth',
+  'cross-model-review': 'auth',
+  'resolve-review-assignments': 'auth',
+  'gemini-review': 'auth',
   // feedback
-  'extract-performance': 'feedback', 'improvement-prompt': 'feedback',
-  'parse-suggestions': 'feedback', 'save-agent-override': 'feedback',
-  'load-agent-override': 'feedback', 'list-agent-overrides': 'feedback',
-  'merge-agent-override': 'feedback', 'save-project-override': 'feedback',
-  'load-project-override': 'feedback', 'list-project-overrides': 'feedback',
+  'extract-performance': 'feedback',
+  'improvement-prompt': 'feedback',
+  'parse-suggestions': 'feedback',
+  'save-agent-override': 'feedback',
+  'load-agent-override': 'feedback',
+  'list-agent-overrides': 'feedback',
+  'merge-agent-override': 'feedback',
+  'save-project-override': 'feedback',
+  'load-project-override': 'feedback',
+  'list-project-overrides': 'feedback',
   'merge-all-overrides': 'feedback',
   // infra
-  'setup-project-infra': 'infra', 'check-gh-status': 'infra', 'check-gemini-status': 'infra',
-  'create-github-repo': 'infra', 'git-init-push': 'infra', 'append-claude-md': 'infra',
-  'check-environment': 'infra', 'check-version': 'infra',
-  'create-branch': 'infra', 'push-branch': 'infra', 'current-branch': 'infra',
-  'create-pr': 'infra', 'build-pr-body': 'infra', 'generate-ci': 'infra',
+  'setup-project-infra': 'infra',
+  'check-gh-status': 'infra',
+  'check-gemini-status': 'infra',
+  'create-github-repo': 'infra',
+  'git-init-push': 'infra',
+  'append-claude-md': 'infra',
+  'check-environment': 'infra',
+  'check-version': 'infra',
+  'create-branch': 'infra',
+  'push-branch': 'infra',
+  'current-branch': 'infra',
+  'create-pr': 'infra',
+  'build-pr-body': 'infra',
+  'finalize-pr': 'infra',
+  'build-merge-report': 'infra',
+  'generate-ci': 'infra',
   // metrics
-  'record-metrics': 'metrics', 'project-metrics': 'metrics', 'cost-summary': 'metrics',
+  'record-metrics': 'metrics',
+  'project-metrics': 'metrics',
+  'cost-summary': 'metrics',
   // template
-  'list-templates': 'template', 'get-template': 'template', 'scaffold': 'template',
+  'list-templates': 'template',
+  'get-template': 'template',
+  scaffold: 'template',
   // task
-  'add-discussion-round': 'task', 'add-task-reviews': 'task',
-  'update-task-status': 'task', 'save-task-output': 'task',
-  'add-task-materialization': 'task', 'build-phase-context': 'task',
-  'tdd-execution-prompt': 'task', 'is-code-task': 'task',
+  'add-discussion-round': 'task',
+  'add-task-reviews': 'task',
+  'update-task-status': 'task',
+  'save-task-output': 'task',
+  'add-task-materialization': 'task',
+  'build-phase-context': 'task',
+  'tdd-execution-prompt': 'task',
+  'is-code-task': 'task',
   // recommendation
-  'recommend-setup': 'recommendation', 'install-setup': 'recommendation',
-  'list-installed': 'recommendation', 'recommendation-catalog': 'recommendation',
+  'recommend-setup': 'recommendation',
+  'install-setup': 'recommendation',
+  'list-installed': 'recommendation',
+  'recommendation-catalog': 'recommendation',
 };
 
 async function resolveCommand(name) {
@@ -101,15 +168,16 @@ function listAllCommands() {
 function suggestSimilar(input, candidates) {
   const threshold = config.cli?.suggestionThreshold ?? 3;
   return candidates
-    .map(c => ({ name: c, dist: levenshtein(input, c) }))
-    .filter(c => c.dist <= threshold)
+    .map((c) => ({ name: c, dist: levenshtein(input, c) }))
+    .filter((c) => c.dist <= threshold)
     .sort((a, b) => a.dist - b.dist)
     .slice(0, 3)
-    .map(c => c.name);
+    .map((c) => c.name);
 }
 
 function levenshtein(a, b) {
-  const m = a.length, n = b.length;
+  const m = a.length,
+    n = b.length;
   const dp = Array.from({ length: m + 1 }, (_, i) => {
     const row = new Array(n + 1);
     row[0] = i;
@@ -118,9 +186,10 @@ function levenshtein(a, b) {
   for (let j = 1; j <= n; j++) dp[0][j] = j;
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
-      dp[i][j] = a[i - 1] === b[j - 1]
-        ? dp[i - 1][j - 1]
-        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+      dp[i][j] =
+        a[i - 1] === b[j - 1]
+          ? dp[i - 1][j - 1]
+          : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
     }
   }
   return dp[m][n];
@@ -133,7 +202,7 @@ const ERROR_HINTS = {
 };
 
 async function main() {
-  const [,, command] = process.argv;
+  const [, , command] = process.argv;
 
   let handler = command ? await resolveCommand(command) : null;
 

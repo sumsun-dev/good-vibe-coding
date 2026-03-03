@@ -79,7 +79,6 @@ describe('buildDiscussionPrompt', () => {
     const prompt = buildDiscussionPrompt(SAMPLE_PROJECT, SAMPLE_TEAM, 2);
     expect(prompt).toContain('2');
   });
-
 });
 
 describe('parseDiscussionOutput', () => {
@@ -118,7 +117,14 @@ describe('buildPlanDocument', () => {
 
   it('필수 섹션이 모두 포함된다', () => {
     const doc = buildPlanDocument(SAMPLE_PROJECT, []);
-    const sections = ['프로젝트 개요', '기술 스택', '아키텍처', '역할별 작업 분배', '일정', '리스크'];
+    const sections = [
+      '프로젝트 개요',
+      '기술 스택',
+      '아키텍처',
+      '역할별 작업 분배',
+      '일정',
+      '리스크',
+    ];
     for (const section of sections) {
       expect(doc).toContain(section);
     }
@@ -205,11 +211,13 @@ describe('buildSingleAgentDiscussionPrompt - tier cascade', () => {
     const teamMember = SAMPLE_TEAM[0]; // CTO
     const prompt = buildSingleAgentDiscussionPrompt(SAMPLE_PROJECT, teamMember, {
       round: 1,
-      priorTierOutputs: [{
-        roleId: 'backend',
-        role: 'Backend Developer',
-        analysis: 'line1\nline2\nline3\nline4\nline5\nline6\nline7',
-      }],
+      priorTierOutputs: [
+        {
+          roleId: 'backend',
+          role: 'Backend Developer',
+          analysis: 'line1\nline2\nline3\nline4\nline5\nline6\nline7',
+        },
+      ],
     });
     expect(prompt).toContain('line1');
     expect(prompt).toContain('line5');
@@ -221,11 +229,13 @@ describe('buildSingleAgentDiscussionPrompt - tier cascade', () => {
     const teamMember = SAMPLE_TEAM[0];
     const prompt = buildSingleAgentDiscussionPrompt(SAMPLE_PROJECT, teamMember, {
       round: 1,
-      priorTierOutputs: [{
-        roleId: 'qa',
-        role: 'QA Engineer',
-        analysis: 'first\n\n\nsecond\n\nthird',
-      }],
+      priorTierOutputs: [
+        {
+          roleId: 'qa',
+          role: 'QA Engineer',
+          analysis: 'first\n\n\nsecond\n\nthird',
+        },
+      ],
     });
     expect(prompt).toContain('first');
     expect(prompt).toContain('second');

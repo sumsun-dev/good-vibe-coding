@@ -44,7 +44,11 @@ describe('infra handler', () => {
     it('gh 상태를 출력해야 한다', async () => {
       checkGhStatus.mockReturnValue({ installed: true, authenticated: true, username: 'user' });
       await commands['check-gh-status']();
-      expect(output).toHaveBeenCalledWith({ installed: true, authenticated: true, username: 'user' });
+      expect(output).toHaveBeenCalledWith({
+        installed: true,
+        authenticated: true,
+        username: 'user',
+      });
     });
   });
 
@@ -53,7 +57,9 @@ describe('infra handler', () => {
       isGeminiCliInstalled.mockReturnValue(true);
       await commands['check-gemini-status']();
       expect(output).toHaveBeenCalledWith({
-        installed: true, authType: 'cli', model: 'gemini-2.0-flash',
+        installed: true,
+        authType: 'cli',
+        model: 'gemini-2.0-flash',
       });
     });
 
@@ -61,7 +67,9 @@ describe('infra handler', () => {
       isGeminiCliInstalled.mockReturnValue(false);
       await commands['check-gemini-status']();
       expect(output).toHaveBeenCalledWith({
-        installed: false, authType: 'cli', model: 'gemini-2.0-flash',
+        installed: false,
+        authType: 'cli',
+        model: 'gemini-2.0-flash',
       });
     });
   });
@@ -87,24 +95,28 @@ describe('infra handler', () => {
   describe('check-version', () => {
     it('버전 정보를 출력해야 한다', async () => {
       getVersionInfo.mockReturnValue({
-        version: '1.0.0', updateAvailable: false, instructions: null,
+        version: '1.0.0',
+        updateAvailable: false,
+        instructions: null,
       });
 
       await commands['check-version']();
       expect(output).toHaveBeenCalledWith({
-        version: '1.0.0', updateAvailable: false, instructions: null,
+        version: '1.0.0',
+        updateAvailable: false,
+        instructions: null,
       });
     });
 
     it('업데이트 가능 시 instructions 포함', async () => {
       getVersionInfo.mockReturnValue({
-        version: '1.0.0', updateAvailable: true, instructions: 'git pull',
+        version: '1.0.0',
+        updateAvailable: true,
+        instructions: 'git pull',
       });
 
       await commands['check-version']();
-      expect(output).toHaveBeenCalledWith(
-        expect.objectContaining({ updateAvailable: true }),
-      );
+      expect(output).toHaveBeenCalledWith(expect.objectContaining({ updateAvailable: true }));
     });
   });
 });

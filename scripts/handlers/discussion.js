@@ -5,20 +5,27 @@ import { readStdin, output, parseArgs } from '../cli-utils.js';
 import { getProject } from '../lib/project/project-manager.js';
 import { notFoundError, inputError } from '../lib/core/validators.js';
 import {
-  buildDiscussionPrompt, buildPlanDocument, buildSingleAgentDiscussionPrompt,
+  buildDiscussionPrompt,
+  buildPlanDocument,
+  buildSingleAgentDiscussionPrompt,
 } from '../lib/engine/discussion-engine.js';
 import {
-  buildAcceptanceCriteriaPrompt, parseAcceptanceCriteria,
+  buildAcceptanceCriteriaPrompt,
+  parseAcceptanceCriteria,
 } from '../lib/engine/acceptance-criteria.js';
 import {
-  buildAgentAnalysisPrompt, buildSynthesisPrompt, buildReviewPrompt,
-  checkConvergence, groupAgentsForParallelDispatch,
+  buildAgentAnalysisPrompt,
+  buildSynthesisPrompt,
+  buildReviewPrompt,
+  checkConvergence,
+  groupAgentsForParallelDispatch,
 } from '../lib/engine/orchestrator.js';
 import {
-  buildDiscussionDispatchPlan, buildExecutionDispatchPlan,
+  buildDiscussionDispatchPlan,
+  buildExecutionDispatchPlan,
 } from '../lib/engine/dispatch-plan-generator.js';
 
-const [,, , ...args] = process.argv;
+const [, , , ...args] = process.argv;
 
 export const commands = {
   'discussion-prompt': async () => {
@@ -37,7 +44,11 @@ export const commands = {
 
   'single-agent-discussion-prompt': async () => {
     const data = await readStdin();
-    const prompt = buildSingleAgentDiscussionPrompt(data.project, data.teamMember, data.context || {});
+    const prompt = buildSingleAgentDiscussionPrompt(
+      data.project,
+      data.teamMember,
+      data.context || {},
+    );
     output({ prompt });
   },
 
@@ -75,7 +86,11 @@ export const commands = {
     const data = await readStdin();
     const project = data.project || (data.id ? await getProject(data.id) : null);
     if (!project) throw inputError('프로젝트 정보가 필요합니다');
-    const plan = buildDiscussionDispatchPlan(project, data.team || project.team, data.context || {});
+    const plan = buildDiscussionDispatchPlan(
+      project,
+      data.team || project.team,
+      data.context || {},
+    );
     output(plan);
   },
 
@@ -97,7 +112,12 @@ export const commands = {
     const data = await readStdin();
     const project = data.project || (data.id ? await getProject(data.id) : null);
     if (!project) throw inputError('프로젝트 정보가 필요합니다');
-    const plan = buildExecutionDispatchPlan(project, data.tasks || project.tasks, data.team || project.team, data.context || {});
+    const plan = buildExecutionDispatchPlan(
+      project,
+      data.tasks || project.tasks,
+      data.team || project.team,
+      data.context || {},
+    );
     output(plan);
   },
 };

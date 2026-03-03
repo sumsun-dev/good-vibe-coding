@@ -47,7 +47,7 @@ export function recordAgentCall(metrics, event) {
   const outputTokens = event.outputTokens || 0;
 
   const rates = COST_RATES[provider] || COST_RATES.claude;
-  const cost = (inputTokens * rates.input) + (outputTokens * rates.output);
+  const cost = inputTokens * rates.input + outputTokens * rates.output;
 
   const newCall = {
     roleId: event.roleId,
@@ -61,21 +61,31 @@ export function recordAgentCall(metrics, event) {
   const updatedCalls = [...metrics.agentCalls, newCall].slice(-config.execution.maxAgentCalls);
 
   // byRole 집계 (immutable)
-  const prevRole = (event.roleId && metrics.byRole[event.roleId]) || { callCount: 0, inputTokens: 0, outputTokens: 0, costUsd: 0 };
+  const prevRole = (event.roleId && metrics.byRole[event.roleId]) || {
+    callCount: 0,
+    inputTokens: 0,
+    outputTokens: 0,
+    costUsd: 0,
+  };
   const updatedByRole = event.roleId
     ? {
-      ...metrics.byRole,
-      [event.roleId]: {
-        callCount: prevRole.callCount + 1,
-        inputTokens: prevRole.inputTokens + inputTokens,
-        outputTokens: prevRole.outputTokens + outputTokens,
-        costUsd: prevRole.costUsd + cost,
-      },
-    }
+        ...metrics.byRole,
+        [event.roleId]: {
+          callCount: prevRole.callCount + 1,
+          inputTokens: prevRole.inputTokens + inputTokens,
+          outputTokens: prevRole.outputTokens + outputTokens,
+          costUsd: prevRole.costUsd + cost,
+        },
+      }
     : { ...metrics.byRole };
 
   // byProvider 집계 (immutable)
-  const prevProv = metrics.byProvider[provider] || { callCount: 0, inputTokens: 0, outputTokens: 0, costUsd: 0 };
+  const prevProv = metrics.byProvider[provider] || {
+    callCount: 0,
+    inputTokens: 0,
+    outputTokens: 0,
+    costUsd: 0,
+  };
   const updatedByProvider = {
     ...metrics.byProvider,
     [provider]: {
@@ -135,7 +145,13 @@ export function recordPhaseCompletion(metrics, event) {
  */
 export function getCostSummary(metrics) {
   if (!metrics) {
-    return { totalCostUsd: 0, totalInputTokens: 0, totalOutputTokens: 0, byRole: {}, byProvider: {} };
+    return {
+      totalCostUsd: 0,
+      totalInputTokens: 0,
+      totalOutputTokens: 0,
+      byRole: {},
+      byProvider: {},
+    };
   }
 
   return {
@@ -199,7 +215,8 @@ export function buildMetricsDashboard(project) {
   // 프로바이더별 비용
   const providerEntries = Object.entries(costSummary.byProvider);
   if (providerEntries.length > 0) {
-    dashboard += '\n\n### 프로바이더별 비용\n\n| 프로바이더 | 호출 수 | 비용 |\n|------------|---------|------|\n';
+    dashboard +=
+      '\n\n### 프로바이더별 비용\n\n| 프로바이더 | 호출 수 | 비용 |\n|------------|---------|------|\n';
     dashboard += providerEntries
       .map(([prov, data]) => `| ${prov} | ${data.callCount} | $${data.costUsd.toFixed(4)} |`)
       .join('\n');
@@ -208,7 +225,8 @@ export function buildMetricsDashboard(project) {
   // 페이즈별 성능
   const phaseEntries = Object.entries(metrics.phaseMetrics);
   if (phaseEntries.length > 0) {
-    dashboard += '\n\n### 페이즈별 성능\n\n| 페이즈 | 소요 시간 | 태스크 수 | 수정 횟수 |\n|--------|-----------|-----------|----------|\n';
+    dashboard +=
+      '\n\n### 페이즈별 성능\n\n| 페이즈 | 소요 시간 | 태스크 수 | 수정 횟수 |\n|--------|-----------|-----------|----------|\n';
     dashboard += phaseEntries
       .map(([phase, data]) => {
         const duration = data.durationMs ? `${(data.durationMs / 1000).toFixed(1)}s` : '-';

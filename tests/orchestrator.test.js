@@ -122,7 +122,6 @@ describe('buildAgentAnalysisPrompt', () => {
     expect(prompt).toContain('테스트 전략이 부족합니다');
   });
 
-
   it('skills가 없는 팀원도 처리한다', () => {
     const member = { ...SAMPLE_TEAM[0], skills: undefined };
     const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, member);
@@ -239,7 +238,8 @@ describe('parseReviewOutput', () => {
   });
 
   it('JSON 코드블록에서 파싱한다', () => {
-    const raw = '리뷰 결과:\n```json\n{"approved": false, "feedback": "수정 필요", "issues": [{"severity": "critical", "description": "보안 이슈"}]}\n```';
+    const raw =
+      '리뷰 결과:\n```json\n{"approved": false, "feedback": "수정 필요", "issues": [{"severity": "critical", "description": "보안 이슈"}]}\n```';
     const result = parseReviewOutput(raw);
     expect(result.approved).toBe(false);
     expect(result.issues.length).toBe(1);
@@ -314,7 +314,11 @@ describe('checkConvergence', () => {
       { approved: true, feedback: 'Good', issues: [] },
       { approved: true, feedback: 'Fine', issues: [] },
       { approved: true, feedback: 'Nice', issues: [] },
-      { approved: false, feedback: '개선 필요', issues: [{ severity: 'minor', description: '사소한 이슈' }] },
+      {
+        approved: false,
+        feedback: '개선 필요',
+        issues: [{ severity: 'minor', description: '사소한 이슈' }],
+      },
     ];
     const result = checkConvergence(reviews);
     expect(result.converged).toBe(true);
@@ -335,10 +339,14 @@ describe('checkConvergence', () => {
   it('critical 이슈를 blockers로 수집한다', () => {
     const reviews = [
       { approved: true, feedback: 'OK', issues: [] },
-      { approved: false, feedback: '보안 문제', issues: [
-        { severity: 'critical', description: 'SQL 인젝션 취약점' },
-        { severity: 'minor', description: '코드 스타일' },
-      ]},
+      {
+        approved: false,
+        feedback: '보안 문제',
+        issues: [
+          { severity: 'critical', description: 'SQL 인젝션 취약점' },
+          { severity: 'minor', description: '코드 스타일' },
+        ],
+      },
     ];
     const result = checkConvergence(reviews);
     expect(result.blockers).toEqual(['SQL 인젝션 취약점']);
@@ -371,27 +379,27 @@ describe('groupAgentsForParallelDispatch', () => {
   it('Tier 1에 priority 1-2 멤버가 포함된다', () => {
     const tiers = groupAgentsForParallelDispatch(SAMPLE_TEAM);
     const tier1 = tiers[0];
-    expect(tier1.map(m => m.roleId)).toContain('cto');
-    expect(tier1.map(m => m.roleId)).toContain('po');
+    expect(tier1.map((m) => m.roleId)).toContain('cto');
+    expect(tier1.map((m) => m.roleId)).toContain('po');
   });
 
   it('Tier 2에 priority 3-4 멤버가 포함된다', () => {
     const tiers = groupAgentsForParallelDispatch(SAMPLE_TEAM);
     const tier2 = tiers[1];
-    expect(tier2.map(m => m.roleId)).toContain('fullstack');
-    expect(tier2.map(m => m.roleId)).toContain('backend');
+    expect(tier2.map((m) => m.roleId)).toContain('fullstack');
+    expect(tier2.map((m) => m.roleId)).toContain('backend');
   });
 
   it('Tier 3에 priority 5-7 멤버가 포함된다', () => {
     const tiers = groupAgentsForParallelDispatch(SAMPLE_TEAM);
     const tier3 = tiers[2];
-    expect(tier3.map(m => m.roleId)).toContain('qa');
+    expect(tier3.map((m) => m.roleId)).toContain('qa');
   });
 
   it('Tier 4에 priority 8+ 멤버가 포함된다', () => {
     const tiers = groupAgentsForParallelDispatch(SAMPLE_TEAM);
     const tier4 = tiers[3];
-    expect(tier4.map(m => m.roleId)).toContain('tech-writer');
+    expect(tier4.map((m) => m.roleId)).toContain('tech-writer');
   });
 
   it('빈 팀은 빈 배열을 반환한다', () => {
@@ -414,4 +422,3 @@ describe('groupAgentsForParallelDispatch', () => {
     expect(tiers[0][0].roleId).toBe('cto');
   });
 });
-

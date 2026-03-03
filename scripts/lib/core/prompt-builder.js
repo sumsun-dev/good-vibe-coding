@@ -27,7 +27,7 @@ export function buildSectioned(intro, sections = []) {
  */
 export function toMarkdownList(items, formatter = String) {
   if (!items || items.length === 0) return '- (없음)';
-  return items.map(item => `- ${formatter(item)}`).join('\n');
+  return items.map((item) => `- ${formatter(item)}`).join('\n');
 }
 
 /**

@@ -110,7 +110,23 @@ describe('buildTeam', () => {
   });
 
   it('모든 15개 역할을 빌드할 수 있다', async () => {
-    const allRoles = ['cto', 'po', 'fullstack', 'frontend', 'backend', 'qa', 'uiux', 'devops', 'data', 'security', 'tech-writer', 'market-researcher', 'business-researcher', 'tech-researcher', 'design-researcher'];
+    const allRoles = [
+      'cto',
+      'po',
+      'fullstack',
+      'frontend',
+      'backend',
+      'qa',
+      'uiux',
+      'devops',
+      'data',
+      'security',
+      'tech-writer',
+      'market-researcher',
+      'business-researcher',
+      'tech-researcher',
+      'design-researcher',
+    ];
     const team = await buildTeam(allRoles);
     expect(team.length).toBe(15);
     for (const member of team) {

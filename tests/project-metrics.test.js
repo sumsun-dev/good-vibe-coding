@@ -45,7 +45,12 @@ describe('COST_RATES', () => {
 
 describe('recordAgentCall', () => {
   it('토큰과 비용을 누적한다', () => {
-    const metrics = recordAgentCall(createMetricsSnapshot(), { roleId: 'cto', provider: 'claude', inputTokens: 1000, outputTokens: 500 });
+    const metrics = recordAgentCall(createMetricsSnapshot(), {
+      roleId: 'cto',
+      provider: 'claude',
+      inputTokens: 1000,
+      outputTokens: 500,
+    });
 
     expect(metrics.totalInputTokens).toBe(1000);
     expect(metrics.totalOutputTokens).toBe(500);
@@ -74,15 +79,29 @@ describe('recordAgentCall', () => {
 
   it('byProvider에 프로바이더별 집계를 기록한다', () => {
     let metrics = createMetricsSnapshot();
-    metrics = recordAgentCall(metrics, { roleId: 'cto', provider: 'claude', inputTokens: 100, outputTokens: 50 });
-    metrics = recordAgentCall(metrics, { roleId: 'backend', provider: 'openai', inputTokens: 200, outputTokens: 100 });
+    metrics = recordAgentCall(metrics, {
+      roleId: 'cto',
+      provider: 'claude',
+      inputTokens: 100,
+      outputTokens: 50,
+    });
+    metrics = recordAgentCall(metrics, {
+      roleId: 'backend',
+      provider: 'openai',
+      inputTokens: 200,
+      outputTokens: 100,
+    });
 
     expect(metrics.byProvider.claude.callCount).toBe(1);
     expect(metrics.byProvider.openai.callCount).toBe(1);
   });
 
   it('provider 기본값은 claude이다', () => {
-    const metrics = recordAgentCall(createMetricsSnapshot(), { roleId: 'cto', inputTokens: 100, outputTokens: 50 });
+    const metrics = recordAgentCall(createMetricsSnapshot(), {
+      roleId: 'cto',
+      inputTokens: 100,
+      outputTokens: 50,
+    });
 
     expect(metrics.byProvider.claude).toBeDefined();
     expect(metrics.byProvider.claude.callCount).toBe(1);
@@ -103,15 +122,24 @@ describe('recordAgentCall', () => {
   });
 
   it('비용 계산이 올바르다 (claude)', () => {
-    const metrics = recordAgentCall(createMetricsSnapshot(), { roleId: 'cto', provider: 'claude', inputTokens: 1000, outputTokens: 1000 });
+    const metrics = recordAgentCall(createMetricsSnapshot(), {
+      roleId: 'cto',
+      provider: 'claude',
+      inputTokens: 1000,
+      outputTokens: 1000,
+    });
 
-    const expectedCost = (1000 * COST_RATES.claude.input) + (1000 * COST_RATES.claude.output);
+    const expectedCost = 1000 * COST_RATES.claude.input + 1000 * COST_RATES.claude.output;
     expect(metrics.totalCostUsd).toBeCloseTo(expectedCost, 10);
   });
 
   it('원본 메트릭스를 변경하지 않는다 (immutability)', () => {
     const original = createMetricsSnapshot();
-    const updated = recordAgentCall(original, { roleId: 'cto', inputTokens: 100, outputTokens: 50 });
+    const updated = recordAgentCall(original, {
+      roleId: 'cto',
+      inputTokens: 100,
+      outputTokens: 50,
+    });
 
     expect(original.totalInputTokens).toBe(0);
     expect(updated.totalInputTokens).toBe(100);
@@ -165,7 +193,11 @@ describe('recordPhaseCompletion', () => {
 
 describe('getCostSummary', () => {
   it('비용 요약을 반환한다', () => {
-    const metrics = recordAgentCall(createMetricsSnapshot(), { roleId: 'cto', inputTokens: 1000, outputTokens: 500 });
+    const metrics = recordAgentCall(createMetricsSnapshot(), {
+      roleId: 'cto',
+      inputTokens: 1000,
+      outputTokens: 500,
+    });
 
     const summary = getCostSummary(metrics);
     expect(summary.totalInputTokens).toBe(1000);
@@ -187,16 +219,24 @@ describe('getAgentPerformanceSummary', () => {
   it('에이전트별 성능 요약을 반환한다', () => {
     let metrics = createMetricsSnapshot();
     metrics = recordAgentCall(metrics, { roleId: 'cto', inputTokens: 1000, outputTokens: 500 });
-    metrics = recordAgentCall(metrics, { roleId: 'backend', inputTokens: 2000, outputTokens: 1000 });
+    metrics = recordAgentCall(metrics, {
+      roleId: 'backend',
+      inputTokens: 2000,
+      outputTokens: 1000,
+    });
 
     const summary = getAgentPerformanceSummary(metrics, { cto: 0.8, backend: 0.9 });
     expect(summary).toHaveLength(2);
-    expect(summary.find(s => s.roleId === 'cto').contributionScore).toBe(0.8);
-    expect(summary.find(s => s.roleId === 'backend').contributionScore).toBe(0.9);
+    expect(summary.find((s) => s.roleId === 'cto').contributionScore).toBe(0.8);
+    expect(summary.find((s) => s.roleId === 'backend').contributionScore).toBe(0.9);
   });
 
   it('기여도가 없으면 0을 반환한다', () => {
-    const metrics = recordAgentCall(createMetricsSnapshot(), { roleId: 'cto', inputTokens: 100, outputTokens: 50 });
+    const metrics = recordAgentCall(createMetricsSnapshot(), {
+      roleId: 'cto',
+      inputTokens: 100,
+      outputTokens: 50,
+    });
 
     const summary = getAgentPerformanceSummary(metrics);
     expect(summary[0].contributionScore).toBe(0);
@@ -212,7 +252,12 @@ describe('getAgentPerformanceSummary', () => {
 describe('buildMetricsDashboard', () => {
   it('마크다운 대시보드를 생성한다', () => {
     let metrics = createMetricsSnapshot();
-    metrics = recordAgentCall(metrics, { roleId: 'cto', provider: 'claude', inputTokens: 1000, outputTokens: 500 });
+    metrics = recordAgentCall(metrics, {
+      roleId: 'cto',
+      provider: 'claude',
+      inputTokens: 1000,
+      outputTokens: 500,
+    });
     metrics = recordPhaseCompletion(metrics, { phase: 1, durationMs: 5000, taskCount: 3 });
 
     const dashboard = buildMetricsDashboard({ metrics });

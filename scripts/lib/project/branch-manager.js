@@ -61,7 +61,9 @@ export function isGitInitialized(projectDir) {
 export function hasRemote(projectDir) {
   try {
     const output = execFileSync('git', ['remote', '-v'], {
-      cwd: projectDir, stdio: 'pipe', encoding: 'utf-8',
+      cwd: projectDir,
+      stdio: 'pipe',
+      encoding: 'utf-8',
     });
     return output.trim().length > 0;
   } catch {
@@ -77,7 +79,9 @@ export function hasRemote(projectDir) {
 export function getCurrentBranch(projectDir) {
   try {
     const output = execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
-      cwd: projectDir, stdio: 'pipe', encoding: 'utf-8',
+      cwd: projectDir,
+      stdio: 'pipe',
+      encoding: 'utf-8',
     });
     return output.trim() || null;
   } catch {
@@ -99,7 +103,11 @@ export function createFeatureBranch(projectDir, options = {}) {
   const { projectSlug, baseBranch, strategy = 'timestamp', context = {} } = options;
 
   if (!isGitInitialized(projectDir)) {
-    return { success: false, branchName: null, error: 'git이 초기화되지 않았습니다. git init을 먼저 실행하세요.' };
+    return {
+      success: false,
+      branchName: null,
+      error: 'git이 초기화되지 않았습니다. git init을 먼저 실행하세요.',
+    };
   }
 
   const branchName = generateBranchName(projectSlug, strategy, context);
@@ -126,7 +134,9 @@ export function createFeatureBranch(projectDir, options = {}) {
 export function checkoutBranch(projectDir, branchName) {
   try {
     execFileSync('git', ['checkout', branchName], {
-      cwd: projectDir, stdio: 'pipe', encoding: 'utf-8',
+      cwd: projectDir,
+      stdio: 'pipe',
+      encoding: 'utf-8',
     });
     return { success: true, error: null };
   } catch (err) {
@@ -148,7 +158,9 @@ export function pushBranch(projectDir, branchName) {
 
   try {
     execFileSync('git', ['push', '-u', 'origin', branchName], {
-      cwd: projectDir, stdio: 'pipe', encoding: 'utf-8',
+      cwd: projectDir,
+      stdio: 'pipe',
+      encoding: 'utf-8',
     });
     return { success: true, skipped: false, reason: null, error: null };
   } catch (err) {

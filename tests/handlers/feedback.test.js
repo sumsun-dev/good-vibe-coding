@@ -13,7 +13,7 @@ function cliExec(command, input) {
       input: JSON.stringify(input),
       encoding: 'utf-8',
       timeout: 10_000,
-    })
+    }),
   );
 }
 
@@ -31,7 +31,6 @@ function cliExecRaw(command, input) {
 }
 
 describe('handlers/feedback', () => {
-
   it('improvement-prompt → roleId 필수 검증', () => {
     const result = cliExecRaw('improvement-prompt', {});
     expect(result.exitCode).toBe(2);

@@ -148,19 +148,25 @@ describe('Discusser', () => {
         if (round === 0 && prompt.includes('CTO')) {
           return {
             text: '```json\n{"approved": false, "feedback": "보안 취약점이 있습니다", "issues": [{"severity": "critical", "description": "SQL injection"}]}\n```',
-            provider: 'claude', model: 'claude-sonnet-4-6', tokenCount: 50,
+            provider: 'claude',
+            model: 'claude-sonnet-4-6',
+            tokenCount: 50,
           };
         }
         round++;
         return {
           text: '```json\n{"approved": true, "feedback": "OK", "issues": []}\n```',
-          provider: 'claude', model: 'claude-sonnet-4-6', tokenCount: 50,
+          provider: 'claude',
+          model: 'claude-sonnet-4-6',
+          tokenCount: 50,
         };
       }
       // 분석 프롬프트: feedbackForMe가 주입되었는지 확인
       return {
         text: 'Analysis result',
-        provider: 'claude', model: 'claude-sonnet-4-6', tokenCount: 50,
+        provider: 'claude',
+        model: 'claude-sonnet-4-6',
+        tokenCount: 50,
       };
     });
 
@@ -193,8 +199,8 @@ describe('Discusser', () => {
     await discusser.run({
       idea: 'test',
       agents: [
-        makeMember('cto', 1),    // tier 1
-        makeMember('qa', 5),     // tier 3
+        makeMember('cto', 1), // tier 1
+        makeMember('qa', 5), // tier 3
       ],
       complexity: { discussionRounds: 1 },
     });

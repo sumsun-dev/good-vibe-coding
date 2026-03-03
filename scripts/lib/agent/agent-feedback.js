@@ -32,23 +32,23 @@ export function extractAgentPerformance(project) {
   const team = project.team || [];
   const tasks = project.tasks || [];
 
-  return team.map(member => {
+  return team.map((member) => {
     const roleId = member.roleId;
 
     const memberTasks = tasks
-      .filter(t => t.assignee === roleId)
-      .map(t => ({
+      .filter((t) => t.assignee === roleId)
+      .map((t) => ({
         id: t.id,
         title: t.title,
         status: t.status,
         reviewResults: t.reviews || [],
       }));
 
-    const reviews = memberTasks.flatMap(t => t.reviewResults);
+    const reviews = memberTasks.flatMap((t) => t.reviewResults);
 
     const issues = reviews
-      .flatMap(r => (r.issues || []))
-      .filter(i => i.severity === 'critical' || i.severity === 'important');
+      .flatMap((r) => r.issues || [])
+      .filter((i) => i.severity === 'critical' || i.severity === 'important');
 
     return { roleId, tasks: memberTasks, reviews, issues };
   });
@@ -62,19 +62,19 @@ export function extractAgentPerformance(project) {
  * @returns {string} 개선 분석 프롬프트
  */
 export function buildImprovementPrompt(roleId, performance, currentAgentMd) {
-  const taskList = toMarkdownList(
-    performance.tasks,
-    t => `${t.title} (${t.status})`,
-  ).replace('- (없음)', '- (담당 작업 없음)');
+  const taskList = toMarkdownList(performance.tasks, (t) => `${t.title} (${t.status})`).replace(
+    '- (없음)',
+    '- (담당 작업 없음)',
+  );
 
   const issueList = toMarkdownList(
     performance.issues,
-    i => `[${i.severity}] ${i.description}`,
+    (i) => `[${i.severity}] ${i.description}`,
   ).replace('- (없음)', '- (이슈 없음)');
 
   const reviewList = toMarkdownList(
     performance.reviews,
-    r => `${r.approved ? '승인' : '수정 요청'}: ${r.feedback || ''}`,
+    (r) => `${r.approved ? '승인' : '수정 요청'}: ${r.feedback || ''}`,
   ).replace('- (없음)', '- (리뷰 없음)');
 
   const intro = `다음은 "${roleId}" 에이전트의 프로젝트 수행 결과입니다.
@@ -82,8 +82,13 @@ export function buildImprovementPrompt(roleId, performance, currentAgentMd) {
 
   return buildSectioned(intro, [
     { title: '현재 에이전트 설정', content: `\`\`\`markdown\n${currentAgentMd}\n\`\`\`` },
-    { title: '프로젝트 수행 결과', content: `### 담당 작업\n${taskList}\n\n### 리뷰 결과\n${reviewList}\n\n### 발견된 이슈\n${issueList}` },
-    { title: '제안 형식', content: `반드시 아래 JSON 배열 형식으로 응답하세요:
+    {
+      title: '프로젝트 수행 결과',
+      content: `### 담당 작업\n${taskList}\n\n### 리뷰 결과\n${reviewList}\n\n### 발견된 이슈\n${issueList}`,
+    },
+    {
+      title: '제안 형식',
+      content: `반드시 아래 JSON 배열 형식으로 응답하세요:
 \`\`\`json
 [
   {
@@ -98,7 +103,8 @@ export function buildImprovementPrompt(roleId, performance, currentAgentMd) {
 규칙:
 - 프로젝트 결과에서 드러난 구체적 문제점만 다루세요
 - 이슈가 없다면 빈 배열을 반환하세요
-- 제안은 에이전트의 행동을 직접 개선하는 것이어야 합니다` },
+- 제안은 에이전트의 행동을 직접 개선하는 것이어야 합니다`,
+    },
   ]);
 }
 
@@ -123,8 +129,8 @@ export function parseImprovementSuggestions(analysisText) {
  */
 function normalizeSuggestions(suggestions) {
   return suggestions
-    .filter(s => s && typeof s === 'object' && s.suggested)
-    .map(s => ({
+    .filter((s) => s && typeof s === 'object' && s.suggested)
+    .map((s) => ({
       section: s.section || '',
       current: s.current || '',
       suggested: s.suggested || '',
@@ -165,12 +171,12 @@ export async function listAgentOverrides() {
   if (files.length === 0) return [];
 
   const results = await Promise.all(
-    files.map(async file => {
+    files.map(async (file) => {
       const roleId = file.slice(0, -3);
       const filePath = resolve(overridesDir, file);
       const fileStat = await stat(filePath);
       return { roleId, updatedAt: fileStat.mtime.toISOString() };
-    })
+    }),
   );
 
   return results;
@@ -236,12 +242,12 @@ export async function listProjectOverrides(projectDir) {
   if (files.length === 0) return [];
 
   const results = await Promise.all(
-    files.map(async file => {
+    files.map(async (file) => {
       const roleId = file.slice(0, -3);
       const filePath = resolve(dir, file);
       const fileStat = await stat(filePath);
       return { roleId, updatedAt: fileStat.mtime.toISOString() };
-    })
+    }),
   );
 
   return results;

@@ -4,7 +4,7 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 
 ## 설계: CLI-as-API + SDK
 
-- `cli.js`는 경량 라우터. 114개 커맨드를 14개 핸들러 모듈(`scripts/handlers/*.js`)로 lazy-load 디스패치
+- `cli.js`는 경량 라우터. 116개 커맨드를 14개 핸들러 모듈(`scripts/handlers/*.js`)로 lazy-load 디스패치
 - 사용자는 `/hello`, `/new`, `/discuss` 같은 슬래시 커맨드만 씀
 - 흐름: 슬래시 커맨드 → 에이전트 디스패치 → cli.js → 핸들러 → 코어 라이브러리
 - 에이전트 .md 파일이 `node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js <command>` 형태로 호출
@@ -150,7 +150,7 @@ created → planning → approved → executing → reviewing → completed
 │  AI 팀원             15개 역할               │
 │  Tier별 병렬 분석 + 크로스 리뷰              │
 ├─────────────────────────────────────────────┤
-│  내부 API            CLI-as-API (114개)      │
+│  내부 API            CLI-as-API (116개)      │
 │  에이전트가 호출하는 인터페이스               │
 ├─────────────────────────────────────────────┤
 │  코어 라이브러리      49개 모듈 + 14개 핸들러  │
@@ -247,7 +247,7 @@ created → planning → approved → executing → reviewing → completed
 - `adapter.js` — Claude Code 환경에서 SDK 초기화
 
 **CLI 레이어**
-- `cli.js` — 라우터 (114개 커맨드, 14개 핸들러로 디스패치)
+- `cli.js` — 라우터 (116개 커맨드, 14개 핸들러로 디스패치)
 - `cli-utils.js` — readStdin, output, outputOk, parseArgs
 - `handlers/*.js` — 14개 핸들러: project, team, discussion, execution, review, build, eval, auth, feedback, infra, metrics, template, task, recommendation
 
@@ -330,13 +330,20 @@ github.enabled = false (기본값)
 github.enabled = true
   → 실행 시작 시 feature branch 생성 (gv/{slug}-{timestamp})
   → Phase별 conventional commit (feat/fix/test/refactor/chore)
-  → 실행 완료 후 자동 PR 생성 (gh CLI)
-  → PR URL을 project.json에 기록
+  → 실행 완료 시 자동 PR 생성:
+      1. pushBranch() — 최종 push (autoPush=true일 때)
+      2. buildMergeReport() — merge 판단용 상세 보고서 생성
+      3. createPullRequest() — PR 생성 (gh CLI)
+      4. addPullRequest() — PR URL을 project.json에 기록
+  → CEO가 GitHub에서 직접 merge 승인 (자동 merge 없음)
 ```
 
+- **PR 보고서**: 품질 게이트 결과, 리뷰 요약, 실행 이력, 생성 파일 목록, CEO 체크리스트 포함
 - **Graceful Degradation**: gh 미설치 시 `{ skipped: true, reason }` 반환, 에러 아님
 - **conventional commit**: `feat(phase-1): API 라우터 구현` + Co-authored-by
 - **CI 자동 생성**: 기술 스택 감지 → Node/Python/Go/Java CI 워크플로우 생성
+- **수동 PR 생성**: `finalize-pr` 커맨드로 이미 완료된 프로젝트에 PR 생성 가능
+- **보고서만 생성**: `build-merge-report` 커맨드로 merge 보고서 미리보기 가능
 
 ## 코드 구체화 파이프라인
 

@@ -52,11 +52,12 @@ export class Discusser {
       for (const tier of tiers) {
         const tierResults = await Promise.all(
           tier.map(async (member) => {
-            const prompt = buildAgentAnalysisPrompt(
-              project,
-              member,
-              { round, previousSynthesis: lastPlan, peerOutputs: analyses, feedbackForMe: feedbackByRole[member.roleId] },
-            );
+            const prompt = buildAgentAnalysisPrompt(project, member, {
+              round,
+              previousSynthesis: lastPlan,
+              peerOutputs: analyses,
+              feedbackForMe: feedbackByRole[member.roleId],
+            });
             const response = await this._call(member.roleId, prompt);
             return {
               roleId: member.roleId,

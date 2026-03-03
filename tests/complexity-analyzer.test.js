@@ -50,7 +50,8 @@ describe('parseComplexityAnalysis', () => {
   });
 
   it('JSON 코드블록에서 파싱한다', () => {
-    const raw = '분석:\n```json\n{"level":"complex","suggestedMode":"plan-only","reasoning":"복잡"}\n```';
+    const raw =
+      '분석:\n```json\n{"level":"complex","suggestedMode":"plan-only","reasoning":"복잡"}\n```';
     const result = parseComplexityAnalysis(raw);
     expect(result.level).toBe('complex');
     expect(result.suggestedMode).toBe('plan-only');

@@ -32,7 +32,7 @@ describe('extractMaterializableBlocks', () => {
   it('다중 파일 출력에서 모든 파일명 블록을 반환한다', () => {
     const blocks = extractMaterializableBlocks(MULTI_FILE_OUTPUT);
     expect(blocks).toHaveLength(4);
-    expect(blocks.map(b => b.filename)).toEqual([
+    expect(blocks.map((b) => b.filename)).toEqual([
       'src/server.js',
       'src/routes/users.js',
       'package.json',
@@ -139,7 +139,7 @@ describe('materializeCode', () => {
 
   it('파일명 없는 블록은 건너뛴다', () => {
     const dir = createTempDir();
-    return materializeCode(NO_FILENAME_OUTPUT, dir).then(result => {
+    return materializeCode(NO_FILENAME_OUTPUT, dir).then((result) => {
       expect(result.totalBlocks).toBe(2);
       expect(result.materializedCount).toBe(0);
       expect(result.skippedCount).toBe(2);
@@ -222,7 +222,10 @@ describe('materializeCode', () => {
     const dir = createTempDir();
 
     await materializeCode(SINGLE_FILE_OUTPUT, dir);
-    const result = await materializeCode(SINGLE_FILE_OUTPUT, dir, { overwrite: true, backup: true });
+    const result = await materializeCode(SINGLE_FILE_OUTPUT, dir, {
+      overwrite: true,
+      backup: true,
+    });
 
     expect(result.files[0].backupPath).toBeTruthy();
     expect(existsSync(result.files[0].backupPath)).toBe(true);
@@ -232,7 +235,10 @@ describe('materializeCode', () => {
     const dir = createTempDir();
 
     await materializeCode(SINGLE_FILE_OUTPUT, dir);
-    const result = await materializeCode(SINGLE_FILE_OUTPUT, dir, { overwrite: true, backup: false });
+    const result = await materializeCode(SINGLE_FILE_OUTPUT, dir, {
+      overwrite: true,
+      backup: false,
+    });
 
     expect(result.files[0].backupPath).toBeNull();
   });
@@ -307,14 +313,17 @@ describe('materializeCode', () => {
     const result = await materializeCode(maliciousOutput, dir);
     // resolve가 리터럴로 처리하므로 안전 (파일명에 %2F 포함)
     // 어느 쪽이든 projectDir 바깥에는 기록 안 됨
-    expect(result.materializedCount + result.failedCount + result.unmaterializableCount).toBeGreaterThanOrEqual(0);
+    expect(
+      result.materializedCount + result.failedCount + result.unmaterializableCount,
+    ).toBeGreaterThanOrEqual(0);
   });
 
   it('쓰기 에러 시 에러를 던진다', async () => {
     // Windows에서는 /nonexistent가 상대 경로로 해석될 수 있으므로 플랫폼별 경로 사용
-    const dir = process.platform === 'win32'
-      ? 'Z:\\nonexistent-readonly-dir-test-12345'
-      : '/nonexistent-readonly-dir-test-12345';
+    const dir =
+      process.platform === 'win32'
+        ? 'Z:\\nonexistent-readonly-dir-test-12345'
+        : '/nonexistent-readonly-dir-test-12345';
     // materializeCode propagates file system errors when the base directory cannot be created
     await expect(materializeCode(SINGLE_FILE_OUTPUT, dir)).rejects.toThrow();
   });
@@ -380,9 +389,7 @@ describe('materializeBatch', () => {
 
   it('옵션을 개별 materializeCode에 전달한다', async () => {
     const dir = createTempDir();
-    const taskOutputs = [
-      { taskId: 'task-1', output: SINGLE_FILE_OUTPUT },
-    ];
+    const taskOutputs = [{ taskId: 'task-1', output: SINGLE_FILE_OUTPUT }];
 
     const result = await materializeBatch(taskOutputs, dir, { dryRun: true });
 
@@ -393,9 +400,7 @@ describe('materializeBatch', () => {
 
   it('결과 형식이 올바르다', async () => {
     const dir = createTempDir();
-    const taskOutputs = [
-      { taskId: 'task-1', output: SINGLE_FILE_OUTPUT },
-    ];
+    const taskOutputs = [{ taskId: 'task-1', output: SINGLE_FILE_OUTPUT }];
 
     const result = await materializeBatch(taskOutputs, dir);
 
@@ -419,12 +424,11 @@ describe('materializeBatch', () => {
   });
 
   it('materializeCode 실패를 errorCount에 반영한다', async () => {
-    const taskOutputs = [
-      { taskId: 'fail-task', output: SINGLE_FILE_OUTPUT },
-    ];
-    const badDir = process.platform === 'win32'
-      ? 'Z:\\nonexistent-readonly-path-12345\\sub'
-      : '/nonexistent-readonly-path-12345/sub';
+    const taskOutputs = [{ taskId: 'fail-task', output: SINGLE_FILE_OUTPUT }];
+    const badDir =
+      process.platform === 'win32'
+        ? 'Z:\\nonexistent-readonly-path-12345\\sub'
+        : '/nonexistent-readonly-path-12345/sub';
     const result = await materializeBatch(taskOutputs, badDir);
     expect(result.errorCount).toBe(1);
     expect(result.results[0].taskId).toBe('fail-task');

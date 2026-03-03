@@ -21,9 +21,7 @@ export function extractInstructions(markdownContent) {
   // 다음 ## 레벨 헤더를 찾는다 (### 이하는 포함)
   const nextH2 = afterMarker.search(/\n## (?!#)/);
 
-  const content = nextH2 === -1
-    ? afterMarker
-    : afterMarker.slice(0, nextH2);
+  const content = nextH2 === -1 ? afterMarker : afterMarker.slice(0, nextH2);
 
   return content.trim();
 }
@@ -49,4 +47,3 @@ export async function extractAllInstructions(agents) {
 
   return result;
 }
-

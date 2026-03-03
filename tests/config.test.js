@@ -37,12 +37,21 @@ describe('config', () => {
     expect(config.recommendation.minScore).toBe(3);
     expect(config.recommendation.maxPerCategory).toBe(5);
     expect(config.recommendation.maxKeywordHits).toBe(3);
-    expect(config.recommendation.weights).toEqual({ projectType: 3, complexity: 2, keyword: 1, roleAffinity: 2 });
+    expect(config.recommendation.weights).toEqual({
+      projectType: 3,
+      complexity: 2,
+      keyword: 1,
+      roleAffinity: 2,
+    });
   });
 
   it('값을 변경할 수 없다', () => {
-    expect(() => { config.convergence.threshold = 0.5; }).toThrow();
-    expect(() => { config.team.simple.min = 10; }).toThrow();
+    expect(() => {
+      config.convergence.threshold = 0.5;
+    }).toThrow();
+    expect(() => {
+      config.team.simple.min = 10;
+    }).toThrow();
     expect(config.convergence.threshold).toBe(0.8);
   });
 });

@@ -96,13 +96,13 @@ describe('selectReviewers', () => {
     const reviewers = selectReviewers(task, SAMPLE_TEAM);
     expect(reviewers.length).toBeGreaterThanOrEqual(2);
     // 담당자(backend)는 리뷰어에 포함되지 않는다
-    expect(reviewers.every(r => r.roleId !== 'backend')).toBe(true);
+    expect(reviewers.every((r) => r.roleId !== 'backend')).toBe(true);
   });
 
   it('담당자를 리뷰어에서 제외한다', () => {
     const task = { id: 'task-1', assignee: 'cto' };
     const reviewers = selectReviewers(task, SAMPLE_TEAM);
-    expect(reviewers.every(r => r.roleId !== 'cto')).toBe(true);
+    expect(reviewers.every((r) => r.roleId !== 'cto')).toBe(true);
   });
 
   it('최소 2명의 리뷰어를 선정한다', () => {
@@ -132,7 +132,7 @@ describe('selectReviewers', () => {
   });
 
   it('reviewDomains가 없으면 skills를 사용한다', () => {
-    const team = SAMPLE_TEAM.map(m => {
+    const team = SAMPLE_TEAM.map((m) => {
       // eslint-disable-next-line no-unused-vars
       const { reviewDomains, ...rest } = m;
       return rest;
@@ -151,9 +151,11 @@ describe('selectReviewers', () => {
   it('범용 리뷰 역할(QA, Security, CTO)이 우선 선정된다', () => {
     const task = { id: 'task-1', assignee: 'uiux' };
     const reviewers = selectReviewers(task, SAMPLE_TEAM);
-    const reviewerIds = reviewers.map(r => r.roleId);
+    const reviewerIds = reviewers.map((r) => r.roleId);
     // QA, Security, CTO 중 최소 2명은 포함되어야 함
-    const universalCount = reviewerIds.filter(id => ['qa', 'security', 'cto'].includes(id)).length;
+    const universalCount = reviewerIds.filter((id) =>
+      ['qa', 'security', 'cto'].includes(id),
+    ).length;
     expect(universalCount).toBeGreaterThanOrEqual(2);
   });
 
@@ -161,7 +163,7 @@ describe('selectReviewers', () => {
     // backend(workDomains: api, database, auth, backend) → security(reviewDomains: security, auth, owasp)는 auth 겹침
     const task = { id: 'task-1', assignee: 'backend' };
     const reviewers = selectReviewers(task, SAMPLE_TEAM);
-    const reviewerIds = reviewers.map(r => r.roleId);
+    const reviewerIds = reviewers.map((r) => r.roleId);
     expect(reviewerIds).toContain('security'); // auth 겹침 + 범용 보너스
   });
 
@@ -172,7 +174,7 @@ describe('selectReviewers', () => {
     // → cto(reviewDomains: architecture, tech-decision, code-review) = overlap 0, +1 universal = 1
     const task = { id: 'task-1', assignee: 'frontend' };
     const reviewers = selectReviewers(task, SAMPLE_TEAM);
-    const reviewerIds = reviewers.map(r => r.roleId);
+    const reviewerIds = reviewers.map((r) => r.roleId);
     expect(reviewerIds[0]).toBe('uiux'); // overlap 2 → 최우선
     expect(reviewerIds).toContain('uiux');
   });
@@ -185,12 +187,12 @@ describe('selectReviewers', () => {
     // → qa = overlap 0, +1 universal = 1
     const task = { id: 'task-1', assignee: 'backend' };
     const reviewers = selectReviewers(task, SAMPLE_TEAM);
-    const reviewerIds = reviewers.map(r => r.roleId);
+    const reviewerIds = reviewers.map((r) => r.roleId);
     expect(reviewerIds[0]).toBe('security'); // overlap 1 + universal 1 = 2 → 최우선
   });
 
   it('workDomains가 없으면 reviewDomains로 fallback한다', () => {
-    const teamWithoutWorkDomains = SAMPLE_TEAM.map(m => {
+    const teamWithoutWorkDomains = SAMPLE_TEAM.map((m) => {
       // eslint-disable-next-line no-unused-vars
       const { workDomains, ...rest } = m;
       return rest;
@@ -200,7 +202,7 @@ describe('selectReviewers', () => {
     expect(reviewers.length).toBeGreaterThanOrEqual(2);
     // backend의 reviewDomains(api, database, auth, code-quality)로 fallback
     // security(reviewDomains: security, auth, owasp) → auth 겹침 + universal = 2
-    const reviewerIds = reviewers.map(r => r.roleId);
+    const reviewerIds = reviewers.map((r) => r.roleId);
     expect(reviewerIds).toContain('security');
   });
 });
@@ -348,7 +350,10 @@ describe('checkQualityGate', () => {
   it('critical 이슈가 있으면 실패한다', () => {
     const reviews = [
       { verdict: 'approve', issues: [] },
-      { verdict: 'request-changes', issues: [{ severity: 'critical', description: '보안 취약점' }] },
+      {
+        verdict: 'request-changes',
+        issues: [{ severity: 'critical', description: '보안 취약점' }],
+      },
     ];
     const result = checkQualityGate(reviews);
     expect(result.passed).toBe(false);
@@ -358,7 +363,10 @@ describe('checkQualityGate', () => {
 
   it('important만 있으면 통과하지만 검토 권장', () => {
     const reviews = [
-      { verdict: 'request-changes', issues: [{ severity: 'important', description: '테스트 부족' }] },
+      {
+        verdict: 'request-changes',
+        issues: [{ severity: 'important', description: '테스트 부족' }],
+      },
     ];
     const result = checkQualityGate(reviews);
     expect(result.passed).toBe(true);
@@ -368,10 +376,16 @@ describe('checkQualityGate', () => {
 
   it('빈 리뷰 배열이면 실패한다', () => {
     expect(checkQualityGate([])).toEqual({
-      passed: false, criticalCount: 0, importantCount: 0, summary: '리뷰 결과 없음',
+      passed: false,
+      criticalCount: 0,
+      importantCount: 0,
+      summary: '리뷰 결과 없음',
     });
     expect(checkQualityGate(null)).toEqual({
-      passed: false, criticalCount: 0, importantCount: 0, summary: '리뷰 결과 없음',
+      passed: false,
+      criticalCount: 0,
+      importantCount: 0,
+      summary: '리뷰 결과 없음',
     });
   });
 
@@ -386,10 +400,7 @@ describe('checkQualityGate', () => {
   });
 
   it('issues 필드가 없는 리뷰도 처리한다', () => {
-    const reviews = [
-      { verdict: 'approve' },
-      { verdict: 'approve', issues: undefined },
-    ];
+    const reviews = [{ verdict: 'approve' }, { verdict: 'approve', issues: undefined }];
     const result = checkQualityGate(reviews);
     expect(result.passed).toBe(true);
     expect(result.criticalCount).toBe(0);
@@ -405,7 +416,12 @@ describe('buildRevisionPrompt', () => {
 
   it('구현자 정보를 포함한다', () => {
     const reviews = [
-      { verdict: 'request-changes', issues: [{ severity: 'critical', description: 'SQL 인젝션', suggestion: '파라미터 바인딩' }] },
+      {
+        verdict: 'request-changes',
+        issues: [
+          { severity: 'critical', description: 'SQL 인젝션', suggestion: '파라미터 바인딩' },
+        ],
+      },
     ];
     const prompt = buildRevisionPrompt(task, implementer, reviews);
     expect(prompt).toContain('도윤');
@@ -414,11 +430,14 @@ describe('buildRevisionPrompt', () => {
 
   it('critical/important 이슈만 포함한다', () => {
     const reviews = [
-      { verdict: 'request-changes', issues: [
-        { severity: 'critical', description: '보안 이슈' },
-        { severity: 'important', description: '테스트 부족' },
-        { severity: 'minor', description: '코드 스타일' },
-      ]},
+      {
+        verdict: 'request-changes',
+        issues: [
+          { severity: 'critical', description: '보안 이슈' },
+          { severity: 'important', description: '테스트 부족' },
+          { severity: 'minor', description: '코드 스타일' },
+        ],
+      },
     ];
     const prompt = buildRevisionPrompt(task, implementer, reviews);
     expect(prompt).toContain('보안 이슈');
@@ -441,9 +460,12 @@ describe('buildRevisionPrompt', () => {
 
   it('수정 방안(suggestion)이 있으면 포함한다', () => {
     const reviews = [
-      { verdict: 'request-changes', issues: [
-        { severity: 'critical', description: 'XSS 취약점', suggestion: '입력값 이스케이프 처리' },
-      ]},
+      {
+        verdict: 'request-changes',
+        issues: [
+          { severity: 'critical', description: 'XSS 취약점', suggestion: '입력값 이스케이프 처리' },
+        ],
+      },
     ];
     const prompt = buildRevisionPrompt(task, implementer, reviews);
     expect(prompt).toContain('입력값 이스케이프 처리');

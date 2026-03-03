@@ -45,7 +45,8 @@ describe('parseJsonObject', () => {
   });
 
   it('중첩 객체를 올바르게 파싱한다', () => {
-    const input = '```json\n{"issues": [{"severity": "critical", "description": "보안 취약점"}]}\n```';
+    const input =
+      '```json\n{"issues": [{"severity": "critical", "description": "보안 취약점"}]}\n```';
     const result = parseJsonObject(input);
     expect(result.issues).toHaveLength(1);
     expect(result.issues[0].severity).toBe('critical');

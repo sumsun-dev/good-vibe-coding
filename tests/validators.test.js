@@ -20,7 +20,9 @@ describe('requireString', () => {
 
   it('빈 문자열이면 AppError(INPUT_ERROR)를 던진다', () => {
     expect(() => requireString('', 'name')).toThrow('name는 비어있지 않은 문자열');
-    try { requireString('', 'name'); } catch (e) {
+    try {
+      requireString('', 'name');
+    } catch (e) {
       expect(e).toBeInstanceOf(AppError);
       expect(e.code).toBe('INPUT_ERROR');
     }
@@ -50,7 +52,9 @@ describe('requireArray', () => {
 
   it('null이면 AppError(INPUT_ERROR)를 던진다', () => {
     expect(() => requireArray(null, 'items')).toThrow('items는 배열');
-    try { requireArray(null, 'items'); } catch (e) {
+    try {
+      requireArray(null, 'items');
+    } catch (e) {
       expect(e).toBeInstanceOf(AppError);
       expect(e.code).toBe('INPUT_ERROR');
     }
@@ -72,7 +76,9 @@ describe('requireOneOf', () => {
 
   it('허용되지 않은 값이면 AppError(INPUT_ERROR)를 던진다', () => {
     expect(() => requireOneOf('d', ['a', 'b', 'c'], 'choice')).toThrow('choice는 다음 중 하나');
-    try { requireOneOf('d', ['a', 'b', 'c'], 'choice'); } catch (e) {
+    try {
+      requireOneOf('d', ['a', 'b', 'c'], 'choice');
+    } catch (e) {
       expect(e).toBeInstanceOf(AppError);
       expect(e.code).toBe('INPUT_ERROR');
     }
@@ -88,7 +94,9 @@ describe('requireDefined', () => {
 
   it('null이면 AppError(INPUT_ERROR)를 던진다', () => {
     expect(() => requireDefined(null, 'field')).toThrow('field가 필요합니다');
-    try { requireDefined(null, 'field'); } catch (e) {
+    try {
+      requireDefined(null, 'field');
+    } catch (e) {
       expect(e).toBeInstanceOf(AppError);
       expect(e.code).toBe('INPUT_ERROR');
     }
@@ -107,7 +115,9 @@ describe('requireFields', () => {
 
   it('필드가 없으면 AppError(INPUT_ERROR)를 던진다', () => {
     expect(() => requireFields({ a: 1 }, ['a', 'b'])).toThrow('b 필드가 필요합니다');
-    try { requireFields({ a: 1 }, ['a', 'b']); } catch (e) {
+    try {
+      requireFields({ a: 1 }, ['a', 'b']);
+    } catch (e) {
       expect(e).toBeInstanceOf(AppError);
       expect(e.code).toBe('INPUT_ERROR');
     }
@@ -122,7 +132,10 @@ describe('requireFields', () => {
   });
 
   it('0과 false 값은 허용한다', () => {
-    expect(requireFields({ count: 0, flag: false }, ['count', 'flag'])).toEqual({ count: 0, flag: false });
+    expect(requireFields({ count: 0, flag: false }, ['count', 'flag'])).toEqual({
+      count: 0,
+      flag: false,
+    });
   });
 });
 
@@ -163,7 +176,9 @@ describe('validateRoleId', () => {
 
   it('경로 순회를 AppError(INPUT_ERROR)로 거부한다', () => {
     expect(() => validateRoleId('../etc/passwd')).toThrow('유효하지 않은 roleId');
-    try { validateRoleId('../etc/passwd'); } catch (e) {
+    try {
+      validateRoleId('../etc/passwd');
+    } catch (e) {
       expect(e).toBeInstanceOf(AppError);
       expect(e.code).toBe('INPUT_ERROR');
     }
@@ -204,7 +219,9 @@ describe('assertWithinRoot', () => {
   });
 
   it('루트 바깥 경로를 거부한다', () => {
-    expect(() => assertWithinRoot(resolve('/project/other'), root, 'file')).toThrow('허용 범위를 벗어났습니다');
+    expect(() => assertWithinRoot(resolve('/project/other'), root, 'file')).toThrow(
+      '허용 범위를 벗어났습니다',
+    );
     try {
       assertWithinRoot(resolve('/project/other'), root, 'file');
     } catch (e) {
@@ -214,15 +231,21 @@ describe('assertWithinRoot', () => {
   });
 
   it('../로 탈출하는 경로를 거부한다', () => {
-    expect(() => assertWithinRoot(resolve('/project/dir/../other'), root, 'file')).toThrow('허용 범위를 벗어났습니다');
+    expect(() => assertWithinRoot(resolve('/project/dir/../other'), root, 'file')).toThrow(
+      '허용 범위를 벗어났습니다',
+    );
   });
 
   it('루트 이름의 prefix 디렉토리를 거부한다', () => {
     // /project/dir-evil은 /project/dir로 시작하지만 sep가 아님
-    expect(() => assertWithinRoot(resolve('/project/dir-evil/file'), root, 'file')).toThrow('허용 범위를 벗어났습니다');
+    expect(() => assertWithinRoot(resolve('/project/dir-evil/file'), root, 'file')).toThrow(
+      '허용 범위를 벗어났습니다',
+    );
   });
 
   it('절대 경로가 완전히 다른 경우를 거부한다', () => {
-    expect(() => assertWithinRoot(resolve('/etc/passwd'), root, 'file')).toThrow('허용 범위를 벗어났습니다');
+    expect(() => assertWithinRoot(resolve('/etc/passwd'), root, 'file')).toThrow(
+      '허용 범위를 벗어났습니다',
+    );
   });
 });

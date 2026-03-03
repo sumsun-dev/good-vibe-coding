@@ -13,9 +13,22 @@ import { assertWithinRoot, AppError } from '../core/validators.js';
 
 /** 실행 가능 언어 목록 */
 const EXECUTABLE_LANGUAGES = [
-  'js', 'javascript', 'ts', 'typescript',
-  'py', 'python', 'sh', 'bash', 'shell',
-  'go', 'golang', 'java', 'kotlin', 'kt', 'rust', 'rs',
+  'js',
+  'javascript',
+  'ts',
+  'typescript',
+  'py',
+  'python',
+  'sh',
+  'bash',
+  'shell',
+  'go',
+  'golang',
+  'java',
+  'kotlin',
+  'kt',
+  'rust',
+  'rs',
 ];
 
 /** 설정 파일 언어 목록 */
@@ -29,7 +42,7 @@ const PROJECT_TYPE_STRATEGY_MAP = {
   'web-app': 'node',
   'api-server': 'node',
   'cli-tool': 'node',
-  'library': 'node',
+  library: 'node',
   'mobile-app': 'node',
   'chrome-extension': 'node',
   'telegram-bot': 'node',
@@ -49,12 +62,16 @@ const PROJECT_TYPE_STRATEGY_MAP = {
  */
 export const BUILD_STRATEGIES = {
   node: {
-    detect: (files) => files.some(f => f === 'package.json') ||
-      files.some(f => f.endsWith('.js') || f.endsWith('.ts')),
+    detect: (files) =>
+      files.some((f) => f === 'package.json') ||
+      files.some((f) => f.endsWith('.js') || f.endsWith('.ts')),
     build: (tempDir) => {
       if (existsSync(join(tempDir, 'package.json'))) {
         const output = execSync('npm install --ignore-scripts && npm run build --ignore-scripts', {
-          cwd: tempDir, timeout: config.build.defaultTimeout, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+          cwd: tempDir,
+          timeout: config.build.defaultTimeout,
+          encoding: 'utf-8',
+          stdio: ['pipe', 'pipe', 'pipe'],
         });
         return { success: true, output, exitCode: 0 };
       }
@@ -65,9 +82,12 @@ export const BUILD_STRATEGIES = {
       }
       // SECURITY: jsFiles는 findFilesByExtension()에서 열거된 파일시스템 경로 (LLM 입력 아님)
       // assertWithinRoot()로 tempDir 바깥 접근 차단됨
-      const checkCommands = jsFiles.map(f => `node --check "${f}"`).join(' && ');
+      const checkCommands = jsFiles.map((f) => `node --check "${f}"`).join(' && ');
       const output = execSync(checkCommands, {
-        cwd: tempDir, timeout: config.build.defaultTimeout, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+        cwd: tempDir,
+        timeout: config.build.defaultTimeout,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       return { success: true, output: output || 'syntax check passed', exitCode: 0 };
     },
@@ -76,58 +96,80 @@ export const BUILD_STRATEGIES = {
         return { success: null, output: 'no package.json for test execution', exitCode: null };
       }
       const output = execSync('npm test', {
-        cwd: tempDir, timeout: config.build.defaultTimeout, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+        cwd: tempDir,
+        timeout: config.build.defaultTimeout,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       return { success: true, output, exitCode: 0 };
     },
   },
   python: {
-    detect: (files) => files.some(f => ['requirements.txt', 'pyproject.toml', 'setup.py'].includes(f)),
+    detect: (files) =>
+      files.some((f) => ['requirements.txt', 'pyproject.toml', 'setup.py'].includes(f)),
     build: (tempDir) => {
       const pyFiles = findFilesByExtension(tempDir, '.py');
       if (pyFiles.length === 0) {
         return { success: false, output: 'no .py files found', exitCode: 1 };
       }
       // SECURITY: pyFiles는 findFilesByExtension()에서 열거된 파일시스템 경로
-      const checkCommands = pyFiles.map(f => `python3 -m py_compile "${f}"`).join(' && ');
+      const checkCommands = pyFiles.map((f) => `python3 -m py_compile "${f}"`).join(' && ');
       const output = execSync(checkCommands, {
-        cwd: tempDir, timeout: config.build.defaultTimeout, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+        cwd: tempDir,
+        timeout: config.build.defaultTimeout,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       return { success: true, output: output || 'python compile check passed', exitCode: 0 };
     },
     test: (tempDir) => {
       const output = execSync('python3 -m pytest', {
-        cwd: tempDir, timeout: config.build.defaultTimeout, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+        cwd: tempDir,
+        timeout: config.build.defaultTimeout,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       return { success: true, output, exitCode: 0 };
     },
   },
   go: {
-    detect: (files) => files.some(f => f === 'go.mod'),
+    detect: (files) => files.some((f) => f === 'go.mod'),
     build: (tempDir) => {
       const output = execSync('go build ./...', {
-        cwd: tempDir, timeout: config.build.goTimeout, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+        cwd: tempDir,
+        timeout: config.build.goTimeout,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       return { success: true, output: output || 'go build passed', exitCode: 0 };
     },
     test: (tempDir) => {
       const output = execSync('go test ./...', {
-        cwd: tempDir, timeout: config.build.goTimeout, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+        cwd: tempDir,
+        timeout: config.build.goTimeout,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       return { success: true, output, exitCode: 0 };
     },
   },
   java: {
-    detect: (files) => files.some(f => f === 'pom.xml'),
+    detect: (files) => files.some((f) => f === 'pom.xml'),
     build: (tempDir) => {
       const output = execSync('mvn compile -q', {
-        cwd: tempDir, timeout: config.build.javaTimeout, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+        cwd: tempDir,
+        timeout: config.build.javaTimeout,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       return { success: true, output: output || 'mvn compile passed', exitCode: 0 };
     },
     test: (tempDir) => {
       const output = execSync('mvn test -q', {
-        cwd: tempDir, timeout: config.build.javaTimeout, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
+        cwd: tempDir,
+        timeout: config.build.javaTimeout,
+        encoding: 'utf-8',
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       return { success: true, output, exitCode: 0 };
     },
@@ -219,7 +261,7 @@ export function extractCodeBlocks(markdownOutput) {
 export function classifyCodeBlocks(codeBlocks) {
   if (!codeBlocks || !Array.isArray(codeBlocks)) return [];
 
-  return codeBlocks.map(block => {
+  return codeBlocks.map((block) => {
     const lang = block.language.toLowerCase();
     let type;
 
@@ -255,17 +297,30 @@ export function writeTemporaryProject(codeBlocks, _projectType) {
 
   /** 언어 → 확장자 매핑 */
   const langExtMap = {
-    javascript: '.js', js: '.js',
-    typescript: '.ts', ts: '.ts',
-    python: '.py', py: '.py',
-    sh: '.sh', bash: '.sh', shell: '.sh',
-    json: '.json', yaml: '.yml', yml: '.yml',
-    toml: '.toml', html: '.html', css: '.css',
-    md: '.md', markdown: '.md',
-    go: '.go', golang: '.go',
+    javascript: '.js',
+    js: '.js',
+    typescript: '.ts',
+    ts: '.ts',
+    python: '.py',
+    py: '.py',
+    sh: '.sh',
+    bash: '.sh',
+    shell: '.sh',
+    json: '.json',
+    yaml: '.yml',
+    yml: '.yml',
+    toml: '.toml',
+    html: '.html',
+    css: '.css',
+    md: '.md',
+    markdown: '.md',
+    go: '.go',
+    golang: '.go',
     java: '.java',
-    kotlin: '.kt', kt: '.kt',
-    rust: '.rs', rs: '.rs',
+    kotlin: '.kt',
+    kt: '.kt',
+    rust: '.rs',
+    rs: '.rs',
   };
 
   codeBlocks.forEach((block, idx) => {
@@ -464,7 +519,9 @@ function findFilesByExtension(dir, ext) {
       }
     }
   } catch (err) {
-    if (err.code !== 'ENOENT') throw new AppError(`파일 검색 오류 (${dir}): ${err.message}`, 'SYSTEM_ERROR');
+    if (err.code !== 'ENOENT') {
+      throw new AppError(`파일 검색 오류 (${dir}): ${err.message}`, 'SYSTEM_ERROR');
+    }
   }
 
   return results;
@@ -486,10 +543,9 @@ function findTestFiles(dir) {
     ...findFilesByExtension(dir, '.java'),
   ];
 
-  return allFiles.filter(f =>
-    testPatterns.some(p => f.includes(p)) ||
-    f.endsWith('_test.go') ||
-    f.endsWith('Test.java')
+  return allFiles.filter(
+    (f) =>
+      testPatterns.some((p) => f.includes(p)) || f.endsWith('_test.go') || f.endsWith('Test.java'),
   );
 }
 

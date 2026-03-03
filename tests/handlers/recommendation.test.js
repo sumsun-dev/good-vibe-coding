@@ -24,8 +24,16 @@ vi.mock('../../scripts/lib/agent/setup-installer.js', () => ({
 }));
 
 import { readStdin, output, outputOk } from '../../scripts/cli-utils.js';
-import { recommendSetup, formatRecommendations, getCatalog } from '../../scripts/lib/agent/recommendation-engine.js';
-import { listInstalled, installItems, formatInstallResults } from '../../scripts/lib/agent/setup-installer.js';
+import {
+  recommendSetup,
+  formatRecommendations,
+  getCatalog,
+} from '../../scripts/lib/agent/recommendation-engine.js';
+import {
+  listInstalled,
+  installItems,
+  formatInstallResults,
+} from '../../scripts/lib/agent/setup-installer.js';
 import { commands } from '../../scripts/handlers/recommendation.js';
 
 describe('recommendation handler', () => {
@@ -35,16 +43,24 @@ describe('recommendation handler', () => {
 
   describe('recommend-setup', () => {
     it('추천 결과를 포맷팅하여 출력해야 한다', async () => {
-      readStdin.mockResolvedValue({ projectType: 'web', complexity: 'medium', description: '웹 앱' });
+      readStdin.mockResolvedValue({
+        projectType: 'web',
+        complexity: 'medium',
+        description: '웹 앱',
+      });
       listInstalled.mockResolvedValue({ skills: [], agents: [] });
       const recs = { skills: [{ id: 's1' }], agents: [] };
       recommendSetup.mockResolvedValue(recs);
       formatRecommendations.mockReturnValue('추천 목록');
 
       await commands['recommend-setup']();
-      expect(recommendSetup).toHaveBeenCalledWith(expect.objectContaining({
-        projectType: 'web', complexity: 'medium', description: '웹 앱',
-      }));
+      expect(recommendSetup).toHaveBeenCalledWith(
+        expect.objectContaining({
+          projectType: 'web',
+          complexity: 'medium',
+          description: '웹 앱',
+        }),
+      );
       expect(output).toHaveBeenCalledWith(expect.objectContaining({ formatted: '추천 목록' }));
     });
   });

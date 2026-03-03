@@ -4,9 +4,24 @@
 import { readStdin, output } from '../cli-utils.js';
 import { setupProjectInfra, appendToClaudeMd } from '../lib/project/project-scaffolder.js';
 import { checkGhStatus, createGithubRepo, gitInitAndPush } from '../lib/project/github-manager.js';
-import { createFeatureBranch, pushBranch, getCurrentBranch } from '../lib/project/branch-manager.js';
-import { createPullRequest, buildPRBody, buildPRTitle, buildPRLabels } from '../lib/project/pr-manager.js';
-import { resolveCIStrategy, inferCommands, generateCIWorkflow } from '../lib/project/ci-generator.js';
+import {
+  createFeatureBranch,
+  pushBranch,
+  getCurrentBranch,
+} from '../lib/project/branch-manager.js';
+import {
+  createPullRequest,
+  buildPRBody,
+  buildPRTitle,
+  buildPRLabels,
+  buildMergeReport,
+  finalizeWithPR,
+} from '../lib/project/pr-manager.js';
+import {
+  resolveCIStrategy,
+  inferCommands,
+  generateCIWorkflow,
+} from '../lib/project/ci-generator.js';
 import { isGeminiCliInstalled } from '../lib/llm/gemini-bridge.js';
 import { checkEnvironment } from '../lib/output/env-checker.js';
 import { getVersionInfo } from '../lib/output/update-checker.js';
@@ -106,6 +121,22 @@ export const commands = {
     const body = buildPRBody(data.project, data.executionState);
     const labels = buildPRLabels(data.project);
     output({ title, body, labels });
+  },
+
+  'finalize-pr': async () => {
+    const data = await readStdin();
+    const result = await finalizeWithPR(data.projectDir, {
+      project: data.project,
+      executionState: data.executionState,
+      githubConfig: data.githubConfig,
+    });
+    output(result);
+  },
+
+  'build-merge-report': async () => {
+    const data = await readStdin();
+    const report = buildMergeReport(data.project, data.executionState);
+    output({ report });
   },
 
   'generate-ci': async () => {

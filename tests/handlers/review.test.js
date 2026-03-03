@@ -28,8 +28,16 @@ vi.mock('../../scripts/lib/project/project-manager.js', () => ({
 }));
 
 import { readStdin, output } from '../../scripts/cli-utils.js';
-import { selectReviewers, checkQualityGate, checkEnhancedQualityGate } from '../../scripts/lib/engine/review-engine.js';
-import { detectRedundantAgents, recommendOptimalTeam, buildOptimizationReport } from '../../scripts/lib/agent/agent-optimizer.js';
+import {
+  selectReviewers,
+  checkQualityGate,
+  checkEnhancedQualityGate,
+} from '../../scripts/lib/engine/review-engine.js';
+import {
+  detectRedundantAgents,
+  recommendOptimalTeam,
+  buildOptimizationReport,
+} from '../../scripts/lib/agent/agent-optimizer.js';
 import { commands } from '../../scripts/handlers/review.js';
 
 describe('review handler', () => {
@@ -40,7 +48,10 @@ describe('review handler', () => {
   describe('select-reviewers', () => {
     it('리뷰어를 선정하고 출력해야 한다', async () => {
       const reviewers = [{ roleId: 'qa' }, { roleId: 'security' }];
-      readStdin.mockResolvedValue({ task: { id: 't1', domains: ['api'] }, team: [{ roleId: 'qa' }] });
+      readStdin.mockResolvedValue({
+        task: { id: 't1', domains: ['api'] },
+        team: [{ roleId: 'qa' }],
+      });
       selectReviewers.mockReturnValue(reviewers);
 
       await commands['select-reviewers']();
@@ -76,7 +87,11 @@ describe('review handler', () => {
       const redundancies = [];
       const recommendations = { keep: ['cto'], remove: [] };
       const report = '최적화 보고서';
-      readStdin.mockResolvedValue({ agentOutputs: ['o1'], roleContributions: [{ roleId: 'cto', contributionScore: 5 }], teamSize: 3 });
+      readStdin.mockResolvedValue({
+        agentOutputs: ['o1'],
+        roleContributions: [{ roleId: 'cto', contributionScore: 5 }],
+        teamSize: 3,
+      });
       detectRedundantAgents.mockReturnValue(redundancies);
       recommendOptimalTeam.mockReturnValue(recommendations);
       buildOptimizationReport.mockReturnValue(report);

@@ -25,9 +25,7 @@ async function scanSkills() {
   const dir = userSkillsDir();
   try {
     const entries = await readdir(dir, { withFileTypes: true });
-    return entries
-      .filter(e => e.isDirectory())
-      .map(e => e.name);
+    return entries.filter((e) => e.isDirectory()).map((e) => e.name);
   } catch (err) {
     if (err.code === 'ENOENT') return [];
     throw new AppError(`스킬 디렉토리 읽기 오류: ${err.message}`, 'SYSTEM_ERROR');
@@ -39,8 +37,8 @@ async function scanAgents() {
   try {
     const entries = await readdir(dir, { withFileTypes: true });
     return entries
-      .filter(e => e.isFile() && e.name.endsWith('.md'))
-      .map(e => e.name.replace(/\.md$/, ''));
+      .filter((e) => e.isFile() && e.name.endsWith('.md'))
+      .map((e) => e.name.replace(/\.md$/, ''));
   } catch (err) {
     if (err.code === 'ENOENT') return [];
     throw new AppError(`에이전트 디렉토리 읽기 오류: ${err.message}`, 'SYSTEM_ERROR');
@@ -95,7 +93,7 @@ export async function installItems(items) {
 export function formatInstallResults(results) {
   if (results.length === 0) return '설치할 항목이 없습니다.';
 
-  const lines = results.map(r => {
+  const lines = results.map((r) => {
     if (r.error) {
       return `- [실패] **${r.id}** ${r.error}`;
     }
@@ -105,8 +103,8 @@ export function formatInstallResults(results) {
     return `- [스킵] **${r.id}** 이미 설치됨`;
   });
 
-  const installed = results.filter(r => r.installed).length;
-  const skipped = results.filter(r => r.skipped).length;
+  const installed = results.filter((r) => r.installed).length;
+  const skipped = results.filter((r) => r.skipped).length;
   lines.push('');
   lines.push(`설치: ${installed}개 / 건너뜀: ${skipped}개`);
 

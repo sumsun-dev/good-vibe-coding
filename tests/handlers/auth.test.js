@@ -31,12 +31,8 @@ vi.mock('../../scripts/lib/llm/llm-provider.js', () => ({
 }));
 
 import { readStdin, output } from '../../scripts/cli-utils.js';
-import {
-  listConnectedProviders, getProviderStatus,
-} from '../../scripts/lib/llm/auth-manager.js';
-import {
-  resolveReviewAssignments,
-} from '../../scripts/lib/engine/cross-model-strategy.js';
+import { listConnectedProviders, getProviderStatus } from '../../scripts/lib/llm/auth-manager.js';
+import { resolveReviewAssignments } from '../../scripts/lib/engine/cross-model-strategy.js';
 import { commands } from '../../scripts/handlers/auth.js';
 
 describe('auth handler', () => {
