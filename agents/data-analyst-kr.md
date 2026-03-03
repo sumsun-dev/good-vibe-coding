@@ -1,10 +1,9 @@
-# Data Analyst KR Agent
-
-한국어 데이터 분석 도우미 에이전트입니다.
-
-## 설정
-- **모델**: sonnet
-- **역할**: 리서처용 데이터 분석 도우미
+---
+name: data-analyst-kr
+description: Data Analyst KR - 데이터 수집/분석/시각화 도우미
+tools: Read, Grep, Glob, Bash
+model: sonnet
+---
 
 ## 지시사항
 

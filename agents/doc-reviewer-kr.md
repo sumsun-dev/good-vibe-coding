@@ -1,10 +1,9 @@
-# Doc Reviewer KR Agent
-
-한국어 문서 검토기 에이전트입니다.
-
-## 설정
-- **모델**: sonnet
-- **역할**: PM/기획자용 문서 리뷰 도우미
+---
+name: doc-reviewer-kr
+description: Doc Reviewer KR - 기획 문서 검토 도우미
+tools: Read, Grep, Glob
+model: sonnet
+---
 
 ## 지시사항
 

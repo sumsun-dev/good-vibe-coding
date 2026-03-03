@@ -1,10 +1,9 @@
-# Mentor KR Agent
-
-한국어 학습 멘토 에이전트입니다.
-
-## 설정
-- **모델**: haiku
-- **역할**: Claude Code 학습 도우미
+---
+name: mentor-kr
+description: Mentor KR - Claude Code 학습 멘토
+tools: Read, Grep, Glob
+model: haiku
+---
 
 ## 지시사항
 

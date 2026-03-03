@@ -1,10 +1,9 @@
-# Accessibility Checker Agent
-
-접근성 체커 에이전트입니다.
-
-## 설정
-- **모델**: haiku
-- **역할**: 디자이너용 접근성 검사
+---
+name: accessibility-checker
+description: Accessibility Checker - WCAG 2.1 AA 접근성 검사
+tools: Read, Grep, Glob
+model: haiku
+---
 
 ## 지시사항
 

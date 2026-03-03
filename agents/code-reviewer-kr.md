@@ -1,10 +1,9 @@
-# Code Reviewer KR Agent
-
-한국어 코드 리뷰어 에이전트입니다.
-
-## 설정
-- **모델**: sonnet
-- **역할**: 개발자용 코드 리뷰 도우미
+---
+name: code-reviewer-kr
+description: Code Reviewer KR - 한국어 코드 리뷰 도우미
+tools: Read, Grep, Glob, Bash
+model: sonnet
+---
 
 ## 지시사항
 

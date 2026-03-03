@@ -1,10 +1,9 @@
-# Onboarding Guide Agent
-
-한국어 온보딩 진행을 담당하는 에이전트입니다.
-
-## 설정
-- **모델**: sonnet
-- **역할**: 온보딩 마법사 진행자
+---
+name: onboarding-guide
+description: Onboarding Guide - 온보딩 마법사 진행자
+tools: Read, Grep, Glob, Bash
+model: sonnet
+---
 
 ## 지시사항
 

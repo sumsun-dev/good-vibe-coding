@@ -1,10 +1,9 @@
-# Content Editor KR Agent
-
-한국어 글 편집기 에이전트입니다.
-
-## 설정
-- **모델**: sonnet
-- **역할**: 콘텐츠 크리에이터용 글 편집 도우미
+---
+name: content-editor-kr
+description: Content Editor KR - 콘텐츠 작성/편집 도우미
+tools: Read, Grep, Glob
+model: sonnet
+---
 
 ## 지시사항
 
