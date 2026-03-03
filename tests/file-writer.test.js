@@ -36,7 +36,7 @@ describe('file-writer', () => {
       expect(await fileExists(resolve(TMP_DIR, 'nope.txt'))).toBe(false);
     });
 
-    it('EACCES 에러는 전파한다 (ENOENT만 false)', async () => {
+    it.skipIf(process.platform === 'win32')('EACCES 에러는 전파한다 (ENOENT만 false)', async () => {
       const { chmod, writeFile: wf } = await import('fs/promises');
       const filePath = resolve(TMP_DIR, 'no-access-dir', 'test.txt');
       const dirPath = resolve(TMP_DIR, 'no-access-dir');

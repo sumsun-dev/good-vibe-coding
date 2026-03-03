@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { checkGhStatus, createGithubRepo, gitInitAndPush, commitPhase, MINIMAL_GITIGNORE } from '../scripts/lib/project/github-manager.js';
 import { execFileSync } from 'child_process';
 import { existsSync, writeFileSync } from 'fs';
+import { join } from 'path';
 
 vi.mock('child_process', () => ({
   execFileSync: vi.fn(),
@@ -180,7 +181,7 @@ describe('github-manager', () => {
 
       expect(result.success).toBe(true);
       expect(writeFileSync).toHaveBeenCalledWith(
-        '/tmp/project/.gitignore',
+        join('/tmp/project', '.gitignore'),
         MINIMAL_GITIGNORE,
         'utf-8'
       );
