@@ -528,20 +528,47 @@ function findFilesByExtension(dir, ext) {
 }
 
 /**
+ * 디렉토리에서 여러 확장자의 파일을 한 번의 순회로 찾는다.
+ * @param {string} dir - 검색 디렉토리
+ * @param {string[]} extensions - 확장자 목록 (예: ['.js', '.ts'])
+ * @returns {string[]} 파일 경로 배열
+ */
+function findFilesByExtensions(dir, extensions) {
+  const results = [];
+  const extSet = new Set(extensions);
+
+  try {
+    const entries = readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = join(dir, entry.name);
+      if (entry.isDirectory() && entry.name !== 'node_modules') {
+        results.push(...findFilesByExtensions(fullPath, extensions));
+      } else if (entry.isFile()) {
+        for (const ext of extSet) {
+          if (entry.name.endsWith(ext)) {
+            results.push(fullPath);
+            break;
+          }
+        }
+      }
+    }
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      throw new AppError(`파일 검색 오류 (${dir}): ${err.message}`, 'SYSTEM_ERROR');
+    }
+  }
+
+  return results;
+}
+
+/**
  * 디렉토리에서 테스트 파일을 찾는다.
  * @param {string} dir - 검색 디렉토리
  * @returns {string[]} 테스트 파일 경로 배열
  */
 function findTestFiles(dir) {
   const testPatterns = ['.test.', '.spec.', '__tests__'];
-
-  const allFiles = [
-    ...findFilesByExtension(dir, '.js'),
-    ...findFilesByExtension(dir, '.ts'),
-    ...findFilesByExtension(dir, '.py'),
-    ...findFilesByExtension(dir, '.go'),
-    ...findFilesByExtension(dir, '.java'),
-  ];
+  const allFiles = findFilesByExtensions(dir, ['.js', '.ts', '.py', '.go', '.java']);
 
   return allFiles.filter(
     (f) =>
