@@ -3,9 +3,12 @@
  */
 import { readStdin, output, parseArgs } from '../cli-utils.js';
 import {
-  recommendTeam, buildTeam, loadRoleCatalog, loadProjectTypes,
+  recommendTeam, buildTeam, buildTeamWithDynamic, loadRoleCatalog, loadProjectTypes,
   getTeamSummary, getOptimizedTeam,
 } from '../lib/agent/team-builder.js';
+import {
+  buildDynamicRolePrompt, parseDynamicRoles,
+} from '../lib/agent/dynamic-role-designer.js';
 import { requireFields, inputError } from '../lib/core/validators.js';
 
 const [,, , ...args] = process.argv;
@@ -39,6 +42,27 @@ export const commands = {
   'project-types': async () => {
     const types = await loadProjectTypes();
     output(types);
+  },
+
+  'design-dynamic-roles': async () => {
+    const data = await readStdin();
+    requireFields(data, ['description']);
+    const prompt = buildDynamicRolePrompt(data.description, data.existingRoles || [], data.codebaseInfo || null);
+    output({ prompt });
+  },
+
+  'parse-dynamic-roles': async () => {
+    const data = await readStdin();
+    requireFields(data, ['rawOutput']);
+    const roles = parseDynamicRoles(data.rawOutput);
+    output({ roles });
+  },
+
+  'build-team-with-dynamic': async () => {
+    const data = await readStdin();
+    requireFields(data, ['roleIds']);
+    const team = await buildTeamWithDynamic(data.roleIds, data.dynamicRoles || [], { complexity: data.complexity });
+    output(team);
   },
 
   'team-summary': async () => {
