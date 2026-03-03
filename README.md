@@ -45,7 +45,7 @@ claude plugin update sumsun-dev/good-vibe-coding
 
 - [Claude Code](https://claude.ai/code) 2.0 이상
 - Node.js 18 이상
-- (선택) [GitHub CLI](https://cli.github.com/) — 저장소 자동 생성에 쓰임
+- (선택) [GitHub CLI](https://cli.github.com/) — 저장소 자동 생성, branch/PR 관리에 쓰임
 - (선택) [Gemini CLI](https://github.com/google-gemini/gemini-cli) — 크로스 모델 리뷰에 쓰임
 
 ## 시작하기
@@ -128,6 +128,46 @@ claude plugin update sumsun-dev/good-vibe-coding
 1. 문제를 7개 카테고리(보안, 빌드, 테스트, 성능, 타입, 아키텍처, 로직)로 분류
 2. 담당자에게 "이전에 뭘 시도했고 뭐가 안 됐는지"를 알려주면서 수정을 요청 (최대 2회)
 3. 그래도 안 되면 당신(CEO)에게 알려줌 — 계속 시도할지, 건너뛸지, 중단할지 선택
+
+## GitHub 협업 워크플로우 (opt-in)
+
+코드를 branch로 관리하고, PR로 리뷰받고 싶다면 GitHub 협업 모드를 켜세요.
+
+```
+기본값: github.enabled = false → 기존과 동일 (main 직접 커밋)
+```
+
+`/hello`에서 GitHub 협업 모드를 활성화하면:
+
+1. **실행 시작 시** feature branch 자동 생성 (`gv/{프로젝트명}-{timestamp}`)
+2. **Phase별** conventional commit 자동 생성 (`feat(phase-1): API 라우터 구현`)
+3. **실행 완료 후** Pull Request 자동 생성 (팀 구성, Phase 결과 요약 포함)
+4. **기술 스택 감지** 후 GitHub Actions CI 워크플로우 자동 생성
+
+### 브랜치 네이밍 전략
+
+| 전략 | 예시 | 설명 |
+|------|------|------|
+| `timestamp` (기본) | `gv/my-app-20260303-1400` | 시간 기반, 충돌 없음 |
+| `phase` | `gv/my-app-phase-1` | Phase 기반 |
+| `custom` | 사용자 지정 | 직접 입력 |
+
+### CI 자동 생성
+
+기술 스택을 감지해서 `.github/workflows/ci.yml`을 자동으로 만듭니다.
+
+| 언어 | 테스트 버전 | 감지 기준 |
+|------|-----------|----------|
+| Node.js | 18, 20, 22 | `package.json` 존재 |
+| Python | 3.10, 3.11, 3.12 | `requirements.txt` 또는 `pyproject.toml` |
+| Go | 1.21 | `go.mod` 존재 |
+| Java | 17 | `pom.xml` 존재 |
+
+### Graceful Degradation
+
+- GitHub CLI(`gh`)가 설치되지 않아도 에러 없이 동작합니다 (PR 생성만 건너뜀)
+- remote가 설정되지 않으면 push를 자동 건너뜁니다
+- 모든 GitHub 기능은 opt-in이므로, 켜지 않으면 기존 동작과 완전히 동일합니다
 
 ## 기존 프로젝트 이어서 작업
 
@@ -267,10 +307,10 @@ import { Discusser, Executor } from 'good-vibe-coding';
 │  AI 팀원             15개 역할               │
 │  Tier별 병렬 분석 + 크로스 리뷰              │
 ├─────────────────────────────────────────────┤
-│  내부 API            CLI-as-API (101개)      │
+│  내부 API            CLI-as-API (108개)      │
 │  에이전트가 호출하는 인터페이스               │
 ├─────────────────────────────────────────────┤
-│  코어 라이브러리      41개 모듈 + 14개 핸들러  │
+│  코어 라이브러리      49개 모듈 + 14개 핸들러  │
 │  프로젝트 관리, 오케스트레이션, 리뷰 엔진 등  │
 └─────────────────────────────────────────────┘
 ```
@@ -286,20 +326,20 @@ good-vibe-coding/
 ├── agents/          23개 에이전트 (팀 15 + 서포트 8)
 ├── commands/        20개 슬래시 커맨드 정의
 ├── scripts/
-│   ├── cli.js       내부 API 라우터 (101개 커맨드)
+│   ├── cli.js       내부 API 라우터 (114개 커맨드)
 │   ├── handlers/    14개 핸들러 모듈
-│   └── lib/         41개 코어 라이브러리
+│   └── lib/         49개 코어 라이브러리
 │       ├── core/        기반 유틸 (validators, config, cache 등)
-│       ├── project/     프로젝트 관리 (project-manager, scaffolder 등)
+│       ├── project/     프로젝트 관리 (project-manager, scaffolder, branch, PR, CI 등)
 │       ├── engine/      실행 엔진 (orchestrator, execution-loop, review 등)
 │       ├── llm/         LLM 연동 (llm-provider, gemini-bridge 등)
 │       ├── agent/       에이전트/팀 (team-builder, optimizer 등)
 │       └── output/      보고/환경 (report-generator, env-checker 등)
-├── presets/         역할, 프로젝트 타입, 템플릿
+├── presets/         역할, 프로젝트 타입, 템플릿, CI 템플릿
 ├── guides/          사용자 가이드
 ├── templates/       Handlebars 템플릿
 ├── skills/          4개 내장 스킬
-└── tests/           1,267+ 테스트 (Vitest)
+└── tests/           1,400+ 테스트 (Vitest)
 ```
 
 ## 개발
@@ -315,7 +355,7 @@ npm run test:coverage # 커버리지 리포트
 
 - **Node.js 18+** (ESM)
 - **Handlebars** 템플릿 엔진
-- **Vitest** 테스트 (1,267+개)
+- **Vitest** 테스트 (1,400+개)
 - **GitHub Actions** CI (Node 18/20/22)
 
 ## 지원 범위

@@ -434,6 +434,13 @@ export const COMMAND_SCHEMAS = {
     output: obj({ committed: bool(), message: str() }),
     description: 'Phase 결과를 커밋한다',
   },
+  'commit-phase-enhanced': {
+    handler: 'build',
+    inputMethod: 'stdin',
+    input: obj({ projectDir: str(true), phase: num(true), tasks: arr(), project: objField(), team: arr(), totalPhases: num(), qualityGate: objField() }),
+    output: obj({ success: bool(), message: str(), error: str() }),
+    description: 'conventional commit 메시지로 Phase를 커밋한다',
+  },
 
   // ============================================================
   // === eval (9개) ===
@@ -712,6 +719,48 @@ export const COMMAND_SCHEMAS = {
     input: obj({}),
     output: obj({ version: str(), updateAvailable: bool(), instructions: str() }),
     description: '현재 버전과 업데이트 가능 여부를 확인한다',
+  },
+  'create-branch': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({ projectDir: str(true), projectSlug: str(true), baseBranch: str(), strategy: strEnum(['timestamp', 'phase', 'custom']), context: objField() }),
+    output: obj({ success: bool(), branchName: str(), error: str() }),
+    description: 'feature branch를 생성한다',
+  },
+  'push-branch': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({ projectDir: str(true), branchName: str(true) }),
+    output: obj({ success: bool(), skipped: bool(), reason: str(), error: str() }),
+    description: 'branch를 remote에 push한다',
+  },
+  'current-branch': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({ projectDir: str(true) }),
+    output: obj({ branch: str() }),
+    description: '현재 branch를 조회한다',
+  },
+  'create-pr': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({ projectDir: str(true), branchName: str(true), baseBranch: str(), title: str(true), body: str(true), labels: arr(), draft: bool() }),
+    output: obj({ success: bool(), url: str(), skipped: bool(), reason: str(), error: str() }),
+    description: 'Pull Request를 생성한다',
+  },
+  'build-pr-body': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({ project: objField(true), executionState: objField(), options: objField() }),
+    output: obj({ title: str(), body: str(), labels: arr() }),
+    description: 'PR 제목/본문/라벨을 생성한다',
+  },
+  'generate-ci': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({ projectDir: str(true), techStack: arr(), codebaseInfo: objField(), packageJson: objField() }),
+    output: obj({ success: bool(), filePath: str(), strategy: objField(), commands: objField() }),
+    description: 'GitHub Actions CI 워크플로우를 생성한다',
   },
 
   // ============================================================

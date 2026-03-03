@@ -144,6 +144,7 @@ export async function createProject(name, type, description, options = {}) {
     tasks: [],
     report: null,
     feedback: [],
+    pullRequests: [],
     metrics: createMetricsSnapshot(),
   };
 
@@ -405,6 +406,19 @@ export async function recordContributions(projectId, contributions) {
     }
     return { ...project, contributions: updated };
   });
+}
+
+/**
+ * 프로젝트에 Pull Request 정보를 추가한다.
+ * @param {string} projectId - 프로젝트 ID
+ * @param {object} prInfo - PR 정보 (url, branchName, title, createdAt 등)
+ * @returns {Promise<object>} 업데이트된 프로젝트
+ */
+export async function addPullRequest(projectId, prInfo) {
+  return withProjectLock(projectId, project => ({
+    ...project,
+    pullRequests: [...(project.pullRequests || []), { ...prInfo, recordedAt: new Date().toISOString() }],
+  }));
 }
 
 /**

@@ -3,6 +3,7 @@ import { readFile } from 'fs/promises';
 import { ensureDir, safeWriteFile, writeFiles, fileExists } from '../core/file-writer.js';
 import { renderTemplate } from './template-engine.js';
 import { inputError } from '../core/validators.js';
+import { resolveCIStrategy, inferCommands, generateCIWorkflow } from './ci-generator.js';
 
 const GITIGNORE_TEMPLATES = {
   'next-js': `node_modules/
@@ -138,7 +139,7 @@ export async function buildProjectReadme(options) {
  * @returns {Promise<{files: Array<{path: string, written: boolean}>, projectDir: string}>}
  */
 export async function setupProjectInfra(options) {
-  const { name, description, techStack, targetDir } = options;
+  const { name, description, techStack, targetDir, withCI = false } = options;
 
   if (!name || typeof name !== 'string') {
     throw inputError('name 필드가 필요합니다');
@@ -184,9 +185,22 @@ export async function setupProjectInfra(options) {
 
   const results = await writeFiles(filesToWrite);
 
+  let ciResult = null;
+  if (withCI) {
+    try {
+      const techArray = techStack ? techStack.split(',').map(s => s.trim()) : [];
+      const strategy = resolveCIStrategy({ techStack: techArray });
+      const commands = inferCommands(strategy.type);
+      ciResult = await generateCIWorkflow(projectDir, strategy, commands);
+    } catch (err) {
+      ciResult = { success: false, error: err.message };
+    }
+  }
+
   return {
     files: results.map(r => ({ path: r.path, written: r.written })),
     projectDir,
+    ci: ciResult,
   };
 }
 

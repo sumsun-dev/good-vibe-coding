@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  push:
+    branches: [{{baseBranch}}]
+  pull_request:
+    branches: [{{baseBranch}}]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '{{javaVersion}}'
+          distribution: temurin
+{{#if buildCommand}}
+      - run: {{buildCommand}}
+{{/if}}
+      - run: {{testCommand}}

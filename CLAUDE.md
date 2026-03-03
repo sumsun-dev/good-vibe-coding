@@ -4,7 +4,7 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 
 ## 설계: CLI-as-API + SDK
 
-- `cli.js`는 경량 라우터. 107개 커맨드를 14개 핸들러 모듈(`scripts/handlers/*.js`)로 lazy-load 디스패치
+- `cli.js`는 경량 라우터. 114개 커맨드를 14개 핸들러 모듈(`scripts/handlers/*.js`)로 lazy-load 디스패치
 - 사용자는 `/hello`, `/new`, `/discuss` 같은 슬래시 커맨드만 씀
 - 흐름: 슬래시 커맨드 → 에이전트 디스패치 → cli.js → 핸들러 → 코어 라이브러리
 - 에이전트 .md 파일이 `node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js <command>` 형태로 호출
@@ -150,10 +150,10 @@ created → planning → approved → executing → reviewing → completed
 │  AI 팀원             15개 역할               │
 │  Tier별 병렬 분석 + 크로스 리뷰              │
 ├─────────────────────────────────────────────┤
-│  내부 API            CLI-as-API (101개)      │
+│  내부 API            CLI-as-API (108개)      │
 │  에이전트가 호출하는 인터페이스               │
 ├─────────────────────────────────────────────┤
-│  코어 라이브러리      45개 모듈 + 14개 핸들러  │
+│  코어 라이브러리      49개 모듈 + 14개 핸들러  │
 │  프로젝트 관리, 오케스트레이션, 리뷰 엔진 등  │
 └─────────────────────────────────────────────┘
 ```
@@ -188,7 +188,7 @@ created → planning → approved → executing → reviewing → completed
 - `prompt-builder.js` — 프롬프트 조합 유틸리티 (순수 마크다운 포맷팅)
 - `nl-router.js` — 자연어 → 커맨드 매핑 (규칙 기반, LLM 호출 없음)
 
-**`project/`** — 프로젝트 관리 (8개)
+**`project/`** — 프로젝트 관리 (12개)
 - `project-manager.js` — CRUD + 상태 관리 (원자적 잠금, AppError, 기여도 기록)
 - `project-scaffolder.js` — 프로젝트 인프라 생성 (폴더, CLAUDE.md, README.md, 에이전트)
 - `project-metrics.js` — 비용/토큰 추적, 에이전트 기여도, 대시보드
@@ -197,6 +197,10 @@ created → planning → approved → executing → reviewing → completed
 - `template-scaffolder.js` — 프로젝트 템플릿 스캐폴딩 (5개 built-in + custom)
 - `template-engine.js` — Handlebars 엔진
 - `codebase-scanner.js` — 프로젝트 폴더 스캔 → 기술 스택/구조 파악 (LLM 호출 없음)
+- `commit-message-builder.js` — conventional commit 메시지 생성 (pure, feat/fix/test/refactor/chore 자동 결정)
+- `branch-manager.js` — feature branch 생성/관리 (timestamp/phase/custom 전략, graceful skip)
+- `pr-manager.js` — Pull Request 생성/관리 (gh CLI 래퍼, graceful skip)
+- `ci-generator.js` — GitHub Actions CI 워크플로우 자동 생성 (Node/Python/Go/Java)
 
 **`engine/`** — 실행 엔진 (11개)
 - `orchestrator.js` — 멀티에이전트 오케스트레이션 (4-tier 병렬 디스패치, 수렴 확인, 역할별 피드백 주입)
@@ -243,7 +247,7 @@ created → planning → approved → executing → reviewing → completed
 - `adapter.js` — Claude Code 환경에서 SDK 초기화
 
 **CLI 레이어**
-- `cli.js` — 라우터 (107개 커맨드, 14개 핸들러로 디스패치)
+- `cli.js` — 라우터 (114개 커맨드, 14개 핸들러로 디스패치)
 - `cli-utils.js` — readStdin, output, outputOk, parseArgs
 - `handlers/*.js` — 14개 핸들러: project, team, discussion, execution, review, build, eval, auth, feedback, infra, metrics, template, task, recommendation
 
@@ -268,6 +272,12 @@ created → planning → approved → executing → reviewing → completed
 | 팀 | `team.complex` | 5-8명 | plan-only |
 | 추천 | `recommendation.minScore` | 3 | 추천 노출 최소 점수 |
 | LLM | `llm.defaultTimeout` | 60s | LLM 호출 타임아웃 |
+| GitHub | `github.enabled` | false | GitHub 협업 기능 활성화 |
+| GitHub | `github.branchStrategy` | timestamp | 브랜치 네이밍 전략 (timestamp/phase/custom) |
+| GitHub | `github.baseBranch` | main | 베이스 브랜치 |
+| GitHub | `github.autoPush` | true | 브랜치 자동 push |
+| GitHub | `github.autoCreatePR` | true | 실행 완료 후 자동 PR 생성 |
+| GitHub | `github.prDraft` | false | PR을 Draft로 생성 |
 
 ## 토론 플로우
 
@@ -310,6 +320,23 @@ Phase N:
 - **시맨틱 상태 검증**: 6가지 규칙 (fixAttempt 상한, completedAt 필수, escalation 플래그, 중복 Phase 방지 등)
 - **리뷰어 선정**: 도메인 오버랩 점수 + 유니버셜 리뷰어(qa/security/cto) +1 보너스
 - **리비전 프롬프트**: critical + important 이슈만 포함, minor는 자동 제외
+
+## GitHub 협업 워크플로우 (opt-in)
+
+```
+github.enabled = false (기본값)
+  → 기존과 동일 (main 직접 커밋, branch/PR 없음)
+
+github.enabled = true
+  → 실행 시작 시 feature branch 생성 (gv/{slug}-{timestamp})
+  → Phase별 conventional commit (feat/fix/test/refactor/chore)
+  → 실행 완료 후 자동 PR 생성 (gh CLI)
+  → PR URL을 project.json에 기록
+```
+
+- **Graceful Degradation**: gh 미설치 시 `{ skipped: true, reason }` 반환, 에러 아님
+- **conventional commit**: `feat(phase-1): API 라우터 구현` + Co-authored-by
+- **CI 자동 생성**: 기술 스택 감지 → Node/Python/Go/Java CI 워크플로우 생성
 
 ## 코드 구체화 파이프라인
 

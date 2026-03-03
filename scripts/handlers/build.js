@@ -6,7 +6,7 @@ import {
   materializeCode, materializeBatch, extractMaterializableBlocks,
 } from '../lib/engine/code-materializer.js';
 import { verifyAndMaterialize } from '../lib/engine/execution-verifier.js';
-import { commitPhase } from '../lib/project/github-manager.js';
+import { commitPhase, commitPhaseEnhanced } from '../lib/project/github-manager.js';
 
 export const commands = {
   'materialize-code': async () => {
@@ -36,6 +36,19 @@ export const commands = {
   'commit-phase': async () => {
     const data = await readStdin();
     const result = commitPhase(data.projectDir, data.phase, data.message);
+    output(result);
+  },
+
+  'commit-phase-enhanced': async () => {
+    const data = await readStdin();
+    const result = commitPhaseEnhanced(data.projectDir, {
+      phase: data.phase,
+      tasks: data.tasks,
+      project: data.project,
+      team: data.team,
+      totalPhases: data.totalPhases,
+      qualityGate: data.qualityGate,
+    });
     output(result);
   },
 };

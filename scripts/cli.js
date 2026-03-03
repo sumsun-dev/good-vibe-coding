@@ -50,6 +50,7 @@ const COMMAND_MAP = {
   // build
   'materialize-code': 'build', 'materialize-batch': 'build',
   'verify-and-materialize': 'build', 'extract-materializable-blocks': 'build', 'commit-phase': 'build',
+  'commit-phase-enhanced': 'build',
   // eval
   'eval-create': 'eval', 'eval-record': 'eval', 'eval-compare': 'eval',
   'eval-report': 'eval', 'eval-list': 'eval', 'eval-baseline-prompt': 'eval',
@@ -70,6 +71,8 @@ const COMMAND_MAP = {
   'setup-project-infra': 'infra', 'check-gh-status': 'infra', 'check-gemini-status': 'infra',
   'create-github-repo': 'infra', 'git-init-push': 'infra', 'append-claude-md': 'infra',
   'check-environment': 'infra', 'check-version': 'infra',
+  'create-branch': 'infra', 'push-branch': 'infra', 'current-branch': 'infra',
+  'create-pr': 'infra', 'build-pr-body': 'infra', 'generate-ci': 'infra',
   // metrics
   'record-metrics': 'metrics', 'project-metrics': 'metrics', 'cost-summary': 'metrics',
   // template

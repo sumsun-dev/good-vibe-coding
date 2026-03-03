@@ -4,6 +4,9 @@
 import { readStdin, output } from '../cli-utils.js';
 import { setupProjectInfra, appendToClaudeMd } from '../lib/project/project-scaffolder.js';
 import { checkGhStatus, createGithubRepo, gitInitAndPush } from '../lib/project/github-manager.js';
+import { createFeatureBranch, pushBranch, getCurrentBranch } from '../lib/project/branch-manager.js';
+import { createPullRequest, buildPRBody, buildPRTitle, buildPRLabels } from '../lib/project/pr-manager.js';
+import { resolveCIStrategy, inferCommands, generateCIWorkflow } from '../lib/project/ci-generator.js';
 import { isGeminiCliInstalled } from '../lib/llm/gemini-bridge.js';
 import { checkEnvironment } from '../lib/output/env-checker.js';
 import { getVersionInfo } from '../lib/output/update-checker.js';
@@ -59,5 +62,60 @@ export const commands = {
   'check-version': async () => {
     const result = getVersionInfo();
     output(result);
+  },
+
+  'create-branch': async () => {
+    const data = await readStdin();
+    const result = createFeatureBranch(data.projectDir, {
+      projectSlug: data.projectSlug,
+      baseBranch: data.baseBranch,
+      strategy: data.strategy,
+      context: data.context,
+    });
+    output(result);
+  },
+
+  'push-branch': async () => {
+    const data = await readStdin();
+    const result = pushBranch(data.projectDir, data.branchName);
+    output(result);
+  },
+
+  'current-branch': async () => {
+    const data = await readStdin();
+    const branch = getCurrentBranch(data.projectDir);
+    output({ branch });
+  },
+
+  'create-pr': async () => {
+    const data = await readStdin();
+    const result = createPullRequest(data.projectDir, {
+      branchName: data.branchName,
+      baseBranch: data.baseBranch,
+      title: data.title,
+      body: data.body,
+      labels: data.labels,
+      draft: data.draft,
+    });
+    output(result);
+  },
+
+  'build-pr-body': async () => {
+    const data = await readStdin();
+    const title = buildPRTitle(data.project, data.options);
+    const body = buildPRBody(data.project, data.executionState);
+    const labels = buildPRLabels(data.project);
+    output({ title, body, labels });
+  },
+
+  'generate-ci': async () => {
+    const data = await readStdin();
+    const strategy = resolveCIStrategy({
+      techStack: data.techStack,
+      codebaseInfo: data.codebaseInfo,
+    });
+    const commands = inferCommands(strategy.type, data.packageJson);
+    const result = await generateCIWorkflow(data.projectDir, strategy, commands);
+    output({ ...result, strategy, commands });
   },
 };
