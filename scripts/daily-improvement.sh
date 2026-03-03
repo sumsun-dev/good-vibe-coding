@@ -41,7 +41,7 @@ log "분석 데이터 수집 → $TMP_DIR"
 
 npx eslint . --format json > "$TMP_DIR/eslint-report.json" 2>/dev/null || true
 npx vitest run --coverage --reporter=json > "$TMP_DIR/test-report.json" 2>/dev/null || true
-git log --since="7 days ago" --name-only --pretty=format: | sort -u | head -50 > "$TMP_DIR/recent-changes.txt"
+git log --since="7 days ago" --name-only --pretty=format: | sort -u | head -50 > "$TMP_DIR/recent-changes.txt" || true
 gh issue list --label "automated,improvement" --state open --json title,number > "$TMP_DIR/existing-issues.json" 2>/dev/null || echo "[]" > "$TMP_DIR/existing-issues.json"
 
 # ── 라벨 확인 (없으면 생성) ───────────────────────────────
