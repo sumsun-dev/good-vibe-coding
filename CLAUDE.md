@@ -345,35 +345,92 @@ github.enabled = true
 - **수동 PR 생성**: `finalize-pr` 커맨드로 이미 완료된 프로젝트에 PR 생성 가능
 - **보고서만 생성**: `build-merge-report` 커맨드로 merge 보고서 미리보기 가능
 
-## Daily Improvement 자동화
+## Daily Improvement 자율 파이프라인
 
-VPS + Claude Code CLI로 매일 KST 자정에 코드베이스를 자동 분석 → Issue 생성 + 코드 수정 + PR 생성. CEO는 GitHub에서 merge만 결정.
+VPS + Claude Code CLI로 매일 KST 자정에 코드베이스를 **멀티 세션 파이프라인**으로 자동 분석 → 이슈 생성 → 코드 수정 → PR 생성 → 독립 리뷰 → 수정 루프 → 보고서 → 머지 요청. CEO는 GitHub에서 merge만 결정.
 
 ```
-매일 KST 00:00 (cron: 0 15 * * *)
-  → git pull + npm ci
-  → ESLint + 테스트 커버리지 + 최근 변경 파일 수집
-  → Claude Code CLI가 코드 분석 (품질/보안/성능, CLAUDE.md 자동 참조)
-  → 기존 이슈 중복 확인 → critical/important만 처리
-  → gh issue create + 코드 수정 + PR 생성
-  → lint + test 통과 확인, 실패 시 롤백
+daily-improvement.sh (오케스트레이터)
+  │
+  ├─ Phase 0: 사전 준비
+  │  flock → git pull → npm ci → 데이터 수집 → 브랜치 생성
+  │
+  ├─ Phase 1: 분석 + 수정 + PR (Claude Session 1 — Improver)
+  │  이슈 생성 → 코드 수정 → lint/test → 커밋 → push → PR
+  │  발견 없으면 → 브랜치 삭제, 즉시 종료
+  │
+  ├─ Phase 2: 독립 리뷰 (Claude Session 2 — Reviewer)
+  │  gh pr diff → 보안/성능/정확성 → approve or request-changes
+  │
+  ├─ Phase 3: 수정 루프 (최대 3사이클)
+  │  APPROVED면 건너뜀
+  │  각 사이클: Fixer(수정+push) → Re-reviewer(재리뷰)
+  │  3회 실패 → CEO에게 넘김
+  │
+  └─ Phase 4: 보고서 + 머지 요청
+     PR body 업데이트 → merge-ready 라벨 → 텔레그램 알림
 ```
+
+### 파일 구조
+
+```
+scripts/
+  daily-improvement.sh              # 오케스트레이터 (Phase 0→1→2→3→4 순차 실행)
+  improvement/
+    config.env                      # 타임아웃, 정책 상수, 텔레그램 설정
+    lib/
+      common.sh                     # log, send_telegram, cleanup, assert_not_on_master
+      prompts.sh                    # Improver/Reviewer/Fixer 프롬프트 생성
+      history.sh                    # history.jsonl 읽기/쓰기/요약
+    phase0-prepare.sh               # git pull, npm ci, 데이터 수집, 브랜치 생성
+    phase1-improve.sh               # Claude Improver + PR 생성
+    phase2-review.sh                # Claude Reviewer + CI 대기
+    phase3-fix-loop.sh              # fix-review 사이클 루프
+    phase4-report.sh                # 보고서 + 텔레그램 + 히스토리 기록
+logs/daily-improvement/
+  history.jsonl                     # 실행 이력 (append-only)
+```
+
+### 실행 정보
 
 - **스크립트**: `scripts/daily-improvement.sh` (VPS cron 실행)
 - **이슈 템플릿**: `.github/ISSUE_TEMPLATE/improvement.md`
 - **수동 실행**: `bash scripts/daily-improvement.sh`
 - **인증**: Claude Max Plan OAuth (별도 API key 불필요)
 
-| 안전장치 | 설정 | 역할 |
-|----------|------|------|
-| `timeout 8h` | 시스템 레벨 | 최대 8시간 후 자동 종료 |
-| `set -euo pipefail` | 스크립트 | 에러 시 즉시 중단 |
-| `\|\| true` | Claude 호출 | Claude 실패해도 스크립트 정상 종료 |
-| 중복 이슈 방지 | existing-issues.json | 열린 이슈 목록 전달 |
-| 빈 PR 방지 | 프롬프트 지시 | 변경사항 없으면 PR 미생성 |
-| 로그 자동 정리 | find -mtime +30 | 30일 이전 로그 자동 삭제 |
+### 타임아웃 설정
 
-**개발 로드맵**: Phase 1(수동 실행) → Phase 2(프롬프트 튜닝) → Phase 3(cron 자동화) → Phase 4(피드백 루프)
+| Phase | 타임아웃 | 역할 |
+|-------|----------|------|
+| Phase 1 (Improver) | 4h | 분석+수정+테스트 |
+| Phase 2 (Reviewer) | 2h | 컨텍스트 읽기+깊이 리뷰 |
+| Phase 3 (Fixer) | 3h/사이클 | 수정 작업 |
+| Phase 3 (Re-reviewer) | 2h/사이클 | 재리뷰 |
+| 전체 파이프라인 | 12h | 최악: 4h+2h+3cycle×5h |
+
+### 리뷰 품질 기준
+
+**MUST (reject 사유):** 보안 취약점, 테스트 깨뜨림, 로직 오류, CLAUDE.md 컨벤션 위반, 이슈-수정 불일치, 새 문제 도입
+**SHOULD (코멘트만):** 개선 제안, 커버리지 부족, 네이밍/코멘트 개선, 리팩토링 기회
+
+### Reflection (적응형 분석)
+
+`logs/daily-improvement/history.jsonl`에 매 실행 결과를 기록하여 Improver 프롬프트에 최근 7일 요약 주입. 카테고리별 발견 빈도와 승인율을 기반으로 분석 방향을 자동 조정.
+
+### 안전장치
+
+| 안전장치 | 구현 |
+|----------|------|
+| 동시 실행 방지 | `flock -n` (파일 락) |
+| 전체 타임아웃 | watchdog 프로세스 (12h) |
+| Phase별 타임아웃 | `timeout N claude -p` |
+| master 직접 커밋 방지 | `assert_not_on_master()` |
+| lint/test 실패 롤백 | `git checkout -- .` |
+| 빈 PR 방지 | `git diff --name-only` 확인 |
+| Claude 세션 실패 | exit code 124/137 감지 → 텔레그램 알림 |
+| 텔레그램 실패 내성 | `|| true` |
+| 30일 로그 정리 | `find -mtime +30 -delete` |
+
 **중단 기준**: 빈 결과 3회 연속, merge율 < 20%, 같은 이슈 3회+ 반복 중 2개 이상 해당 시
 
 ## 코드 구체화 파이프라인

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Daily Improvement — VPS cron 스크립트
-# 코드베이스를 분석하고, 이슈 생성 + 코드 수정 + PR 생성
+# Daily Improvement — 멀티 Phase 자율 파이프라인
+# 분석 → 이슈 → 브랜치 → 수정 → PR → 리뷰 → 보고서 → 머지 요청
 #
 # 사용법:
 #   bash scripts/daily-improvement.sh          # 수동 실행
@@ -10,114 +10,110 @@
 #   - claude login (Max Plan OAuth)
 #   - gh auth login (GitHub CLI)
 #   - npm ci (의존성 설치)
+#
+# Phase 구조:
+#   Phase 0: 사전 준비 (git pull, npm ci, 데이터 수집, 브랜치 생성)
+#   Phase 1: 분석 + 수정 + PR (Claude Improver)
+#   Phase 2: 독립 리뷰 (Claude Reviewer)
+#   Phase 3: 수정 루프 (Fixer + Re-reviewer, 최대 3사이클)
+#   Phase 4: 보고서 + 머지 요청 (텔레그램 알림)
 
 set -euo pipefail
 
 # ── 경로 설정 ──────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+IMPROVEMENT_DIR="$SCRIPT_DIR/improvement"
 LOG_DIR="$PROJECT_ROOT/logs/daily-improvement"
 LOG_FILE="$LOG_DIR/$(date +%Y-%m-%d).log"
+LOCK_FILE="/tmp/gv-daily-improvement.lock"
 
 mkdir -p "$LOG_DIR"
 
-log() {
-  echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"
-}
+export SCRIPT_DIR PROJECT_ROOT IMPROVEMENT_DIR LOG_DIR LOG_FILE
 
-log "=== Daily Improvement 시작 ==="
+# ── 설정 로드 ──────────────────────────────────────────────
+source "$IMPROVEMENT_DIR/config.env"
 
-# ── 최신 코드 동기화 ──────────────────────────────────────
+# ── 라이브러리 로드 ────────────────────────────────────────
+source "$IMPROVEMENT_DIR/lib/common.sh"
+source "$IMPROVEMENT_DIR/lib/history.sh"
+source "$IMPROVEMENT_DIR/lib/prompts.sh"
+
+# ── Phase 스크립트 로드 ────────────────────────────────────
+source "$IMPROVEMENT_DIR/phase0-prepare.sh"
+source "$IMPROVEMENT_DIR/phase1-improve.sh"
+source "$IMPROVEMENT_DIR/phase2-review.sh"
+source "$IMPROVEMENT_DIR/phase3-fix-loop.sh"
+source "$IMPROVEMENT_DIR/phase4-report.sh"
+
+# ── 동시 실행 방지 (flock) ─────────────────────────────────
+exec 200>"$LOCK_FILE"
+if ! flock -n 200; then
+  echo "이미 실행 중 — 종료" >&2
+  exit "$EXIT_ALREADY_RUNNING"
+fi
+LOCK_FD=200
+
+# ── 정리 핸들러 등록 ──────────────────────────────────────
+trap cleanup EXIT
+
+# ── 메인 오케스트레이터 ───────────────────────────────────
+log "=========================================="
+log "=== Daily Improvement 파이프라인 시작 ==="
+log "=========================================="
+
 cd "$PROJECT_ROOT"
-log "git pull..."
-git pull --rebase origin master >> "$LOG_FILE" 2>&1
 
-log "npm ci..."
-npm ci --ignore-scripts >> "$LOG_FILE" 2>&1
+# Watchdog 시작
+start_watchdog "$TOTAL_TIMEOUT"
 
-# ── 분석 데이터 수집 ──────────────────────────────────────
-TMP_DIR=$(mktemp -d)
-log "분석 데이터 수집 → $TMP_DIR"
+# ── Phase 0: 사전 준비 ────────────────────────────────────
+run_phase0
+# RUN_DIR, BRANCH_NAME이 export됨
 
-npx eslint . --format json > "$TMP_DIR/eslint-report.json" 2>/dev/null || true
-npx vitest run --coverage --reporter=json > "$TMP_DIR/test-report.json" 2>/dev/null || true
-git log --since="7 days ago" --name-only --pretty=format: | sort -u | head -50 > "$TMP_DIR/recent-changes.txt" || true
-gh issue list --label "automated,improvement" --state open --json title,number > "$TMP_DIR/existing-issues.json" 2>/dev/null || echo "[]" > "$TMP_DIR/existing-issues.json"
+# ── Phase 1: 분석 + 수정 + PR ────────────────────────────
+phase1_exit=0
+run_phase1 || phase1_exit=$?
 
-# ── 라벨 확인 (없으면 생성) ───────────────────────────────
-log "GitHub 라벨 확인..."
-gh label create "automated" --color "0075ca" --description "자동 생성" --force 2>/dev/null || true
-gh label create "improvement" --color "a2eeef" --description "개선 사항" --force 2>/dev/null || true
-gh label create "quality" --color "d4c5f9" --description "코드 품질" --force 2>/dev/null || true
-gh label create "security" --color "e11d48" --description "보안" --force 2>/dev/null || true
-gh label create "performance" --color "f9a825" --description "성능" --force 2>/dev/null || true
+case "$phase1_exit" in
+  "$EXIT_NO_FINDINGS")
+    log "발견 없음 — 조용히 종료"
+    run_phase4_no_findings
+    exit 0
+    ;;
+  "$EXIT_LINT_FAIL"|"$EXIT_TEST_FAIL"|"$EXIT_TIMEOUT")
+    log "Phase 1 실패 (code: ${phase1_exit})"
+    run_phase4_error "Phase 1 실패 (code: ${phase1_exit})"
+    exit "$phase1_exit"
+    ;;
+  "$EXIT_ERROR")
+    log "Phase 1 에러"
+    run_phase4_error "Phase 1 에러"
+    exit "$EXIT_ERROR"
+    ;;
+  0)
+    log "Phase 1 성공 — PR 생성됨"
+    ;;
+esac
 
-# ── Claude Code CLI 실행 ──────────────────────────────────
-PROMPT=$(cat <<'PROMPT_EOF'
-먼저 CLAUDE.md 파일을 읽고 프로젝트 컨벤션을 반드시 준수하세요.
-다음 파일을 참조하세요:
-- {{TMP_DIR}}/eslint-report.json (ESLint 결과)
-- {{TMP_DIR}}/test-report.json (테스트 커버리지)
-- {{TMP_DIR}}/recent-changes.txt (최근 7일 변경 파일)
-- {{TMP_DIR}}/existing-issues.json (기존 improvement 이슈)
+# ── Phase 2: 독립 리뷰 ──────────────────────────────────
+phase2_exit=0
+run_phase2 || phase2_exit=$?
 
-## 분석 범위
+if [[ "$phase2_exit" -ne 0 ]]; then
+  log "Phase 2 실패 (code: ${phase2_exit}) — Phase 4로 건너뜀"
+fi
 
-### 1. 코드 품질
-- 50줄 초과 함수, 4단계 초과 중첩, 800줄 초과 파일
-- console.log 잔존, 미사용 import/변수
-- magic number, 3회 이상 반복 패턴
+# ── Phase 3: 수정 루프 ──────────────────────────────────
+phase3_exit=0
+run_phase3 || phase3_exit=$?
 
-### 2. 보안
-- 하드코딩 시크릿/토큰/API키
-- path traversal (assertWithinRoot 누락)
-- exec/execSync에 사용자 입력 직접 전달
-- requireFields 등 입력 검증 누락
+# Phase 3 결과는 리뷰 미승인이어도 계속 진행 (Phase 4에서 CEO에게 알림)
 
-### 3. 성능
-- 핫패스의 동기 I/O
-- 루프 내 반복 I/O (N+1)
-- 캐시 가능한 중복 연산
+# ── Phase 4: 보고서 + 알림 ───────────────────────────────
+run_phase4
 
-## 종료 판단 (중요)
-
-분석은 충분히 깊게, 하지만 무의미하게 오래 하지 마세요.
-- critical/important 발견이 없으면 → 이슈/수정 없이 바로 종료
-- 발견한 것을 모두 수정하고 커밋/PR까지 완료했으면 → 종료
-- 같은 패턴을 반복 탐색하고 있다면 → 중단하고 현재까지 결과로 마무리
-- 수정이 lint/test를 통과하지 못하고 2회 이상 재시도했으면 → 이슈만 남기고 종료
-
-## 실행 규칙
-
-1. existing-issues.json 확인 → 동일 주제 이슈 열려있으면 SKIP
-2. critical/important만 처리, minor는 무시
-3. 각 발견 사항:
-   a. `gh issue create`로 이슈 생성
-      - 제목: "[Daily Improvement] {quality|security|performance}: {요약}"
-      - 라벨: automated,improvement,{category}
-      - 본문: 파일 경로, 라인, 현재 코드, 개선안
-   b. 코드 직접 수정
-4. 수정 후 `npm run lint && npm test` 실행, 통과 확인
-5. 실패 시 수정 롤백, 이슈만 생성
-6. 변경사항 없으면 아무것도 하지 말 것 (빈 PR 금지)
-7. 커밋: conventional commit (fix|refactor|chore(scope): 설명)
-8. PR 본문에 분석 결과 + `closes #이슈번호` 포함
-9. 모든 작업이 끝나면 반드시 종료. 추가로 찾을 것이 없는지 재탐색하지 마세요
-PROMPT_EOF
-)
-
-# TMP_DIR 경로를 프롬프트에 주입
-PROMPT="${PROMPT//\{\{TMP_DIR\}\}/$TMP_DIR}"
-
-log "Claude Code 실행..."
-timeout 8h claude -p "$PROMPT" --dangerously-skip-permissions >> "$LOG_FILE" 2>&1 || true
-
-log "Claude Code 완료"
-
-# ── 정리 ──────────────────────────────────────────────────
-rm -rf "$TMP_DIR"
-
-# 30일 이전 로그 자동 정리
-find "$LOG_DIR" -name "*.log" -mtime +30 -delete 2>/dev/null || true
-
-log "=== Daily Improvement 완료 ==="
+log "=========================================="
+log "=== Daily Improvement 파이프라인 완료 ==="
+log "=========================================="
