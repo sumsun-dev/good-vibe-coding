@@ -7,7 +7,12 @@
   "exports": {
     ".": "./src/index.js",
     "./plugin": "./plugin/adapter.js",
-    "./lib/*": "./scripts/lib/*.js"
+    "./lib/core/*": "./scripts/lib/core/*.js",
+    "./lib/project/*": "./scripts/lib/project/*.js",
+    "./lib/engine/*": "./scripts/lib/engine/*.js",
+    "./lib/agent/*": "./scripts/lib/agent/*.js",
+    "./lib/llm/*": "./scripts/lib/llm/*.js",
+    "./lib/output/*": "./scripts/lib/output/*.js"
   },
   "scripts": {
     "test": "vitest run",
@@ -16,17 +21,28 @@
   },
   "keywords": [
     "claude-code",
-    "onboarding",
-    "korean",
-    "plugin",
-    "developer-tools",
-    "team-management",
-    "project-management",
     "ai-team",
-    "virtual-team"
+    "multi-agent",
+    "virtual-team",
+    "project-management",
+    "team-management",
+    "code-review",
+    "developer-tools",
+    "plugin",
+    "korean",
+    "orchestration",
+    "llm"
   ],
-  "author": "",
+  "author": "sumsun-dev",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sumsun-dev/good-vibe-coding.git"
+  },
+  "homepage": "https://github.com/sumsun-dev/good-vibe-coding#readme",
+  "bugs": {
+    "url": "https://github.com/sumsun-dev/good-vibe-coding/issues"
+  },
   "dependencies": {
     "handlebars": "^4.7.8"
   },
@@ -34,6 +50,19 @@
     "@vitest/coverage-v8": "^3.2.4",
     "vitest": "^3.0.0"
   },
+  "files": [
+    "src/",
+    "scripts/",
+    "plugin/",
+    "agents/",
+    "commands/",
+    "guides/",
+    "presets/",
+    "templates/",
+    "skills/",
+    "LICENSE",
+    "README.md"
+  ],
   "engines": {
     "node": ">=18.0.0"
   }

@@ -312,7 +312,10 @@ describe('materializeCode', () => {
   });
 
   it('쓰기 에러 시 에러를 던진다', async () => {
-    const dir = '/nonexistent-readonly-dir-test-12345';
+    // Windows에서는 /nonexistent가 상대 경로로 해석될 수 있으므로 플랫폼별 경로 사용
+    const dir = process.platform === 'win32'
+      ? 'Z:\\nonexistent-readonly-dir-test-12345'
+      : '/nonexistent-readonly-dir-test-12345';
     // materializeCode propagates file system errors when the base directory cannot be created
     await expect(materializeCode(SINGLE_FILE_OUTPUT, dir)).rejects.toThrow();
   });
@@ -420,7 +423,10 @@ describe('materializeBatch', () => {
     const taskOutputs = [
       { taskId: 'fail-task', output: SINGLE_FILE_OUTPUT },
     ];
-    const result = await materializeBatch(taskOutputs, '/nonexistent-readonly-path-12345/sub');
+    const badDir = process.platform === 'win32'
+      ? 'Z:\\nonexistent-readonly-path-12345\\sub'
+      : '/nonexistent-readonly-path-12345/sub';
+    const result = await materializeBatch(taskOutputs, badDir);
     expect(result.errorCount).toBe(1);
     expect(result.results[0].taskId).toBe('fail-task');
     expect(result.results[0].result).toBeNull();

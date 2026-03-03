@@ -1,3 +1,7 @@
 node_modules/
 .tmp*
 *.backup
+.env
+.env.*
+*.pem
+*.key

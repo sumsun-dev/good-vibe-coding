@@ -95,7 +95,7 @@ export class Executor {
         return this._fix(step, project);
 
       case 'escalate': {
-        const decision = await (this.hooks.onEscalation?.(step.context) ?? 'skip');
+        const decision = await (this.hooks.onEscalation?.(step.context) ?? 'abort');
         return { completedAction: 'escalation-response', escalationDecision: decision };
       }
 

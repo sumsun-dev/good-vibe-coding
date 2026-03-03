@@ -119,6 +119,7 @@ export function createInitialExecutionState(mode = 'interactive') {
     journal: [],
     failureContext: null,
     failureHistory: [],
+    branchName: null,
   };
 }
 
@@ -181,6 +182,14 @@ export function getNextExecutionStep(project) {
   }
 
   if (state.status === 'completed') {
+    if (state.branchName && !(project.pullRequests || []).length) {
+      return {
+        action: 'suggest-pr',
+        phase: state.currentPhase,
+        branchName: state.branchName,
+        description: `실행 완료. PR을 생성하시겠습니까? (branch: ${state.branchName})`,
+      };
+    }
     return {
       action: 'already-completed',
       phase: state.currentPhase,

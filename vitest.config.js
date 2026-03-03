@@ -5,7 +5,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['scripts/lib/**/*.js'],
-      thresholds: { lines: 80, functions: 80, statements: 80, branches: 75 },
+      thresholds: { lines: 95, functions: 90, statements: 95, branches: 85 },
       reporter: ['text', 'text-summary'],
     },
   },

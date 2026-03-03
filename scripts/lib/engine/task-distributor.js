@@ -157,6 +157,12 @@ export function isCodeTask(task) {
     return true;
   }
 
+  // dynamic role: workDomains에 코드 관련 도메인이 포함되면 코드 태스크
+  const codeDomains = ['frontend', 'backend', 'api', 'database', 'fullstack'];
+  if (task.assigneeWorkDomains && task.assigneeWorkDomains.some(d => codeDomains.includes(d))) {
+    return true;
+  }
+
   // 한국어: 단어 경계가 없으므로 includes() 유지
   const koreanKeywords = ['구현', '개발', '코딩'];
   // 영어: \b 단어 경계로 false positive 방지 (e.g. "classification" ≠ "class")

@@ -34,7 +34,7 @@ export function buildAgentAnalysisPrompt(project, teamMember, context = {}) {
 ## 분석 요청 (라운드 ${round})
 당신의 역할과 전문성에 기반하여 이 프로젝트를 분석하세요.
 당신의 말투와 성격으로 응답하세요.
-
+${project.codebaseInfo ? `\n## 코드베이스 정보\n- 기술 스택: ${(project.codebaseInfo.techStack || []).join(', ')}\n- 파일 구조: ${project.codebaseInfo.fileStructure || '없음'}\n` : ''}
 다음 항목에 대해 의견을 제시하세요:
 1. 프로젝트 관점에서의 핵심 고려사항
 2. 기술/설계/전략 제안
@@ -79,7 +79,7 @@ export function buildSynthesisPrompt(project, agentOutputs, round) {
 - 이름: ${project.name}
 - 유형: ${project.type}
 - 설명: ${project.description}
-
+${project.codebaseInfo ? `\n## 코드베이스 정보\n- 기술 스택: ${(project.codebaseInfo.techStack || []).join(', ')}\n- 파일 구조: ${project.codebaseInfo.fileStructure || '없음'}\n` : ''}
 ## 팀원별 분석 결과
 
 ${analysisSection}

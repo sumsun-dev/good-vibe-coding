@@ -58,7 +58,15 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
-  await rm(TMP_DIR, { recursive: true, force: true });
+  // Windows에서 한국어 폴더명 삭제 시 ENOTEMPTY 발생 가능 — 재시도
+  for (let i = 0; i < 3; i++) {
+    try {
+      await rm(TMP_DIR, { recursive: true, force: true });
+      break;
+    } catch {
+      await new Promise(r => setTimeout(r, 100));
+    }
+  }
 });
 
 // === Pure 함수 테스트 ===

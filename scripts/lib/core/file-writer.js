@@ -1,4 +1,4 @@
-import { writeFile as fsWriteFile, readFile, mkdir, copyFile, access } from 'fs/promises';
+import { writeFile as fsWriteFile, readFile, mkdir, copyFile, access, lstat } from 'fs/promises';
 import { dirname } from 'path';
 import { AppError } from './validators.js';
 
@@ -54,6 +54,14 @@ export async function safeWriteFile(filePath, content, options = {}) {
   const exists = await fileExists(filePath);
   if (exists && !overwrite) {
     return { written: false, backupPath: null };
+  }
+
+  // 심링크 감지: 심링크 대상에 쓰기를 차단하여 경로 조작 방지
+  if (exists) {
+    const stat = await lstat(filePath);
+    if (stat.isSymbolicLink()) {
+      throw new AppError(`심링크 대상에 쓰기가 차단되었습니다: ${filePath}`, 'SYSTEM_ERROR');
+    }
   }
 
   let backupPath = null;

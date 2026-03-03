@@ -8,6 +8,9 @@ import {
   buildDiscussionPrompt, buildPlanDocument, buildSingleAgentDiscussionPrompt,
 } from '../lib/engine/discussion-engine.js';
 import {
+  buildAcceptanceCriteriaPrompt, parseAcceptanceCriteria,
+} from '../lib/engine/acceptance-criteria.js';
+import {
   buildAgentAnalysisPrompt, buildSynthesisPrompt, buildReviewPrompt,
   checkConvergence, groupAgentsForParallelDispatch,
 } from '../lib/engine/orchestrator.js';
@@ -74,6 +77,20 @@ export const commands = {
     if (!project) throw inputError('프로젝트 정보가 필요합니다');
     const plan = buildDiscussionDispatchPlan(project, data.team || project.team, data.context || {});
     output(plan);
+  },
+
+  'generate-acceptance-criteria': async () => {
+    const data = await readStdin();
+    if (!data.planDocument) throw inputError('planDocument 필드가 필요합니다');
+    const prompt = buildAcceptanceCriteriaPrompt(data.planDocument, data.projectContext || {});
+    output({ prompt });
+  },
+
+  'parse-acceptance-criteria': async () => {
+    const data = await readStdin();
+    if (!data.rawOutput) throw inputError('rawOutput 필드가 필요합니다');
+    const criteria = parseAcceptanceCriteria(data.rawOutput);
+    output({ criteria });
   },
 
   'execution-dispatch-plan': async () => {

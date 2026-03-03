@@ -88,6 +88,13 @@ export const COMMAND_SCHEMAS = {
     output: obj({ report: str() }),
     description: '프로젝트 보고서를 생성한다',
   },
+  'scan-codebase': {
+    handler: 'project',
+    inputMethod: 'args',
+    input: obj({ path: str(true) }),
+    output: obj({ techStack: arr(), languages: objField(), dependencies: objField(), fileStructure: str(), suggestedRoles: arr(), scannedAt: str() }),
+    description: '프로젝트 폴더를 스캔하여 기술 스택과 구조를 파악한다',
+  },
   'describe-command': {
     handler: 'project',
     inputMethod: 'args',
@@ -133,6 +140,27 @@ export const COMMAND_SCHEMAS = {
     input: obj({}),
     output: obj({ types: objField() }),
     description: '프로젝트 타입 목록을 반환한다',
+  },
+  'design-dynamic-roles': {
+    handler: 'team',
+    inputMethod: 'stdin',
+    input: obj({ description: str(true), existingRoles: arr(), codebaseInfo: objField() }),
+    output: promptOutput,
+    description: '프로젝트별 맞춤 역할 설계 프롬프트를 생성한다',
+  },
+  'parse-dynamic-roles': {
+    handler: 'team',
+    inputMethod: 'stdin',
+    input: obj({ rawOutput: str(true) }),
+    output: obj({ roles: arr() }),
+    description: '동적 역할 LLM 출력을 파싱한다',
+  },
+  'build-team-with-dynamic': {
+    handler: 'team',
+    inputMethod: 'stdin',
+    input: obj({ roleIds: arr(true), dynamicRoles: arr(), complexity: str() }),
+    output: arr(),
+    description: 'catalog 역할과 동적 역할을 병합하여 팀을 빌드한다',
   },
   'team-summary': {
     handler: 'team',
@@ -207,6 +235,20 @@ export const COMMAND_SCHEMAS = {
     input: obj({ project: objField(true), team: arr(true), round: num() }),
     output: obj({ plan: objField() }),
     description: '토론 디스패치 계획을 생성한다',
+  },
+  'generate-acceptance-criteria': {
+    handler: 'discussion',
+    inputMethod: 'stdin',
+    input: obj({ planDocument: str(true), projectContext: objField() }),
+    output: promptOutput,
+    description: '기획서 기반 수락 기준 생성 프롬프트를 생성한다',
+  },
+  'parse-acceptance-criteria': {
+    handler: 'discussion',
+    inputMethod: 'stdin',
+    input: obj({ rawOutput: str(true) }),
+    output: obj({ criteria: arr() }),
+    description: '수락 기준 LLM 출력을 파싱한다',
   },
   'execution-dispatch-plan': {
     handler: 'discussion',
@@ -391,6 +433,13 @@ export const COMMAND_SCHEMAS = {
     input: obj({ projectDir: str(true), phase: num(true), message: str() }),
     output: obj({ committed: bool(), message: str() }),
     description: 'Phase 결과를 커밋한다',
+  },
+  'commit-phase-enhanced': {
+    handler: 'build',
+    inputMethod: 'stdin',
+    input: obj({ projectDir: str(true), phase: num(true), tasks: arr(), project: objField(), team: arr(), totalPhases: num(), qualityGate: objField() }),
+    output: obj({ success: bool(), message: str(), error: str() }),
+    description: 'conventional commit 메시지로 Phase를 커밋한다',
   },
 
   // ============================================================
@@ -670,6 +719,48 @@ export const COMMAND_SCHEMAS = {
     input: obj({}),
     output: obj({ version: str(), updateAvailable: bool(), instructions: str() }),
     description: '현재 버전과 업데이트 가능 여부를 확인한다',
+  },
+  'create-branch': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({ projectDir: str(true), projectSlug: str(true), baseBranch: str(), strategy: strEnum(['timestamp', 'phase', 'custom']), context: objField() }),
+    output: obj({ success: bool(), branchName: str(), error: str() }),
+    description: 'feature branch를 생성한다',
+  },
+  'push-branch': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({ projectDir: str(true), branchName: str(true) }),
+    output: obj({ success: bool(), skipped: bool(), reason: str(), error: str() }),
+    description: 'branch를 remote에 push한다',
+  },
+  'current-branch': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({ projectDir: str(true) }),
+    output: obj({ branch: str() }),
+    description: '현재 branch를 조회한다',
+  },
+  'create-pr': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({ projectDir: str(true), branchName: str(true), baseBranch: str(), title: str(true), body: str(true), labels: arr(), draft: bool() }),
+    output: obj({ success: bool(), url: str(), skipped: bool(), reason: str(), error: str() }),
+    description: 'Pull Request를 생성한다',
+  },
+  'build-pr-body': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({ project: objField(true), executionState: objField(), options: objField() }),
+    output: obj({ title: str(), body: str(), labels: arr() }),
+    description: 'PR 제목/본문/라벨을 생성한다',
+  },
+  'generate-ci': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({ projectDir: str(true), techStack: arr(), codebaseInfo: objField(), packageJson: objField() }),
+    output: obj({ success: bool(), filePath: str(), strategy: objField(), commands: objField() }),
+    description: 'GitHub Actions CI 워크플로우를 생성한다',
   },
 
   // ============================================================

@@ -157,6 +157,38 @@ export function getTeamSummary(team) {
     .join('\n');
 }
 
+/**
+ * catalog 역할과 동적 역할을 병합하여 팀을 빌드한다.
+ * @param {string[]} roleIds - catalog 역할 ID 배열
+ * @param {Array<object>} dynamicRoles - 동적 역할 객체 배열
+ * @param {object} [options={}] - 빌드 옵션
+ * @returns {Promise<Array<object>>} 팀원 배열
+ */
+export async function buildTeamWithDynamic(roleIds, dynamicRoles = [], options = {}) {
+  const catalogMembers = await buildTeam(roleIds, {}, options);
+
+  const dynamicMembers = dynamicRoles.map(role => ({
+    roleId: role.roleId,
+    personalityVariant: 'dynamic',
+    displayName: role.displayName,
+    emoji: '🔧',
+    role: role.displayName,
+    trait: role.description || '',
+    description: role.description || '',
+    speakingStyle: '',
+    greeting: '',
+    model: role.model || 'sonnet',
+    skills: role.skills || [],
+    tools: [],
+    reviewDomains: role.reviewDomains || [],
+    workDomains: role.workDomains || [],
+    dynamic: true,
+    discussionPriority: role.discussionPriority || 5,
+  }));
+
+  return [...catalogMembers, ...dynamicMembers];
+}
+
 // 역할 우선순위 — 낮을수록 core에 우선 배치
 const ROLE_PRIORITY = {
   cto: 0, po: 1,
@@ -176,10 +208,15 @@ const ROLE_PRIORITY = {
  * @param {string} complexity - 복잡도 ('simple' | 'medium' | 'complex')
  * @returns {Promise<{roles: string[], optional: string[]}>}
  */
-export async function getOptimizedTeam(projectType, complexity) {
+export async function getOptimizedTeam(projectType, complexity, codebaseInfo = null) {
   const typeRec = await recommendTeam(projectType);
   const defaults = getDefaultsForComplexity(complexity);
   const baseRoles = new Set([...typeRec.recommended, ...defaults.suggestedRoles]);
+
+  // codebaseInfo에서 추천된 역할을 병합
+  if (codebaseInfo && Array.isArray(codebaseInfo.suggestedRoles)) {
+    for (const role of codebaseInfo.suggestedRoles) baseRoles.add(role);
+  }
 
   // Rule 1: fullstack 중복 제거
   if (baseRoles.has('fullstack') && baseRoles.has('frontend') && baseRoles.has('backend')) {

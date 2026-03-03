@@ -63,6 +63,8 @@ export const BUILD_STRATEGIES = {
       if (jsFiles.length === 0) {
         return { success: false, output: 'no .js files found', exitCode: 1 };
       }
+      // SECURITY: jsFiles는 findFilesByExtension()에서 열거된 파일시스템 경로 (LLM 입력 아님)
+      // assertWithinRoot()로 tempDir 바깥 접근 차단됨
       const checkCommands = jsFiles.map(f => `node --check "${f}"`).join(' && ');
       const output = execSync(checkCommands, {
         cwd: tempDir, timeout: config.build.defaultTimeout, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],
@@ -86,6 +88,7 @@ export const BUILD_STRATEGIES = {
       if (pyFiles.length === 0) {
         return { success: false, output: 'no .py files found', exitCode: 1 };
       }
+      // SECURITY: pyFiles는 findFilesByExtension()에서 열거된 파일시스템 경로
       const checkCommands = pyFiles.map(f => `python3 -m py_compile "${f}"`).join(' && ');
       const output = execSync(checkCommands, {
         cwd: tempDir, timeout: config.build.defaultTimeout, encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'],

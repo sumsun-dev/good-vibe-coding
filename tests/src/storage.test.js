@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { MemoryStorage, resolveStorage } from '../../src/storage.js';
+import { MemoryStorage, FileStorage, resolveStorage } from '../../src/storage.js';
+import { mkdir, rm } from 'fs/promises';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const TMP_DIR = resolve(__dirname, '../../.tmp-test-storage');
 
 describe('MemoryStorage', () => {
   let storage;
@@ -55,6 +61,32 @@ describe('MemoryStorage', () => {
     await storage.write('test-1', { id: 'test-1', version: 2 });
     const result = await storage.read('test-1');
     expect(result.version).toBe(2);
+  });
+});
+
+describe('FileStorage', () => {
+  beforeEach(async () => {
+    await mkdir(TMP_DIR, { recursive: true });
+  });
+
+  afterEach(async () => {
+    await rm(TMP_DIR, { recursive: true, force: true });
+  });
+
+  it('write한 데이터를 read로 읽을 수 있다 (경로 일관성)', async () => {
+    const storage = new FileStorage(TMP_DIR);
+    const data = { id: 'test-1', name: 'Test Project', status: 'created' };
+
+    await storage.write('test-1', data);
+    const result = await storage.read('test-1');
+
+    expect(result).toEqual(data);
+  });
+
+  it('존재하지 않는 ID는 null을 반환한다', async () => {
+    const storage = new FileStorage(TMP_DIR);
+    const result = await storage.read('nonexistent');
+    expect(result).toBeNull();
   });
 });
 

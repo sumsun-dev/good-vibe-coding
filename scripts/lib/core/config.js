@@ -21,5 +21,26 @@ export const config = Object.freeze({
     maxKeywordHits: 3,
     weights: Object.freeze({ projectType: 3, complexity: 2, keyword: 1, roleAffinity: 2 }),
   }),
+  github: Object.freeze({
+    enabled: false,
+    branchStrategy: 'timestamp',
+    baseBranch: 'main',
+    autoPush: true,
+    autoCreatePR: true,
+    prDraft: false,
+  }),
   cli: Object.freeze({ suggestionThreshold: 3 }),
+  codebase: Object.freeze({
+    ignoredDirs: Object.freeze([
+      'node_modules', '.git', '.svn', 'dist', 'build', 'coverage',
+      '__pycache__', '.next', '.nuxt', 'vendor', 'target', '.gradle',
+    ]),
+    techStackMap: Object.freeze({
+      react: 'frontend', vue: 'frontend', angular: 'frontend', svelte: 'frontend', nextjs: 'frontend',
+      express: 'backend', fastapi: 'backend', django: 'backend', flask: 'backend',
+      nestjs: 'backend', koa: 'backend', gin: 'backend', spring: 'backend',
+      docker: 'devops', kubernetes: 'devops', terraform: 'devops',
+      tensorflow: 'data', pytorch: 'data', pandas: 'data',
+    }),
+  }),
 });

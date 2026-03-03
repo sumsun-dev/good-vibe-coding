@@ -42,6 +42,7 @@ export class Discusser {
     const project = { name: team.idea, type: team.type || 'custom', description: team.idea };
     let lastPlan = null;
     let lastConvergence = null;
+    let feedbackByRole = {};
 
     for (let round = 1; round <= maxRounds; round++) {
       // 1) Tier별 순차, tier 내부 병렬 — 에이전트 분석
@@ -54,7 +55,7 @@ export class Discusser {
             const prompt = buildAgentAnalysisPrompt(
               project,
               member,
-              { round, previousSynthesis: lastPlan, peerOutputs: analyses },
+              { round, previousSynthesis: lastPlan, peerOutputs: analyses, feedbackForMe: feedbackByRole[member.roleId] },
             );
             const response = await this._call(member.roleId, prompt);
             return {
@@ -78,14 +79,23 @@ export class Discusser {
         agents.map(async (member) => {
           const prompt = buildReviewPrompt(member, lastPlan, round);
           const response = await this._call(member.roleId, prompt);
-          return response.text;
+          return { roleId: member.roleId, text: response.text };
         }),
       );
 
       // 4) 수렴 체크
-      const parsed = reviews.map((r) => parseReviewOutput(r));
+      const parsed = reviews.map((r) => parseReviewOutput(r.text));
       const convergence = checkConvergence(parsed);
       lastConvergence = convergence;
+
+      // 5) 비승인 에이전트의 피드백을 역할별로 수집 → 다음 라운드에 주입
+      feedbackByRole = {};
+      parsed.forEach((review, idx) => {
+        if (!review.approved && review.feedback) {
+          const roleId = reviews[idx].roleId;
+          feedbackByRole[roleId] = review.feedback;
+        }
+      });
       await this.hooks.onRoundComplete?.(round, convergence);
 
       if (convergence.converged) {

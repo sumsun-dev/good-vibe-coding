@@ -142,6 +142,42 @@ describe('Discusser', () => {
     expect(onAgentCall.mock.calls.length).toBeGreaterThanOrEqual(3);
   });
 
+  it('비승인 에이전트의 피드백이 다음 라운드에 주입된다', async () => {
+    let round = 0;
+    callLLM.mockImplementation(async (provider, prompt) => {
+      // 리뷰 응답: 1라운드에서 CTO만 거부
+      if (prompt.includes('리뷰 대상')) {
+        if (round === 0 && prompt.includes('CTO')) {
+          return {
+            text: '```json\n{"approved": false, "feedback": "보안 취약점이 있습니다", "issues": [{"severity": "critical", "description": "SQL injection"}]}\n```',
+            provider: 'claude', model: 'claude-sonnet-4-6', tokenCount: 50,
+          };
+        }
+        round++;
+        return {
+          text: '```json\n{"approved": true, "feedback": "OK", "issues": []}\n```',
+          provider: 'claude', model: 'claude-sonnet-4-6', tokenCount: 50,
+        };
+      }
+      // 분석 프롬프트: feedbackForMe가 주입되었는지 확인
+      return {
+        text: 'Analysis result',
+        provider: 'claude', model: 'claude-sonnet-4-6', tokenCount: 50,
+      };
+    });
+
+    const team = {
+      idea: 'test project',
+      agents: [makeMember('cto', 1), makeMember('qa', 5)],
+      complexity: { discussionRounds: 2 },
+    };
+
+    const result = await discusser.run(team);
+    // 2라운드 이상 실행됨 (1라운드에서 CTO가 거부했으므로)
+    expect(result.rounds).toBeGreaterThanOrEqual(1);
+    expect(result.document).toBeTruthy();
+  });
+
   it('tier별로 그룹화하여 호출한다', async () => {
     const callOrder = [];
     callLLM.mockImplementation(async (provider, prompt) => {

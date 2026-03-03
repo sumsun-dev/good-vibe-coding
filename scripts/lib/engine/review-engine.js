@@ -59,8 +59,13 @@ export function selectReviewers(task, team) {
  * @param {string} taskOutput - 태스크 실행 결과물
  * @returns {string} 리뷰 프롬프트
  */
-export function buildTaskReviewPrompt(reviewer, task, taskOutput) {
+export function buildTaskReviewPrompt(reviewer, task, taskOutput, acceptanceCriteria = null) {
   const reviewDomains = reviewer.reviewDomains || reviewer.skills || [];
+
+  let acSection = '';
+  if (acceptanceCriteria && acceptanceCriteria.length > 0) {
+    acSection = `\n\n## 수락 기준 검증\n다음 수락 기준에 대해서도 충족 여부를 판단하세요:\n\n${acceptanceCriteria.map(c => `- **${c.id}**: ${c.description} (검증: ${c.measurementMethod})`).join('\n')}\n`;
+  }
 
   return `당신은 ${reviewer.emoji} **${reviewer.displayName}** (${reviewer.role})입니다.
 다른 팀원의 작업 결과를 리뷰합니다.
@@ -75,7 +80,7 @@ export function buildTaskReviewPrompt(reviewer, task, taskOutput) {
 - 설명: ${task.description || '(설명 없음)'}
 
 ## 작업 결과물
-${taskOutput}
+${taskOutput}${acSection}
 
 ## 리뷰 지시사항
 

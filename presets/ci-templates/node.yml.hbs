@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [{{baseBranch}}]
+  pull_request:
+    branches: [{{baseBranch}}]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [{{join nodeVersions ", "}}]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{{{raw}}}}${{ matrix.node-version }}${{{{/raw}}}}
+          cache: npm
+      - run: npm ci
+{{#if lintCommand}}
+      - run: {{lintCommand}}
+{{/if}}
+{{#if buildCommand}}
+      - run: {{buildCommand}}
+{{/if}}
+      - run: {{testCommand}}
