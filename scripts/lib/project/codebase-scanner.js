@@ -78,7 +78,11 @@ export async function scanCodebase(projectPath) {
  * @param {string} root - 루트 디렉토리
  * @returns {Promise<string[]>} 상대 경로 배열
  */
-async function collectFiles(dir, root) {
+const MAX_DEPTH = 10;
+
+async function collectFiles(dir, root, depth = 0) {
+  if (depth > MAX_DEPTH) return [];
+
   const entries = await readdir(dir, { withFileTypes: true });
   const files = [];
 
@@ -89,7 +93,7 @@ async function collectFiles(dir, root) {
     const fullPath = resolve(dir, entry.name);
 
     if (entry.isDirectory()) {
-      const subFiles = await collectFiles(fullPath, root);
+      const subFiles = await collectFiles(fullPath, root, depth + 1);
       files.push(...subFiles);
     } else if (entry.isFile()) {
       files.push(relative(root, fullPath).replace(/\\/g, '/'));
@@ -110,7 +114,11 @@ async function loadManifests(projectPath) {
   for (const name of MANIFEST_FILES) {
     try {
       const content = await readFile(resolve(projectPath, name), 'utf-8');
-      manifests[name] = name === 'package.json' ? JSON.parse(content) : content;
+      if (name === 'package.json') {
+        try { manifests[name] = JSON.parse(content); } catch { /* 손상된 package.json 무시 */ }
+      } else {
+        manifests[name] = content;
+      }
     } catch {
       // 파일이 없으면 무시
     }
