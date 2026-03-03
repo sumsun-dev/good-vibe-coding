@@ -11,15 +11,23 @@ import { config } from '../core/config.js';
  * @param {string} description - 프로젝트 설명
  * @returns {string} 복잡도 분석 프롬프트
  */
-export function buildComplexityAnalysisPrompt(description) {
+export function buildComplexityAnalysisPrompt(description, codebaseInfo = null) {
   if (!description || description.trim() === '') {
     return '';
+  }
+
+  let codebaseSection = '';
+  if (codebaseInfo) {
+    codebaseSection = `\n\n## 코드베이스 정보
+- 기술 스택: ${(codebaseInfo.techStack || []).join(', ') || '없음'}
+- 파일 구조: ${codebaseInfo.fileStructure || '없음'}
+- 주요 언어: ${Object.entries(codebaseInfo.languages || {}).map(([l, c]) => `${l}(${c})`).join(', ') || '없음'}`;
   }
 
   return `다음 프로젝트 설명을 분석하여 복잡도를 판단하세요.
 
 ## 프로젝트 설명
-${description}
+${description}${codebaseSection}
 
 ## 복잡도 판단 기준
 

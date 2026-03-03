@@ -7,6 +7,7 @@ import {
   setProjectTeam, getExecutionProgress,
 } from '../lib/project/project-manager.js';
 import { generateReport } from '../lib/output/report-generator.js';
+import { scanCodebase } from '../lib/project/codebase-scanner.js';
 import { requireFields, notFoundError } from '../lib/core/validators.js';
 import { getCommandSchema, listCommandSchemas } from '../lib/core/command-schemas.js';
 
@@ -60,6 +61,13 @@ export const commands = {
     if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
     const report = generateReport(project);
     output({ report });
+  },
+
+  'scan-codebase': async () => {
+    const opts = parseArgs(args);
+    if (!opts.path) throw notFoundError('--path 옵션이 필요합니다');
+    const result = await scanCodebase(opts.path);
+    output(result);
   },
 
   'describe-command': async () => {

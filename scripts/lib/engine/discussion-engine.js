@@ -121,7 +121,7 @@ export function buildSingleAgentDiscussionPrompt(project, teamMember, context = 
 ## 토론 (라운드 ${round})
 당신의 역할과 전문성에 기반하여 이 프로젝트를 분석하고 의견을 제시하세요.
 반드시 당신의 말투와 성격으로 발언하세요.
-
+${project.codebaseInfo ? `\n## 코드베이스 정보\n- 기술 스택: ${(project.codebaseInfo.techStack || []).join(', ')}\n- 파일 구조: ${project.codebaseInfo.fileStructure || '없음'}\n` : ''}
 다음 항목에 대해 의견을 제시하세요:
 1. 프로젝트의 핵심 고려사항 (당신의 역할 관점)
 2. 기술/설계/전략 제안
