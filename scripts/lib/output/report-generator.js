@@ -43,6 +43,12 @@ ${project.discussion.planDocument || '(기획서 없음)'}
 |------|---------|
 ${Object.entries(stats.byRole).map(([role, count]) => `| ${role} | ${count} |`).join('\n')}`;
 
+  // Phase 실행 기록 섹션 (executionState가 있을 때만)
+  const executionSection = generateExecutionSummary(project);
+  if (executionSection) {
+    report += '\n\n' + executionSection;
+  }
+
   // 비용/성능 섹션 (메트릭스가 있을 때만)
   if (project.metrics) {
     const costSummary = getCostSummary(project.metrics);
@@ -91,6 +97,50 @@ export function generateRoleSummary(teamMember, tasks) {
   return `### ${teamMember.emoji} ${teamMember.displayName} (${teamMember.role})
 - 담당 작업: ${tasks.length}개 (완료: ${completedCount})
 ${taskList}`;
+}
+
+/**
+ * Phase별 실행 기록을 생성한다.
+ * @param {object} project - 프로젝트 전체 데이터
+ * @returns {string|null} 실행 기록 마크다운 또는 null
+ */
+export function generateExecutionSummary(project) {
+  const state = project.executionState;
+  if (!state || !state.phaseResults) return null;
+
+  const phases = Object.keys(state.phaseResults);
+  if (phases.length === 0) return null;
+
+  let section = `## 실행 기록\n\n| Phase | 태스크 | 리뷰 | 품질게이트 | 수정시도 |\n|-------|--------|------|-----------|---------|`;
+
+  for (const phase of phases) {
+    const pr = state.phaseResults[phase];
+    const taskCount = (pr.taskResults || []).length;
+    const reviews = pr.reviews || [];
+    const criticalCount = reviews.reduce(
+      (sum, r) => sum + (r.issues || []).filter(i => i.severity === 'critical').length,
+      0,
+    );
+    const gate = pr.qualityGate;
+    const gateStatus = gate ? (gate.passed ? 'PASS' : 'FAIL') : '-';
+    const fixAttempts = (state.journal || []).filter(
+      j => j.phase === Number(phase) && j.action === 'fix',
+    ).length;
+
+    section += `\n| ${phase} | ${taskCount}개 | ${reviews.length}건 (critical ${criticalCount}) | ${gateStatus} | ${fixAttempts}회 |`;
+  }
+
+  // 타임라인 (journal 기반)
+  const journal = state.journal || [];
+  if (journal.length > 0) {
+    section += '\n\n### 실행 타임라인\n';
+    for (const entry of journal) {
+      const time = entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString('ko-KR') : '';
+      section += `\n- ${time} Phase ${entry.phase}: ${entry.action}${entry.fixAttempt ? ` (시도 ${entry.fixAttempt})` : ''}`;
+    }
+  }
+
+  return section;
 }
 
 /**

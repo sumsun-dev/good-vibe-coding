@@ -6,6 +6,51 @@
 import { parseJsonObject } from '../core/json-parser.js';
 import { config } from '../core/config.js';
 
+/** 역할 카테고리별 맞춤 분석 항목 */
+const ROLE_SPECIFIC_QUESTIONS = {
+  leadership: [
+    '아키텍처/기술 스택 결정의 트레이드오프',
+    '확장성, 유지보수성, 기술 부채 관점의 리스크',
+    '팀 역할 분배와 병렬 작업 전략',
+    '마일스톤과 우선순위 제안',
+  ],
+  engineering: [
+    '구현 관점에서의 핵심 기술 과제',
+    '코드 구조, 모듈 분리, 의존성 설계',
+    '테스트 전략과 품질 기준',
+    '성능 병목과 최적화 포인트',
+  ],
+  design: [
+    '사용자 경험(UX) 관점의 핵심 흐름',
+    '컴포넌트 구조와 디자인 시스템',
+    '접근성(a11y)과 반응형 고려사항',
+    '인터랙션 패턴과 시각적 일관성',
+  ],
+  research: [
+    '시장/기술/비즈니스 관점의 기회와 위험',
+    '경쟁사 분석 또는 기술 트렌드',
+    '데이터 기반 의사결정 포인트',
+    '검증이 필요한 가설과 실험 방법',
+  ],
+  support: [
+    '문서화 전략과 사용자 가이드 구조',
+    '온보딩 경험과 학습 곡선 완화',
+    '품질 보증과 테스트 커버리지 전략',
+    '보안 취약점과 대응 방안',
+  ],
+};
+
+/**
+ * 역할 카테고리에 맞는 분석 질문을 생성한다.
+ * @param {object} teamMember - 팀원 정보
+ * @returns {string} 번호 매긴 질문 목록
+ */
+function buildRoleQuestions(teamMember) {
+  const category = teamMember.category || 'engineering';
+  const questions = ROLE_SPECIFIC_QUESTIONS[category] || ROLE_SPECIFIC_QUESTIONS.engineering;
+  return `당신의 역할 관점에서 다음 항목을 분석하세요:\n${questions.map((q, i) => `${i + 1}. ${q}`).join('\n')}`;
+}
+
 /**
  * 개별 에이전트 분석 프롬프트를 생성한다 (역할별 독립 분석).
  * @param {object} project - 프로젝트 정보
@@ -35,11 +80,7 @@ export function buildAgentAnalysisPrompt(project, teamMember, context = {}) {
 당신의 역할과 전문성에 기반하여 이 프로젝트를 분석하세요.
 당신의 말투와 성격으로 응답하세요.
 ${project.codebaseInfo ? `\n## 코드베이스 정보\n- 기술 스택: ${(project.codebaseInfo.techStack || []).join(', ')}\n- 파일 구조: ${project.codebaseInfo.fileStructure || '없음'}\n` : ''}
-다음 항목에 대해 의견을 제시하세요:
-1. 프로젝트 관점에서의 핵심 고려사항
-2. 기술/설계/전략 제안
-3. 잠재적 리스크와 대응 방안
-4. 다른 역할과의 협업 포인트`;
+${buildRoleQuestions(teamMember)}`;
 
   if (context.previousSynthesis) {
     prompt += `\n\n## 이전 라운드 기획서\n다음은 이전 라운드에서 종합된 기획서입니다. 이를 기반으로 수정/보완 의견을 제시하세요.\n\n${context.previousSynthesis}`;
