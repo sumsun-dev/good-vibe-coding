@@ -170,25 +170,41 @@ export function extractCodeBlocks(markdownOutput) {
   if (!markdownOutput || typeof markdownOutput !== 'string') return [];
 
   const blocks = [];
-  // 펜스드 코드 블록: ```lang optionalFilename\n...content...\n```
-  const codeBlockRegex = /```(\w*)\s*([\w./-]*)\s*\n([\s\S]*?)```/g;
-  let match;
+  const lines = markdownOutput.split('\n');
+  let i = 0;
 
-  while ((match = codeBlockRegex.exec(markdownOutput)) !== null) {
-    const language = (match[1] || '').trim().toLowerCase();
-    const infoFilename = (match[2] || '').trim() || null;
-    const content = match[3];
+  while (i < lines.length) {
+    const openMatch = lines[i].match(/^(`{3,})(\w*)\s*([\w./-]*)\s*$/);
+    if (openMatch) {
+      const fenceLen = openMatch[1].length;
+      const language = (openMatch[2] || '').trim().toLowerCase();
+      const infoFilename = (openMatch[3] || '').trim() || null;
+      const contentLines = [];
+      i++;
 
-    // 코드 내 주석에서 파일명 감지: // filename: src/app.js 또는 # filename: app.py
-    let commentFilename = null;
-    const filenameCommentMatch = content.match(/^(?:\/\/|#)\s*filename:\s*(.+)$/m);
-    if (filenameCommentMatch) {
-      commentFilename = filenameCommentMatch[1].trim();
+      // closing fence: 같은 수 이상의 백틱만 매칭 (중첩 안전)
+      while (i < lines.length) {
+        const closeMatch = lines[i].match(/^(`{3,})\s*$/);
+        if (closeMatch && closeMatch[1].length >= fenceLen) {
+          break;
+        }
+        contentLines.push(lines[i]);
+        i++;
+      }
+
+      const content = contentLines.length > 0 ? contentLines.join('\n') + '\n' : '';
+
+      // 코드 내 주석에서 파일명 감지: // filename: src/app.js 또는 # filename: app.py
+      let commentFilename = null;
+      const filenameCommentMatch = content.match(/^(?:\/\/|#)\s*filename:\s*(.+)$/m);
+      if (filenameCommentMatch) {
+        commentFilename = filenameCommentMatch[1].trim();
+      }
+
+      const filename = infoFilename || commentFilename;
+      blocks.push({ language, filename, content });
     }
-
-    const filename = infoFilename || commentFilename;
-
-    blocks.push({ language, filename, content });
+    i++;
   }
 
   return blocks;

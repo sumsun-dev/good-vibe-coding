@@ -94,6 +94,43 @@ describe('extractCodeBlocks', () => {
     expect(blocks).toHaveLength(1);
     expect(blocks[0].language).toBe('');
   });
+
+  it('중첩 코드 블록을 올바르게 처리한다 (4개 백틱 fence)', () => {
+    const md = [
+      '````javascript src/generator.js',
+      'const template = `',
+      '```python',
+      'print("hello")',
+      '```',
+      '`;',
+      '````',
+    ].join('\n');
+
+    const blocks = extractCodeBlocks(md);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].filename).toBe('src/generator.js');
+    expect(blocks[0].content).toContain('```python');
+    expect(blocks[0].content).toContain('print("hello")');
+  });
+
+  it('중첩된 3개 백틱이 포함된 콘텐츠를 4개 백틱으로 감싼 경우', () => {
+    const md = [
+      '````javascript src/docs.js',
+      'function createDocs() {',
+      '  return `',
+      '```html',
+      '<div>content</div>',
+      '```',
+      '  `;',
+      '}',
+      '````',
+    ].join('\n');
+
+    const blocks = extractCodeBlocks(md);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].content).toContain('```html');
+    expect(blocks[0].content).toContain('}');
+  });
 });
 
 // --- classifyCodeBlocks ---
