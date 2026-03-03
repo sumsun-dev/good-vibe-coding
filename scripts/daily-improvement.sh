@@ -79,6 +79,14 @@ PROMPT=$(cat <<'PROMPT_EOF'
 - 루프 내 반복 I/O (N+1)
 - 캐시 가능한 중복 연산
 
+## 종료 판단 (중요)
+
+분석은 충분히 깊게, 하지만 무의미하게 오래 하지 마세요.
+- critical/important 발견이 없으면 → 이슈/수정 없이 바로 종료
+- 발견한 것을 모두 수정하고 커밋/PR까지 완료했으면 → 종료
+- 같은 패턴을 반복 탐색하고 있다면 → 중단하고 현재까지 결과로 마무리
+- 수정이 lint/test를 통과하지 못하고 2회 이상 재시도했으면 → 이슈만 남기고 종료
+
 ## 실행 규칙
 
 1. existing-issues.json 확인 → 동일 주제 이슈 열려있으면 SKIP
@@ -94,6 +102,7 @@ PROMPT=$(cat <<'PROMPT_EOF'
 6. 변경사항 없으면 아무것도 하지 말 것 (빈 PR 금지)
 7. 커밋: conventional commit (fix|refactor|chore(scope): 설명)
 8. PR 본문에 분석 결과 + `closes #이슈번호` 포함
+9. 모든 작업이 끝나면 반드시 종료. 추가로 찾을 것이 없는지 재탐색하지 마세요
 PROMPT_EOF
 )
 
