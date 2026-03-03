@@ -88,6 +88,13 @@ export const COMMAND_SCHEMAS = {
     output: obj({ report: str() }),
     description: '프로젝트 보고서를 생성한다',
   },
+  'scan-codebase': {
+    handler: 'project',
+    inputMethod: 'args',
+    input: obj({ path: str(true) }),
+    output: obj({ techStack: arr(), languages: objField(), dependencies: objField(), fileStructure: str(), suggestedRoles: arr(), scannedAt: str() }),
+    description: '프로젝트 폴더를 스캔하여 기술 스택과 구조를 파악한다',
+  },
   'describe-command': {
     handler: 'project',
     inputMethod: 'args',
@@ -133,6 +140,27 @@ export const COMMAND_SCHEMAS = {
     input: obj({}),
     output: obj({ types: objField() }),
     description: '프로젝트 타입 목록을 반환한다',
+  },
+  'design-dynamic-roles': {
+    handler: 'team',
+    inputMethod: 'stdin',
+    input: obj({ description: str(true), existingRoles: arr(), codebaseInfo: objField() }),
+    output: promptOutput,
+    description: '프로젝트별 맞춤 역할 설계 프롬프트를 생성한다',
+  },
+  'parse-dynamic-roles': {
+    handler: 'team',
+    inputMethod: 'stdin',
+    input: obj({ rawOutput: str(true) }),
+    output: obj({ roles: arr() }),
+    description: '동적 역할 LLM 출력을 파싱한다',
+  },
+  'build-team-with-dynamic': {
+    handler: 'team',
+    inputMethod: 'stdin',
+    input: obj({ roleIds: arr(true), dynamicRoles: arr(), complexity: str() }),
+    output: arr(),
+    description: 'catalog 역할과 동적 역할을 병합하여 팀을 빌드한다',
   },
   'team-summary': {
     handler: 'team',
@@ -207,6 +235,20 @@ export const COMMAND_SCHEMAS = {
     input: obj({ project: objField(true), team: arr(true), round: num() }),
     output: obj({ plan: objField() }),
     description: '토론 디스패치 계획을 생성한다',
+  },
+  'generate-acceptance-criteria': {
+    handler: 'discussion',
+    inputMethod: 'stdin',
+    input: obj({ planDocument: str(true), projectContext: objField() }),
+    output: promptOutput,
+    description: '기획서 기반 수락 기준 생성 프롬프트를 생성한다',
+  },
+  'parse-acceptance-criteria': {
+    handler: 'discussion',
+    inputMethod: 'stdin',
+    input: obj({ rawOutput: str(true) }),
+    output: obj({ criteria: arr() }),
+    description: '수락 기준 LLM 출력을 파싱한다',
   },
   'execution-dispatch-plan': {
     handler: 'discussion',

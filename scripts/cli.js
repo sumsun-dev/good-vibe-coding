@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { AppError } from './lib/core/validators.js';
 import { config } from './lib/core/config.js';
+import { resolveNaturalLanguage } from './lib/core/nl-router.js';
 
 const HANDLERS = {
   project: () => import('./handlers/project.js'),
@@ -24,16 +25,18 @@ const COMMAND_MAP = {
   // project
   'create-project': 'project', 'get-project': 'project', 'list-projects': 'project',
   'update-status': 'project', 'set-team': 'project', 'execution-progress': 'project', 'report': 'project',
-  'describe-command': 'project',
+  'describe-command': 'project', 'scan-codebase': 'project',
   // team
   'recommend-team': 'team', 'optimized-team': 'team', 'build-team': 'team',
   'role-catalog': 'team', 'project-types': 'team', 'team-summary': 'team',
+  'design-dynamic-roles': 'team', 'parse-dynamic-roles': 'team', 'build-team-with-dynamic': 'team',
   // discussion
   'discussion-prompt': 'discussion', 'plan-document': 'discussion',
   'single-agent-discussion-prompt': 'discussion', 'agent-analysis-prompt': 'discussion',
   'synthesis-prompt': 'discussion', 'review-prompt': 'discussion',
   'check-convergence': 'discussion', 'group-agents': 'discussion',
   'discussion-dispatch-plan': 'discussion', 'execution-dispatch-plan': 'discussion',
+  'generate-acceptance-criteria': 'discussion', 'parse-acceptance-criteria': 'discussion',
   // execution
   'init-execution': 'execution', 'next-step': 'execution', 'advance-execution': 'execution',
   'execution-summary': 'execution', 'task-distribution-prompt': 'execution',
@@ -129,7 +132,16 @@ const ERROR_HINTS = {
 async function main() {
   const [,, command] = process.argv;
 
-  const handler = command ? await resolveCommand(command) : null;
+  let handler = command ? await resolveCommand(command) : null;
+
+  // NL fallback: 커맨드 매칭 실패 시 자연어 라우팅 시도
+  if (!handler && command) {
+    const nlCommand = resolveNaturalLanguage(command);
+    if (nlCommand) {
+      process.stderr.write(`💬 "${command}" → /${nlCommand} 으로 매핑합니다.\n`);
+      handler = await resolveCommand(nlCommand);
+    }
+  }
 
   if (!handler) {
     const available = listAllCommands();

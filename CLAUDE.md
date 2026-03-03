@@ -4,7 +4,7 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 
 ## 설계: CLI-as-API + SDK
 
-- `cli.js`는 경량 라우터. 101개 커맨드를 14개 핸들러 모듈(`scripts/handlers/*.js`)로 lazy-load 디스패치
+- `cli.js`는 경량 라우터. 107개 커맨드를 14개 핸들러 모듈(`scripts/handlers/*.js`)로 lazy-load 디스패치
 - 사용자는 `/hello`, `/new`, `/discuss` 같은 슬래시 커맨드만 씀
 - 흐름: 슬래시 커맨드 → 에이전트 디스패치 → cli.js → 핸들러 → 코어 라이브러리
 - 에이전트 .md 파일이 `node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js <command>` 형태로 호출
@@ -153,7 +153,7 @@ created → planning → approved → executing → reviewing → completed
 │  내부 API            CLI-as-API (101개)      │
 │  에이전트가 호출하는 인터페이스               │
 ├─────────────────────────────────────────────┤
-│  코어 라이브러리      41개 모듈 + 14개 핸들러  │
+│  코어 라이브러리      45개 모듈 + 14개 핸들러  │
 │  프로젝트 관리, 오케스트레이션, 리뷰 엔진 등  │
 └─────────────────────────────────────────────┘
 ```
@@ -174,7 +174,7 @@ created → planning → approved → executing → reviewing → completed
 
 ## 코어 모듈 (`scripts/lib/`)
 
-**`core/`** — 기반 유틸리티 (11개)
+**`core/`** — 기반 유틸리티 (12개)
 - `validators.js` — 입력 검증 + AppError (inputError/notFoundError/systemError)
 - `config.js` — 중앙 설정 (Object.freeze, 전체 정책 상수)
 - `schema-validator.js` — 경량 스키마 검증 (외부 의존성 0)
@@ -186,8 +186,9 @@ created → planning → approved → executing → reviewing → completed
 - `cache.js` — 지연 로딩 캐시
 - `preset-loader.js` — 프리셋 JSON 로딩
 - `prompt-builder.js` — 프롬프트 조합 유틸리티 (순수 마크다운 포맷팅)
+- `nl-router.js` — 자연어 → 커맨드 매핑 (규칙 기반, LLM 호출 없음)
 
-**`project/`** — 프로젝트 관리 (7개)
+**`project/`** — 프로젝트 관리 (8개)
 - `project-manager.js` — CRUD + 상태 관리 (원자적 잠금, AppError, 기여도 기록)
 - `project-scaffolder.js` — 프로젝트 인프라 생성 (폴더, CLAUDE.md, README.md, 에이전트)
 - `project-metrics.js` — 비용/토큰 추적, 에이전트 기여도, 대시보드
@@ -195,8 +196,9 @@ created → planning → approved → executing → reviewing → completed
 - `handler-helpers.js` — 핸들러 공통 유틸리티 (withProject)
 - `template-scaffolder.js` — 프로젝트 템플릿 스캐폴딩 (5개 built-in + custom)
 - `template-engine.js` — Handlebars 엔진
+- `codebase-scanner.js` — 프로젝트 폴더 스캔 → 기술 스택/구조 파악 (LLM 호출 없음)
 
-**`engine/`** — 실행 엔진 (10개)
+**`engine/`** — 실행 엔진 (11개)
 - `orchestrator.js` — 멀티에이전트 오케스트레이션 (4-tier 병렬 디스패치, 수렴 확인, 역할별 피드백 주입)
 - `discussion-engine.js` — 토론 프롬프트 생성
 - `execution-loop.js` — 실행 상태 머신 (시맨틱 검증, 저널, 부실 감지, 실패 복구, 기여도 자동 수집)
@@ -207,13 +209,14 @@ created → planning → approved → executing → reviewing → completed
 - `code-materializer.js` — 마크다운에서 파일 추출 → 실제 기록 (path traversal 방지, dry-run 지원)
 - `dispatch-plan-generator.js` — JSON 디스패치 계획 생성 (토론/실행 모두, 플레이스홀더 템플릿 계약)
 - `eval-engine.js` — A/B 평가 프레임워크
+- `acceptance-criteria.js` — 수락 기준 생성/파싱/검증 (기획서 기반 AC)
 
 **`llm/`** — LLM/외부 연동 (3개)
 - `llm-provider.js` — LLM 프로바이더 추상화 (Claude/OpenAI/Gemini)
 - `gemini-bridge.js` — Gemini CLI 래퍼 (shell injection 방지)
 - `auth-manager.js` — 멀티프로바이더 인증 (크레덴셜 CRUD)
 
-**`agent/`** — 에이전트/팀 (7개)
+**`agent/`** — 에이전트/팀 (8개)
 - `team-builder.js` — 팀 추천/구성
 - `complexity-analyzer.js` — 복잡도 분석 (모드/팀 규모/모델 추천)
 - `recommendation-engine.js` — 스킬/에이전트 추천 (멀티시그널, 한국어 조사 제거, LLM 호출 없음)
@@ -221,6 +224,7 @@ created → planning → approved → executing → reviewing → completed
 - `agent-feedback.js` — 프로젝트 결과 분석 → 에이전트 오버라이드 저장
 - `agent-instruction-extractor.js` — 에이전트 인스트럭션 추출
 - `setup-installer.js` — 스킬/에이전트 설치
+- `dynamic-role-designer.js` — 프로젝트별 맞춤 역할 설계 (프롬프트/파서, dynamic: true)
 
 **`output/`** — 보고/환경 (3개)
 - `report-generator.js` — 보고서 생성
@@ -239,7 +243,7 @@ created → planning → approved → executing → reviewing → completed
 - `adapter.js` — Claude Code 환경에서 SDK 초기화
 
 **CLI 레이어**
-- `cli.js` — 라우터 (101개 커맨드, 14개 핸들러로 디스패치)
+- `cli.js` — 라우터 (107개 커맨드, 14개 핸들러로 디스패치)
 - `cli-utils.js` — readStdin, output, outputOk, parseArgs
 - `handlers/*.js` — 14개 핸들러: project, team, discussion, execution, review, build, eval, auth, feedback, infra, metrics, template, task, recommendation
 
