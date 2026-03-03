@@ -9,6 +9,7 @@
 
 import { parseJsonObject } from '../core/json-parser.js';
 import { config } from '../core/config.js';
+import { formatCriteriaForPrompt } from './acceptance-criteria.js';
 
 /** 범용 리뷰 역할: 어떤 작업이든 리뷰 가치가 높은 역할 */
 const UNIVERSAL_REVIEWER_ROLES = ['qa', 'security', 'cto'];
@@ -48,8 +49,9 @@ export function selectReviewers(task, team) {
 
   scored.sort((a, b) => b.score - a.score);
 
+  const minReviewers = candidates.length === 0 ? 0 : config.review.minReviewers;
   const count = Math.max(
-    config.review.minReviewers,
+    minReviewers,
     Math.min(config.review.maxReviewers, scored.length),
   );
   return scored.slice(0, count).map((s) => s.member);
@@ -67,7 +69,10 @@ export function buildTaskReviewPrompt(reviewer, task, taskOutput, acceptanceCrit
 
   let acSection = '';
   if (acceptanceCriteria && acceptanceCriteria.length > 0) {
-    acSection = `\n\n## 수락 기준 검증\n다음 수락 기준에 대해서도 충족 여부를 판단하세요:\n\n${acceptanceCriteria.map((c) => `- **${c.id}**: ${c.description} (검증: ${c.measurementMethod})`).join('\n')}\n`;
+    const formatted = formatCriteriaForPrompt(acceptanceCriteria);
+    if (formatted && typeof formatted === 'string') {
+      acSection = `\n\n## 수락 기준 검증\n${formatted}\n`;
+    }
   }
 
   return `당신은 ${reviewer.emoji} **${reviewer.displayName}** (${reviewer.role})입니다.
@@ -119,7 +124,7 @@ ${taskOutput}${acSection}
  */
 export function parseTaskReview(rawReview) {
   if (!rawReview || rawReview.trim() === '') {
-    return { verdict: 'request-changes', issues: [] };
+    return { verdict: 'parse-error', issues: [] };
   }
 
   const parsed = parseJsonObject(rawReview);
@@ -136,7 +141,7 @@ export function parseTaskReview(rawReview) {
     };
   }
 
-  return { verdict: 'request-changes', issues: [] };
+  return { verdict: 'parse-error', issues: [] };
 }
 
 /**
@@ -154,9 +159,12 @@ export function checkQualityGate(reviews) {
   const importantCount = allIssues.filter((i) => i.severity === 'important').length;
   const passed = criticalCount === 0;
 
+  const maxImportant = config.review.maxImportantIssues ?? 10;
   let summary;
   if (passed && importantCount === 0) {
     summary = '품질 게이트 통과';
+  } else if (passed && importantCount > maxImportant) {
+    summary = `품질 게이트 통과 (⚠️ 경고: important ${importantCount}건 — 임계치 ${maxImportant}건 초과, 검토 필요)`;
   } else if (passed) {
     summary = `품질 게이트 통과 (important ${importantCount}건 검토 권장)`;
   } else {
@@ -199,6 +207,9 @@ export function buildRevisionPrompt(task, implementer, reviews, failureContext =
 ${issuesList}`;
 
   if (failureContext) {
+    if (failureContext.attempt >= failureContext.maxAttempts) {
+      prompt += `\n\n⚠️ **마지막 수정 기회입니다.** 이번에 해결하지 못하면 CEO에게 에스컬레이션됩니다.`;
+    }
     prompt += `\n\n## 수정 이력 (시도 ${failureContext.attempt}/${failureContext.maxAttempts})`;
     if (failureContext.previousAttempts && failureContext.previousAttempts.length > 0) {
       prompt += '\n\n### 이전 시도';

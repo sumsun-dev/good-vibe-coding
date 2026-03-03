@@ -195,6 +195,66 @@ function getTasksForPhase(project, phase) {
  * @param {object} project - 프로젝트 객체 (executionState 포함)
  * @returns {object} 액션 descriptor
  */
+/** phaseStep별 액션 생성 핸들러 맵 */
+const STEP_HANDLERS = {
+  'execute-tasks': (phase, phaseTasks) => ({
+    action: 'execute-tasks',
+    phase,
+    tasks: phaseTasks,
+    description: `Phase ${phase}: 태스크 실행 (${phaseTasks.length}개)`,
+  }),
+  materialize: (phase, phaseTasks) => ({
+    action: 'materialize',
+    phase,
+    tasks: phaseTasks.filter((t) => isCodeTask(t)),
+    description: `Phase ${phase}: 코드 Materialization`,
+  }),
+  review: (phase, phaseTasks) => ({
+    action: 'review',
+    phase,
+    tasks: phaseTasks,
+    description: `Phase ${phase}: 크로스 리뷰`,
+  }),
+  'quality-gate': (phase) => ({
+    action: 'quality-gate',
+    phase,
+    description: `Phase ${phase}: 품질 게이트 체크`,
+  }),
+  fix: (phase, phaseTasks, state) => ({
+    action: 'fix',
+    phase,
+    tasks: phaseTasks,
+    description: `Phase ${phase}: 수정 (시도 ${state.fixAttempt + 1}/${MAX_FIX_ATTEMPTS})`,
+  }),
+  commit: (phase) => ({
+    action: 'commit',
+    phase,
+    description: `Phase ${phase}: 커밋`,
+  }),
+  'build-context': (phase, phaseTasks, state, totalPhases) => {
+    if (phase >= totalPhases) {
+      return {
+        action: 'complete',
+        phase,
+        description: '모든 Phase가 완료되었습니다. 실행을 종료합니다.',
+      };
+    }
+    if (state.mode === 'interactive') {
+      return {
+        action: 'confirm-next-phase',
+        phase,
+        description: `Phase ${phase} 완료. Phase ${phase + 1}로 진행할까요?`,
+      };
+    }
+    return {
+      action: 'build-context',
+      phase,
+      tasks: phaseTasks,
+      description: `Phase ${phase}: 컨텍스트 생성 후 다음 Phase로 진행`,
+    };
+  },
+};
+
 export function getNextExecutionStep(project) {
   const state = project.executionState;
 
@@ -243,87 +303,16 @@ export function getNextExecutionStep(project) {
   const currentPhase = state.currentPhase;
   const phaseTasks = getTasksForPhase(project, currentPhase);
 
-  switch (state.phaseStep) {
-    case 'execute-tasks':
-      return {
-        action: 'execute-tasks',
-        phase: currentPhase,
-        tasks: phaseTasks,
-        description: `Phase ${currentPhase}: 태스크 실행 (${phaseTasks.length}개)`,
-      };
-
-    case 'materialize':
-      return {
-        action: 'materialize',
-        phase: currentPhase,
-        tasks: phaseTasks.filter((t) => isCodeTask(t)),
-        description: `Phase ${currentPhase}: 코드 Materialization`,
-      };
-
-    case 'review':
-      return {
-        action: 'review',
-        phase: currentPhase,
-        tasks: phaseTasks,
-        description: `Phase ${currentPhase}: 크로스 리뷰`,
-      };
-
-    case 'quality-gate':
-      return {
-        action: 'quality-gate',
-        phase: currentPhase,
-        description: `Phase ${currentPhase}: 품질 게이트 체크`,
-      };
-
-    case 'fix':
-      return {
-        action: 'fix',
-        phase: currentPhase,
-        tasks: phaseTasks,
-        description: `Phase ${currentPhase}: 수정 (시도 ${state.fixAttempt + 1}/${MAX_FIX_ATTEMPTS})`,
-      };
-
-    case 'commit':
-      return {
-        action: 'commit',
-        phase: currentPhase,
-        description: `Phase ${currentPhase}: 커밋`,
-      };
-
-    case 'build-context': {
-      const isLastPhase = currentPhase >= totalPhases;
-
-      if (isLastPhase) {
-        return {
-          action: 'complete',
-          phase: currentPhase,
-          description: '모든 Phase가 완료되었습니다. 실행을 종료합니다.',
-        };
-      }
-
-      if (state.mode === 'interactive') {
-        return {
-          action: 'confirm-next-phase',
-          phase: currentPhase,
-          description: `Phase ${currentPhase} 완료. Phase ${currentPhase + 1}로 진행할까요?`,
-        };
-      }
-
-      return {
-        action: 'build-context',
-        phase: currentPhase,
-        tasks: phaseTasks,
-        description: `Phase ${currentPhase}: 컨텍스트 생성 후 다음 Phase로 진행`,
-      };
-    }
-
-    default:
-      return {
-        action: 'not-started',
-        phase: currentPhase,
-        description: `알 수 없는 phaseStep: ${state.phaseStep}`,
-      };
+  const handler = STEP_HANDLERS[state.phaseStep];
+  if (handler) {
+    return handler(currentPhase, phaseTasks, state, totalPhases);
   }
+
+  return {
+    action: 'not-started',
+    phase: currentPhase,
+    description: `알 수 없는 phaseStep: ${state.phaseStep}`,
+  };
 }
 
 /**
@@ -342,11 +331,7 @@ export function computeStateTransition(project, stepResult) {
   }
   if (!project.executionState) throw inputError('실행 상태가 초기화되지 않았습니다.');
 
-  const state = {
-    ...project.executionState,
-    phaseResults: { ...project.executionState.phaseResults },
-    completedPhases: [...project.executionState.completedPhases],
-  };
+  const state = structuredClone(project.executionState);
   const totalPhases = getTotalPhases(project);
   const phase = state.currentPhase;
 
@@ -520,12 +505,12 @@ export async function advanceExecution(projectId, stepResult) {
       phase,
       fixAttempts: updatedProject.executionState.fixAttempt,
       taskCount: phaseTasks.length,
-    }).catch(() => {});
+    }).catch((err) => { process.stderr.write(`[gvc] metrics error: ${err.message}\n`); });
   }
   if (stepResult.completedAction === 'review' && stepResult.reviews) {
     const contributions = extractContributions(stepResult.reviews);
     if (contributions.length > 0) {
-      recordContributions(projectId, contributions).catch(() => {});
+      recordContributions(projectId, contributions).catch((err) => { process.stderr.write(`[gvc] contributions error: ${err.message}\n`); });
     }
   }
 
@@ -545,7 +530,7 @@ export async function advanceExecution(projectId, stepResult) {
           });
         }
       })
-      .catch(() => {});
+      .catch((err) => { process.stderr.write(`[gvc] PR creation error: ${err.message}\n`); });
   }
 
   return {
@@ -696,10 +681,12 @@ export function getExecutionSummary(project) {
  */
 export function isStaleExecution(state, maxAgeMs) {
   if (!state || !state.journal || state.journal.length === 0) {
-    // 저널이 없으면 startedAt 기준
+    // 저널이 없으면 startedAt 기준 (UTC ISO 8601 타임스탬프)
     if (!state || !state.startedAt) return true;
-    return Date.now() - new Date(state.startedAt).getTime() > maxAgeMs;
+    const startMs = new Date(state.startedAt).getTime();
+    return isNaN(startMs) || Date.now() - startMs > maxAgeMs;
   }
   const lastEntry = state.journal[state.journal.length - 1];
-  return Date.now() - new Date(lastEntry.timestamp).getTime() > maxAgeMs;
+  const lastMs = new Date(lastEntry.timestamp).getTime();
+  return isNaN(lastMs) || Date.now() - lastMs > maxAgeMs;
 }

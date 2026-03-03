@@ -3,6 +3,7 @@
  */
 
 import { parseJsonArray } from '../core/json-parser.js';
+import { config } from '../core/config.js';
 
 /**
  * 기획서를 분석하여 작업 목록을 추출하는 프롬프트를 생성한다.
@@ -151,69 +152,24 @@ export function buildExecutionPlan(tasks, _team) {
 export function isCodeTask(task) {
   if (!task) return false;
 
-  const engineerRoles = ['backend', 'frontend', 'fullstack', 'devops', 'data'];
+  const { engineerRoles, codeDomains, koreanKeywords, englishKeywords } = config.taskClassification;
 
   if (task.assignee && engineerRoles.includes(task.assignee)) {
     return true;
   }
 
   // dynamic role: workDomains에 코드 관련 도메인이 포함되면 코드 태스크
-  const codeDomains = ['frontend', 'backend', 'api', 'database', 'fullstack'];
   if (task.assigneeWorkDomains && task.assigneeWorkDomains.some((d) => codeDomains.includes(d))) {
     return true;
   }
 
-  // 한국어: 단어 경계가 없으므로 includes() 유지
-  const koreanKeywords = ['구현', '개발', '코딩'];
-  // 영어: \b 단어 경계로 false positive 방지 (e.g. "classification" ≠ "class")
-  const englishKeywords = [
-    'implement',
-    'implements',
-    'implementation',
-    'develop',
-    'developer',
-    'code',
-    'coding',
-    'build',
-    'builds',
-    'create',
-    'creates',
-    'api',
-    'apis',
-    'endpoint',
-    'endpoints',
-    'component',
-    'components',
-    'function',
-    'functions',
-    'module',
-    'modules',
-    'class',
-    'classes',
-    'service',
-    'services',
-    'controller',
-    'controllers',
-    'middleware',
-    'route',
-    'routes',
-    'router',
-    'schema',
-    'schemas',
-    'migration',
-    'migrations',
-    'test',
-    'tests',
-    'testing',
-    'spec',
-    'specs',
-  ];
-
   const searchText = `${task.title || ''} ${task.description || ''}`.toLowerCase();
 
+  // 한국어: 단어 경계가 없으므로 includes() 유지
   const koreanMatch = koreanKeywords.some((kw) => searchText.includes(kw));
   if (koreanMatch) return true;
 
+  // 영어: \b 단어 경계로 false positive 방지 (e.g. "classification" ≠ "class")
   return englishKeywords.some((kw) => new RegExp(`\\b${kw}\\b`).test(searchText));
 }
 

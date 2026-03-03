@@ -310,7 +310,7 @@ import { Discusser, Executor } from 'good-vibe-coding';
 │  내부 API            CLI-as-API (114개)      │
 │  에이전트가 호출하는 인터페이스               │
 ├─────────────────────────────────────────────┤
-│  코어 라이브러리      49개 모듈 + 14개 핸들러  │
+│  코어 라이브러리      53개 모듈 + 14개 핸들러  │
 │  프로젝트 관리, 오케스트레이션, 리뷰 엔진 등  │
 └─────────────────────────────────────────────┘
 ```
@@ -339,7 +339,7 @@ good-vibe-coding/
 ├── guides/          사용자 가이드
 ├── templates/       Handlebars 템플릿
 ├── skills/          4개 내장 스킬
-└── tests/           1,400+ 테스트 (Vitest)
+└── tests/           1,600+ 테스트 (Vitest)
 ```
 
 ## 개발
@@ -355,7 +355,7 @@ npm run test:coverage # 커버리지 리포트
 
 - **Node.js 18+** (ESM)
 - **Handlebars** 템플릿 엔진
-- **Vitest** 테스트 (1,400+개)
+- **Vitest** 테스트 (1,600+개)
 - **GitHub Actions** CI (Node 18/20/22)
 
 ## 지원 범위

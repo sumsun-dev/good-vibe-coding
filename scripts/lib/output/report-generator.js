@@ -9,10 +9,18 @@ import { getCostSummary, getAgentPerformanceSummary } from '../project/project-m
  * @param {object} project - 프로젝트 전체 데이터
  * @returns {string} 보고서 마크다운
  */
-export function generateReport(project) {
-  const stats = generateProjectStats(project);
-  const team = project.team || [];
-  const tasks = project.tasks || [];
+function generateOverviewSection(project, stats, team) {
+  return `# 프로젝트 보고서: ${project.name}
+
+## 개요
+- 프로젝트: ${project.name} (${project.type})
+- 팀원: ${team.length}명
+- 작업: ${stats.totalTasks}개 (완료: ${stats.completed})
+- 모드: ${project.mode}
+- 상태: ${project.status}`;
+}
+
+function generateTeamSection(team, tasks) {
   const roleSummaries = team
     .map((member) => {
       const memberTasks = tasks.filter((t) => t.assignee === member.roleId);
@@ -20,52 +28,43 @@ export function generateReport(project) {
     })
     .join('\n\n');
 
-  let report = `# 프로젝트 보고서: ${project.name}
+  return `## 팀원별 기여
 
-## 개요
-- 프로젝트: ${project.name} (${project.type})
-- 팀원: ${team.length}명
-- 작업: ${stats.totalTasks}개 (완료: ${stats.completed})
-- 모드: ${project.mode}
-- 상태: ${project.status}
+${roleSummaries}`;
+}
 
-## 팀원별 기여
+function generatePlanSection(project) {
+  return `## 기획서
 
-${roleSummaries}
+${project.discussion.planDocument || '(기획서 없음)'}`;
+}
 
-## 기획서
-
-${project.discussion.planDocument || '(기획서 없음)'}
-
-## 작업 통계
+function generateStatsTable(stats) {
+  return `## 작업 통계
 
 | 역할 | 작업 수 |
 |------|---------|
 ${Object.entries(stats.byRole)
   .map(([role, count]) => `| ${role} | ${count} |`)
   .join('\n')}`;
+}
 
-  // Phase 실행 기록 섹션 (executionState가 있을 때만)
-  const executionSection = generateExecutionSummary(project);
-  if (executionSection) {
-    report += '\n\n' + executionSection;
+function generateCostSection(project) {
+  if (!project.metrics) return '';
+
+  const costSummary = getCostSummary(project.metrics);
+  const contributions = {};
+  for (const member of project.team) {
+    const memberTasks = project.tasks.filter((t) => t.assignee === member.roleId);
+    const completedRatio =
+      memberTasks.length > 0
+        ? memberTasks.filter((t) => t.status === 'completed').length / memberTasks.length
+        : 0;
+    contributions[member.roleId] = Math.round(completedRatio * 100) / 100;
   }
+  const agentPerf = getAgentPerformanceSummary(project.metrics, contributions);
 
-  // 비용/성능 섹션 (메트릭스가 있을 때만)
-  if (project.metrics) {
-    const costSummary = getCostSummary(project.metrics);
-    const contributions = {};
-    for (const member of project.team) {
-      const memberTasks = project.tasks.filter((t) => t.assignee === member.roleId);
-      const completedRatio =
-        memberTasks.length > 0
-          ? memberTasks.filter((t) => t.status === 'completed').length / memberTasks.length
-          : 0;
-      contributions[member.roleId] = Math.round(completedRatio * 100) / 100;
-    }
-    const agentPerf = getAgentPerformanceSummary(project.metrics, contributions);
-
-    report += `\n\n## 비용/성능
+  let section = `\n\n## 비용/성능
 
 | 항목 | 값 |
 |------|-----|
@@ -73,18 +72,37 @@ ${Object.entries(stats.byRole)
 | 입력 토큰 | ${costSummary.totalInputTokens.toLocaleString()} |
 | 출력 토큰 | ${costSummary.totalOutputTokens.toLocaleString()} |`;
 
-    if (agentPerf.length > 0) {
-      report +=
-        '\n\n### 에이전트 기여도\n\n| 역할 | 호출 수 | 비용 | 기여도 |\n|------|---------|------|--------|\n';
-      report += agentPerf
-        .sort((a, b) => b.contributionScore - a.contributionScore)
-        .map(
-          (a) =>
-            `| ${a.roleId} | ${a.callCount} | $${a.costUsd.toFixed(4)} | ${(a.contributionScore * 100).toFixed(0)}% |`,
-        )
-        .join('\n');
-    }
+  if (agentPerf.length > 0) {
+    section +=
+      '\n\n### 에이전트 기여도\n\n| 역할 | 호출 수 | 비용 | 기여도 |\n|------|---------|------|--------|\n';
+    section += agentPerf
+      .sort((a, b) => b.contributionScore - a.contributionScore)
+      .map(
+        (a) =>
+          `| ${a.roleId} | ${a.callCount} | $${a.costUsd.toFixed(4)} | ${(a.contributionScore * 100).toFixed(0)}% |`,
+      )
+      .join('\n');
   }
+
+  return section;
+}
+
+export function generateReport(project) {
+  const stats = generateProjectStats(project);
+  const team = project.team || [];
+  const tasks = project.tasks || [];
+
+  let report = generateOverviewSection(project, stats, team);
+  report += '\n\n' + generateTeamSection(team, tasks);
+  report += '\n\n' + generatePlanSection(project);
+  report += '\n\n' + generateStatsTable(stats);
+
+  const executionSection = generateExecutionSummary(project);
+  if (executionSection) {
+    report += '\n\n' + executionSection;
+  }
+
+  report += generateCostSection(project);
 
   return report;
 }
@@ -114,7 +132,7 @@ ${taskList}`;
  */
 export function generateExecutionSummary(project) {
   const state = project.executionState;
-  if (!state || !state.phaseResults) return null;
+  if (!state || !state.phaseResults || typeof state.phaseResults !== 'object') return null;
 
   const phases = Object.keys(state.phaseResults);
   if (phases.length === 0) return null;
@@ -161,7 +179,8 @@ export function generateProjectStats(project) {
   const byRole = {};
 
   for (const task of tasks) {
-    byRole[task.assignee] = (byRole[task.assignee] || 0) + 1;
+    const assignee = task.assignee || 'unassigned';
+    byRole[assignee] = (byRole[assignee] || 0) + 1;
   }
 
   return {

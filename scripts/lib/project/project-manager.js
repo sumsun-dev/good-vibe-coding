@@ -40,7 +40,8 @@ export function generateProjectId(name) {
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
-  return `${slug}-${yyyy}-${mm}`;
+  const suffix = Math.random().toString(36).slice(2, 6);
+  return `${slug}-${yyyy}-${mm}-${suffix}`;
 }
 
 /**
@@ -108,6 +109,10 @@ async function withProjectLock(projectId, fn) {
     return updated;
   } finally {
     resolveLock();
+    // 현재 락이 Map에 남아있으면 삭제 (누수 방지)
+    if (writeLocks.get(projectId) === lockPromise) {
+      writeLocks.delete(projectId);
+    }
   }
 }
 
@@ -182,7 +187,7 @@ export async function listProjects() {
     }
     return projects;
   } catch (err) {
-    if (err.code === 'ENOENT') return [];
+    if (err.code === 'ENOENT' || err.code === 'EACCES' || err.code === 'EPERM') return [];
     throw new AppError(`프로젝트 목록 읽기 오류: ${err.message}`, 'SYSTEM_ERROR');
   }
 }

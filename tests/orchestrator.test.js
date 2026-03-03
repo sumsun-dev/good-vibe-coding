@@ -6,6 +6,7 @@ import {
   parseReviewOutput,
   checkConvergence,
   groupAgentsForParallelDispatch,
+  trackConvergenceEvolution,
 } from '../scripts/lib/engine/orchestrator.js';
 
 const SAMPLE_PROJECT = {
@@ -187,9 +188,9 @@ describe('buildSynthesisPrompt', () => {
     expect(prompt).toContain('3명');
   });
 
-  it('빈 agentOutputs이면 빈 문자열을 반환한다', () => {
-    expect(buildSynthesisPrompt(SAMPLE_PROJECT, [], 1)).toBe('');
-    expect(buildSynthesisPrompt(SAMPLE_PROJECT, null, 1)).toBe('');
+  it('빈 agentOutputs이면 에러를 throw한다', () => {
+    expect(() => buildSynthesisPrompt(SAMPLE_PROJECT, [], 1)).toThrow();
+    expect(() => buildSynthesisPrompt(SAMPLE_PROJECT, null, 1)).toThrow();
   });
 });
 
@@ -253,8 +254,8 @@ describe('parseReviewOutput', () => {
   });
 
   it('빈 입력은 미승인으로 처리한다', () => {
-    expect(parseReviewOutput('')).toEqual({ approved: false, feedback: '', issues: [] });
-    expect(parseReviewOutput(null)).toEqual({ approved: false, feedback: '', issues: [] });
+    expect(parseReviewOutput('')).toEqual({ approved: false, feedback: '', issues: [], parseError: true });
+    expect(parseReviewOutput(null)).toEqual({ approved: false, feedback: '', issues: [], parseError: true });
   });
 
   it('파싱 불가능한 텍스트는 feedback으로 사용한다', () => {
@@ -353,8 +354,8 @@ describe('checkConvergence', () => {
   });
 
   it('빈 리뷰 배열은 미수렴으로 처리한다', () => {
-    expect(checkConvergence([])).toEqual({ converged: false, approvalRate: 0, blockers: [] });
-    expect(checkConvergence(null)).toEqual({ converged: false, approvalRate: 0, blockers: [] });
+    expect(checkConvergence([])).toEqual({ converged: false, approvalRate: 0, blockers: [], noReviews: true });
+    expect(checkConvergence(null)).toEqual({ converged: false, approvalRate: 0, blockers: [], noReviews: true });
   });
 
   it('모두 거부하면 수렴하지 않는다', () => {
@@ -420,5 +421,94 @@ describe('groupAgentsForParallelDispatch', () => {
     expect(tiers.length).toBe(1);
     // priority 5 → Tier 3
     expect(tiers[0][0].roleId).toBe('cto');
+  });
+});
+
+// --- trackConvergenceEvolution ---
+
+describe('trackConvergenceEvolution', () => {
+  it('첫 라운드 (previousRounds 빈 배열) → velocity 0, newBlockers만', () => {
+    const currentResult = { converged: false, approvalRate: 0.6, blockers: ['보안 이슈'] };
+    const result = trackConvergenceEvolution(currentResult, []);
+    expect(result.converged).toBe(false);
+    expect(result.approvalRate).toBe(0.6);
+    expect(result.evolution.velocity).toBe(0);
+    expect(result.evolution.newBlockers).toEqual(['보안 이슈']);
+    expect(result.evolution.resolvedBlockers).toEqual([]);
+    expect(result.evolution.approvalHistory).toEqual([0.6]);
+  });
+
+  it('승인율 개선 (60% → 85%) → improving, velocity 0.25', () => {
+    const currentResult = { converged: true, approvalRate: 0.85, blockers: [] };
+    const previousRounds = [{ approvalRate: 0.6, blockers: ['이슈A'] }];
+    const result = trackConvergenceEvolution(currentResult, previousRounds);
+    expect(result.evolution.velocity).toBeCloseTo(0.25, 5);
+    expect(result.evolution.trend).toBe('improving');
+    expect(result.evolution.approvalHistory).toEqual([0.6, 0.85]);
+  });
+
+  it('정체 감지 (75% → 77%) → stagnating, velocity 0.02', () => {
+    const currentResult = { converged: false, approvalRate: 0.77, blockers: ['이슈A'] };
+    const previousRounds = [{ approvalRate: 0.75, blockers: ['이슈A'] }];
+    const result = trackConvergenceEvolution(currentResult, previousRounds);
+    expect(result.evolution.velocity).toBeCloseTo(0.02, 5);
+    expect(result.evolution.trend).toBe('stagnating');
+  });
+
+  it('후퇴 감지 (80% → 60%) → declining, velocity -0.2', () => {
+    const currentResult = { converged: false, approvalRate: 0.6, blockers: ['새 이슈'] };
+    const previousRounds = [{ approvalRate: 0.8, blockers: [] }];
+    const result = trackConvergenceEvolution(currentResult, previousRounds);
+    expect(result.evolution.velocity).toBeCloseTo(-0.2, 5);
+    expect(result.evolution.trend).toBe('declining');
+  });
+
+  it('블로커 해결 추적 (이전 [a,b] → 현재 [b]) → resolved [a]', () => {
+    const currentResult = { converged: false, approvalRate: 0.7, blockers: ['이슈B'] };
+    const previousRounds = [{ approvalRate: 0.6, blockers: ['이슈A', '이슈B'] }];
+    const result = trackConvergenceEvolution(currentResult, previousRounds);
+    expect(result.evolution.resolvedBlockers).toEqual(['이슈A']);
+    expect(result.evolution.newBlockers).toEqual([]);
+  });
+
+  it('새 블로커 추적 (이전 [a] → 현재 [a,c]) → new [c]', () => {
+    const currentResult = { converged: false, approvalRate: 0.7, blockers: ['이슈A', '이슈C'] };
+    const previousRounds = [{ approvalRate: 0.6, blockers: ['이슈A'] }];
+    const result = trackConvergenceEvolution(currentResult, previousRounds);
+    expect(result.evolution.newBlockers).toEqual(['이슈C']);
+    expect(result.evolution.resolvedBlockers).toEqual([]);
+  });
+
+  it('다중 라운드 히스토리 (3라운드) → approvalHistory 3개', () => {
+    const currentResult = { converged: true, approvalRate: 0.9, blockers: [] };
+    const previousRounds = [
+      { approvalRate: 0.5, blockers: ['이슈A'] },
+      { approvalRate: 0.7, blockers: ['이슈B'] },
+    ];
+    const result = trackConvergenceEvolution(currentResult, previousRounds);
+    expect(result.evolution.approvalHistory).toEqual([0.5, 0.7, 0.9]);
+    expect(result.evolution.velocity).toBeCloseTo(0.2, 5);
+    expect(result.evolution.trend).toBe('improving');
+  });
+});
+
+describe('buildSynthesisPrompt 빈 배열 에러', () => {
+  it('빈 배열 시 에러를 throw한다', () => {
+    expect(() => buildSynthesisPrompt(SAMPLE_PROJECT, [], 1)).toThrow();
+  });
+});
+
+describe('parseReviewOutput parseError 플래그', () => {
+  it('빈 응답 시 parseError: true를 반환한다', () => {
+    const result = parseReviewOutput('');
+    expect(result.parseError).toBe(true);
+  });
+});
+
+describe('checkConvergence 빈 reviews noReviews 플래그', () => {
+  it('빈 배열 시 noReviews: true를 반환한다', () => {
+    const result = checkConvergence([]);
+    expect(result.noReviews).toBe(true);
+    expect(result.converged).toBe(false);
   });
 });

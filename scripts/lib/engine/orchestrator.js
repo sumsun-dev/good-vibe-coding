@@ -5,6 +5,7 @@
 
 import { parseJsonObject } from '../core/json-parser.js';
 import { config } from '../core/config.js';
+import { inputError } from '../core/validators.js';
 
 /** 역할 카테고리별 맞춤 분석 항목 */
 const ROLE_SPECIFIC_QUESTIONS = {
@@ -83,7 +84,11 @@ ${project.codebaseInfo ? `\n## 코드베이스 정보\n- 기술 스택: ${(proje
 ${buildRoleQuestions(teamMember)}`;
 
   if (context.previousSynthesis) {
-    prompt += `\n\n## 이전 라운드 기획서\n다음은 이전 라운드에서 종합된 기획서입니다. 이를 기반으로 수정/보완 의견을 제시하세요.\n\n${context.previousSynthesis}`;
+    const maxLen = 3000;
+    const truncated = context.previousSynthesis.length > maxLen
+      ? context.previousSynthesis.slice(0, maxLen) + '\n...(truncated)'
+      : context.previousSynthesis;
+    prompt += `\n\n## 이전 라운드 기획서\n다음은 이전 라운드에서 종합된 기획서입니다. 이를 기반으로 수정/보완 의견을 제시하세요.\n\n${truncated}`;
   }
 
   if (context.feedbackForMe) {
@@ -106,7 +111,7 @@ ${buildRoleQuestions(teamMember)}`;
  */
 export function buildSynthesisPrompt(project, agentOutputs, round) {
   if (!agentOutputs || agentOutputs.length === 0) {
-    return '';
+    throw inputError('에이전트 분석 결과가 없습니다');
   }
 
   const analysisSection = agentOutputs
@@ -203,7 +208,7 @@ ${synthesizedPlan}
  */
 export function parseReviewOutput(rawOutput) {
   if (!rawOutput || rawOutput.trim() === '') {
-    return { approved: false, feedback: '', issues: [] };
+    return { approved: false, feedback: '', issues: [], parseError: true };
   }
 
   const parsed = parseJsonObject(rawOutput);
@@ -237,7 +242,7 @@ function normalizeReviewResult(parsed) {
  */
 export function checkConvergence(reviews) {
   if (!reviews || reviews.length === 0) {
-    return { converged: false, approvalRate: 0, blockers: [] };
+    return { converged: false, approvalRate: 0, blockers: [], noReviews: true };
   }
 
   const approvedCount = reviews.filter((r) => r.approved).length;
@@ -251,6 +256,41 @@ export function checkConvergence(reviews) {
     );
 
   return { converged, approvalRate, blockers };
+}
+
+/**
+ * 수렴 진화를 추적한다 (순수 함수).
+ * 현재 라운드 결과와 이전 라운드들을 비교하여 개선 추이를 분석한다.
+ * @param {{ converged: boolean, approvalRate: number, blockers: string[] }} currentResult
+ * @param {Array<{ approvalRate: number, blockers: string[] }>} previousRounds
+ * @returns {{ ...currentResult, evolution: object }}
+ */
+export function trackConvergenceEvolution(currentResult, previousRounds) {
+  const safeRounds = Array.isArray(previousRounds) ? previousRounds : [];
+  const approvalHistory = [...safeRounds.map((r) => r.approvalRate), currentResult.approvalRate];
+
+  const lastRate = safeRounds.length > 0 ? safeRounds[safeRounds.length - 1].approvalRate : currentResult.approvalRate;
+  const velocity = currentResult.approvalRate - lastRate;
+
+  let trend = 'stagnating';
+  if (velocity > 0.05) trend = 'improving';
+  else if (velocity < -0.05) trend = 'declining';
+
+  const prevBlockers = safeRounds.length > 0 ? safeRounds[safeRounds.length - 1].blockers || [] : [];
+  const resolvedBlockers = prevBlockers.filter((b) => !currentResult.blockers.includes(b));
+  const newBlockers = currentResult.blockers.filter((b) => !prevBlockers.includes(b));
+
+  return {
+    ...currentResult,
+    evolution: {
+      approvalHistory,
+      velocity,
+      resolvedBlockers,
+      newBlockers,
+      stagnating: trend === 'stagnating',
+      trend,
+    },
+  };
 }
 
 /**

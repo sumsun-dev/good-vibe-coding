@@ -14,7 +14,19 @@ export const config = Object.freeze({
     pingTimeout: 15_000,
     pingMaxTokens: 16,
   }),
-  review: Object.freeze({ minReviewers: 2, maxReviewers: 3, maxRevisionRounds: 2 }),
+  review: Object.freeze({ minReviewers: 2, maxReviewers: 3, maxRevisionRounds: 2, maxImportantIssues: 10 }),
+  quality: Object.freeze({
+    criticalPenalty: 20,
+    importantPenalty: 5,
+    fixAttemptPenalty: 10,
+    buildFailurePenalty: 30,
+    firstPhaseWeight: 0.3,
+  }),
+  evolution: Object.freeze({
+    targetScore: 80,
+    maxGenerations: 3,
+    minImprovement: 5,
+  }),
   team: Object.freeze({
     simple: Object.freeze({ min: 2, max: 3 }),
     medium: Object.freeze({ min: 3, max: 5 }),
@@ -33,6 +45,26 @@ export const config = Object.freeze({
     autoPush: true,
     autoCreatePR: true,
     prDraft: false,
+  }),
+  clarity: Object.freeze({
+    threshold: 0.8,
+    minImprovement: 0.05,
+    maxDescriptionLength: 3000,
+    dimensionThreshold: 0.6,
+  }),
+  taskClassification: Object.freeze({
+    engineerRoles: Object.freeze(['backend', 'frontend', 'fullstack', 'devops', 'data']),
+    codeDomains: Object.freeze(['frontend', 'backend', 'api', 'database', 'fullstack']),
+    koreanKeywords: Object.freeze(['구현', '개발', '코딩']),
+    englishKeywords: Object.freeze([
+      'implement', 'implements', 'implementation', 'develop', 'developer',
+      'code', 'coding', 'build', 'builds', 'create', 'creates',
+      'api', 'apis', 'endpoint', 'endpoints', 'component', 'components',
+      'function', 'functions', 'module', 'modules', 'class', 'classes',
+      'service', 'services', 'controller', 'controllers', 'middleware',
+      'route', 'routes', 'router', 'schema', 'schemas',
+      'migration', 'migrations', 'test', 'tests', 'testing', 'spec', 'specs',
+    ]),
   }),
   cli: Object.freeze({ suggestionThreshold: 3 }),
   codebase: Object.freeze({

@@ -14,6 +14,7 @@ import {
   buildFailureContext,
   categorizeFailure,
   extractContributions,
+  computeStateTransition,
 } from '../scripts/lib/engine/execution-loop.js';
 import {
   createProject,
@@ -1291,5 +1292,34 @@ describe('extractContributions', () => {
     const result = extractContributions(reviews);
     expect(result).toHaveLength(1);
     expect(result[0].roleId).toBe('backend');
+  });
+});
+
+describe('computeStateTransition 불변성', () => {
+  it('원본 프로젝트의 executionState를 변경하지 않는다', () => {
+    const originalState = createInitialExecutionState('auto');
+    originalState.phaseResults = {
+      1: { taskResults: [{ id: 'task-1', output: 'original' }], reviews: [], qualityGate: null, committed: false },
+    };
+    const project = {
+      id: 'immutability-test',
+      tasks: [{ id: 'task-1', phase: 1 }],
+      executionState: originalState,
+    };
+
+    // deep copy 확인: 원본 phaseResults 내부 배열이 참조 공유되지 않아야 함
+    const originalTaskResults = project.executionState.phaseResults[1].taskResults;
+    const originalTaskResultsCopy = [...originalTaskResults];
+
+    const result = computeStateTransition(project, {
+      completedAction: 'execute-tasks',
+      taskResults: [{ id: 'task-1', output: 'modified' }],
+    });
+
+    // 원본이 변경되지 않았는지 확인
+    expect(project.executionState.phaseResults[1].taskResults).toEqual(originalTaskResultsCopy);
+    expect(project.executionState.phaseStep).toBe('execute-tasks');
+    // 결과는 변경되어야 함
+    expect(result.executionState.phaseStep).toBe('materialize');
   });
 });

@@ -289,14 +289,14 @@ describe('parseTaskReview', () => {
     expect(result.verdict).toBe('approve');
   });
 
-  it('빈 입력은 request-changes로 처리한다', () => {
-    expect(parseTaskReview('')).toEqual({ verdict: 'request-changes', issues: [] });
-    expect(parseTaskReview(null)).toEqual({ verdict: 'request-changes', issues: [] });
+  it('빈 입력은 parse-error로 처리한다', () => {
+    expect(parseTaskReview('')).toEqual({ verdict: 'parse-error', issues: [] });
+    expect(parseTaskReview(null)).toEqual({ verdict: 'parse-error', issues: [] });
   });
 
-  it('파싱 불가능한 텍스트는 request-changes로 처리한다', () => {
+  it('파싱 불가능한 텍스트는 parse-error로 처리한다', () => {
     const result = parseTaskReview('잘 모르겠습니다');
-    expect(result.verdict).toBe('request-changes');
+    expect(result.verdict).toBe('parse-error');
   });
 
   it('issues 필드가 없으면 빈 배열로 정규화한다', () => {
@@ -647,5 +647,42 @@ describe('checkEnhancedQualityGate', () => {
     expect(result.criticalCount).toBe(0);
     expect(result.importantCount).toBe(1);
     expect(result.executionVerified).toBe(true);
+  });
+});
+
+describe('selectReviewers 1명 팀', () => {
+  it('1명 팀에서 빈 리뷰어 배열을 반환한다', () => {
+    const soloTeam = [
+      { roleId: 'fullstack', workDomains: ['frontend', 'backend'], reviewDomains: ['frontend'] },
+    ];
+    const task = { assignee: 'fullstack' };
+    const reviewers = selectReviewers(task, soloTeam);
+    expect(reviewers).toEqual([]);
+  });
+});
+
+describe('checkQualityGate important 경고', () => {
+  it('important 초과 시 summary에 경고를 포함한다', () => {
+    const issues = Array.from({ length: 15 }, (_, i) => ({
+      severity: 'important',
+      description: `이슈 ${i}`,
+    }));
+    const reviews = [{ verdict: 'approve', issues }];
+    const result = checkQualityGate(reviews);
+    expect(result.passed).toBe(true);
+    expect(result.summary).toContain('경고');
+  });
+});
+
+describe('buildRevisionPrompt 최종 시도 경고', () => {
+  it('최종 시도 시 경고 문구를 포함한다', () => {
+    const task = { id: 'task-1', title: '구현' };
+    const implementer = { emoji: '🧑‍💻', displayName: '풀스택', role: 'fullstack' };
+    const reviews = [
+      { issues: [{ severity: 'critical', description: '보안 취약점', suggestion: '수정 필요' }] },
+    ];
+    const failureContext = { attempt: 2, maxAttempts: 2, previousAttempts: [], issues: [] };
+    const prompt = buildRevisionPrompt(task, implementer, reviews, failureContext);
+    expect(prompt).toContain('마지막');
   });
 });

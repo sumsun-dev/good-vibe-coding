@@ -76,7 +76,7 @@ export function parseDiscussionOutput(rawOutput) {
   const discussionPart = rawOutput.slice(0, planIdx).trim();
 
   const contributions = [];
-  const rolePattern = /###?\s+\d*\.?\s*[^\n]+\(([^)]+)\)/g;
+  const rolePattern = /###?\s+\d*\.?\s*[^\n]{1,200}\(([^)]{1,100})\)/g;
   let match;
   while ((match = rolePattern.exec(discussionPart)) !== null) {
     contributions.push({ role: match[1] });
