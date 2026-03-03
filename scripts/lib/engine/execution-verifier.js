@@ -244,7 +244,7 @@ export function classifyCodeBlocks(codeBlocks) {
  * @param {string} projectType - 프로젝트 유형 ('web-app', 'api-server', 'cli-tool' 등)
  * @returns {{ tempDir: string, files: string[] }}
  */
-export function writeTemporaryProject(codeBlocks, projectType) {
+export function writeTemporaryProject(codeBlocks, _projectType) {
   if (!codeBlocks || codeBlocks.length === 0) {
     const tempDir = mkdtempSync(join(tmpdir(), 'gvc-verify-'));
     return { tempDir, files: [] };

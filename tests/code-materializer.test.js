@@ -1,4 +1,4 @@
-import { vi, describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { mkdtempSync, existsSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -14,7 +14,6 @@ import {
   TEXT_ONLY_OUTPUT,
   NO_FILENAME_OUTPUT,
   MIXED_OUTPUT,
-  SYNTAX_ERROR_OUTPUT,
   COMMENT_FILENAME_OUTPUT,
   NESTED_DIR_OUTPUT,
   TDD_OUTPUT,

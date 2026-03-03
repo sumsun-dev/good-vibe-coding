@@ -3,11 +3,11 @@ import { mkdir, rm } from 'fs/promises';
 import { resolve } from 'path';
 import {
   createProject, getProject, updateProjectStatus, setProjectTeam,
-  setProjectPlan, addProjectTasks, setProjectReport, listProjects, setBaseDir,
+  setProjectPlan, addProjectTasks, listProjects, setBaseDir,
 } from '../scripts/lib/project/project-manager.js';
-import { recommendTeam, buildTeam, getTeamSummary, clearCaches } from '../scripts/lib/agent/team-builder.js';
+import { recommendTeam, buildTeam, clearCaches } from '../scripts/lib/agent/team-builder.js';
 import { buildDiscussionPrompt, buildPlanDocument } from '../scripts/lib/engine/discussion-engine.js';
-import { buildTaskDistributionPrompt, buildExecutionPlan } from '../scripts/lib/engine/task-distributor.js';
+import { buildExecutionPlan } from '../scripts/lib/engine/task-distributor.js';
 import { generateReport, generateProjectStats } from '../scripts/lib/output/report-generator.js';
 import {
   scaffold, loadTemplate, listTemplates, validateTemplate, setCustomTemplatesDir,

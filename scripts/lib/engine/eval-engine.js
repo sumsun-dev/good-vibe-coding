@@ -111,7 +111,7 @@ export function scoreTechnicalDepth(output) {
     codeExamples: /```[\s\S]*?```|`[^`]+`|function\s+\w+|const\s+\w+\s*=|import\s+.*from|class\s+\w+/,
     apiDesign: /api|endpoint|엔드포인트|GET\s+\/|POST\s+\/|PUT\s+\/|DELETE\s+\/|REST|graphql|route|라우트/,
     databaseSchema: /schema|스키마|table|테이블|column|컬럼|foreign\s*key|primary\s*key|index|relation|entity|ERD|모델\s*설계/i,
-    errorHandling: /error\s*handl|에러\s*처리|exception|예외|try\s*[\-/]?\s*catch|fallback|retry|재시도|graceful|circuit\s*breaker|timeout|validation/i,
+    errorHandling: /error\s*handl|에러\s*처리|exception|예외|try\s*[-/]?\s*catch|fallback|retry|재시도|graceful|circuit\s*breaker|timeout|validation/i,
   });
 }
 

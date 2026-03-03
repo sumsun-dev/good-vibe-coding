@@ -123,22 +123,26 @@ describe('validateDynamicRole', () => {
   });
 
   it('roleId 누락 시 에러를 던진다', () => {
-    const { roleId, ...rest } = validRole;
+    // eslint-disable-next-line no-unused-vars
+    const { roleId: _roleId, ...rest } = validRole;
     expect(() => validateDynamicRole(rest)).toThrow();
   });
 
   it('displayName 누락 시 에러를 던진다', () => {
-    const { displayName, ...rest } = validRole;
+    // eslint-disable-next-line no-unused-vars
+    const { displayName: _displayName, ...rest } = validRole;
     expect(() => validateDynamicRole(rest)).toThrow();
   });
 
   it('category 누락 시 에러를 던진다', () => {
-    const { category, ...rest } = validRole;
+    // eslint-disable-next-line no-unused-vars
+    const { category: _category, ...rest } = validRole;
     expect(() => validateDynamicRole(rest)).toThrow();
   });
 
   it('workDomains 누락 시 에러를 던진다', () => {
-    const { workDomains, ...rest } = validRole;
+    // eslint-disable-next-line no-unused-vars
+    const { workDomains: _workDomains, ...rest } = validRole;
     expect(() => validateDynamicRole(rest)).toThrow();
   });
 });

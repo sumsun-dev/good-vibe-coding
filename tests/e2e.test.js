@@ -18,7 +18,7 @@ import {
   CODE_TASK, NON_CODE_TASK, PROJECT_WITH_TASKS,
 } from './fixtures/projects.js';
 import {
-  BACKEND_MEMBER, CTO_MEMBER, QA_MEMBER, DEFAULT_TEAM,
+  BACKEND_MEMBER, CTO_MEMBER, DEFAULT_TEAM,
 } from './fixtures/teams.js';
 
 const CLI_PATH = resolve('scripts/cli.js');

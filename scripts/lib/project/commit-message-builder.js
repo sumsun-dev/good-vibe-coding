@@ -40,7 +40,7 @@ export function resolveCommitType(tasks, phase, totalPhases) {
  * @param {Array<{roleId?: string, name?: string}>} team - 팀 배열
  * @returns {string[]} Co-authored-by 라인 배열
  */
-export function buildCoAuthoredBy(tasks, team) {
+export function buildCoAuthoredBy(tasks, _team) {
   if (!tasks || tasks.length === 0) return [];
 
   const uniqueRoles = [...new Set(tasks.map(t => t.assignedTo).filter(Boolean))];
@@ -85,7 +85,8 @@ export function buildCommitBody(tasks, qualityGate) {
  * @returns {string} 커밋 메시지
  */
 export function buildCommitMessage(options) {
-  const { phase, tasks = [], project = {}, team = [], totalPhases = 1, qualityGate } = options;
+  // eslint-disable-next-line no-unused-vars
+  const { phase, tasks = [], project: _project = {}, team = [], totalPhases = 1, qualityGate } = options;
 
   const type = resolveCommitType(tasks, phase, totalPhases);
   const scope = `phase-${phase}`;

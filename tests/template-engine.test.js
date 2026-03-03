@@ -1,11 +1,5 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { renderTemplate, renderString } from '../scripts/lib/project/template-engine.js';
-import { writeFile, mkdir } from 'fs/promises';
-import { resolve, dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const TEMPLATES_DIR = resolve(__dirname, '../templates');
 
 describe('template-engine', () => {
   describe('renderString', () => {

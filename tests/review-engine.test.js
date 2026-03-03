@@ -133,6 +133,7 @@ describe('selectReviewers', () => {
 
   it('reviewDomains가 없으면 skills를 사용한다', () => {
     const team = SAMPLE_TEAM.map(m => {
+      // eslint-disable-next-line no-unused-vars
       const { reviewDomains, ...rest } = m;
       return rest;
     });
@@ -190,6 +191,7 @@ describe('selectReviewers', () => {
 
   it('workDomains가 없으면 reviewDomains로 fallback한다', () => {
     const teamWithoutWorkDomains = SAMPLE_TEAM.map(m => {
+      // eslint-disable-next-line no-unused-vars
       const { workDomains, ...rest } = m;
       return rest;
     });

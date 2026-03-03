@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolve, sep } from 'path';
+import { resolve } from 'path';
 import {
   requireString,
   requireArray,

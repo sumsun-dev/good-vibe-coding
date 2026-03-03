@@ -122,7 +122,7 @@ export function buildExecutionPlanWithReviews(tasks, team) {
   return { phases: phasesWithReviews, dependencies: basePlan.dependencies };
 }
 
-export function buildExecutionPlan(tasks, team) {
+export function buildExecutionPlan(tasks, _team) {
   const phaseMap = new Map();
   const dependencies = {};
 

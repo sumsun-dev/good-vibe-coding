@@ -120,7 +120,7 @@ describe('Executor', () => {
       hooks: { onEscalation },
     });
 
-    const result = await executor.run({ projectId: 'test-proj' });
+    await executor.run({ projectId: 'test-proj' });
     expect(onEscalation).toHaveBeenCalled();
   });
 

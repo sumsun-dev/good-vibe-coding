@@ -29,7 +29,9 @@ beforeEach(() => {
 
 afterEach(() => {
   resetDirs();
-  try { rmSync(tempDir, { recursive: true }); } catch {}
+  try { rmSync(tempDir, { recursive: true }); } catch {
+    // expected
+  }
 });
 
 // --- 크레덴셜 CRUD ---

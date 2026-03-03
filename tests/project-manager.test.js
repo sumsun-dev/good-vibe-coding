@@ -1,4 +1,4 @@
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdir, rm, readFile } from 'fs/promises';
 import { resolve } from 'path';
 import {
@@ -19,7 +19,6 @@ import {
   addTaskMaterializationResult,
   getExecutionProgress,
   addDiscussionRound,
-  updateExecutionState,
   recordMetrics,
   recordContributions,
 } from '../scripts/lib/project/project-manager.js';

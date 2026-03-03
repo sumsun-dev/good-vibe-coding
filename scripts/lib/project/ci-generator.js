@@ -8,7 +8,6 @@
 import { mkdir, writeFile } from 'fs/promises';
 import { resolve, dirname } from 'path';
 
-const NODE_STACKS = ['node', 'express', 'react', 'vue', 'angular', 'svelte', 'nextjs', 'next', 'nestjs', 'koa', 'npm', 'yarn'];
 const PYTHON_STACKS = ['python', 'fastapi', 'django', 'flask', 'pytorch', 'tensorflow', 'pandas'];
 const GO_STACKS = ['go', 'gin', 'echo', 'fiber'];
 const JAVA_STACKS = ['java', 'spring', 'kotlin', 'gradle', 'maven'];

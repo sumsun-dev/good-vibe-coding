@@ -30,12 +30,12 @@ vi.mock('../../scripts/lib/llm/llm-provider.js', () => ({
   verifyConnection: vi.fn(),
 }));
 
-import { readStdin, output, outputOk } from '../../scripts/cli-utils.js';
+import { readStdin, output } from '../../scripts/cli-utils.js';
 import {
   listConnectedProviders, getProviderStatus,
 } from '../../scripts/lib/llm/auth-manager.js';
 import {
-  resolveReviewAssignments, executeCrossModelReviews, summarizeCrossModelResults,
+  resolveReviewAssignments,
 } from '../../scripts/lib/engine/cross-model-strategy.js';
 import { commands } from '../../scripts/handlers/auth.js';
 

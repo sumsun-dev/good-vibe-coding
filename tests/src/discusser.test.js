@@ -42,9 +42,7 @@ describe('Discusser', () => {
 
   it('수렴 시 즉시 반환한다', async () => {
     // 모든 LLM 응답: 분석 → 종합 → 리뷰(approved)
-    let callCount = 0;
     callLLM.mockImplementation(async () => {
-      callCount++;
       // 리뷰 응답에 approved: true JSON을 반환
       return {
         text: '```json\n{"approved": true, "feedback": "좋습니다", "issues": []}\n```',

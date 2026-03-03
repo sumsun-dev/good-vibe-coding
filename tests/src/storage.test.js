@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { MemoryStorage, FileStorage, resolveStorage } from '../../src/storage.js';
 import { mkdir, rm } from 'fs/promises';
 import { resolve, dirname } from 'path';

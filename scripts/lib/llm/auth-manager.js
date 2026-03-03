@@ -104,7 +104,8 @@ export async function saveAuth(providerId, authData) {
  */
 export async function removeAuth(providerId) {
   const allAuth = await loadAllAuth();
-  const { [providerId]: _, ...rest } = allAuth;
+  // eslint-disable-next-line no-unused-vars
+  const { [providerId]: _removed, ...rest } = allAuth;
   await saveAllAuth(rest);
 }
 
@@ -210,7 +211,8 @@ export async function connectWithApiKey(providerId, apiKey) {
   await saveAuth(providerId, authData);
   await setProviderEnabled(providerId, true);
 
-  const { apiKey: _, ...safeData } = authData;
+  // eslint-disable-next-line no-unused-vars
+  const { apiKey: _apiKey, ...safeData } = authData;
   return safeData;
 }
 

@@ -38,7 +38,6 @@ describe('file-writer', () => {
 
     it.skipIf(process.platform === 'win32')('EACCES 에러는 전파한다 (ENOENT만 false)', async () => {
       const { chmod, writeFile: wf } = await import('fs/promises');
-      const filePath = resolve(TMP_DIR, 'no-access-dir', 'test.txt');
       const dirPath = resolve(TMP_DIR, 'no-access-dir');
       await mkdir(dirPath, { recursive: true });
       await wf(resolve(dirPath, 'dummy.txt'), 'x', 'utf-8');

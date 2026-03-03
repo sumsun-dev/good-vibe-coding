@@ -40,7 +40,7 @@ export async function callLLM(providerId, prompt, options = {}) {
     throw inputError(`지원하지 않는 프로바이더: ${providerId}`);
   }
 
-  let auth = await loadAuth(providerId);
+  const auth = await loadAuth(providerId);
   if (!auth) {
     throw notFoundError(`${providerId} 인증 정보가 없습니다. 먼저 connect 명령으로 인증하세요.`);
   }
