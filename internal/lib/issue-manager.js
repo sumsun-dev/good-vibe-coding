@@ -184,13 +184,14 @@ if (
         // 파일 없음
       }
 
-      const { execSync } = await import('child_process');
+      const { execFileSync } = await import('child_process');
 
       // gh issue list 래퍼
       const ghIssueFn = (label) => {
         try {
-          const output = execSync(
-            `gh issue list --label "${label}" --state open --json number --jq '.[].number'`,
+          const output = execFileSync(
+            'gh',
+            ['issue', 'list', '--label', label, '--state', 'open', '--json', 'number', '--jq', '.[].number'],
             { encoding: 'utf-8', timeout: 10_000 },
           ).trim();
           return output
@@ -211,10 +212,11 @@ if (
         const prNumberStr = readFileSync(`${runDir}/pr-number`, 'utf-8').trim();
         const prNum = parseInt(prNumberStr, 10);
         if (!Number.isNaN(prNum) && prNum > 0) {
-          const rawBody = execSync(`gh pr view ${prNum} --json body --jq '.body'`, {
-            encoding: 'utf-8',
-            timeout: 15_000,
-          }).trim();
+          const rawBody = execFileSync(
+            'gh',
+            ['pr', 'view', String(prNum), '--json', 'body', '--jq', '.body'],
+            { encoding: 'utf-8', timeout: 15_000 },
+          ).trim();
           prBody = rawBody || '';
         }
       } catch {
