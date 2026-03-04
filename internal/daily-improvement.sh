@@ -202,7 +202,7 @@ while can_start_next_round; do
   save_checkpoint "$round" "phase1" "completed"
 
   # ── Phase 1.5: 이슈 검증 ──────────────────────────────────
-  node "${SCRIPT_DIR}/lib/improvement/issue-manager.js" verify-all \
+  node "${SCRIPT_DIR}/lib/issue-manager.js" verify-all \
     "$RUN_DIR" "$round" >> "$LOG_FILE" 2>&1 || true
 
   check_emergency_stop
