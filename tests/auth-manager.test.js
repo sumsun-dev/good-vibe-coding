@@ -209,6 +209,11 @@ describe('connectWithApiKey', () => {
     await expect(connectWithApiKey('openai', '  ')).rejects.toThrow('API Key가 비어있습니다');
   });
 
+  it('유효하지 않은 프로바이더 ID는 에러를 던진다', async () => {
+    await expect(connectWithApiKey('invalid-provider', 'sk-key')).rejects.toThrow('유효하지 않은 프로바이더');
+    await expect(connectWithApiKey(null, 'sk-key')).rejects.toThrow('유효하지 않은 프로바이더');
+  });
+
   it('API Key 앞뒤 공백을 제거한다', async () => {
     await connectWithApiKey('claude', '  sk-trimmed  ');
     const auth = await loadAuth('claude');
@@ -223,7 +228,7 @@ describe('connectWithApiKey', () => {
 
   it('알 수 없는 프로바이더는 에러를 던진다', async () => {
     await expect(connectWithApiKey('unknown-provider', 'sk-test')).rejects.toThrow(
-      '알 수 없는 프로바이더',
+      '유효하지 않은 프로바이더',
     );
   });
 

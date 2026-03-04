@@ -359,6 +359,10 @@ export function computeStateTransition(project, stepResult) {
     case 'escalation-response':
       switch (stepResult.escalationDecision) {
         case 'continue':
+          state.escalationCount = (state.escalationCount || 0) + 1;
+          if (state.escalationCount > 3) {
+            throw inputError('에스컬레이션 최대 횟수(3회)를 초과했습니다. skip 또는 abort를 선택하세요.');
+          }
           state.fixAttempt = 0;
           state.phaseStep = 'fix';
           state.status = 'fixing';

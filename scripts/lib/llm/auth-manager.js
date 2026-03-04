@@ -78,7 +78,7 @@ async function loadAllAuth() {
  * @param {object} allAuth
  */
 async function saveAllAuth(allAuth) {
-  await mkdir(authDir, { recursive: true });
+  await mkdir(authDir, { recursive: true, mode: 0o700 });
   const authPath = resolve(authDir, AUTH_FILENAME);
   await writeFile(authPath, JSON.stringify(allAuth, null, 2), 'utf-8');
   await chmod(authPath, 0o600);
@@ -204,7 +204,12 @@ export async function setReviewStrategy(strategy) {
  * @param {string} apiKey
  * @returns {Promise<object>}
  */
+const VALID_PROVIDER_IDS = ['claude', 'openai', 'gemini'];
+
 export async function connectWithApiKey(providerId, apiKey) {
+  if (!providerId || !VALID_PROVIDER_IDS.includes(providerId)) {
+    throw inputError(`유효하지 않은 프로바이더: ${providerId}. 지원: ${VALID_PROVIDER_IDS.join(', ')}`);
+  }
   if (!apiKey || apiKey.trim() === '') {
     throw inputError('API Key가 비어있습니다');
   }

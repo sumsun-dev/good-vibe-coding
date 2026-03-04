@@ -22,7 +22,7 @@ import {
   recordMetrics,
   recordContributions,
 } from '../scripts/lib/project/project-manager.js';
-import { AppError } from '../scripts/lib/core/validators.js';
+
 
 const TMP_DIR = resolve('.tmp-test-project-manager');
 
@@ -38,22 +38,22 @@ afterEach(async () => {
 describe('generateProjectId', () => {
   it('영어 이름을 kebab-case + YYYY-MM + suffix로 변환한다', () => {
     const id = generateProjectId('Telegram Bot');
-    expect(id).toMatch(/^telegram-bot-\d{4}-\d{2}-[a-z0-9]{4}$/);
+    expect(id).toMatch(/^telegram-bot-\d{4}-\d{2}-[a-f0-9]{8}$/);
   });
 
   it('한글 이름도 처리한다', () => {
     const id = generateProjectId('텔레그램 봇');
-    expect(id).toMatch(/^텔레그램-봇-\d{4}-\d{2}-[a-z0-9]{4}$/);
+    expect(id).toMatch(/^텔레그램-봇-\d{4}-\d{2}-[a-f0-9]{8}$/);
   });
 
   it('특수문자를 제거한다', () => {
     const id = generateProjectId('My App! (v2)');
-    expect(id).toMatch(/^my-app-v2-\d{4}-\d{2}-[a-z0-9]{4}$/);
+    expect(id).toMatch(/^my-app-v2-\d{4}-\d{2}-[a-f0-9]{8}$/);
   });
 
   it('연속 하이픈을 하나로 줄인다', () => {
     const id = generateProjectId('my   app');
-    expect(id).toMatch(/^my-app-\d{4}-\d{2}-[a-z0-9]{4}$/);
+    expect(id).toMatch(/^my-app-\d{4}-\d{2}-[a-f0-9]{8}$/);
   });
 });
 
@@ -537,45 +537,33 @@ describe('recordMetrics', () => {
 
 describe('에러 타입 검증 (Phase 2)', () => {
   it('존재하지 않는 프로젝트는 NOT_FOUND AppError를 던진다', async () => {
-    try {
-      await updateProjectStatus('no-exist', 'approved');
-    } catch (e) {
-      expect(e).toBeInstanceOf(AppError);
-      expect(e.code).toBe('NOT_FOUND');
-      expect(e.message).toContain('프로젝트를 찾을 수 없습니다');
-    }
+    await expect(updateProjectStatus('no-exist', 'approved')).rejects.toThrow('프로젝트를 찾을 수 없습니다');
+    await expect(updateProjectStatus('no-exist', 'approved')).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    });
   });
 
   it('유효하지 않은 상태는 INPUT_ERROR AppError를 던진다', async () => {
     const project = await createProject('에러테스트', 'web-app', '설명');
-    try {
-      await updateProjectStatus(project.id, 'invalid');
-    } catch (e) {
-      expect(e).toBeInstanceOf(AppError);
-      expect(e.code).toBe('INPUT_ERROR');
-      expect(e.message).toContain('유효하지 않은 상태');
-    }
+    await expect(updateProjectStatus(project.id, 'invalid')).rejects.toThrow('유효하지 않은 상태');
+    await expect(updateProjectStatus(project.id, 'invalid')).rejects.toMatchObject({
+      code: 'INPUT_ERROR',
+    });
   });
 
   it('존재하지 않는 태스크는 NOT_FOUND AppError를 던진다', async () => {
     const project = await createProject('에러테스트2', 'web-app', '설명');
-    try {
-      await updateTaskStatus(project.id, 'no-task', 'completed');
-    } catch (e) {
-      expect(e).toBeInstanceOf(AppError);
-      expect(e.code).toBe('NOT_FOUND');
-      expect(e.message).toContain('태스크를 찾을 수 없습니다');
-    }
+    await expect(updateTaskStatus(project.id, 'no-task', 'completed')).rejects.toThrow('태스크를 찾을 수 없습니다');
+    await expect(updateTaskStatus(project.id, 'no-task', 'completed')).rejects.toMatchObject({
+      code: 'NOT_FOUND',
+    });
   });
 
   it('유효하지 않은 모드는 INPUT_ERROR AppError를 던진다', async () => {
-    try {
-      await createProject('에러테스트3', 'web-app', '설명', { mode: 'bad-mode' });
-    } catch (e) {
-      expect(e).toBeInstanceOf(AppError);
-      expect(e.code).toBe('INPUT_ERROR');
-      expect(e.message).toContain('유효하지 않은 모드');
-    }
+    await expect(createProject('에러테스트3', 'web-app', '설명', { mode: 'bad-mode' })).rejects.toThrow('유효하지 않은 모드');
+    await expect(createProject('에러테스트4', 'web-app', '설명', { mode: 'bad-mode' })).rejects.toMatchObject({
+      code: 'INPUT_ERROR',
+    });
   });
 });
 

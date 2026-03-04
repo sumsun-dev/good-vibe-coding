@@ -162,6 +162,12 @@ describe('github-manager', () => {
       expect(result.error).toContain('remoteUrl이 필요합니다');
     });
 
+    it('유효하지 않은 remoteUrl 형식은 에러를 반환한다', () => {
+      const result = gitInitAndPush('/tmp/proj', 'not-a-url');
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('유효하지 않은 remoteUrl 형식');
+    });
+
     it('git 명령 실패 시 에러를 반환한다', () => {
       execFileSync.mockImplementationOnce(() => {
         const err = new Error('git failed');

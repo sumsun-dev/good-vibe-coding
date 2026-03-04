@@ -148,11 +148,8 @@ describe('parseProviderResponse', () => {
     expect(result.tokenCount).toBe(0);
   });
 
-  it('알 수 없는 프로바이더는 빈 결과를 반환한다', () => {
-    const result = parseProviderResponse('unknown', { text: 'test' }, 'model');
-    expect(result.text).toBe('');
-    expect(result.provider).toBe('unknown');
-    expect(result.tokenCount).toBe(0);
+  it('알 수 없는 프로바이더는 에러를 던진다', () => {
+    expect(() => parseProviderResponse('unknown', { text: 'test' }, 'model')).toThrow('지원하지 않는 프로바이더 응답');
   });
 });
 

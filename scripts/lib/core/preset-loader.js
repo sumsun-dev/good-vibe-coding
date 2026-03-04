@@ -109,6 +109,7 @@ export function mergePresets(...presets) {
 export async function listPresets(category) {
   const { listFilesByExtension } = await import('./file-writer.js');
   const dirPath = resolve(PRESETS_DIR, category);
+  assertWithinRoot(dirPath, PRESETS_DIR, 'preset category');
   const files = await listFilesByExtension(dirPath, '.json');
   return files.map((f) => f.replace('.json', ''));
 }

@@ -5,9 +5,6 @@ import {
   getDefaultsForComplexity,
   calculateComplexityScore,
   deriveComplexityLevel,
-  COMPLEXITY_DIMENSIONS,
-  COMPLEXITY_WEIGHTS,
-  COMPLEXITY_THRESHOLDS,
 } from '../scripts/lib/agent/complexity-analyzer.js';
 
 // --- buildComplexityAnalysisPrompt ---

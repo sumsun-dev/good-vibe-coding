@@ -3,6 +3,7 @@ import {
   parseGeminiCliOutput,
   isGeminiCliInstalled,
   callGeminiCli,
+  _installCache,
 } from '../scripts/lib/llm/gemini-bridge.js';
 import { spawnSync } from 'child_process';
 
@@ -130,6 +131,7 @@ describe('parseGeminiCliOutput', () => {
 describe('isGeminiCliInstalled', () => {
   beforeEach(() => {
     vi.mocked(spawnSync).mockReset();
+    _installCache.clear();
   });
 
   it('CLI가 설치되어 있으면 true를 반환한다', () => {
@@ -174,6 +176,7 @@ describe('isGeminiCliInstalled', () => {
 describe('callGeminiCli', () => {
   beforeEach(() => {
     vi.mocked(spawnSync).mockReset();
+    _installCache.clear();
   });
 
   /** isGeminiCliInstalled + callGeminiCli 모두 spawnSync를 호출하므로 2번 mock */
@@ -310,6 +313,7 @@ describe('callGeminiCli', () => {
 describe('callGeminiCli — 보안', () => {
   beforeEach(() => {
     vi.mocked(spawnSync).mockReset();
+    _installCache.clear();
   });
 
   function mockInstalledThenCall(callResult) {

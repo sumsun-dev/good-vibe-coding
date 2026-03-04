@@ -11,30 +11,17 @@ import {
 
 const [, , , ...args] = process.argv;
 
+function toTemplateSummary(t) {
+  return { name: t.name, displayName: t.displayName, description: t.description, projectType: t.projectType };
+}
+
 export const commands = {
   'list-templates': async () => {
     const opts = parseArgs(args);
-    if (opts.type) {
-      const templates = await getTemplatesForProjectType(opts.type);
-      output(
-        templates.map((t) => ({
-          name: t.name,
-          displayName: t.displayName,
-          description: t.description,
-          projectType: t.projectType,
-        })),
-      );
-    } else {
-      const templates = await listTemplates();
-      output(
-        templates.map((t) => ({
-          name: t.name,
-          displayName: t.displayName,
-          description: t.description,
-          projectType: t.projectType,
-        })),
-      );
-    }
+    const templates = opts.type
+      ? await getTemplatesForProjectType(opts.type)
+      : await listTemplates();
+    output(templates.map(toTemplateSummary));
   },
 
   'get-template': async () => {

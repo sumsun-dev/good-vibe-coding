@@ -92,7 +92,7 @@ export function requireDefined(value, fieldName) {
  */
 export function requireFields(data, fields) {
   for (const field of fields) {
-    if (data[field] === undefined || data[field] === null) {
+    if (!Object.hasOwn(data, field) || data[field] === undefined || data[field] === null) {
       throw inputError(`${field} 필드가 필요합니다`);
     }
   }

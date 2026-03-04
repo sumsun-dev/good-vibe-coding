@@ -17,6 +17,7 @@ import {
   buildRevisionPrompt,
 } from '../scripts/lib/engine/review-engine.js';
 import { callLLM } from '../scripts/lib/llm/llm-provider.js';
+import { randomBytes } from 'crypto';
 import { DEFAULTS } from './defaults.js';
 
 export class Executor {
@@ -27,11 +28,12 @@ export class Executor {
    * @param {object} options.storage - 스토리지 인터페이스
    * @param {object} [options.hooks] - 이벤트 훅
    */
-  constructor({ provider, model, storage, hooks = {} }) {
+  constructor({ provider, model, storage, hooks = {}, maxSteps }) {
     this.provider = provider;
     this.model = model;
     this.storage = storage;
     this.hooks = hooks;
+    this._maxSteps = maxSteps || DEFAULTS.maxExecutionSteps;
   }
 
   /**
@@ -44,7 +46,7 @@ export class Executor {
     const journal = [];
     let stepCount = 0;
 
-    while (stepCount++ < DEFAULTS.maxExecutionSteps) {
+    while (stepCount++ < this._maxSteps) {
       const project = await this.storage.read(projectId);
       const step = getNextExecutionStep(project);
 
@@ -212,7 +214,7 @@ export class Executor {
    * 프로젝트를 초기화하고 실행 상태를 설정한다.
    */
   async _initProject(plan) {
-    const projectId = `sdk-${Date.now()}`;
+    const projectId = `sdk-${Date.now()}-${randomBytes(3).toString('hex')}`;
     const project = {
       id: projectId,
       name: plan.document ? 'SDK Project' : 'Unnamed',
@@ -236,7 +238,7 @@ export class Executor {
     const projectId = plan.projectId || (await this._initProject(plan));
     let stepCount = 0;
 
-    while (stepCount++ < DEFAULTS.maxExecutionSteps) {
+    while (stepCount++ < this._maxSteps) {
       const project = await this.storage.read(projectId);
       const step = getNextExecutionStep(project);
 

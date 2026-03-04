@@ -100,15 +100,42 @@ export class Discusser {
       await this.hooks.onRoundComplete?.(round, convergence);
 
       if (convergence.converged) {
-        return { document: lastPlan, rounds: round, convergence };
+        const result = { document: lastPlan, rounds: round, convergence };
+        await this._persist(team, result);
+        return result;
       }
     }
 
-    return {
+    const result = {
       document: lastPlan,
       rounds: maxRounds,
       convergence: { ...lastConvergence, converged: false, reason: 'max-rounds' },
     };
+    await this._persist(team, result);
+    return result;
+  }
+
+  /**
+   * 토론 결과를 스토리지에 저장한다 (있을 경우).
+   */
+  async _persist(team, result) {
+    if (!this.storage || typeof this.storage.write !== 'function') return;
+    if (!team.projectId) return;
+    try {
+      const existing = await this.storage.read(team.projectId);
+      if (existing) {
+        await this.storage.write(team.projectId, {
+          ...existing,
+          discussion: {
+            planDocument: result.document,
+            rounds: result.rounds,
+            convergence: result.convergence,
+          },
+        });
+      }
+    } catch {
+      // 저장 실패는 무시 — 토론 결과는 반환값으로 전달됨
+    }
   }
 
   /**

@@ -40,6 +40,16 @@ describe('parseArgs', () => {
     const result = parseArgs(['--query=a=b']);
     expect(result).toEqual({ query: 'a=b' });
   });
+
+  it('--key= 빈값을 빈 문자열로 처리한다', () => {
+    const result = parseArgs(['--name=']);
+    expect(result).toEqual({ name: '' });
+  });
+
+  it('음수값을 다음 키가 아닌 값으로 처리한다', () => {
+    const result = parseArgs(['--offset', '-5', '--limit', '10']);
+    expect(result).toEqual({ offset: '-5', limit: '10' });
+  });
 });
 
 describe('outputOk', () => {

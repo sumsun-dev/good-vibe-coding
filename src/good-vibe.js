@@ -116,6 +116,9 @@ export class GoodVibe {
    * @returns {string} 마크다운 보고서
    */
   report(result) {
+    if (!result || typeof result !== 'object') {
+      throw inputError('report에 전달할 결과 객체가 필요합니다');
+    }
     // result가 프로젝트 형태가 아니면 최소 구조를 만들어줌
     const project = result.name
       ? result

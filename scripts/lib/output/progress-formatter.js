@@ -111,7 +111,7 @@ export function estimateRemainingTime(journal, currentPhase, totalPhases) {
 
   const phases = new Map();
   for (const entry of journal) {
-    if (entry.phase == null) continue;
+    if (entry.phase === null || entry.phase === undefined) continue;
     const ts = Number(entry.timestamp);
     if (isNaN(ts)) continue;
     if (!phases.has(entry.phase)) {

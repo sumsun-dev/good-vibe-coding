@@ -60,7 +60,7 @@ export async function callLLM(providerId, prompt, options = {}) {
   const model = options.model || DEFAULT_MODELS[providerId];
   const request = buildProviderRequest(providerId, prompt, model, options);
   const headers = buildAuthHeaders(providerId, auth);
-  const maxRetries = config.llm.maxRetries;
+  const maxRetries = options.maxRetries ?? config.llm.maxRetries;
   let lastError;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -104,7 +104,7 @@ export async function callLLM(providerId, prompt, options = {}) {
 
     // 마지막 시도면 재시도 안 함
     if (attempt < maxRetries) {
-      const delay = Math.min(Math.pow(2, attempt) * 1000, 8000) + (Math.random() * 400 - 200);
+      const delay = Math.min(Math.pow(2, attempt) * 1000, 8000) + Math.random() * 200;
       await new Promise((r) => setTimeout(r, delay));
     }
   }
@@ -125,17 +125,9 @@ export function buildProviderRequest(providerId, prompt, model, options = {}) {
 
   switch (providerId) {
     case 'claude':
-      return {
-        url: PROVIDER_ENDPOINTS.claude,
-        body: {
-          model,
-          max_tokens: maxTokens,
-          messages: [{ role: 'user', content: prompt }],
-        },
-      };
     case 'openai':
       return {
-        url: PROVIDER_ENDPOINTS.openai,
+        url: PROVIDER_ENDPOINTS[providerId],
         body: {
           model,
           max_tokens: maxTokens,
@@ -216,14 +208,7 @@ export function parseProviderResponse(providerId, data, model) {
         outputTokens: data.usageMetadata?.candidatesTokenCount || 0,
       };
     default:
-      return {
-        text: '',
-        provider: providerId,
-        model: model || '',
-        tokenCount: 0,
-        inputTokens: 0,
-        outputTokens: 0,
-      };
+      throw inputError(`지원하지 않는 프로바이더 응답: ${providerId}`);
   }
 }
 

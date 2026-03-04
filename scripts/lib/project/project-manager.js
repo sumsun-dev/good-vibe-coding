@@ -1,5 +1,6 @@
 import { writeFile, readdir } from 'fs/promises';
 import { resolve } from 'path';
+import { randomBytes } from 'crypto';
 import { ensureDir, fileExists, readJsonFile } from '../core/file-writer.js';
 import { inputError, notFoundError, AppError } from '../core/validators.js';
 import {
@@ -40,7 +41,7 @@ export function generateProjectId(name) {
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
-  const suffix = Math.random().toString(36).slice(2, 6);
+  const suffix = randomBytes(4).toString('hex');
   return `${slug}-${yyyy}-${mm}-${suffix}`;
 }
 

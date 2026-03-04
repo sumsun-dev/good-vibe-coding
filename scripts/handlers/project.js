@@ -12,7 +12,7 @@ import {
 } from '../lib/project/project-manager.js';
 import { generateReport } from '../lib/output/report-generator.js';
 import { scanCodebase } from '../lib/project/codebase-scanner.js';
-import { requireFields, notFoundError } from '../lib/core/validators.js';
+import { requireFields, inputError, notFoundError, assertWithinRoot } from '../lib/core/validators.js';
 import { getCommandSchema, listCommandSchemas } from '../lib/core/command-schemas.js';
 
 const [, , , ...args] = process.argv;
@@ -71,8 +71,11 @@ export const commands = {
 
   'scan-codebase': async () => {
     const opts = parseArgs(args);
-    if (!opts.path) throw notFoundError('--path 옵션이 필요합니다');
-    const result = await scanCodebase(opts.path);
+    if (!opts.path) throw inputError('--path 옵션이 필요합니다');
+    const { resolve } = await import('path');
+    const resolved = resolve(opts.path);
+    assertWithinRoot(resolved, process.cwd(), '--path');
+    const result = await scanCodebase(resolved);
     output(result);
   },
 

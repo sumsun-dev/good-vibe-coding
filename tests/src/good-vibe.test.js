@@ -125,5 +125,13 @@ describe('GoodVibe', () => {
       expect(typeof report).toBe('string');
       expect(report).toContain('SDK Project');
     });
+
+    it('null 입력은 에러를 던진다', () => {
+      expect(() => gv.report(null)).toThrow('report에 전달할 결과 객체가 필요합니다');
+    });
+
+    it('undefined 입력은 에러를 던진다', () => {
+      expect(() => gv.report(undefined)).toThrow('report에 전달할 결과 객체가 필요합니다');
+    });
   });
 });

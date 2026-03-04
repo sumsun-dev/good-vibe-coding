@@ -6,8 +6,10 @@
 import { resolve } from 'path';
 import { GoodVibe } from '../src/index.js';
 
+import { homedir as osHomedir } from 'os';
+
 function homeDir() {
-  return process.env.HOME || process.env.USERPROFILE || '';
+  return process.env.HOME || process.env.USERPROFILE || osHomedir();
 }
 
 /**

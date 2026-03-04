@@ -4,7 +4,7 @@
  * 빌드/테스트를 실행함으로써 코드의 실제 동작을 검증한다.
  */
 
-import { execSync, execFileSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, dirname, resolve } from 'path';
@@ -67,13 +67,19 @@ export const BUILD_STRATEGIES = {
       files.some((f) => f.endsWith('.js') || f.endsWith('.ts')),
     build: (tempDir) => {
       if (existsSync(join(tempDir, 'package.json'))) {
-        const output = execSync('npm install --ignore-scripts && npm run build --ignore-scripts', {
+        const installOut = execFileSync('npm', ['install', '--ignore-scripts'], {
           cwd: tempDir,
           timeout: config.build.defaultTimeout,
           encoding: 'utf-8',
           stdio: ['pipe', 'pipe', 'pipe'],
         });
-        return { success: true, output, exitCode: 0 };
+        const buildOut = execFileSync('npm', ['run', 'build', '--ignore-scripts'], {
+          cwd: tempDir,
+          timeout: config.build.defaultTimeout,
+          encoding: 'utf-8',
+          stdio: ['pipe', 'pipe', 'pipe'],
+        });
+        return { success: true, output: [installOut, buildOut].filter(Boolean).join('\n'), exitCode: 0 };
       }
       // package.json 없으면 JS 파일 syntax check
       const jsFiles = findFilesByExtension(tempDir, '.js');
@@ -97,7 +103,7 @@ export const BUILD_STRATEGIES = {
       if (!existsSync(join(tempDir, 'package.json'))) {
         return { success: null, output: 'no package.json for test execution', exitCode: null };
       }
-      const output = execSync('npm test', {
+      const output = execFileSync('npm', ['test'], {
         cwd: tempDir,
         timeout: config.build.defaultTimeout,
         encoding: 'utf-8',
@@ -128,7 +134,7 @@ export const BUILD_STRATEGIES = {
       return { success: true, output: outputs.join('\n') || 'python compile check passed', exitCode: 0 };
     },
     test: (tempDir) => {
-      const output = execSync('python3 -m pytest', {
+      const output = execFileSync('python3', ['-m', 'pytest'], {
         cwd: tempDir,
         timeout: config.build.defaultTimeout,
         encoding: 'utf-8',
@@ -140,7 +146,7 @@ export const BUILD_STRATEGIES = {
   go: {
     detect: (files) => files.some((f) => f === 'go.mod'),
     build: (tempDir) => {
-      const output = execSync('go build ./...', {
+      const output = execFileSync('go', ['build', './...'], {
         cwd: tempDir,
         timeout: config.build.goTimeout,
         encoding: 'utf-8',
@@ -149,7 +155,7 @@ export const BUILD_STRATEGIES = {
       return { success: true, output: output || 'go build passed', exitCode: 0 };
     },
     test: (tempDir) => {
-      const output = execSync('go test ./...', {
+      const output = execFileSync('go', ['test', './...'], {
         cwd: tempDir,
         timeout: config.build.goTimeout,
         encoding: 'utf-8',
@@ -161,7 +167,7 @@ export const BUILD_STRATEGIES = {
   java: {
     detect: (files) => files.some((f) => f === 'pom.xml'),
     build: (tempDir) => {
-      const output = execSync('mvn compile -q', {
+      const output = execFileSync('mvn', ['compile', '-q'], {
         cwd: tempDir,
         timeout: config.build.javaTimeout,
         encoding: 'utf-8',
@@ -170,7 +176,7 @@ export const BUILD_STRATEGIES = {
       return { success: true, output: output || 'mvn compile passed', exitCode: 0 };
     },
     test: (tempDir) => {
-      const output = execSync('mvn test -q', {
+      const output = execFileSync('mvn', ['test', '-q'], {
         cwd: tempDir,
         timeout: config.build.javaTimeout,
         encoding: 'utf-8',

@@ -180,17 +180,11 @@ describe('Executor', () => {
       model: 'claude-sonnet-4-6',
       storage,
       hooks: {},
+      maxSteps: 3,
     });
-
-    // maxExecutionSteps를 작게 설정해서 빠르게 테스트
-    const { DEFAULTS } = await import('../../src/defaults.js');
-    const original = DEFAULTS.maxExecutionSteps;
-    DEFAULTS.maxExecutionSteps = 3;
 
     const result = await executor.run({ projectId: 'test-proj' });
     expect(result.status).toBe('max-steps-exceeded');
-
-    DEFAULTS.maxExecutionSteps = original;
   });
 });
 

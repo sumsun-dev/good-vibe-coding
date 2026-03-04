@@ -4,12 +4,20 @@
 
 import { inputError } from './lib/core/validators.js';
 
+/** stdin 최대 크기 (10MB) */
+const MAX_STDIN_BYTES = 10 * 1024 * 1024;
+
 /**
  * stdin에서 JSON을 읽는다.
  */
 export async function readStdin() {
   const chunks = [];
+  let totalBytes = 0;
   for await (const chunk of process.stdin) {
+    totalBytes += chunk.length;
+    if (totalBytes > MAX_STDIN_BYTES) {
+      throw inputError(`stdin 입력이 최대 크기(${MAX_STDIN_BYTES / 1024 / 1024}MB)를 초과했습니다`);
+    }
     chunks.push(chunk);
   }
   const raw = Buffer.concat(chunks).toString('utf-8').trim();
@@ -57,3 +65,5 @@ export function parseArgs(args) {
   }
   return result;
 }
+
+export { MAX_STDIN_BYTES };

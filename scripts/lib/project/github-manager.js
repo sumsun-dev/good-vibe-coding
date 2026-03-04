@@ -170,9 +170,18 @@ export function gitInitAndPush(projectDir, remoteUrl) {
   if (!remoteUrl || typeof remoteUrl !== 'string') {
     return { success: false, error: 'remoteUrl이 필요합니다' };
   }
+  if (!/^https?:\/\/.+|^git@.+:.+/.test(remoteUrl)) {
+    return { success: false, error: '유효하지 않은 remoteUrl 형식입니다' };
+  }
 
   try {
     const opts = { cwd: projectDir, stdio: 'pipe', encoding: 'utf-8' };
+
+    // .gitignore 없으면 최소 패턴 자동 생성 (민감 파일 보호)
+    const gitignorePath = join(projectDir, '.gitignore');
+    if (!existsSync(gitignorePath)) {
+      writeFileSync(gitignorePath, MINIMAL_GITIGNORE, 'utf-8');
+    }
 
     execFileSync('git', ['init'], opts);
     execFileSync('git', ['add', '.'], opts);

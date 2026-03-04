@@ -12,6 +12,9 @@ import { AppError, notFoundError } from '../core/validators.js';
 const DEFAULT_CLI_PATH = process.env.GEMINI_CLI_PATH || 'gemini';
 const DEFAULT_TIMEOUT_MS = 120000;
 
+/** 모듈 레벨 캐시: CLI 설치 확인 결과를 path별로 저장 */
+export const _installCache = new Map();
+
 /**
  * Gemini CLI JSON 출력을 파싱하여 정규화된 응답을 반환한다.
  *
@@ -59,14 +62,18 @@ export function parseGeminiCliOutput(stdout, model) {
  */
 export function isGeminiCliInstalled(cliPath) {
   const bin = cliPath || DEFAULT_CLI_PATH;
+  if (_installCache.has(bin)) return _installCache.get(bin);
   try {
     const result = spawnSync(bin, ['--version'], {
       timeout: 5000,
       stdio: ['ignore', 'pipe', 'pipe'],
       encoding: 'utf-8',
     });
-    return result.status === 0;
+    const installed = result.status === 0;
+    _installCache.set(bin, installed);
+    return installed;
   } catch {
+    _installCache.set(bin, false);
     return false;
   }
 }

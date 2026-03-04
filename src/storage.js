@@ -23,24 +23,22 @@ export function resolveStorage(input) {
 export class FileStorage {
   constructor(baseDir) {
     this._baseDir = baseDir;
-    // project-manager의 setBaseDir을 사용하여 인스턴스 경로 설정
-    // 주의: 동일 프로세스에서 여러 FileStorage 인스턴스를 만들면 마지막 것이 적용됨
-    this._initialized = this._init();
-  }
-
-  async _init() {
-    const { setBaseDir } = await import('../scripts/lib/project/project-manager.js');
-    setBaseDir(this._baseDir);
   }
 
   async read(id) {
-    await this._initialized;
-    const { getProject } = await import('../scripts/lib/project/project-manager.js');
-    return getProject(id);
+    const { resolve } = await import('path');
+    const { readFile } = await import('fs/promises');
+    const filePath = resolve(this._baseDir, id, 'project.json');
+    try {
+      const content = await readFile(filePath, 'utf-8');
+      return JSON.parse(content);
+    } catch (err) {
+      if (err.code === 'ENOENT') return null;
+      throw err;
+    }
   }
 
   async write(id, data) {
-    await this._initialized;
     const { resolve } = await import('path');
     const { writeFile, mkdir } = await import('fs/promises');
     const dir = resolve(this._baseDir, id);
@@ -49,9 +47,26 @@ export class FileStorage {
   }
 
   async list() {
-    await this._initialized;
-    const { listProjects } = await import('../scripts/lib/project/project-manager.js');
-    return listProjects();
+    const { resolve } = await import('path');
+    const { readdir, readFile } = await import('fs/promises');
+    try {
+      const entries = await readdir(this._baseDir, { withFileTypes: true });
+      const projects = [];
+      for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+        const filePath = resolve(this._baseDir, entry.name, 'project.json');
+        try {
+          const content = await readFile(filePath, 'utf-8');
+          projects.push(JSON.parse(content));
+        } catch {
+          // skip invalid entries
+        }
+      }
+      return projects;
+    } catch (err) {
+      if (err.code === 'ENOENT') return [];
+      throw err;
+    }
   }
 }
 

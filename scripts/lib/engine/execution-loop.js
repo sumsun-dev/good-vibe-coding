@@ -75,7 +75,8 @@ export async function advanceExecution(projectId, stepResult) {
     }
   }
 
-  // 실행 완료 시 PR 자동 생성 (fire-and-forget)
+  // WARNING: fire-and-forget — PR 생성이 advanceExecution 반환 이후에 완료될 수 있음.
+  // 호출자가 PR 결과에 의존하면 안 됨. 실패 시 stderr로만 로깅.
   if (updatedProject.executionState.status === 'completed' && config.github.enabled) {
     const projectDir = getProjectDir(projectId);
     finalizeWithPR(projectDir, {

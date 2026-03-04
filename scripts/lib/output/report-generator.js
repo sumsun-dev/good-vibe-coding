@@ -10,14 +10,14 @@ import { getCostSummary, getAgentPerformanceSummary } from '../project/project-m
  * @returns {string} 보고서 마크다운
  */
 function generateOverviewSection(project, stats, team) {
-  return `# 프로젝트 보고서: ${project.name}
+  return `# 프로젝트 보고서: ${project.name || '(이름 없음)'}
 
 ## 개요
-- 프로젝트: ${project.name} (${project.type})
+- 프로젝트: ${project.name || '(이름 없음)'} (${project.type || 'custom'})
 - 팀원: ${team.length}명
 - 작업: ${stats.totalTasks}개 (완료: ${stats.completed})
-- 모드: ${project.mode}
-- 상태: ${project.status}`;
+- 모드: ${project.mode || '-'}
+- 상태: ${project.status || '-'}`;
 }
 
 function generateTeamSection(team, tasks) {
@@ -36,7 +36,7 @@ ${roleSummaries}`;
 function generatePlanSection(project) {
   return `## 기획서
 
-${project.discussion.planDocument || '(기획서 없음)'}`;
+${project.discussion?.planDocument || '(기획서 없음)'}`;
 }
 
 function generateStatsTable(stats) {
