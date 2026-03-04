@@ -181,7 +181,14 @@ export async function listProjects() {
   try {
     const dirs = await readdir(baseDir, { withFileTypes: true });
     const results = await Promise.all(
-      dirs.filter((d) => d.isDirectory()).map((d) => getProject(d.name)),
+      dirs.filter((d) => d.isDirectory()).map(async (d) => {
+        try {
+          return await getProject(d.name);
+        } catch {
+          process.stderr.write(`[gvc] 손상된 프로젝트 건너뜀: ${d.name}\n`);
+          return null;
+        }
+      }),
     );
     return results.filter(Boolean);
   } catch (err) {

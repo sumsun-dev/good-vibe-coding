@@ -18,7 +18,7 @@ append_history() {
   local total_rounds="${8:-1}"
   local sla_score="${9:-null}"
 
-  node "${SCRIPT_DIR}/lib/improvement/history-analyzer.js" append \
+  node "${SCRIPT_DIR}/lib/history-analyzer.js" append \
     "$HISTORY_FILE" "$date" "$issues" "$categories" "$approved" "$fix_cycles" "$pr_url" "$stop_reason" "$total_rounds" "$sla_score" \
     2>>"${LOG_FILE:-/dev/stderr}" || {
     log "WARNING: Node.js append_history 실패 — Shell fallback"
@@ -69,7 +69,7 @@ read_recent_history() {
 build_history_summary() {
   local output_file="${RUN_DIR}/history-summary.txt"
 
-  node "${SCRIPT_DIR}/lib/improvement/history-analyzer.js" summary \
+  node "${SCRIPT_DIR}/lib/history-analyzer.js" summary \
     "$HISTORY_FILE" "${HISTORY_DAYS:-7}" > "$output_file" 2>>"${LOG_FILE:-/dev/stderr}" || {
     log "WARNING: Node.js build_history_summary 실패 — 기본값 사용"
     echo "실행 이력 없음 (첫 실행)" > "$output_file"
@@ -82,7 +82,7 @@ update_merged_status() {
     return 0
   fi
 
-  node "${SCRIPT_DIR}/lib/improvement/history-analyzer.js" update-merged \
+  node "${SCRIPT_DIR}/lib/history-analyzer.js" update-merged \
     "$HISTORY_FILE" 2>>"${LOG_FILE:-/dev/stderr}" || {
     log "WARNING: Node.js update_merged_status 실패 — 건너뜀"
   }

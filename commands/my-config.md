@@ -25,9 +25,9 @@
 │ Agents: {N}개  Skills: {N}개          │
 │ Commands: {N}개  Hooks: {N}개         │
 │                                       │
-│ 📁 설정 파일:                          │
-│   ~/.claude/CLAUDE.md          ✅     │
-│   ~/.claude/rules/core.md      ✅     │
+│ 설정 파일:                              │
+│   ~/.claude/CLAUDE.md          [O]    │
+│   ~/.claude/rules/core.md      [O]    │
 │   ~/.claude/agents/            {상태}  │
 │   ~/.claude/skills/            {상태}  │
 └───────────────────────────────────────┘

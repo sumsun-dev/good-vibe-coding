@@ -6,7 +6,7 @@ import {
   buildReReviewerPrompt,
   buildEvaluatorPrompt,
   buildRoundImproverPrompt,
-} from '../../scripts/lib/improvement/prompt-builder.js';
+} from '../../internal/lib/prompt-builder.js';
 
 describe('prompt-builder', () => {
   describe('buildImproverPrompt', () => {

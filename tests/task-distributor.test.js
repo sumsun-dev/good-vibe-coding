@@ -29,7 +29,7 @@ Node.js, telegraf
 const SAMPLE_TEAM_MEMBER = {
   roleId: 'backend',
   displayName: '도윤',
-  emoji: '🔧',
+  emoji: '',
   role: 'Backend Developer',
   trait: '체계적이고 설계 중심의',
   speakingStyle: '논리적이고 구조화된 설명 스타일',

@@ -41,9 +41,9 @@ const password = process.env.DB_PASSWORD;
 ```
 
 심각도 기준:
-- 🔴 **Critical**: 보안 취약점, 데이터 유실 위험, 런타임 크래시 — 반드시 수정
-- 🟡 **Warning**: 성능 이슈, 확장성 문제, 테스트 부족 — 수정 권장
-- 🟢 **Suggestion**: 네이밍 개선, 코드 스타일, 리팩토링 기회 — 선택적 개선
+- **Critical**: 보안 취약점, 데이터 유실 위험, 런타임 크래시 — 반드시 수정
+- **Warning**: 성능 이슈, 확장성 문제, 테스트 부족 — 수정 권장
+- **Suggestion**: 네이밍 개선, 코드 스타일, 리팩토링 기회 — 선택적 개선
 
 ### 리뷰 요약 형식
 
@@ -54,9 +54,9 @@ const password = process.env.DB_PASSWORD;
 
 | 심각도 | 건수 |
 |--------|------|
-| 🔴 Critical | 0건 |
-| 🟡 Warning | 2건 |
-| 🟢 Suggestion | 3건 |
+| Critical | 0건 |
+| Warning | 2건 |
+| Suggestion | 3건 |
 
 **총평**: 전반적으로 구조가 깔끔합니다. Warning 2건 수정 후 머지 가능합니다.
 **머지 가능 여부**: Critical 0건이므로 수정 후 머지 가능

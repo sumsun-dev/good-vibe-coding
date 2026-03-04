@@ -132,7 +132,7 @@ describe('통합 테스트: 전체 프로젝트 플로우', () => {
 
     const report = generateReport({
       ...project,
-      team: [{ roleId: 'cto', displayName: '민준', emoji: '🏗️', role: 'CTO' }],
+      team: [{ roleId: 'cto', displayName: '민준', emoji: '', role: 'CTO' }],
     });
     expect(report).toContain('plan-execute');
   });

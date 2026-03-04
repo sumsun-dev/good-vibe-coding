@@ -20,7 +20,7 @@ const SAMPLE_TEAM = [
   {
     roleId: 'cto',
     displayName: '민준',
-    emoji: '🏗️',
+    emoji: '',
     role: 'CTO',
     trait: '전략적이고 큰 그림을 보는',
     speakingStyle: '확신 있고 명확한 기술 리더 스타일',
@@ -30,7 +30,7 @@ const SAMPLE_TEAM = [
   {
     roleId: 'po',
     displayName: '서윤',
-    emoji: '📋',
+    emoji: '',
     role: 'Product Owner',
     trait: '사용자 중심의',
     speakingStyle: '친절하고 체계적인 스타일',
@@ -40,7 +40,7 @@ const SAMPLE_TEAM = [
   {
     roleId: 'fullstack',
     displayName: '현우',
-    emoji: '⚡',
+    emoji: '',
     role: 'Full-stack Developer',
     trait: '실용적이고 빠른',
     speakingStyle: '간결하고 직접적인 스타일',
@@ -50,7 +50,7 @@ const SAMPLE_TEAM = [
   {
     roleId: 'backend',
     displayName: '도윤',
-    emoji: '🔧',
+    emoji: '',
     role: 'Backend Developer',
     trait: '체계적이고 설계 중심의',
     speakingStyle: '논리적이고 구조화된 설명 스타일',
@@ -60,7 +60,7 @@ const SAMPLE_TEAM = [
   {
     roleId: 'qa',
     displayName: '지민',
-    emoji: '🧪',
+    emoji: '',
     role: 'QA Engineer',
     trait: '빈틈없이 꼼꼼한',
     speakingStyle: '조심스럽고 혹시... 로 시작하는 스타일',
@@ -70,7 +70,7 @@ const SAMPLE_TEAM = [
   {
     roleId: 'tech-writer',
     displayName: '수아',
-    emoji: '📝',
+    emoji: '',
     role: 'Technical Writer',
     trait: '명확하고 간결한',
     speakingStyle: '정리된 문서 스타일',
@@ -152,9 +152,9 @@ describe('buildAgentAnalysisPrompt', () => {
 
 describe('buildSynthesisPrompt', () => {
   const agentOutputs = [
-    { roleId: 'cto', role: 'CTO', emoji: '🏗️', analysis: 'Node.js + telegraf 추천' },
-    { roleId: 'backend', role: 'Backend Developer', emoji: '🔧', analysis: 'REST API 설계 필요' },
-    { roleId: 'qa', role: 'QA Engineer', emoji: '🧪', analysis: '테스트 전략 수립' },
+    { roleId: 'cto', role: 'CTO', emoji: '', analysis: 'Node.js + telegraf 추천' },
+    { roleId: 'backend', role: 'Backend Developer', emoji: '', analysis: 'REST API 설계 필요' },
+    { roleId: 'qa', role: 'QA Engineer', emoji: '', analysis: '테스트 전략 수립' },
   ];
 
   it('프로젝트 정보를 포함한다', () => {
@@ -510,5 +510,28 @@ describe('checkConvergence 빈 reviews noReviews 플래그', () => {
     const result = checkConvergence([]);
     expect(result.noReviews).toBe(true);
     expect(result.converged).toBe(false);
+  });
+});
+
+describe('buildSynthesisPrompt 프롬프트 크기 제한', () => {
+  it('3000자 초과 analysis를 절단한다', () => {
+    const longAnalysis = 'A'.repeat(5000);
+    const agentOutputs = [
+      { roleId: 'cto', role: 'CTO', emoji: '', analysis: longAnalysis },
+    ];
+    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
+    expect(prompt).not.toContain('A'.repeat(5000));
+    expect(prompt).toContain('A'.repeat(3000));
+    expect(prompt).toContain('...(이하 생략)');
+  });
+
+  it('3000자 이하 analysis는 절단하지 않는다', () => {
+    const shortAnalysis = 'B'.repeat(2000);
+    const agentOutputs = [
+      { roleId: 'cto', role: 'CTO', emoji: '', analysis: shortAnalysis },
+    ];
+    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
+    expect(prompt).toContain(shortAnalysis);
+    expect(prompt).not.toContain('...(이하 생략)');
   });
 });

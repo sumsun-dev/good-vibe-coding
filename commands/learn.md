@@ -16,7 +16,7 @@
 
 **공통 (모든 역할):**
 ```
-📚 Claude Code 학습 가이드
+Claude Code 학습 가이드
 
 [공통 기초]
 1. Claude Code란 무엇인가? (/learn 기초)

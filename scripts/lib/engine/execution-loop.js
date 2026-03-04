@@ -92,7 +92,16 @@ export async function advanceExecution(projectId, stepResult) {
           });
         }
       })
-      .catch((err) => { process.stderr.write(`[gvc] PR creation error: ${err.message}\n`); });
+      .catch(async (err) => {
+        process.stderr.write(`[gvc] PR creation error: ${err.message}\n`);
+        try {
+          await addPullRequest(projectId, {
+            url: null,
+            branchName: updatedProject.executionState.branchName,
+            error: err.message,
+          });
+        } catch { /* 기록 실패도 무시 — fire-and-forget */ }
+      });
   }
 
   return {

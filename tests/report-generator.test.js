@@ -13,9 +13,9 @@ const SAMPLE_PROJECT = {
   status: 'completed',
   mode: 'plan-execute',
   team: [
-    { roleId: 'cto', displayName: '민준', emoji: '🏗️', role: 'CTO' },
-    { roleId: 'backend', displayName: '도윤', emoji: '🔧', role: 'Backend Developer' },
-    { roleId: 'qa', displayName: '지민', emoji: '🧪', role: 'QA Engineer' },
+    { roleId: 'cto', displayName: '민준', emoji: '', role: 'CTO' },
+    { roleId: 'backend', displayName: '도윤', emoji: '', role: 'Backend Developer' },
+    { roleId: 'qa', displayName: '지민', emoji: '', role: 'QA Engineer' },
   ],
   discussion: { rounds: [], planDocument: '# 기획서\n내용' },
   tasks: [
@@ -59,7 +59,7 @@ describe('generateRoleSummary', () => {
     const member = {
       roleId: 'backend',
       displayName: '도윤',
-      emoji: '🔧',
+      emoji: '',
       role: 'Backend Developer',
     };
     const tasks = [
@@ -73,7 +73,7 @@ describe('generateRoleSummary', () => {
   });
 
   it('작업 없는 역할도 처리한다', () => {
-    const member = { roleId: 'qa', displayName: '지민', emoji: '🧪', role: 'QA Engineer' };
+    const member = { roleId: 'qa', displayName: '지민', emoji: '', role: 'QA Engineer' };
     const summary = generateRoleSummary(member, []);
     expect(summary).toContain('지민');
     expect(summary).toContain('0개');

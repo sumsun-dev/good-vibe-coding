@@ -70,6 +70,9 @@ describe('computeStateTransition 성능 (#23)', () => {
 
   it('품질 게이트 실패 전이도 10ms 이내이다', () => {
     const project = makeProjectWithNTasks(500);
+    // quality-gate 전이를 테스트하려면 phaseStep이 quality-gate여야 함
+    project.executionState.phaseStep = 'quality-gate';
+    project.executionState.status = 'reviewing';
     const stepResult = {
       completedAction: 'quality-gate',
       qualityGateResult: {

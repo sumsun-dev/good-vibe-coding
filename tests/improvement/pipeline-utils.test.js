@@ -6,7 +6,7 @@ import {
   retryCommand,
   shouldEmergencyStop,
   clearEmergencyStop,
-} from '../../scripts/lib/improvement/pipeline-utils.js';
+} from '../../internal/lib/pipeline-utils.js';
 
 describe('pipeline-utils', () => {
   describe('retryCommand', () => {

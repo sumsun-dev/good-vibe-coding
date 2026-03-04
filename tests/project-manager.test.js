@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdir, rm, readFile } from 'fs/promises';
+import { mkdir, rm, readFile, writeFile } from 'fs/promises';
 import { resolve } from 'path';
 import {
   createProject,
@@ -150,6 +150,17 @@ describe('listProjects', () => {
     const list = await listProjects();
     expect(list).toEqual([]);
   });
+
+  it('손상된 project.json이 있어도 나머지 프로젝트를 정상 조회한다', async () => {
+    const good = await createProject('정상', 'web-app', '정상 프로젝트');
+    // 손상된 프로젝트 디렉토리 생성
+    const corruptDir = resolve(TMP_DIR, 'corrupt-project');
+    await mkdir(corruptDir, { recursive: true });
+    await writeFile(resolve(corruptDir, 'project.json'), '{invalid json!!!');
+    const list = await listProjects();
+    expect(list.length).toBe(1);
+    expect(list[0].id).toBe(good.id);
+  });
 });
 
 describe('updateProjectStatus', () => {
@@ -173,7 +184,7 @@ describe('setProjectTeam', () => {
   it('팀을 설정한다', async () => {
     const project = await createProject('봇', 'telegram-bot', '설명');
     const team = [
-      { roleId: 'cto', personalityVariant: 'visionary', displayName: '민준', emoji: '🏗️' },
+      { roleId: 'cto', personalityVariant: 'visionary', displayName: '민준', emoji: '' },
     ];
     const updated = await setProjectTeam(project.id, team);
     expect(updated.team).toEqual(team);
@@ -182,10 +193,10 @@ describe('setProjectTeam', () => {
   it('팀을 교체한다', async () => {
     const project = await createProject('봇', 'telegram-bot', '설명');
     await setProjectTeam(project.id, [
-      { roleId: 'cto', personalityVariant: 'visionary', displayName: '민준', emoji: '🏗️' },
+      { roleId: 'cto', personalityVariant: 'visionary', displayName: '민준', emoji: '' },
     ]);
     const newTeam = [
-      { roleId: 'backend', personalityVariant: 'architect', displayName: '도윤', emoji: '🔧' },
+      { roleId: 'backend', personalityVariant: 'architect', displayName: '도윤', emoji: '' },
     ];
     const updated = await setProjectTeam(project.id, newTeam);
     expect(updated.team).toEqual(newTeam);

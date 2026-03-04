@@ -4,7 +4,7 @@ import {
   readRecentEntries,
   buildHistorySummary,
   checkMergeStatus,
-} from '../../scripts/lib/improvement/history-analyzer.js';
+} from '../../internal/lib/history-analyzer.js';
 
 describe('history-analyzer', () => {
   describe('buildHistoryEntry', () => {

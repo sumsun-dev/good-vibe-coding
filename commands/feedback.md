@@ -62,7 +62,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js extract-performance --id {프로젝트
 각 제안에 대해 AskUserQuestion으로 승인/거절/수정을 받습니다:
 
 ```
-📝 {roleId} 에이전트 수정 제안
+{roleId} 에이전트 수정 제안
 
 섹션: {section}
 현재: {current}

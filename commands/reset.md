@@ -11,7 +11,7 @@ good-vibe-coding으로 생성된 설정을 초기화합니다.
 `~/.claude/` 디렉토리를 직접 스캔하여 good-vibe-coding이 생성한 파일을 확인합니다.
 
 ```
-📋 현재 설정 파일 목록
+현재 설정 파일 목록
 
 | # | 파일 | 카테고리 | 크기 |
 |---|------|---------|------|
@@ -40,7 +40,7 @@ AskUserQuestion으로 사용자에게 묻습니다:
 
 ### 5단계: 결과 표시
 ```
-✅ 초기화 완료
+초기화 완료
 
 삭제된 파일:
   - CLAUDE.md (백업: CLAUDE.md.backup)
@@ -48,8 +48,8 @@ AskUserQuestion으로 사용자에게 묻습니다:
   - agents/code-reviewer-kr.md (백업됨)
   - agents/tdd-coach-kr.md (백업됨)
 
-💡 새로운 설정을 시작하려면 `/onboarding`을 실행하세요.
-💡 이전 설정을 복원하려면 .backup 파일을 사용하세요.
+새로운 설정을 시작하려면 `/onboarding`을 실행하세요.
+이전 설정을 복원하려면 .backup 파일을 사용하세요.
 ```
 
 ## 주의사항

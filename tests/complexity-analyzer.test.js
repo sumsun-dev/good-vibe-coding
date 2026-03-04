@@ -361,3 +361,27 @@ describe('parseComplexityAnalysis dimensions 검증 강화', () => {
     }
   });
 });
+
+describe('buildComplexityAnalysisPrompt fileStructure 크기 제한', () => {
+  it('1000자 초과 fileStructure를 절단한다', () => {
+    const longStructure = 'dir/'.repeat(500);
+    const prompt = buildComplexityAnalysisPrompt('웹앱', {
+      techStack: ['node'],
+      fileStructure: longStructure,
+      languages: { js: 10 },
+    });
+    expect(prompt).not.toContain(longStructure);
+    expect(prompt).toContain('...(truncated)');
+  });
+
+  it('1000자 이하 fileStructure는 절단하지 않는다', () => {
+    const shortStructure = 'src/index.js\nsrc/app.js';
+    const prompt = buildComplexityAnalysisPrompt('웹앱', {
+      techStack: ['node'],
+      fileStructure: shortStructure,
+      languages: { js: 2 },
+    });
+    expect(prompt).toContain(shortStructure);
+    expect(prompt).not.toContain('...(truncated)');
+  });
+});

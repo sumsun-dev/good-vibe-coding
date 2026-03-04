@@ -16,7 +16,7 @@ function makeMember(roleId, priority = 5) {
   return {
     roleId,
     displayName: roleId.toUpperCase(),
-    emoji: '🤖',
+    emoji: '',
     role: roleId,
     trait: 'test',
     speakingStyle: 'concise',

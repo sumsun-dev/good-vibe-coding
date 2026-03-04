@@ -50,7 +50,7 @@ run_phase3() {
     log_phase "Phase3" "Fixer 세션 종료: ${exit_reason}"
 
     if [[ "$exit_reason" == "timeout" || "$exit_reason" == "killed" ]]; then
-      send_telegram "⚠️" "Phase 3 Fixer ${exit_reason} (cycle ${cycle})"
+      send_telegram "" "Phase 3 Fixer ${exit_reason} (cycle ${cycle})"
       continue
     fi
 

@@ -20,7 +20,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js recommendation-catalog
 ```
 
 응답의 `skills` 배열을 AskUserQuestion으로 보여줍니다.
-이미 설치된 스킬은 ✅ 표시합니다.
+이미 설치된 스킬은 [설치됨] 표시합니다.
 
 직접 스킬명이 지정된 경우 (`/add-skill project-setup`), 해당 스킬을 바로 Step 3으로 진행합니다.
 

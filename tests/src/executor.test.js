@@ -22,7 +22,7 @@ function makeProject(overrides = {}) {
       {
         roleId: 'cto',
         displayName: 'CTO',
-        emoji: '🧑‍💻',
+        emoji: '',
         role: 'CTO',
         skills: ['architecture'],
         reviewDomains: ['architecture'],
@@ -30,7 +30,7 @@ function makeProject(overrides = {}) {
       {
         roleId: 'qa',
         displayName: 'QA',
-        emoji: '🧪',
+        emoji: '',
         role: 'QA',
         skills: ['testing'],
         reviewDomains: ['testing'],
@@ -110,6 +110,7 @@ describe('Executor', () => {
 
     const project = makeProject();
     project.executionState.status = 'escalated';
+    project.executionState.phaseStep = 'quality-gate';
     project.executionState.pendingEscalation = { reason: 'test failure' };
 
     // 에스컬레이션 후 → commit 상태, 그 다음 read에서 completed 반환

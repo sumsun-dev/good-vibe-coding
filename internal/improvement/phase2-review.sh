@@ -62,7 +62,7 @@ run_phase2() {
   log_phase "Phase2" "Claude Reviewer 종료: ${exit_reason}"
 
   if [[ "$exit_reason" == "timeout" || "$exit_reason" == "killed" ]]; then
-    send_telegram "⚠️" "Phase 2 ${exit_reason} — Reviewer 세션이 시간 초과되었습니다"
+    send_telegram "" "Phase 2 ${exit_reason} — Reviewer 세션이 시간 초과되었습니다"
     write_run_file "review-status" "TIMEOUT"
     return "$EXIT_TIMEOUT"
   fi

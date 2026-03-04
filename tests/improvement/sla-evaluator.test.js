@@ -7,7 +7,7 @@ import {
   buildRoundFeedback,
   buildRoundMetrics,
   buildSlaDashboard,
-} from '../../scripts/lib/improvement/sla-evaluator.js';
+} from '../../internal/lib/sla-evaluator.js';
 
 describe('sla-evaluator', () => {
   const fullScores = {
@@ -226,7 +226,7 @@ describe('sla-evaluator', () => {
       expect(dashboard).toContain('SLA 대시보드');
       expect(dashboard).toContain('Round');
       expect(dashboard).toContain('Architecture');
-      expect(dashboard).toContain('✅');
+      expect(dashboard).toContain('O');
     });
 
     it('빈 메트릭이면 기본 메시지를 반환한다', () => {

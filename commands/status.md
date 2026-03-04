@@ -13,7 +13,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js list-projects
 프로젝트가 없으면 아래와 같이 안내하세요:
 
 ```
-📊 프로젝트가 아직 없습니다.
+프로젝트가 아직 없습니다.
 
 시작하려면:
   /hello  → 프로젝트 인프라 셋업
@@ -25,21 +25,21 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js list-projects
 아래 형식으로 대시보드를 출력하세요:
 
 ```
-📊 프로젝트 상태: {이름}
+프로젝트 상태: {이름}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📌 상태: {status}
-🎯 모드: {mode}
-📅 생성일: {createdAt}
+상태: {status}
+모드: {mode}
+생성일: {createdAt}
 
-👥 팀 ({N}명)
-{각 팀원 emoji + 이름 + 역할}
+팀 ({N}명)
+{각 팀원 이름 + 역할}
 
-📋 작업 현황
+작업 현황
 총 {N}개 | 완료: {N} | 진행중: {N} | 대기: {N}
 
 {작업 목록 표}
 
-💰 비용: ${totalCostUsd} (입력: {inputTokens} / 출력: {outputTokens} 토큰)
+비용: ${totalCostUsd} (입력: {inputTokens} / 출력: {outputTokens} 토큰)
 ```
 
 비용/토큰 정보는 프로젝트에 메트릭스 데이터가 있을 때만 표시합니다.

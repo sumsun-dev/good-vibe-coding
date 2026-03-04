@@ -77,7 +77,7 @@ export function buildTaskReviewPrompt(reviewer, task, taskOutput, acceptanceCrit
     }
   }
 
-  return `당신은 ${reviewer.emoji} **${reviewer.displayName}** (${reviewer.role})입니다.
+  return `당신은 **${reviewer.displayName}** (${reviewer.role})입니다.
 다른 팀원의 작업 결과를 리뷰합니다.
 
 ## 당신의 전문 분야
@@ -166,7 +166,7 @@ export function checkQualityGate(reviews) {
   if (passed && importantCount === 0) {
     summary = '품질 게이트 통과';
   } else if (passed && importantCount > maxImportant) {
-    summary = `품질 게이트 통과 (⚠️ 경고: important ${importantCount}건 — 임계치 ${maxImportant}건 초과, 검토 필요)`;
+    summary = `품질 게이트 통과 (경고: important ${importantCount}건 — 임계치 ${maxImportant}건 초과, 검토 필요)`;
   } else if (passed) {
     summary = `품질 게이트 통과 (important ${importantCount}건 검토 권장)`;
   } else {
@@ -198,7 +198,7 @@ export function buildRevisionPrompt(task, implementer, reviews, failureContext =
 
   if (!issuesList) return '';
 
-  let prompt = `당신은 ${implementer.emoji} **${implementer.displayName}** (${implementer.role})입니다.
+  let prompt = `당신은 **${implementer.displayName}** (${implementer.role})입니다.
 
 ## 수정 대상 작업
 - ID: ${task.id}
@@ -210,7 +210,7 @@ ${issuesList}`;
 
   if (failureContext) {
     if (failureContext.attempt >= failureContext.maxAttempts) {
-      prompt += `\n\n⚠️ **마지막 수정 기회입니다.** 이번에 해결하지 못하면 CEO에게 에스컬레이션됩니다.`;
+      prompt += `\n\n**마지막 수정 기회입니다.** 이번에 해결하지 못하면 CEO에게 에스컬레이션됩니다.`;
     }
     prompt += `\n\n## 수정 이력 (시도 ${failureContext.attempt}/${failureContext.maxAttempts})`;
     if (failureContext.previousAttempts && failureContext.previousAttempts.length > 0) {

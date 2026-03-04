@@ -65,7 +65,7 @@ function buildRoleQuestions(teamMember) {
 export function buildAgentAnalysisPrompt(project, teamMember, context = {}) {
   const round = context.round || 1;
 
-  let prompt = `당신은 ${teamMember.emoji} **${teamMember.displayName}** (${teamMember.role})입니다.
+  let prompt = `당신은 **${teamMember.displayName}** (${teamMember.role})입니다.
 
 ## 당신의 성격
 - 특성: ${teamMember.trait}
@@ -114,8 +114,15 @@ export function buildSynthesisPrompt(project, agentOutputs, round) {
     throw inputError('에이전트 분석 결과가 없습니다');
   }
 
+  const MAX_ANALYSIS_LENGTH = 3000;
+
   const analysisSection = agentOutputs
-    .map((o) => `### ${o.emoji} ${o.role} (${o.roleId})\n${o.analysis}`)
+    .map((o) => {
+      const analysis = o.analysis && o.analysis.length > MAX_ANALYSIS_LENGTH
+        ? o.analysis.slice(0, MAX_ANALYSIS_LENGTH) + '\n...(이하 생략)'
+        : o.analysis;
+      return `### ${o.role} (${o.roleId})\n${analysis}`;
+    })
     .join('\n\n---\n\n');
 
   return `다음은 프로젝트 "${project.name}"에 대한 ${agentOutputs.length}명의 팀원 분석 결과입니다.
@@ -161,7 +168,7 @@ ${analysisSection}
  * @returns {string} 리뷰 프롬프트
  */
 export function buildReviewPrompt(teamMember, synthesizedPlan, round) {
-  return `당신은 ${teamMember.emoji} **${teamMember.displayName}** (${teamMember.role})입니다.
+  return `당신은 **${teamMember.displayName}** (${teamMember.role})입니다.
 
 ## 당신의 성격
 - 특성: ${teamMember.trait}

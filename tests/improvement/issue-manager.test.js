@@ -6,7 +6,7 @@ import {
   extractFilePathsFromBody,
   verifyIssueResolution,
   trackCrossRoundIssues,
-} from '../../scripts/lib/improvement/issue-manager.js';
+} from '../../internal/lib/issue-manager.js';
 
 describe('issue-manager', () => {
   describe('verifyCreatedIssues', () => {

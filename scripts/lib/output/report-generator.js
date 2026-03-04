@@ -120,7 +120,7 @@ export function generateRoleSummary(teamMember, tasks) {
       ? tasks.map((t) => `  - ${t.title} (${t.status})`).join('\n')
       : '  - (담당 작업 없음)';
 
-  return `### ${teamMember.emoji} ${teamMember.displayName} (${teamMember.role})
+  return `### ${teamMember.displayName} (${teamMember.role})
 - 담당 작업: ${tasks.length}개 (완료: ${completedCount})
 ${taskList}`;
 }

@@ -157,7 +157,7 @@ export function resolveModel(role, complexity, taskType) {
 export function getTeamSummary(team) {
   if (!team || team.length === 0) return '';
   return team
-    .map((m) => `${m.emoji} **${m.displayName}** (${m.role}) — "${m.greeting}"`)
+    .map((m) => `**${m.displayName}** (${m.role}) — "${m.greeting}"`)
     .join('\n');
 }
 
@@ -175,7 +175,7 @@ export async function buildTeamWithDynamic(roleIds, dynamicRoles = [], options =
     roleId: role.roleId,
     personalityVariant: 'dynamic',
     displayName: role.displayName,
-    emoji: '🔧',
+    emoji: '',
     role: role.displayName,
     trait: role.description || '',
     description: role.description || '',
