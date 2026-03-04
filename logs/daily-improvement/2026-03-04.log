@@ -1674,3 +1674,218 @@ Everything up-to-date
    Start at  15:22:48
    Duration  35.87s (transform 1.19s, setup 0ms, collect 2.66s, tests 16.44s, environment 11ms, prepare 4.88s)
 
+[improve/2026-03-04 cfb4c64] fix(review): [MUST] 이슈 수정 — cycle 2
+ 2 files changed, 224 insertions(+)
+To github.com:sumsun-dev/good-vibe-coding.git
+   91caf2d..cfb4c64  improve/2026-03-04 -> improve/2026-03-04
+Everything up-to-date
+[2026-03-04 15:23:27] [Phase3] Re-reviewer 세션 시작 (cycle 2, timeout: 7200s)...
+PR #31 재리뷰 완료.
+
+- 이전 [MUST] 1건 (`daily-improvement.sh` 경로 참조) → **해결 확인**
+- 신규 [MUST] → **없음**
+- 테스트 1760/1760 pass
+- **[APPROVED]** comment 등록 완료
+[2026-03-04 15:25:13] [Phase3] Re-reviewer 세션 종료: success
+[2026-03-04 15:25:13] [Phase3] 재리뷰 결과: UNKNOWN (cycle 2)
+[2026-03-04 15:25:14] [Phase3] --- 수정 사이클 3/3 ---
+[2026-03-04 15:25:14] [Phase3] Fixer 세션 시작 (cycle 3, timeout: 10800s)...
+The latest review (3rd review) is **[APPROVED]** — all previous [MUST] issues have been resolved and no new [MUST] issues were found.
+
+There are no [MUST] issues to fix in cycle 3. The PR is already approved.
+[2026-03-04 15:25:34] [Phase3] Fixer 세션 종료: success
+[2026-03-04 15:25:34] [Phase3] 미커밋 변경사항 발견, lint/test 확인...
+
+> good-vibe-coding@1.0.0 lint
+> eslint .
+
+
+/home/gv/projects/good-vibe-coding/internal/lib/history-analyzer.js
+  256:7  warning  Unexpected console statement  no-console
+  283:9  warning  Unexpected console statement  no-console
+  288:7  warning  Unexpected console statement  no-console
+
+/home/gv/projects/good-vibe-coding/internal/lib/issue-manager.js
+  234:7  warning  Unexpected console statement  no-console
+  238:7  warning  Unexpected console statement  no-console
+
+/home/gv/projects/good-vibe-coding/internal/lib/pipeline-utils.js
+   99:9  warning  Unexpected console statement  no-console
+  101:9  warning  Unexpected console statement  no-console
+  109:9  warning  Unexpected console statement  no-console
+  113:9  warning  Unexpected console statement  no-console
+  118:7  warning  Unexpected console statement  no-console
+
+/home/gv/projects/good-vibe-coding/internal/lib/prompt-builder.js
+  353:7  warning  Unexpected console statement  no-console
+  356:7  warning  Unexpected console statement  no-console
+  359:7  warning  Unexpected console statement  no-console
+  362:7  warning  Unexpected console statement  no-console
+  372:7  warning  Unexpected console statement  no-console
+  404:7  warning  Unexpected console statement  no-console
+  408:7  warning  Unexpected console statement  no-console
+
+/home/gv/projects/good-vibe-coding/internal/lib/review-parser.js
+  55:9  warning  Unexpected console statement  no-console
+  60:9  warning  Unexpected console statement  no-console
+  62:9  warning  Unexpected console statement  no-console
+  68:7  warning  Unexpected console statement  no-console
+  72:7  warning  Unexpected console statement  no-console
+  76:7  warning  Unexpected console statement  no-console
+
+/home/gv/projects/good-vibe-coding/internal/lib/sla-evaluator.js
+  255:9  warning  Unexpected console statement  no-console
+  261:9  warning  Unexpected console statement  no-console
+  279:7  warning  Unexpected console statement  no-console
+  296:9  warning  Unexpected console statement  no-console
+  300:7  warning  Unexpected console statement  no-console
+  304:7  warning  Unexpected console statement  no-console
+
+✖ 29 problems (0 errors, 29 warnings)
+
+
+> good-vibe-coding@1.0.0 test
+> vitest run
+
+
+ RUN  v3.2.4 /home/gv/projects/good-vibe-coding
+
+ ✓ tests/llm-provider.test.js (30 tests) 8624ms
+   ✓ callLLM > 429 시 재시도 후 성공한다 (#29)  1127ms
+   ✓ callLLM > 3회 실패 시 최종 에러를 던진다 (#29)  7426ms
+사용법: cli.js <command>
+사용 가능한 명령 (116개): create-project, get-project, list-projects, update-status, set-team, execution-progress, report, describe-command, scan-codebase, recommend-team, optimized-team, build-team, role-catalog, project-types, team-summary, design-dynamic-roles, parse-dynamic-roles, build-team-with-dynamic, discussion-prompt, plan-document, single-agent-discussion-prompt, agent-analysis-prompt, synthesis-prompt, review-prompt, check-convergence, group-agents, discussion-dispatch-plan, execution-dispatch-plan, generate-acceptance-criteria, parse-acceptance-criteria, init-execution, next-step, advance-execution, execution-summary, task-distribution-prompt, execution-prompt, execution-plan, execution-plan-with-reviews, get-failure-context, handle-escalation, select-reviewers, task-review-prompt, check-quality-gate, enhanced-quality-gate, revision-prompt, verify-execution, analyze-efficiency, materialize-code, materialize-batch, verify-and-materialize, extract-materializable-blocks, commit-phase, commit-phase-enhanced, eval-create, eval-record, eval-compare, eval-report, eval-list, eval-baseline-prompt, complexity-analysis, parse-complexity, complexity-defaults, connect, disconnect, providers, connected-providers, set-review-strategy, verify-provider, cross-model-review, resolve-review-assignments, gemini-review, extract-performance, improvement-prompt, parse-suggestions, save-agent-override, load-agent-override, list-agent-overrides, merge-agent-override, save-project-override, load-project-override, list-project-overrides, merge-all-overrides, setup-project-infra, check-gh-status, check-gemini-status, create-github-repo, git-init-push, append-claude-md, check-environment, check-version, create-branch, push-branch, current-branch, create-pr, build-pr-body, finalize-pr, build-merge-report, generate-ci, record-metrics, project-metrics, cost-summary, list-templates, get-template, scaffold, add-discussion-round, add-task-reviews, update-task-status, save-task-output, add-task-materialization, build-phase-context, tdd-execution-prompt, is-code-task, recommend-setup, install-setup, list-installed, recommendation-catalog
+사용법: cli.js <command>
+사용 가능한 명령 (116개): create-project, get-project, list-projects, update-status, set-team, execution-progress, report, describe-command, scan-codebase, recommend-team, optimized-team, build-team, role-catalog, project-types, team-summary, design-dynamic-roles, parse-dynamic-roles, build-team-with-dynamic, discussion-prompt, plan-document, single-agent-discussion-prompt, agent-analysis-prompt, synthesis-prompt, review-prompt, check-convergence, group-agents, discussion-dispatch-plan, execution-dispatch-plan, generate-acceptance-criteria, parse-acceptance-criteria, init-execution, next-step, advance-execution, execution-summary, task-distribution-prompt, execution-prompt, execution-plan, execution-plan-with-reviews, get-failure-context, handle-escalation, select-reviewers, task-review-prompt, check-quality-gate, enhanced-quality-gate, revision-prompt, verify-execution, analyze-efficiency, materialize-code, materialize-batch, verify-and-materialize, extract-materializable-blocks, commit-phase, commit-phase-enhanced, eval-create, eval-record, eval-compare, eval-report, eval-list, eval-baseline-prompt, complexity-analysis, parse-complexity, complexity-defaults, connect, disconnect, providers, connected-providers, set-review-strategy, verify-provider, cross-model-review, resolve-review-assignments, gemini-review, extract-performance, improvement-prompt, parse-suggestions, save-agent-override, load-agent-override, list-agent-overrides, merge-agent-override, save-project-override, load-project-override, list-project-overrides, merge-all-overrides, setup-project-infra, check-gh-status, check-gemini-status, create-github-repo, git-init-push, append-claude-md, check-environment, check-version, create-branch, push-branch, current-branch, create-pr, build-pr-body, finalize-pr, build-merge-report, generate-ci, record-metrics, project-metrics, cost-summary, list-templates, get-template, scaffold, add-discussion-round, add-task-reviews, update-task-status, save-task-output, add-task-materialization, build-phase-context, tdd-execution-prompt, is-code-task, recommend-setup, install-setup, list-installed, recommendation-catalog
+
+혹시 이 커맨드를 찾으셨나요? build-team
+사용법: cli.js <command>
+사용 가능한 명령 (116개): create-project, get-project, list-projects, update-status, set-team, execution-progress, report, describe-command, scan-codebase, recommend-team, optimized-team, build-team, role-catalog, project-types, team-summary, design-dynamic-roles, parse-dynamic-roles, build-team-with-dynamic, discussion-prompt, plan-document, single-agent-discussion-prompt, agent-analysis-prompt, synthesis-prompt, review-prompt, check-convergence, group-agents, discussion-dispatch-plan, execution-dispatch-plan, generate-acceptance-criteria, parse-acceptance-criteria, init-execution, next-step, advance-execution, execution-summary, task-distribution-prompt, execution-prompt, execution-plan, execution-plan-with-reviews, get-failure-context, handle-escalation, select-reviewers, task-review-prompt, check-quality-gate, enhanced-quality-gate, revision-prompt, verify-execution, analyze-efficiency, materialize-code, materialize-batch, verify-and-materialize, extract-materializable-blocks, commit-phase, commit-phase-enhanced, eval-create, eval-record, eval-compare, eval-report, eval-list, eval-baseline-prompt, complexity-analysis, parse-complexity, complexity-defaults, connect, disconnect, providers, connected-providers, set-review-strategy, verify-provider, cross-model-review, resolve-review-assignments, gemini-review, extract-performance, improvement-prompt, parse-suggestions, save-agent-override, load-agent-override, list-agent-overrides, merge-agent-override, save-project-override, load-project-override, list-project-overrides, merge-all-overrides, setup-project-infra, check-gh-status, check-gemini-status, create-github-repo, git-init-push, append-claude-md, check-environment, check-version, create-branch, push-branch, current-branch, create-pr, build-pr-body, finalize-pr, build-merge-report, generate-ci, record-metrics, project-metrics, cost-summary, list-templates, get-template, scaffold, add-discussion-round, add-task-reviews, update-task-status, save-task-output, add-task-materialization, build-phase-context, tdd-execution-prompt, is-code-task, recommend-setup, install-setup, list-installed, recommendation-catalog
+오류 [INPUT_ERROR]: name 필드가 필요합니다
+입력 형식을 확인한 후 다시 시도하세요.
+오류 [NOT_FOUND]: 프로젝트를 찾을 수 없습니다: non-existent-id-xyz
+/projects 또는 /status로 목록을 확인하세요.
+ ✓ tests/e2e.test.js (29 tests) 1565ms
+   ✓ E2E: COMMAND_MAP 완전성 > COMMAND_MAP의 모든 커맨드가 실제 핸들러에 존재한다  351ms
+ ✓ tests/execution-verifier.test.js (85 tests) 1320ms
+ ✓ tests/execution-loop.test.js (109 tests) 623ms
+오류 [INPUT_ERROR]: roleId 필드가 필요합니다
+입력 형식을 확인한 후 다시 시도하세요.
+오류 [INPUT_ERROR]: content 필드가 필요합니다
+입력 형식을 확인한 후 다시 시도하세요.
+오류 [INPUT_ERROR]: projectDir 필드가 필요합니다
+입력 형식을 확인한 후 다시 시도하세요.
+오류 [INPUT_ERROR]: projectDir 필드가 필요합니다
+입력 형식을 확인한 후 다시 시도하세요.
+오류 [INPUT_ERROR]: projectDir 필드가 필요합니다
+입력 형식을 확인한 후 다시 시도하세요.
+ ✓ tests/handlers/feedback.test.js (9 tests) 461ms
+오류 [NOT_FOUND]: 프로젝트를 찾을 수 없습니다: nonexistent-xyz
+/projects 또는 /status로 목록을 확인하세요.
+오류 [NOT_FOUND]: 프로젝트를 찾을 수 없습니다: nonexistent-xyz
+/projects 또는 /status로 목록을 확인하세요.
+오류 [NOT_FOUND]: 프로젝트를 찾을 수 없습니다: nonexistent-xyz
+/projects 또는 /status로 목록을 확인하세요.
+오류 [NOT_FOUND]: 프로젝트를 찾을 수 없습니다: nonexistent-xyz
+/projects 또는 /status로 목록을 확인하세요.
+오류 [INPUT_ERROR]: decision 필드가 필요합니다
+입력 형식을 확인한 후 다시 시도하세요.
+오류 [INPUT_ERROR]: 유효하지 않은 결정: invalid. 가능한 값: continue, skip, abort
+입력 형식을 확인한 후 다시 시도하세요.
+ ✓ tests/handlers/execution.test.js (8 tests) 609ms
+오류 [INPUT_ERROR]: 유효하지 않은 상태: archived. 가능한 값: planning, approved, executing, reviewing, completed
+입력 형식을 확인한 후 다시 시도하세요.
+오류 [INPUT_ERROR]: name 필드가 필요합니다
+입력 형식을 확인한 후 다시 시도하세요.
+오류 [NOT_FOUND]: 프로젝트를 찾을 수 없습니다: nonexistent-xyz-123
+/projects 또는 /status로 목록을 확인하세요.
+오류 [INPUT_ERROR]: 유효하지 않은 상태: archived. 가능한 값: planning, approved, executing, reviewing, completed
+입력 형식을 확인한 후 다시 시도하세요.
+ ✓ tests/handlers/project.test.js (4 tests) 650ms
+오류 [INPUT_ERROR]: --type 옵션이 필요합니다
+입력 형식을 확인한 후 다시 시도하세요.
+오류 [INPUT_ERROR]: roleIds 필드가 필요합니다
+입력 형식을 확인한 후 다시 시도하세요.
+ ✓ tests/handlers/team.test.js (8 tests) 541ms
+오류 [NOT_FOUND]: 커맨드 스키마를 찾을 수 없습니다: nonexistent
+/projects 또는 /status로 목록을 확인하세요.
+ ✓ tests/command-schemas.test.js (14 tests) 173ms
+ ✓ tests/template-scaffolder.test.js (27 tests) 127ms
+[gvc] 손상된 프로젝트 건너뜀: corrupt-project
+ ✓ tests/project-manager.test.js (65 tests) 173ms
+ ✓ tests/cross-model-strategy.test.js (24 tests) 84ms
+ ✓ tests/integration.test.js (8 tests) 119ms
+ ✓ tests/cache.test.js (6 tests) 62ms
+ ✓ tests/auth-manager.test.js (28 tests) 43ms
+ ✓ tests/project-scaffolder.test.js (19 tests) 54ms
+ ✓ tests/project-metrics.test.js (24 tests) 46ms
+ ✓ tests/codebase-scanner.test.js (19 tests) 47ms
+ ✓ tests/file-writer.test.js (19 tests) 39ms
+ ✓ tests/eval-engine.test.js (51 tests) 43ms
+ ✓ tests/code-materializer.test.js (36 tests) 65ms
+ ✓ tests/agent-feedback.test.js (35 tests) 84ms
+ ✓ tests/team-builder.test.js (37 tests) 34ms
+ ✓ tests/setup-installer.test.js (17 tests) 45ms
+ ✓ tests/recommendation-engine.test.js (31 tests) 26ms
+ ✓ tests/ci-generator.test.js (16 tests) 22ms
+ ✓ tests/dispatch-plan-generator.test.js (21 tests) 14ms
+ ✓ tests/template-engine.test.js (9 tests) 64ms
+ ✓ tests/validators.test.js (37 tests) 24ms
+ ✓ tests/improvement/pipeline-utils.test.js (9 tests) 27ms
+ ✓ tests/preset-loader.test.js (21 tests) 21ms
+ ✓ tests/improvement/issue-manager.test.js (28 tests) 22ms
+ ✓ tests/src/storage.test.js (13 tests) 10ms
+ ✓ tests/sdk/good-vibe.integration.test.js (9 tests) 21ms
+ ✓ tests/progress-formatter.test.js (31 tests) 7ms
+ ✓ tests/env-checker.test.js (15 tests) 6ms
+ ✓ tests/report-generator.test.js (10 tests) 15ms
+ ✓ tests/orchestrator.test.js (54 tests) 20ms
+ ✓ tests/review-engine.test.js (61 tests) 14ms
+ ✓ tests/clarity-analyzer.test.js (53 tests) 34ms
+ ✓ tests/complexity-analyzer.test.js (37 tests) 22ms
+ ✓ tests/pr-manager.test.js (31 tests) 13ms
+ ✓ tests/state-machine-benchmark.test.js (4 tests) 17ms
+ ✓ tests/improvement/review-parser.test.js (23 tests) 5ms
+ ✓ tests/improvement/history-analyzer.test.js (36 tests) 10ms
+ ✓ tests/improvement/sla-evaluator.test.js (30 tests) 9ms
+ ✓ tests/task-distributor.test.js (37 tests) 11ms
+ ✓ tests/src/good-vibe.test.js (16 tests) 9ms
+ ✓ tests/agent-optimizer.test.js (37 tests) 28ms
+ ✓ tests/src/executor.test.js (13 tests) 10ms
+ ✓ tests/github-manager.test.js (21 tests) 10ms
+ ✓ tests/json-parser.test.js (23 tests) 7ms
+ ✓ tests/gemini-bridge.test.js (22 tests) 17ms
+ ✓ tests/handlers/review.test.js (4 tests) 4ms
+ ✓ tests/branch-manager.test.js (20 tests) 9ms
+ ✓ tests/improvement/prompt-builder.test.js (37 tests) 8ms
+ ✓ tests/src/defaults.test.js (5 tests) 3ms
+ ✓ tests/handlers/build.test.js (11 tests) 8ms
+ ✓ tests/src/discusser.test.js (6 tests) 8ms
+ ✓ tests/dynamic-role-designer.test.js (13 tests) 6ms
+ ✓ tests/discussion-engine.test.js (23 tests) 7ms
+ ✓ tests/handlers/metrics.test.js (5 tests) 13ms
+ ✓ tests/schema-validator.test.js (20 tests) 6ms
+ ✓ tests/commit-message-builder.test.js (19 tests) 6ms
+ ✓ tests/nl-router.test.js (24 tests) 6ms
+ ✓ tests/cli-utils.test.js (12 tests) 5ms
+ ✓ tests/domain-parsers.test.js (18 tests) 7ms
+ ✓ tests/handlers/infra.test.js (6 tests) 6ms
+ ✓ tests/handlers/recommendation.test.js (4 tests) 11ms
+ ✓ tests/agent-instruction-extractor.test.js (10 tests) 11ms
+ ✓ tests/acceptance-criteria.test.js (13 tests) 6ms
+ ✓ tests/handlers/eval.test.js (5 tests) 6ms
+ ✓ tests/prompt-builder.test.js (7 tests) 4ms
+ ✓ tests/handlers/template.test.js (4 tests) 5ms
+ ✓ tests/handlers/discussion.test.js (4 tests) 5ms
+ ✓ tests/handlers/task.test.js (4 tests) 5ms
+ ✓ tests/handler-helpers.test.js (4 tests) 4ms
+ ✓ tests/app-paths.test.js (10 tests) 4ms
+ ✓ tests/handlers/auth.test.js (3 tests) 9ms
+ ✓ tests/update-checker.test.js (7 tests) 4ms
+ ✓ tests/config.test.js (3 tests) 4ms
+
+ Test Files  81 passed (81)
+      Tests  1760 passed (1760)
+   Start at  15:25:36
+   Duration  35.96s (transform 1.19s, setup 0ms, collect 2.64s, tests 16.32s, environment 11ms, prepare 5.08s)
+
