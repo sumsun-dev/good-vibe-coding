@@ -347,48 +347,89 @@ github.enabled = true
 
 ## Daily Improvement 자율 파이프라인
 
-VPS + Claude Code CLI로 매일 KST 자정에 코드베이스를 **멀티 세션 파이프라인**으로 자동 분석 → 이슈 생성 → 코드 수정 → PR 생성 → 독립 리뷰 → 수정 루프 → 보고서 → 머지 요청. CEO는 GitHub에서 merge만 결정.
+VPS + Claude Code CLI로 매일 KST 자정에 코드베이스를 **Round Loop 파이프라인**으로 자동 분석 → 이슈 생성 → 코드 수정 → PR 생성 → 독립 리뷰 → 수정 루프 → SLA 평가 → SLA 달성까지 반복 → 보고서 → 머지 요청. CEO는 GitHub에서 merge만 결정.
 
 ```
 daily-improvement.sh (오케스트레이터)
   │
-  ├─ Phase 0: 사전 준비
+  ├─ Phase 0: 사전 준비                                    [1회]
   │  flock → git pull → npm ci → 데이터 수집 → 브랜치 생성
   │
-  ├─ Phase 1: 분석 + 수정 + PR (Claude Session 1 — Improver)
-  │  이슈 생성 → 코드 수정 → lint/test → 커밋 → push → PR
-  │  발견 없으면 → 브랜치 삭제, 즉시 종료
+  ├─── Round Loop (SLA 달성까지 반복) ──────────────────────┐
+  │ │                                                       │
+  │ ├─ Phase 1: 분석 + 수정 + PR (Claude Improver)          │
+  │ │  Round 1: 이슈 생성 + 코드 수정 + lint/test + PR      │
+  │ │  Round 2+: SLA 미달 영역 집중 + 같은 PR에 추가 커밋   │
+  │ │                                                       │
+  │ ├─ Phase 1.5: 이슈 검증 (issue-manager)                 │
+  │ │  생성 이슈 확인, closes 링크 검증                      │
+  │ │                                                       │
+  │ ├─ Phase 2: 독립 리뷰 (Claude Reviewer)                 │
+  │ │  gh pr diff → 보안/성능/정확성 → approve/request      │
+  │ │                                                       │
+  │ ├─ Phase 3: 수정 루프 (최대 5사이클)                    │
+  │ │  APPROVED면 건너뜀                                    │
+  │ │  Fixer(수정+push) → Re-reviewer(재리뷰)               │
+  │ │                                                       │
+  │ └─ Phase Eval: 7영역 SLA 평가                           │
+  │    ├─ SLA 달성 → break                                  │
+  │    ├─ 개선 정체 → break                                 │
+  │    └─ SLA 미달 → 피드백 주입 → 다음 라운드              │
+  │    ※ 세션 오류 시 checkpoint 저장 → 재개 가능           │
+  └─────────────────────────────────────────────────────────┘
   │
-  ├─ Phase 2: 독립 리뷰 (Claude Session 2 — Reviewer)
-  │  gh pr diff → 보안/성능/정확성 → approve or request-changes
-  │
-  ├─ Phase 3: 수정 루프 (최대 3사이클)
-  │  APPROVED면 건너뜀
-  │  각 사이클: Fixer(수정+push) → Re-reviewer(재리뷰)
-  │  3회 실패 → CEO에게 넘김
-  │
-  └─ Phase 4: 보고서 + 머지 요청
-     PR body 업데이트 → merge-ready 라벨 → 텔레그램 알림
+  └─ Phase 4: 보고서 + 머지 요청                            [1회]
+     SLA 대시보드 + 라운드별 메트릭 + 텔레그램 알림
 ```
+
+### 7영역 SLA 평가
+
+| 영역 | 평가 대상 |
+|------|----------|
+| architecture | 모듈 구조, 의존성, SRP, 레이어 분리 |
+| safety | 보안 취약점, 입력 검증, injection 방지 |
+| promptQuality | AI 프롬프트 명확성, 출력 형식 강제 |
+| reflection | 히스토리 반영, 적응형 분석 |
+| errorHandling | AppError 사용, graceful degradation |
+| testCoverage | 테스트 존재/품질, 커버리지 |
+| docConsistency | CLAUDE.md/README.md와 코드 일치 |
+
+- SLA 목표: 7.0/10 (환경변수 `SLA_TARGET`으로 조정)
+- 개선 정체 감지: 라운드 간 평균 개선폭 < 0.3이면 조기 종료
+
+### 이슈 관리
+
+- Phase 1.5에서 `issue-manager.js`가 이슈 검증
+- 생성 이슈 vs GitHub 실제 이슈 교차 확인
+- PR body의 `closes #N` 링크 검증
+- 라운드 간 이슈 추적 (이전 라운드 미해결 → 다음 라운드 피드백 주입)
 
 ### 파일 구조
 
 ```
 scripts/
-  daily-improvement.sh              # 오케스트레이터 (Phase 0→1→2→3→4 순차 실행)
+  daily-improvement.sh              # 오케스트레이터 (Phase 0 → Round Loop → Phase 4)
   improvement/
-    config.env                      # 타임아웃, 정책 상수, 텔레그램 설정
+    config.env                      # 타임아웃, SLA/Round/Session 상수
     lib/
-      common.sh                     # log, send_telegram, cleanup, assert_not_on_master
-      prompts.sh                    # Improver/Reviewer/Fixer 프롬프트 생성
+      common.sh                     # log, checkpoint, classify_claude_error, run_claude_safe
+      prompts.sh                    # Improver/Reviewer/Fixer/Evaluator/RoundImprover 프롬프트
       history.sh                    # history.jsonl 읽기/쓰기/요약
     phase0-prepare.sh               # git pull, npm ci, 데이터 수집, 브랜치 생성
-    phase1-improve.sh               # Claude Improver + PR 생성
+    phase1-improve.sh               # Claude Improver + PR 생성 (Round 인식)
     phase2-review.sh                # Claude Reviewer + CI 대기
     phase3-fix-loop.sh              # fix-review 사이클 루프
-    phase4-report.sh                # 보고서 + 텔레그램 + 히스토리 기록
+    phase-eval.sh                   # 7영역 SLA 품질 평가
+    phase4-report.sh                # 보고서 + SLA 대시보드 + 텔레그램 + 히스토리
+scripts/lib/improvement/
+  prompt-builder.js                 # Improver/Reviewer/Fixer/Evaluator/RoundImprover 프롬프트 생성
+  history-analyzer.js               # history.jsonl CRUD + 요약 (totalRounds/slaScore 포함)
+  sla-evaluator.js                  # 7영역 SLA 점수 파싱, 달성 판정, 피드백 생성
+  issue-manager.js                  # 이슈 검증, closes 연결, stale 정리
+  review-parser.js                  # 리뷰 결과 파싱
+  pipeline-utils.js                 # 파이프라인 유틸리티
 logs/daily-improvement/
-  history.jsonl                     # 실행 이력 (append-only)
+  history.jsonl                     # 실행 이력 (append-only, totalRounds/slaScore 포함)
 ```
 
 ### 실행 정보
@@ -404,9 +445,10 @@ logs/daily-improvement/
 |-------|----------|------|
 | Phase 1 (Improver) | 4h | 분석+수정+테스트 |
 | Phase 2 (Reviewer) | 2h | 컨텍스트 읽기+깊이 리뷰 |
-| Phase 3 (Fixer) | 3h/사이클 | 수정 작업 |
-| Phase 3 (Re-reviewer) | 2h/사이클 | 재리뷰 |
-| 전체 파이프라인 | 12h | 최악: 4h+2h+3cycle×5h |
+| Phase 3 (Fixer) | 1.5h/사이클 | 수정 작업 |
+| Phase 3 (Re-reviewer) | 1h/사이클 | 재리뷰 |
+| Phase Eval (Evaluator) | 1h | 7영역 SLA 평가 (read-only) |
+| 전체 파이프라인 | 14h | Round Loop × N (14h에 graceful 종료) |
 
 ### 리뷰 품질 기준
 
@@ -422,16 +464,23 @@ logs/daily-improvement/
 | 안전장치 | 구현 |
 |----------|------|
 | 동시 실행 방지 | `flock -n` (파일 락) |
-| 전체 타임아웃 | watchdog 프로세스 (12h) |
+| 전체 타임아웃 | watchdog 프로세스 (14h) |
 | Phase별 타임아웃 | `timeout N claude -p` |
 | master 직접 커밋 방지 | `assert_not_on_master()` |
-| lint/test 실패 롤백 | `git checkout -- .` |
+| lint/test 실패 롤백 | `git reset HEAD && git checkout -- .` |
 | 빈 PR 방지 | `git diff --name-only` 확인 |
-| Claude 세션 실패 | exit code 124/137 감지 → 텔레그램 알림 |
-| 텔레그램 실패 내성 | `|| true` |
+| Claude 세션 한도 재시도 | `run_claude_safe` — 세션 한도 시 5분 대기 후 새 세션 (최대 3회) |
+| Claude 주간 한도 | checkpoint 저장 → 텔레그램 알림 → 다음 실행에서 재개 |
+| Claude 인증 만료 | 텔레그램 "재로그인 필요" 알림 → 즉시 종료 |
+| 네트워크 오류 | 5분 대기 후 재시도 (최대 3회) |
+| Checkpoint/재개 | `checkpoint.json`에 라운드/Phase 진행상황 저장 → 다음 실행에서 자동 재개 |
+| 긴급 정지 파일 | `/tmp/gv-daily-improvement.stop` 감지 시 즉시 중단 |
+| gh CLI 재시도 | `retry_gh` — exponential backoff (최대 3회) |
+| 텔레그램 실패 내성 | `\|\| true` |
 | 30일 로그 정리 | `find -mtime +30 -delete` |
+| SLA 정체 감지 | 라운드 간 개선폭 < 0.3이면 조기 종료 |
 
-**중단 기준**: 빈 결과 3회 연속, merge율 < 20%, 같은 이슈 3회+ 반복 중 2개 이상 해당 시
+**중단 기준**: SLA 달성, 개선 정체, 시간 제한, 세션/주간 한도 소진, 빈 결과 3회 연속
 
 ## 코드 구체화 파이프라인
 

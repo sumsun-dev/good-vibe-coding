@@ -7,22 +7,33 @@ run_phase1() {
 
   assert_not_on_master
 
-  # ── Improver 프롬프트 생성 ─────────────────────────────
+  # ── Improver 프롬프트 생성 (Round 2+는 round-improver) ──
   local prompt
-  prompt=$(build_improver_prompt "$RUN_DIR")
+  if [[ "${CURRENT_ROUND:-1}" -gt 1 ]]; then
+    prompt=$(build_round_improver_prompt "$RUN_DIR" "$CURRENT_ROUND")
+  else
+    prompt=$(build_improver_prompt "$RUN_DIR")
+  fi
 
-  # ── Claude Improver 세션 실행 ──────────────────────────
-  log_phase "Phase1" "Claude Improver 세션 시작 (timeout: ${PHASE1_TIMEOUT}s)..."
+  # ── Claude Improver 세션 실행 (run_claude_safe 래퍼) ───
+  log_phase "Phase1" "Claude Improver 세션 시작 (Round ${CURRENT_ROUND:-1}, timeout: ${PHASE1_TIMEOUT}s)..."
 
   local claude_exit=0
-  timeout "$PHASE1_TIMEOUT" claude -p "$prompt" --dangerously-skip-permissions >> "$LOG_FILE" 2>&1 || claude_exit=$?
+  run_claude_safe "$prompt" "Phase1" "/dev/null" "$PHASE1_TIMEOUT" "yes" || claude_exit=$?
 
   local exit_reason
   exit_reason=$(interpret_claude_exit "$claude_exit")
   log_phase "Phase1" "Claude 세션 종료: ${exit_reason}"
 
   if [[ "$exit_reason" == "timeout" || "$exit_reason" == "killed" ]]; then
-    send_telegram "⚠️" "Phase 1 ${exit_reason} — Improver 세션이 시간 초과되었습니다"
+    send_telegram "⚠️" "코드 분석이 시간 초과되었습니다"
+    # 미커밋 변경사항 백업 후 정리
+    if has_changes; then
+      git diff > "${RUN_DIR}/rollback-phase1-timeout.patch" 2>/dev/null || true
+      git reset HEAD >> "$LOG_FILE" 2>&1 || true
+      git checkout -- . 2>/dev/null || true
+      git clean -fd 2>/dev/null || true
+    fi
     write_run_file "phase1-exit-code" "$EXIT_TIMEOUT"
     return "$EXIT_TIMEOUT"
   fi
@@ -58,16 +69,17 @@ run_phase1() {
       log_phase "Phase1" "lint/test 실패 — 변경사항 백업 후 롤백"
       git diff > "${RUN_DIR}/rollback-phase1.patch" 2>/dev/null || true
       git diff --cached > "${RUN_DIR}/rollback-phase1-staged.patch" 2>/dev/null || true
+      git reset HEAD >> "$LOG_FILE" 2>&1 || true
       git checkout -- . 2>/dev/null || true
       git clean -fd 2>/dev/null || true
 
       if [[ "$lint_ok" == "false" ]]; then
         write_run_file "phase1-exit-code" "$EXIT_LINT_FAIL"
-        send_telegram "⚠️" "Phase 1 lint 실패 — 코드 롤백, 이슈만 유지됨"
+        send_telegram "⚠️" "코드 검사 실패 — 수정을 되돌렸습니다 (이슈는 유지)"
         return "$EXIT_LINT_FAIL"
       else
         write_run_file "phase1-exit-code" "$EXIT_TEST_FAIL"
-        send_telegram "⚠️" "Phase 1 test 실패 — 코드 롤백, 이슈만 유지됨"
+        send_telegram "⚠️" "테스트 실패 — 수정을 되돌렸습니다 (이슈는 유지)"
         return "$EXIT_TEST_FAIL"
       fi
     fi
@@ -89,6 +101,16 @@ run_phase1() {
   # ── Push + PR 생성 ────────────────────────────────────
   log_phase "Phase1" "Push..."
   git push -u origin "$BRANCH_NAME" >> "$LOG_FILE" 2>&1
+
+  # Round 2+: PR은 이미 존재 → push만, PR 생성 스킵
+  if [[ "${CURRENT_ROUND:-1}" -gt 1 ]]; then
+    log_phase "Phase1" "Round ${CURRENT_ROUND}: 기존 PR에 추가 커밋 push"
+    gh issue list --label "automated,improvement" --state open --json number \
+      --jq '.[].number' > "${RUN_DIR}/issues-created.txt" 2>/dev/null || true
+    write_run_file "phase1-exit-code" "0"
+    log_phase "Phase1" "=== 분석 + 수정 완료 (Round ${CURRENT_ROUND}) ==="
+    return 0
+  fi
 
   # PR이 이미 생성되었는지 확인 (Claude가 생성했을 수 있음)
   local existing_pr
