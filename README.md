@@ -331,7 +331,7 @@ good-vibe-coding/
 ├── agents/          23개 에이전트 (팀 15 + 서포트 8)
 ├── commands/        20개 슬래시 커맨드 정의
 ├── scripts/
-│   ├── cli.js       내부 API 라우터 (116개 커맨드)
+│   ├── cli.js       내부 API 라우터 (114개 커맨드)
 │   ├── handlers/    14개 핸들러 모듈
 │   └── lib/         53개 코어 라이브러리
 │       ├── core/        기반 유틸 (validators, config, cache 등)

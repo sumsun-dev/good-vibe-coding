@@ -77,7 +77,7 @@ export function isValidTransition(from, to) {
 export function createInitialExecutionState(mode = 'interactive', options = {}) {
   const validModes = ['interactive', 'semi-auto', 'auto'];
   const resolvedMode = validModes.includes(mode) ? mode : 'interactive';
-  const batchSize = resolvedMode === 'semi-auto' ? (options.batchSize || 3) : 0;
+  const batchSize = resolvedMode === 'semi-auto' ? options.batchSize || 3 : 0;
 
   return {
     status: 'executing',

@@ -264,7 +264,7 @@ created → planning → approved → executing → reviewing → completed
 
 **CLI 레이어**
 
-- `cli.js` — 라우터 (116개 커맨드, 14개 핸들러로 디스패치)
+- `cli.js` — 라우터 (114개 커맨드, 14개 핸들러로 디스패치)
 - `cli-utils.js` — readStdin, output, outputOk, parseArgs
 - `handlers/*.js` — 14개 핸들러: project, team, discussion, execution, review, build, eval, auth, feedback, infra, metrics, template, task, recommendation
 

@@ -152,9 +152,7 @@ export function estimateRemainingTime(journal, currentPhase, totalPhases) {
 export function formatFailureHistory(journal) {
   if (!Array.isArray(journal) || journal.length === 0) return '실패 이력 없음';
 
-  const failures = journal.filter(
-    (e) => e.failureSummary || e.action === 'escalation-response',
-  );
+  const failures = journal.filter((e) => e.failureSummary || e.action === 'escalation-response');
 
   if (failures.length === 0) return '실패 이력 없음';
 

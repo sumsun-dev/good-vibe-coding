@@ -712,9 +712,7 @@ describe('buildRevisionPrompt ceoGuidance', () => {
   const implementer = { displayName: '도윤', role: 'Backend Developer' };
 
   it('ceoGuidance가 있으면 CEO 지침 섹션을 포함한다', () => {
-    const reviews = [
-      { issues: [{ severity: 'critical', description: '보안 이슈' }] },
-    ];
+    const reviews = [{ issues: [{ severity: 'critical', description: '보안 이슈' }] }];
     const failureContext = {
       attempt: 1,
       maxAttempts: 2,
@@ -729,9 +727,7 @@ describe('buildRevisionPrompt ceoGuidance', () => {
   });
 
   it('ceoGuidance가 없으면 CEO 지침 섹션을 생략한다', () => {
-    const reviews = [
-      { issues: [{ severity: 'critical', description: '이슈' }] },
-    ];
+    const reviews = [{ issues: [{ severity: 'critical', description: '이슈' }] }];
     const failureContext = {
       attempt: 1,
       maxAttempts: 2,

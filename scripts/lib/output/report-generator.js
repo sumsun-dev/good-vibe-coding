@@ -98,9 +98,8 @@ export function generateExecutiveSummary(project, stats) {
   const state = project.executionState;
 
   // 핵심 결과
-  const completionRate = stats.totalTasks > 0
-    ? Math.round((stats.completed / stats.totalTasks) * 100)
-    : 0;
+  const completionRate =
+    stats.totalTasks > 0 ? Math.round((stats.completed / stats.totalTasks) * 100) : 0;
 
   let duration = '-';
   if (state && state.startedAt) {
