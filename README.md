@@ -24,8 +24,14 @@ AI 팀을 만들고, 프로젝트를 함께 굴려보세요.
 
 ### Claude Code 플러그인 (권장)
 
+마켓플레이스를 추가하고 플러그인을 설치합니다 (각각 별도로 실행):
+
 ```bash
-claude plugin add sumsun-dev/good-vibe-coding
+/plugin marketplace add sumsun-dev/good-vibe-coding
+```
+
+```bash
+/plugin install good-vibe-coding@sumsun-dev-good-vibe-coding
 ```
 
 ### 소스에서 직접 설치
@@ -34,17 +40,20 @@ claude plugin add sumsun-dev/good-vibe-coding
 git clone https://github.com/sumsun-dev/good-vibe-coding.git
 cd good-vibe-coding
 npm install
-claude plugin add .
+```
+
+```bash
+/plugin marketplace add .
+```
+
+```bash
+/plugin install good-vibe-coding@good-vibe-coding
 ```
 
 ### 업데이트
 
 ```bash
-# 소스 설치 사용자
-cd good-vibe-coding && git pull && npm install
-
-# 플러그인 사용자
-claude plugin update sumsun-dev/good-vibe-coding
+/plugin marketplace update sumsun-dev-good-vibe-coding
 ```
 
 ### 필요한 것
