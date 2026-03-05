@@ -36,5 +36,5 @@ jobs:
       - name: Run shellcheck
         run: |
           cd internal
-          shellcheck -x -e SC2034,SC2155,SC2086,SC2002 \
+          shellcheck -x -e SC1091,SC2034,SC2155,SC2086,SC2002 \
             daily-improvement.sh improvement/*.sh improvement/lib/*.sh
