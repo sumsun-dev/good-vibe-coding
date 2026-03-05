@@ -45,6 +45,16 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js list-projects
 비용/토큰 정보는 프로젝트에 메트릭스 데이터가 있을 때만 표시합니다.
 메트릭스가 없으면 이 라인을 생략하세요.
 
+### 실패 이력 (실행 중/완료 프로젝트만)
+
+executionState.journal이 있으면 실패/에스컬레이션 이력을 요약합니다:
+
+```
+{formatFailureHistory(executionState.journal)}
+```
+
+실패가 없으면 이 섹션을 생략합니다.
+
 ## Step 3: 다음 단계 안내
 
 현재 상태에 따라 적절한 다음 단계를 안내하세요:

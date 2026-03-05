@@ -27,11 +27,14 @@ header: "모드"
 options:
   - label: "인터랙티브 (Recommended)"
     description: "각 Phase 완료 후 진행 여부를 확인합니다"
+  - label: "세미-오토"
+    description: "3 Phase마다 확인합니다 (배치 실행)"
   - label: "자동 실행"
     description: "에스컬레이션이 필요한 경우에만 중단합니다"
 ```
 
 - **인터랙티브** — 처음 쓰거나, 중간 결과를 보면서 진행하고 싶을 때. Phase 단위로 확인하며 넘어갑니다.
+- **세미-오토** — Phase가 많은 프로젝트에서, 3개씩 묶어서 중간 확인하고 싶을 때.
 - **자동** — 기획이 충분히 검토된 상태에서 빠르게 돌리고 싶을 때. 문제가 생길 때만 멈춥니다.
 
 ### 1.3 실행 시작
@@ -147,13 +150,22 @@ echo '{"reviews": [...], "executionResult": {...}}' | node ${CLAUDE_PLUGIN_ROOT}
 
 #### `fix` — 수정
 
+**수정 시작 시 표시:**
+
+```
+수정 중... (시도 {fixAttempt+1}/{maxFixAttempts})
+이전 실패: {카테고리별 이슈 요약}
+수정 전략: {카테고리 기반 자동 전략}
+담당: {에이전트명}
+```
+
 이전 시도에서 뭘 했고 뭐가 안 됐는지를 포함한 수정 프롬프트를 만들어 담당자에게 보냅니다:
 
 ```bash
 echo '{"task":{...},"implementer":{...},"reviews":[...],"failureContext":{...}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js revision-prompt
 ```
 
-failureContext에는 현재 시도 차수, 최대 시도 횟수, 이전 시도 이력, 이슈 카테고리 분포가 들어있습니다.
+failureContext에는 현재 시도 차수, 최대 시도 횟수, 이전 시도 이력, 이슈 카테고리 분포, CEO 지침(ceoGuidance)이 들어있습니다.
 
 #### `commit` — Phase 커밋
 
@@ -204,9 +216,26 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js get-failure-context --id {ID}
 
 미해결 critical 이슈를 보여준 뒤 세 가지 선택지를 제시합니다:
 
-- **계속 수정** — 한 번 더 시도
-- **건너뛰기** — 이 Phase는 넘어감
-- **중단** — 실행 종료
+- **계속 수정** — 핵심 기능이라 반드시 성공해야 할 때. 한 번 더 시도합니다.
+- **건너뛰기** — 부가 기능이라 나중에 추가할 수 있을 때. 이 Phase를 넘어갑니다.
+- **중단** — 기획 자체를 재검토해야 할 때. 실행을 종료합니다.
+
+"계속 수정" 선택 시 수정 방향을 추가로 질문합니다:
+
+```
+AskUserQuestion: "어떤 방향으로 수정하길 원하시나요? (선택 또는 직접 입력)"
+options:
+  - "AI 팀에게 맡기기" — 기존 전략으로 재시도
+  - "직접 지시" — 구체적인 수정 방향 입력
+```
+
+"직접 지시" 선택 시 CEO의 피드백을 `ceoGuidance`로 전달합니다:
+
+```bash
+echo '{"id":"{ID}","decision":"continue","ceoGuidance":"CEO 지침 내용"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js handle-escalation
+```
+
+"AI 팀에게 맡기기" 선택 시:
 
 ```bash
 echo '{"id":"{ID}","decision":"continue"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js handle-escalation
