@@ -34,4 +34,4 @@ jobs:
       - name: Install shellcheck
         run: sudo apt-get install -y shellcheck
       - name: Run shellcheck
-        run: shellcheck scripts/daily-improvement.sh scripts/improvement/*.sh scripts/improvement/lib/*.sh
+        run: shellcheck internal/daily-improvement.sh internal/improvement/*.sh internal/improvement/lib/*.sh

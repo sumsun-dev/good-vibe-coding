@@ -4,7 +4,7 @@
  * 승인된 수정을 오버라이드 파일로 저장한다.
  */
 
-import { readFile, writeFile, stat, rename } from 'fs/promises';
+import { readFile, writeFile, stat } from 'fs/promises';
 import { resolve } from 'path';
 import { ensureDir, fileExists, listFilesByExtension } from '../core/file-writer.js';
 import { parseJsonArray } from '../core/json-parser.js';
