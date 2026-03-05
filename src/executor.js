@@ -45,6 +45,8 @@ export class Executor {
     const projectId = plan.projectId || (await this._initProject(plan));
     const journal = [];
     let stepCount = 0;
+    let lastActionKey = null;
+    let repeatCount = 0;
 
     while (stepCount++ < this._maxSteps) {
       const project = await this.storage.read(projectId);
@@ -61,6 +63,18 @@ export class Executor {
       if (step.action === 'paused') {
         return { status: 'paused', projectId, journal };
       }
+
+      // 동일 상태 반복 감지 (무한 루프 방지)
+      const actionKey = `${step.action}:${step.phase}`;
+      if (actionKey === lastActionKey) {
+        repeatCount++;
+        if (repeatCount >= 3) {
+          return { status: 'stuck', projectId, journal };
+        }
+      } else {
+        repeatCount = 0;
+      }
+      lastActionKey = actionKey;
 
       const stepResult = await this._handleStep(step, project);
 

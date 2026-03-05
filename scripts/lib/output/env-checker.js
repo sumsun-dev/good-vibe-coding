@@ -77,11 +77,20 @@ export function checkEnvironment() {
   try {
     handlebarsVersion = execFileSync(
       'node',
-      ['-e', "process.stdout.write(require('handlebars/package.json').version)"],
+      ['-e', "import('handlebars/package.json',{with:{type:'json'}}).then(m=>process.stdout.write(m.default.version))"],
       { stdio: 'pipe', encoding: 'utf-8', timeout: 5000 },
     ).trim();
   } catch {
-    // not installed
+    // not installed or import failed — fallback to require
+    try {
+      handlebarsVersion = execFileSync(
+        'node',
+        ['-e', "process.stdout.write(require('handlebars/package.json').version)"],
+        { stdio: 'pipe', encoding: 'utf-8', timeout: 5000 },
+      ).trim();
+    } catch {
+      // not installed
+    }
   }
   const handlebars = { installed: !!handlebarsVersion, version: handlebarsVersion };
 

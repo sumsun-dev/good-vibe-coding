@@ -71,8 +71,23 @@ export class FileStorage {
 }
 
 /**
+ * structuredClone의 안전한 래퍼. 순환 참조 시 JSON fallback.
+ */
+function safeClone(data) {
+  try {
+    return structuredClone(data);
+  } catch {
+    try {
+      return JSON.parse(JSON.stringify(data));
+    } catch {
+      return data; // 최악의 경우 원본 반환 (얕은 복사 리스크)
+    }
+  }
+}
+
+/**
  * 인메모리 스토리지 (테스트/프로토타이핑용).
- * read/write 모두 structuredClone으로 격리.
+ * read/write 모두 safeClone으로 격리.
  */
 export class MemoryStorage {
   constructor() {
@@ -81,14 +96,14 @@ export class MemoryStorage {
 
   async read(id) {
     const data = this._store.get(id);
-    return data ? structuredClone(data) : null;
+    return data ? safeClone(data) : null;
   }
 
   async write(id, data) {
-    this._store.set(id, structuredClone(data));
+    this._store.set(id, safeClone(data));
   }
 
   async list() {
-    return [...this._store.values()].map((v) => structuredClone(v));
+    return [...this._store.values()].map((v) => safeClone(v));
   }
 }

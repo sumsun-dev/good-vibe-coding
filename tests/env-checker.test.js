@@ -152,7 +152,10 @@ describe('env-checker', () => {
         .mockReturnValueOnce('git version 2.40.0\n')
         .mockImplementationOnce(() => {
           throw new Error();
-        }); // handlebars 없음
+        }) // handlebars import 실패
+        .mockImplementationOnce(() => {
+          throw new Error();
+        }); // handlebars require fallback도 실패
 
       checkGhStatus.mockReturnValue({ installed: false, authenticated: false, username: null });
       isGeminiCliInstalled.mockReturnValue(false);

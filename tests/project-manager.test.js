@@ -37,22 +37,22 @@ afterEach(async () => {
 describe('generateProjectId', () => {
   it('영어 이름을 kebab-case + YYYY-MM + suffix로 변환한다', () => {
     const id = generateProjectId('Telegram Bot');
-    expect(id).toMatch(/^telegram-bot-\d{4}-\d{2}-[a-f0-9]{8}$/);
+    expect(id).toMatch(/^telegram-bot-\d{4}-\d{2}-[a-f0-9]{12}$/);
   });
 
   it('한글 이름도 처리한다', () => {
     const id = generateProjectId('텔레그램 봇');
-    expect(id).toMatch(/^텔레그램-봇-\d{4}-\d{2}-[a-f0-9]{8}$/);
+    expect(id).toMatch(/^텔레그램-봇-\d{4}-\d{2}-[a-f0-9]{12}$/);
   });
 
   it('특수문자를 제거한다', () => {
     const id = generateProjectId('My App! (v2)');
-    expect(id).toMatch(/^my-app-v2-\d{4}-\d{2}-[a-f0-9]{8}$/);
+    expect(id).toMatch(/^my-app-v2-\d{4}-\d{2}-[a-f0-9]{12}$/);
   });
 
   it('연속 하이픈을 하나로 줄인다', () => {
     const id = generateProjectId('my   app');
-    expect(id).toMatch(/^my-app-\d{4}-\d{2}-[a-f0-9]{8}$/);
+    expect(id).toMatch(/^my-app-\d{4}-\d{2}-[a-f0-9]{12}$/);
   });
 });
 

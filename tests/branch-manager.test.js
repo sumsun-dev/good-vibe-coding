@@ -135,10 +135,11 @@ describe('branch-manager', () => {
         context: { phase: 1 },
       });
 
-      // checkout baseBranch first, then create new branch
+      // getCurrentBranch (rev-parse) → checkout baseBranch → create new branch
       const calls = execFileSync.mock.calls.map((c) => c[1]);
-      expect(calls[0]).toEqual(['checkout', 'develop']);
-      expect(calls[1]).toEqual(['checkout', '-b', 'gv/app-phase-1']);
+      expect(calls[0]).toEqual(['rev-parse', '--abbrev-ref', 'HEAD']);
+      expect(calls[1]).toEqual(['checkout', 'develop']);
+      expect(calls[2]).toEqual(['checkout', '-b', 'gv/app-phase-1']);
     });
   });
 

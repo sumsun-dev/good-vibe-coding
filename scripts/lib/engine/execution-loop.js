@@ -84,8 +84,7 @@ export async function advanceExecution(projectId, stepResult) {
     }
   }
 
-  // WARNING: fire-and-forget — PR 생성이 advanceExecution 반환 이후에 완료될 수 있음.
-  // 호출자가 PR 결과에 의존하면 안 됨. 실패 시 stderr로만 로깅.
+  // PR 생성 (fire-and-forget, 결과를 journal에 기록)
   if (updatedProject.executionState.status === 'completed' && config.github.enabled) {
     const projectDir = getProjectDir(projectId);
     finalizeWithPR(projectDir, {
@@ -93,12 +92,14 @@ export async function advanceExecution(projectId, stepResult) {
       executionState: updatedProject.executionState,
       githubConfig: config.github,
     })
-      .then((result) => {
+      .then(async (result) => {
         if (result.pr && result.pr.url) {
-          return addPullRequest(projectId, {
+          await addPullRequest(projectId, {
             url: result.pr.url,
             branchName: updatedProject.executionState.branchName,
           });
+        } else if (result.pr && result.pr.skipped) {
+          process.stderr.write(`[gvc] PR skipped: ${result.pr.reason}\n`);
         }
       })
       .catch(async (err) => {

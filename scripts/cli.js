@@ -169,6 +169,7 @@ function listAllCommands() {
 }
 
 function suggestSimilar(input, candidates) {
+  if (input.length > 50) return []; // 비정상 입력 DoS 방지
   const threshold = config.cli?.suggestionThreshold ?? 3;
   return candidates
     .map((c) => ({ name: c, dist: levenshtein(input, c) }))
@@ -237,7 +238,8 @@ async function main() {
     const code = err instanceof AppError ? err.code : 'SYSTEM_ERROR';
     const exitCode = code === 'INPUT_ERROR' ? 2 : code === 'NOT_FOUND' ? 3 : 1;
     const hint = ERROR_HINTS[code] || '';
-    process.stderr.write(`오류 [${code}]: ${err.message}\n${hint}\n`);
+    const userMessage = err instanceof AppError ? err.message : '내부 오류가 발생했습니다';
+    process.stderr.write(`오류 [${code}]: ${userMessage}\n${hint}\n`);
     process.exit(exitCode);
   }
 }

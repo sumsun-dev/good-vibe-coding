@@ -3,7 +3,7 @@
  * CLI 커맨드와 라이브러리 모듈 전체에서 재사용.
  */
 
-import { sep } from 'path';
+import { sep, normalize } from 'path';
 
 /**
  * 구조화된 에러 클래스.
@@ -106,7 +106,9 @@ export function requireFields(data, fields) {
  * @param {string} label - 에러 메시지용 라벨
  */
 export function assertWithinRoot(resolvedPath, rootDir, label) {
-  if (!resolvedPath.startsWith(rootDir + sep) && resolvedPath !== rootDir) {
+  const normalizedPath = normalize(resolvedPath).toLowerCase();
+  const normalizedRoot = normalize(rootDir).toLowerCase();
+  if (!normalizedPath.startsWith(normalizedRoot + sep) && normalizedPath !== normalizedRoot) {
     throw inputError(`${label}이 허용 범위를 벗어났습니다`);
   }
 }

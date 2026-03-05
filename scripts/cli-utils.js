@@ -7,6 +7,28 @@ import { inputError } from './lib/core/validators.js';
 /** stdin 최대 크기 (10MB) */
 const MAX_STDIN_BYTES = 10 * 1024 * 1024;
 
+/** Prototype pollution 위험 키 목록 */
+const DANGEROUS_KEYS = ['__proto__', 'constructor', 'prototype'];
+
+/**
+ * JSON 객체에서 prototype pollution 위험 키를 제거한다.
+ * @param {*} obj - 검사할 객체
+ * @returns {*} 안전한 객체
+ */
+function sanitizeJson(obj) {
+  if (typeof obj !== 'object' || obj === null) return obj;
+  if (Array.isArray(obj)) return obj.map(sanitizeJson);
+  for (const key of DANGEROUS_KEYS) {
+    if (key in obj) delete obj[key];
+  }
+  for (const key of Object.keys(obj)) {
+    if (typeof obj[key] === 'object' && obj[key] !== null) {
+      obj[key] = sanitizeJson(obj[key]);
+    }
+  }
+  return obj;
+}
+
 /**
  * stdin에서 JSON을 읽는다.
  */
@@ -23,7 +45,7 @@ export async function readStdin() {
   const raw = Buffer.concat(chunks).toString('utf-8').trim();
   if (!raw) return {};
   try {
-    return JSON.parse(raw);
+    return sanitizeJson(JSON.parse(raw));
   } catch (err) {
     throw inputError(`잘못된 JSON 입력: ${err.message}`);
   }

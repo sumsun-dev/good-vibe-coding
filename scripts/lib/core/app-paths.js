@@ -32,7 +32,9 @@ export function pluginRoot() {
 }
 
 function homeDir() {
-  return process.env.HOME || process.env.USERPROFILE || '';
+  const home = process.env.HOME || process.env.USERPROFILE;
+  if (!home) throw new Error('HOME 또는 USERPROFILE 환경변수가 설정되지 않았습니다');
+  return home;
 }
 
 /** 앱 루트 디렉토리 (~/.claude/good-vibe) */

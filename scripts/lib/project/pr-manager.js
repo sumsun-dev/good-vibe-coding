@@ -127,8 +127,15 @@ export function createPullRequest(projectDir, options = {}) {
       encoding: 'utf-8',
     });
 
-    const urlMatch = output.match(/(https:\/\/github\.com\/[^\s)]+)/);
-    const url = urlMatch ? urlMatch[1].trim() : output.trim();
+    // gh pr create 출력에서 URL 추출 (JSON 시도 → regex fallback)
+    let url = null;
+    try {
+      const parsed = JSON.parse(output);
+      url = parsed.url || null;
+    } catch {
+      const urlMatch = output.match(/(https:\/\/github\.com\/[^\s)]+)/);
+      url = urlMatch ? urlMatch[1].trim() : null;
+    }
 
     return { success: true, url, skipped: false, reason: null, error: null };
   } catch (err) {

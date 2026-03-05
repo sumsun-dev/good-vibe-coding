@@ -4,7 +4,7 @@
  * 실제 파일로 기록한다.
  */
 
-import { resolve } from 'path';
+import { resolve, isAbsolute } from 'path';
 import { extractCodeBlocks, classifyCodeBlocks } from './execution-verifier.js';
 import { safeWriteFile, ensureDir } from '../core/file-writer.js';
 import { assertWithinRoot, inputError } from '../core/validators.js';
@@ -85,9 +85,8 @@ export async function materializeCode(taskOutput, projectDir, options = {}) {
   let existsSkippedCount = 0;
 
   for (const block of materializableBlocks) {
-    const fullPath = resolve(projectDir, block.filename);
     const fileRecord = {
-      path: fullPath,
+      path: null,
       relativePath: block.filename,
       written: false,
       backupPath: null,
@@ -95,9 +94,20 @@ export async function materializeCode(taskOutput, projectDir, options = {}) {
       type: block.type,
     };
 
+    // 파일명 사전 검증 (null byte, 절대경로, UNC 경로 차단)
+    if (block.filename.includes('\0') || isAbsolute(block.filename)) {
+      fileRecord.error = 'invalid filename';
+      files.push(fileRecord);
+      failedCount++;
+      continue;
+    }
+
+    const fullPath = resolve(projectDir, block.filename);
+    fileRecord.path = fullPath;
+
     // path traversal 방지
     try {
-      assertWithinRoot(resolve(fullPath), resolve(projectDir), 'filePath');
+      assertWithinRoot(fullPath, resolve(projectDir), 'filePath');
     } catch {
       fileRecord.error = 'path traversal detected';
       files.push(fileRecord);

@@ -7,7 +7,7 @@ import {
   MINIMAL_GITIGNORE,
 } from '../scripts/lib/project/github-manager.js';
 import { execFileSync } from 'child_process';
-import { existsSync, writeFileSync } from 'fs';
+import { existsSync, writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { config } from '../scripts/lib/core/config.js';
 
@@ -18,6 +18,7 @@ vi.mock('child_process', () => ({
 vi.mock('fs', () => ({
   existsSync: vi.fn(),
   writeFileSync: vi.fn(),
+  unlinkSync: vi.fn(),
 }));
 
 describe('github-manager', () => {
@@ -28,8 +29,9 @@ describe('github-manager', () => {
   describe('checkGhStatus', () => {
     it('gh가 설치되고 인증된 경우 정보를 반환한다', () => {
       execFileSync
-        .mockReturnValueOnce('gh version 2.40.0')
-        .mockReturnValueOnce('Logged in to github.com account testuser');
+        .mockReturnValueOnce('gh version 2.40.0') // gh --version
+        .mockReturnValueOnce('') // gh auth status (exit 0 = authenticated)
+        .mockReturnValueOnce('testuser\n'); // gh api user --jq '.login'
 
       const result = checkGhStatus();
       expect(result.installed).toBe(true);
@@ -50,9 +52,7 @@ describe('github-manager', () => {
 
     it('gh가 설치됐지만 미인증인 경우를 처리한다', () => {
       execFileSync.mockReturnValueOnce('gh version 2.40.0').mockImplementationOnce(() => {
-        const err = new Error('not logged in');
-        err.stderr = Buffer.from('You are not logged in');
-        throw err;
+        throw new Error('not logged in'); // gh auth status exit 1
       });
 
       const result = checkGhStatus();
@@ -61,17 +61,16 @@ describe('github-manager', () => {
       expect(result.username).toBeNull();
     });
 
-    it('stderr에서 인증 정보를 파싱한다', () => {
-      execFileSync.mockReturnValueOnce('gh version 2.40.0').mockImplementationOnce(() => {
-        const err = new Error('');
-        err.stderr = Buffer.from('Logged in to github.com account stderrUser');
-        throw err;
-      });
+    it('username 조회 실패 시에도 인증 상태를 반환한다', () => {
+      execFileSync
+        .mockReturnValueOnce('gh version 2.40.0') // gh --version
+        .mockReturnValueOnce('') // gh auth status (exit 0)
+        .mockImplementationOnce(() => { throw new Error('api failed'); }); // gh api user
 
       const result = checkGhStatus();
       expect(result.installed).toBe(true);
       expect(result.authenticated).toBe(true);
-      expect(result.username).toBe('stderrUser');
+      expect(result.username).toBeNull();
     });
   });
 
@@ -195,9 +194,10 @@ describe('github-manager', () => {
         'utf-8',
       );
       expect(execFileSync).toHaveBeenCalledWith('git', ['add', '-A'], expect.any(Object));
+      // commit -F <tmpFile> 방식으로 변경됨
       expect(execFileSync).toHaveBeenCalledWith(
         'git',
-        ['commit', '-m', 'Phase 1 완료', '--allow-empty'],
+        ['commit', '-F', expect.stringContaining('gvc-commit-'), '--allow-empty'],
         expect.any(Object),
       );
     });
@@ -209,7 +209,11 @@ describe('github-manager', () => {
       const result = commitPhase('/tmp/project', 2);
 
       expect(result.success).toBe(true);
-      expect(writeFileSync).not.toHaveBeenCalled();
+      // .gitignore writeFileSync는 호출 안 됨, 단 commit 메시지 임시 파일은 호출됨
+      const gitignoreCall = writeFileSync.mock.calls.find(
+        (c) => c[0] === join('/tmp/project', '.gitignore'),
+      );
+      expect(gitignoreCall).toBeUndefined();
     });
 
     it('MINIMAL_GITIGNORE에 .env와 node_modules가 포함되어 있다', () => {
@@ -225,11 +229,12 @@ describe('github-manager', () => {
 
       commitPhase('/tmp/project', 1, 'Phase 1: API 구현');
 
-      expect(execFileSync).toHaveBeenCalledWith(
-        'git',
-        ['commit', '-m', 'Phase 1: API 구현', '--allow-empty'],
-        expect.any(Object),
+      // 임시 파일에 메시지가 기록되는지 확인
+      const msgWriteCall = writeFileSync.mock.calls.find(
+        (c) => typeof c[0] === 'string' && c[0].includes('gvc-commit-'),
       );
+      expect(msgWriteCall).toBeDefined();
+      expect(msgWriteCall[1]).toBe('Phase 1: API 구현');
     });
 
     it('projectDir이 없으면 에러를 반환한다', () => {

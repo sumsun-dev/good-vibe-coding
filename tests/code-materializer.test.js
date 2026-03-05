@@ -303,7 +303,7 @@ describe('materializeCode', () => {
     const maliciousOutput = '```javascript /etc/passwd\nroot:x:0:0\n```';
     const result = await materializeCode(maliciousOutput, dir);
     expect(result.failedCount).toBe(1);
-    expect(result.files[0].error).toBe('path traversal detected');
+    expect(result.files[0].error).toBe('invalid filename');
   });
 
   it('URL 인코딩된 path traversal을 방지한다', async () => {

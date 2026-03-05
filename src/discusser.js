@@ -133,8 +133,9 @@ export class Discusser {
           },
         });
       }
-    } catch {
-      // 저장 실패는 무시 — 토론 결과는 반환값으로 전달됨
+    } catch (err) {
+      // 저장 실패 로그 (토론 결과는 반환값으로 전달되므로 비차단)
+      this.hooks.onError?.('persist-failed', err);
     }
   }
 

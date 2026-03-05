@@ -112,6 +112,7 @@ export function createFeatureBranch(projectDir, options = {}) {
 
   const branchName = generateBranchName(projectSlug, strategy, context);
   const opts = { cwd: projectDir, stdio: 'pipe', encoding: 'utf-8' };
+  const originalBranch = getCurrentBranch(projectDir);
 
   try {
     if (baseBranch) {
@@ -120,6 +121,10 @@ export function createFeatureBranch(projectDir, options = {}) {
     execFileSync('git', ['checkout', '-b', branchName], opts);
     return { success: true, branchName, error: null };
   } catch (err) {
+    // 실패 시 원래 branch로 복원 시도
+    if (originalBranch) {
+      try { execFileSync('git', ['checkout', originalBranch], opts); } catch { /* ignore */ }
+    }
     const message = err.stderr ? err.stderr.toString() : err.message;
     return { success: false, branchName: null, error: message };
   }

@@ -1,6 +1,7 @@
 import { execFileSync } from 'child_process';
-import { existsSync, writeFileSync } from 'fs';
+import { existsSync, writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
+import { tmpdir } from 'os';
 import { buildCommitMessage } from './commit-message-builder.js';
 import { config } from '../core/config.js';
 
@@ -21,30 +22,20 @@ export function checkGhStatus() {
   }
 
   try {
-    const output = execFileSync('gh', ['auth', 'status'], { stdio: 'pipe', encoding: 'utf-8' });
-    if (output.includes('Logged in')) {
-      authenticated = true;
-      const match = output.match(/Logged in to [^\s]+ account (\S+)/);
-      if (match) {
-        username = match[1];
-      } else {
-        const userMatch = output.match(/account\s+(\S+)/);
-        if (userMatch) {
-          username = userMatch[1];
-        }
-      }
+    // gh auth status: exit 0=인증됨, exit 1=미인증
+    execFileSync('gh', ['auth', 'status'], { stdio: 'pipe', encoding: 'utf-8' });
+    authenticated = true;
+    // username은 별도 API로 안전하게 조회
+    try {
+      username = execFileSync('gh', ['api', 'user', '--jq', '.login'], {
+        stdio: 'pipe',
+        encoding: 'utf-8',
+      }).trim() || null;
+    } catch {
+      // username 조회 실패는 무시
     }
-  } catch (err) {
-    const stderr = err.stderr ? err.stderr.toString() : '';
-    const stdout = err.stdout ? err.stdout.toString() : '';
-    const combined = stderr + stdout;
-    if (combined.includes('Logged in')) {
-      authenticated = true;
-      const match = combined.match(/account\s+(\S+)/);
-      if (match) {
-        username = match[1];
-      }
-    }
+  } catch {
+    // exit 1 = 미인증
   }
 
   return { installed, authenticated, username };
@@ -120,7 +111,15 @@ export function commitPhase(projectDir, phase, message) {
     }
 
     execFileSync('git', ['add', '-A'], opts);
-    execFileSync('git', ['commit', '-m', commitMessage, '--allow-empty'], opts);
+
+    // 특수문자 안전: -m 대신 임시 파일로 메시지 전달
+    const tmpMsgFile = join(tmpdir(), `gvc-commit-${Date.now()}.txt`);
+    try {
+      writeFileSync(tmpMsgFile, commitMessage, 'utf-8');
+      execFileSync('git', ['commit', '-F', tmpMsgFile, '--allow-empty'], opts);
+    } finally {
+      try { unlinkSync(tmpMsgFile); } catch { /* ignore */ }
+    }
 
     return { success: true, error: null };
   } catch (err) {

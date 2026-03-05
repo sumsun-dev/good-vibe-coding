@@ -134,6 +134,7 @@ async function collectFiles(dir, root, depth = 0) {
 
     const fullPath = resolve(dir, entry.name);
 
+    if (entry.isSymbolicLink()) continue; // symlink 순환 방지
     if (entry.isDirectory()) {
       const subFiles = await collectFiles(fullPath, root, depth + 1);
       files.push(...subFiles);

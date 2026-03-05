@@ -41,7 +41,7 @@ export function generateProjectId(name) {
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
-  const suffix = randomBytes(4).toString('hex');
+  const suffix = randomBytes(6).toString('hex'); // 12자 hex (충돌 확률 2^-48)
   return `${slug}-${yyyy}-${mm}-${suffix}`;
 }
 
@@ -186,8 +186,9 @@ export async function listProjects() {
         .map(async (d) => {
           try {
             return await getProject(d.name);
-          } catch {
-            process.stderr.write(`[gvc] 손상된 프로젝트 건너뜀: ${d.name}\n`);
+          } catch (err) {
+            const reason = err.code === 'EACCES' || err.code === 'EPERM' ? '접근 불가' : '손상됨';
+            process.stderr.write(`[gvc] ${reason} 프로젝트 건너뜀: ${d.name}\n`);
             return null;
           }
         }),

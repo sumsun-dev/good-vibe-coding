@@ -233,6 +233,13 @@ export async function getOptimizedTeam(projectType, complexity, codebaseInfo = n
     baseRoles.delete('fullstack');
   }
 
+  // 동적 역할 우선순위 경고
+  for (const role of baseRoles) {
+    if (!(role in ROLE_PRIORITY)) {
+      process.stderr.write(`[gvc] 동적 역할 "${role}"에 우선순위가 정의되지 않았습니다 (기본값 99 사용)\n`);
+    }
+  }
+
   // 우선순위 정렬 (낮을수록 core 우선)
   const sorted = [...baseRoles].sort((a, b) => (ROLE_PRIORITY[a] ?? 99) - (ROLE_PRIORITY[b] ?? 99));
 

@@ -35,11 +35,13 @@ export function parseJsonObject(rawText) {
     }
   }
 
-  // Tier 3: bare { ... } 패턴 매칭
-  const objMatch = rawText.match(/\{[\s\S]*\}/);
-  if (objMatch) {
+  // Tier 3: bare { ... } 추출 — 인덱스 기반 (ReDoS 방지)
+  // NOTE: 문자열 내 중괄호는 오판 가능 (Tier 1/2 실패 시에만 사용)
+  const firstBrace = rawText.indexOf('{');
+  const lastBrace = rawText.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace > firstBrace) {
     try {
-      const parsed = JSON.parse(objMatch[0]);
+      const parsed = JSON.parse(rawText.slice(firstBrace, lastBrace + 1));
       if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
     } catch {
       // fallthrough
@@ -77,11 +79,13 @@ export function parseJsonArray(rawText) {
     }
   }
 
-  // Tier 3: bare [ ... ] 패턴 매칭
-  const arrayMatch = rawText.match(/\[[\s\S]*\]/);
-  if (arrayMatch) {
+  // Tier 3: bare [ ... ] 추출 — 인덱스 기반 (ReDoS 방지)
+  // NOTE: 문자열 내 대괄호는 오판 가능 (Tier 1/2 실패 시에만 사용)
+  const firstBracket = rawText.indexOf('[');
+  const lastBracket = rawText.lastIndexOf(']');
+  if (firstBracket !== -1 && lastBracket > firstBracket) {
     try {
-      const parsed = JSON.parse(arrayMatch[0]);
+      const parsed = JSON.parse(rawText.slice(firstBracket, lastBracket + 1));
       if (Array.isArray(parsed)) return parsed;
     } catch {
       // fallthrough

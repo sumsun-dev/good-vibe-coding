@@ -56,9 +56,10 @@ const PROJECT_TYPE_STRATEGY_MAP = {
  * 빌드 전략 맵 — 언어별 detect/build/test
  *
  * SECURITY NOTE: 이 전략들은 LLM이 생성한 코드를 /tmp에서 실행한다.
- * npm install에는 --ignore-scripts를 적용하여 postinstall 스크립트 실행을 방지한다.
- * npm run build는 package.json scripts를 실행하므로, 신뢰할 수 없는 입력에 대해
- * 샌드박스 환경(Docker 등)에서의 실행을 권장한다.
+ * - npm install --ignore-scripts: postinstall 스크립트 실행 방지 ✓
+ * - npm run build: package.json의 build 스크립트를 실행하므로 임의 코드 실행 가능 ⚠️
+ *   (--ignore-scripts 플래그는 npm run의 옵션이 아니므로 무효)
+ * - 프로덕션 환경에서는 샌드박스(Docker 등)에서 실행을 권장한다.
  */
 export const BUILD_STRATEGIES = {
   node: {
@@ -73,7 +74,9 @@ export const BUILD_STRATEGIES = {
           encoding: 'utf-8',
           stdio: ['pipe', 'pipe', 'pipe'],
         });
-        const buildOut = execFileSync('npm', ['run', 'build', '--ignore-scripts'], {
+        // SECURITY: --ignore-scripts는 npm run의 옵션이 아니므로 제거
+        // npm run build는 package.json scripts를 실행 — /tmp 격리에 의존
+        const buildOut = execFileSync('npm', ['run', 'build'], {
           cwd: tempDir,
           timeout: config.build.defaultTimeout,
           encoding: 'utf-8',
@@ -530,6 +533,7 @@ function findFilesByExtension(dir, ext) {
   try {
     const entries = readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
+      if (entry.isSymbolicLink()) continue; // symlink 순환 방지
       const fullPath = join(dir, entry.name);
       if (entry.isDirectory() && entry.name !== 'node_modules') {
         results.push(...findFilesByExtension(fullPath, ext));
@@ -559,6 +563,7 @@ function findFilesByExtensions(dir, extensions) {
   try {
     const entries = readdirSync(dir, { withFileTypes: true });
     for (const entry of entries) {
+      if (entry.isSymbolicLink()) continue; // symlink 순환 방지
       const fullPath = join(dir, entry.name);
       if (entry.isDirectory() && entry.name !== 'node_modules') {
         results.push(...findFilesByExtensions(fullPath, extensions));

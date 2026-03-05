@@ -84,7 +84,7 @@ ${project.codebaseInfo ? `\n## 코드베이스 정보\n- 기술 스택: ${(proje
 ${buildRoleQuestions(teamMember)}`;
 
   if (context.previousSynthesis) {
-    const maxLen = 3000;
+    const maxLen = config.llm.maxPromptSectionLength;
     const truncated =
       context.previousSynthesis.length > maxLen
         ? context.previousSynthesis.slice(0, maxLen) + '\n...(truncated)'
@@ -115,7 +115,7 @@ export function buildSynthesisPrompt(project, agentOutputs, round) {
     throw inputError('에이전트 분석 결과가 없습니다');
   }
 
-  const MAX_ANALYSIS_LENGTH = 3000;
+  const MAX_ANALYSIS_LENGTH = config.llm.maxPromptSectionLength;
 
   const analysisSection = agentOutputs
     .map((o) => {

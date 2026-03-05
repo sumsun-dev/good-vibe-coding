@@ -57,6 +57,8 @@ export async function safeWriteFile(filePath, content, options = {}) {
   }
 
   // 심링크 감지: 심링크 대상에 쓰기를 차단하여 경로 조작 방지
+  // NOTE: lstat → writeFile 사이에 TOCTOU 경쟁 조건 존재 (Node.js에서 O_NOFOLLOW 미지원)
+  // 현실적 완화: 체크와 쓰기를 최대한 가깝게 배치
   if (exists) {
     const stat = await lstat(filePath);
     if (stat.isSymbolicLink()) {

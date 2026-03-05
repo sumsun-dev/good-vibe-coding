@@ -77,11 +77,19 @@ async function loadAllAuth() {
  * 전체 인증 데이터를 저장한다.
  * @param {object} allAuth
  */
+async function setSecurePermissions(filePath, dirPath) {
+  if (process.platform !== 'win32') {
+    if (dirPath) await chmod(dirPath, 0o700);
+    await chmod(filePath, 0o600);
+  }
+  // Windows: NTFS ACL은 Node.js fs로 제어 불가, 사용자 홈 디렉토리 권한에 의존
+}
+
 async function saveAllAuth(allAuth) {
   await mkdir(authDir, { recursive: true, mode: 0o700 });
   const authPath = resolve(authDir, AUTH_FILENAME);
   await writeFile(authPath, JSON.stringify(allAuth, null, 2), 'utf-8');
-  await chmod(authPath, 0o600);
+  await setSecurePermissions(authPath, authDir);
 }
 
 /**
@@ -161,10 +169,10 @@ export async function loadProviderConfig(providerId) {
  * @param {object} config
  */
 export async function saveProvidersConfig(config) {
-  await mkdir(providersDir, { recursive: true });
+  await mkdir(providersDir, { recursive: true, mode: 0o700 });
   const configPath = resolve(providersDir, PROVIDERS_FILENAME);
   await writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8');
-  await chmod(configPath, 0o600);
+  await setSecurePermissions(configPath, providersDir);
 }
 
 /**

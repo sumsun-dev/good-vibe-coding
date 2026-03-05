@@ -19,6 +19,7 @@ export const config = Object.freeze({
     pingTimeout: 15_000,
     pingMaxTokens: 16,
     maxRetries: 3,
+    maxPromptSectionLength: 3000,
   }),
   review: Object.freeze({
     minReviewers: 2,
@@ -110,7 +111,7 @@ export const config = Object.freeze({
       'specs',
     ]),
   }),
-  cli: Object.freeze({ suggestionThreshold: 3 }),
+  cli: Object.freeze({ suggestionThreshold: 3, maxInputLength: 50 }),
   codebase: Object.freeze({
     ignoredDirs: Object.freeze([
       'node_modules',
