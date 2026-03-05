@@ -1,9 +1,12 @@
 {
   "name": "good-vibe-coding",
   "version": "1.0.0",
-  "description": "Virtual AI Team Management Platform — AI 팀을 구성하고 프로젝트를 관리하세요",
+  "description": "AI 팀을 구성하여 프로젝트를 기획-토론-실행-리뷰하는 멀티에이전트 플랫폼",
   "type": "module",
   "main": "scripts/cli.js",
+  "bin": {
+    "good-vibe": "scripts/cli.js"
+  },
   "exports": {
     ".": "./src/index.js",
     "./plugin": "./plugin/adapter.js",
@@ -21,7 +24,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"scripts/**/*.js\" \"src/**/*.js\" \"plugin/**/*.js\" \"tests/**/*.js\"",
-    "format:check": "prettier --check \"scripts/**/*.js\" \"src/**/*.js\" \"plugin/**/*.js\" \"tests/**/*.js\""
+    "format:check": "prettier --check \"scripts/**/*.js\" \"src/**/*.js\" \"plugin/**/*.js\" \"tests/**/*.js\"",
+    "prepublishOnly": "npm test && npm run lint && npm run format:check"
   },
   "keywords": [
     "claude-code",

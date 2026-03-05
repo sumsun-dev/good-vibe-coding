@@ -1,6 +1,6 @@
 # 외부 서비스 연동
 
-Good Vibe Coding은 외부 서비스와 연동하여 더 강력한 워크플로우를 구성할 수 있습니다.
+Good Vibe Coding은 외부 서비스와 연동하여 워크플로우를 확장할 수 있습니다.
 이 가이드에서는 GitHub, Supabase, Vercel, n8n 연동 방법을 설명합니다.
 
 ---
@@ -186,11 +186,11 @@ await fetch(webhookUrl, {
 
 | 프로젝트 유형         | 추천 조합                                   | 설명                            |
 | --------------------- | ------------------------------------------- | ------------------------------- |
-| **SaaS 웹앱**         | Next.js + Supabase + Vercel                 | 풀스택, 인증/DB 내장, 자동 배포 |
-| **API 서버**          | Express/FastAPI + Supabase + GitHub Actions | 백엔드 중심, CI/CD 파이프라인   |
-| **텔레그램 봇**       | Node.js + Supabase + n8n                    | 봇 로직 + 데이터 저장 + 자동화  |
-| **정적 사이트**       | Next.js + Vercel                            | 빠른 배포, CDN 지원             |
-| **데이터 파이프라인** | Python + Supabase + n8n                     | 데이터 수집/가공/저장 자동화    |
+| SaaS 웹앱         | Next.js + Supabase + Vercel                 | 풀스택, 인증/DB 내장, 자동 배포 |
+| API 서버          | Express/FastAPI + Supabase + GitHub Actions | 백엔드 중심, CI/CD 파이프라인   |
+| 텔레그램 봇       | Node.js + Supabase + n8n                    | 봇 로직 + 데이터 저장 + 자동화  |
+| 정적 사이트       | Next.js + Vercel                            | 빠른 배포, CDN 지원             |
+| 데이터 파이프라인 | Python + Supabase + n8n                     | 데이터 수집/가공/저장 자동화    |
 
 ---
 

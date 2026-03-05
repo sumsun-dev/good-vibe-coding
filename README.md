@@ -1,7 +1,8 @@
 # Good Vibe Coding
 
-**AI 팀을 만들고, 프로젝트를 함께 굴려보세요.**
+AI 팀을 만들고, 프로젝트를 함께 굴려보세요.
 
+[![npm version](https://img.shields.io/npm/v/good-vibe-coding.svg)](https://www.npmjs.com/package/good-vibe-coding)
 [![CI](https://github.com/sumsun-dev/good-vibe-coding/actions/workflows/ci.yml/badge.svg)](https://github.com/sumsun-dev/good-vibe-coding/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
@@ -10,9 +11,14 @@
 
 ## 왜 쓰나요?
 
-혼자 코딩할 때 놓치는 게 많습니다. 보안은 생각했는지, API 설계는 괜찮은지, 테스트는 충분한지. Good Vibe Coding은 15개 전문 역할의 AI 팀원이 각자 관점에서 짚어주고, 서로 리뷰하고, 문제가 있으면 자동으로 고칩니다.
+혼자 코딩할 때 놓치는 게 많습니다.
 
-**한 줄 요약:** 아이디어를 말하면, AI 팀이 기획 - 토론 - 실행 - 리뷰까지 해줍니다.
+- CTO가 아키텍처를 잡고, Security Engineer가 보안 취약점을 짚어줍니다
+- QA가 테스트 전략을 세우고, 코드 리뷰에서 로직 오류를 잡습니다
+- DevOps가 CI/CD를 구성하고, Tech Writer가 문서를 정리합니다
+- 2회 수정해도 안 되면 CEO(당신)에게 판단을 요청합니다
+
+아이디어를 말하면, AI 팀이 기획 - 토론 - 실행 - 리뷰까지 해줍니다.
 
 ## 설치
 
@@ -52,7 +58,7 @@ claude plugin update sumsun-dev/good-vibe-coding
 
 ### 가장 빠른 방법: `/new`
 
-아이디어만 입력하면, 복잡도를 분석해서 **알아서 끝까지 진행**합니다.
+아이디어만 입력하면, 복잡도를 분석해서 알아서 끝까지 진행합니다.
 
 ```
 /new
@@ -82,7 +88,7 @@ claude plugin update sumsun-dev/good-vibe-coding
 | 5    | `/execute` | 팀원들이 Phase별로 작업하고, 최소 2명이 크로스 리뷰. 코드는 TDD + /tmp 빌드 검증   | 5-15분      |
 | 6    | `/report`  | 전체 과정 보고서 + `/feedback`으로 팀원 성과 분석 (다음 프로젝트에 자동 반영)      | 1분         |
 
-**처음이라면 `/hello`부터 입력하세요.** 다음 단계는 그때그때 안내해드립니다.
+처음이라면 `/hello`부터 입력하세요. 다음 단계는 그때그때 안내해드립니다.
 
 > `/hello` 없이 `/new`만으로도 시작할 수 있습니다. 코드 생성/관리가 필요하면 `/hello`를 먼저, 기획서와 보고서만 필요하면 `/new`로 바로 시작하세요.
 
@@ -94,25 +100,25 @@ claude plugin update sumsun-dev/good-vibe-coding
 
 | 모드             | 팀 규모 | 토론         | 추천 상황                          | 소요시간 |
 | ---------------- | ------- | ------------ | ---------------------------------- | -------- |
-| **quick-build**  | 2-3명   | 생략         | 간단한 봇, 스크립트, 유틸리티      | 3-5분    |
-| **plan-execute** | 3-5명   | 1라운드      | 웹앱, API 서버, 중간 규모 프로젝트 | 10-20분  |
-| **plan-only**    | 5-8명   | 최대 3라운드 | 대규모 시스템, 충분한 토론 후 실행 | 20-40분  |
+| quick-build  | 2-3명   | 생략         | 간단한 봇, 스크립트, 유틸리티      | 3-5분    |
+| plan-execute | 3-5명   | 1라운드      | 웹앱, API 서버, 중간 규모 프로젝트 | 10-20분  |
+| plan-only    | 5-8명   | 최대 3라운드 | 대규모 시스템, 충분한 토론 후 실행 | 20-40분  |
 
 ### 모드별 진행 흐름
 
-**quick-build** — 토론 없이 바로 만들기
+quick-build — 토론 없이 바로 만들기
 
 ```
 /new → CTO 분석 → 작업 분배 → 실행 + QA 리뷰 → 완료
 ```
 
-**plan-execute** — 간단히 논의하고 자동 실행
+plan-execute — 간단히 논의하고 자동 실행
 
 ```
 /new → 팀 토론(1라운드) → 자동 승인 → 자동 실행 + 크로스 리뷰 → 완료
 ```
 
-**plan-only** — 충분히 논의한 후 CEO 승인
+plan-only — 충분히 논의한 후 CEO 승인
 
 ```
 /new → 팀 토론(최대 3라운드) → CEO 승인(/approve) → 실행(/execute) → 완료
@@ -124,9 +130,9 @@ claude plugin update sumsun-dev/good-vibe-coding
 
 | 모드           | 동작                             | 추천 상황                                           |
 | -------------- | -------------------------------- | --------------------------------------------------- |
-| **인터랙티브** | Phase마다 진행 여부를 확인합니다 | 처음 쓸 때, 중간 결과를 보면서 진행하고 싶을 때     |
-| **세미-오토**  | 3 Phase마다 확인합니다           | Phase가 많은 프로젝트에서 배치로 확인하고 싶을 때   |
-| **자동**       | 문제가 생길 때만 멈춥니다        | 기획이 충분히 검토된 상태에서 빠르게 돌리고 싶을 때 |
+| 인터랙티브 | Phase마다 진행 여부를 확인합니다 | 처음 쓸 때, 중간 결과를 보면서 진행하고 싶을 때     |
+| 세미-오토  | 3 Phase마다 확인합니다           | Phase가 많은 프로젝트에서 배치로 확인하고 싶을 때   |
+| 자동       | 문제가 생길 때만 멈춥니다        | 기획이 충분히 검토된 상태에서 빠르게 돌리고 싶을 때 |
 
 실행 중 문제가 발견되면:
 
@@ -144,10 +150,10 @@ claude plugin update sumsun-dev/good-vibe-coding
 
 `/hello`에서 GitHub 협업 모드를 활성화하면:
 
-1. **실행 시작 시** feature branch 자동 생성 (`gv/{프로젝트명}-{timestamp}`)
-2. **Phase별** conventional commit 자동 생성 (`feat(phase-1): API 라우터 구현`)
-3. **실행 완료 후** Pull Request 자동 생성 (팀 구성, Phase 결과 요약 포함)
-4. **기술 스택 감지** 후 GitHub Actions CI 워크플로우 자동 생성
+1. 실행 시작 시 feature branch 자동 생성 (`gv/{프로젝트명}-{timestamp}`)
+2. Phase별 conventional commit 자동 생성 (`feat(phase-1): API 라우터 구현`)
+3. 실행 완료 후 Pull Request 자동 생성 (팀 구성, Phase 결과 요약 포함)
+4. 기술 스택 감지 후 GitHub Actions CI 워크플로우 자동 생성
 
 ### 브랜치 네이밍 전략
 
@@ -292,10 +298,46 @@ const result = await gv.execute(plan, {
 const report = gv.report(result);
 ```
 
-Discusser, Executor를 개별로 import해서 세밀하게 제어할 수도 있습니다.
+### Storage 옵션
+
+| 옵션 | 설명 | 사용 시점 |
+| ---- | ---- | --------- |
+| `'memory'` | 인메모리 저장. 프로세스 종료 시 데이터 소멸 | 테스트, 일회성 실행 |
+| `'/path/to/dir'` | 파일 시스템 저장. 경로를 문자열로 전달 | 영구 저장이 필요할 때 |
+| `{ save, load, list }` | 커스텀 저장소 객체. 세 메서드를 직접 구현 | DB 연동, 클라우드 저장소 |
+
+### 에러 처리
 
 ```javascript
-import { Discusser, Executor } from 'good-vibe-coding';
+try {
+  const result = await gv.execute(plan);
+} catch (err) {
+  if (err.code === 'INPUT_ERROR') {
+    // 입력값 문제 — plan 객체 확인
+  } else if (err.code === 'NOT_FOUND') {
+    // 프로젝트나 에이전트를 찾지 못함
+  } else {
+    // SYSTEM_ERROR — LLM 호출 실패 등
+  }
+}
+```
+
+### Discusser, Executor 개별 사용
+
+토론과 실행을 분리해서 세밀하게 제어할 수 있습니다.
+
+```javascript
+import { Discusser, Executor, Storage } from 'good-vibe-coding';
+
+// 토론만 실행
+const discusser = new Discusser({ provider: 'claude', storage: new Storage('/data') });
+const plan = await discusser.run(team);
+
+// 실행만 실행 (이미 승인된 plan 사용)
+const executor = new Executor({ provider: 'claude', storage: new Storage('/data') });
+const result = await executor.run(plan, {
+  onEscalation: async (ctx) => 'skip',
+});
 ```
 
 ## 아키텍처
@@ -315,7 +357,7 @@ import { Discusser, Executor } from 'good-vibe-coding';
 │  내부 API            CLI-as-API (114개)      │
 │  에이전트가 호출하는 인터페이스               │
 ├─────────────────────────────────────────────┤
-│  코어 라이브러리      53개 모듈 + 14개 핸들러  │
+│  코어 라이브러리      55개 모듈 + 14개 핸들러  │
 │  프로젝트 관리, 오케스트레이션, 리뷰 엔진 등  │
 └─────────────────────────────────────────────┘
 ```
@@ -333,7 +375,7 @@ good-vibe-coding/
 ├── scripts/
 │   ├── cli.js       내부 API 라우터 (114개 커맨드)
 │   ├── handlers/    14개 핸들러 모듈
-│   └── lib/         53개 코어 라이브러리
+│   └── lib/         55개 코어 라이브러리
 │       ├── core/        기반 유틸 (validators, config, cache 등)
 │       ├── project/     프로젝트 관리 (project-manager, scaffolder, branch, PR, CI 등)
 │       ├── engine/      실행 엔진 (orchestrator, execution-loop, review 등)
@@ -359,10 +401,10 @@ npm run test:coverage # 커버리지 리포트
 
 ## 기술 스택
 
-- **Node.js 18+** (ESM)
-- **Handlebars** 템플릿 엔진
-- **Vitest** 테스트 (1,760+개)
-- **GitHub Actions** CI (Node 18/20/22)
+- Node.js 18+ (ESM)
+- Handlebars 템플릿 엔진
+- Vitest 테스트 (1,850+개)
+- GitHub Actions CI (Node 18/20/22)
 
 ## 지원 범위
 
@@ -407,9 +449,9 @@ npm run test:coverage # 커버리지 리포트
 
 수정을 2회 시도해도 품질 게이트를 통과하지 못하면, CEO(당신)에게 선택을 요청합니다:
 
-- **continue** — 한 번 더 수정 시도
-- **skip** — 해당 Phase를 건너뛰고 다음으로 진행
-- **abort** — 실행 전체를 중단
+- continue — 한 번 더 수정 시도
+- skip — 해당 Phase를 건너뛰고 다음으로 진행
+- abort — 실행 전체를 중단
 
 ### 빌드가 실패할 때
 
@@ -431,6 +473,36 @@ npm run test:coverage # 커버리지 리포트
 | 에이전트 오버라이드 (사용자)   | `~/.claude/good-vibe/agent-overrides/{roleId}.md`     |
 | 에이전트 오버라이드 (프로젝트) | `{projectDir}/.good-vibe/agent-overrides/{roleId}.md` |
 | 커스텀 템플릿                  | `~/.claude/good-vibe/custom-templates/`               |
+
+## FAQ
+
+### Claude Code 없이도 쓸 수 있나요?
+
+SDK를 사용하면 Claude Code 없이 Node.js 환경에서 직접 호출할 수 있습니다. 다만 슬래시 커맨드(`/new`, `/execute` 등)는 Claude Code 플러그인이 필요합니다.
+
+### 어떤 LLM을 지원하나요?
+
+Claude, OpenAI, Gemini를 지원합니다. `llm-provider.js`에서 프로바이더를 추상화하고 있어서, 팀원마다 다른 모델을 배정할 수도 있습니다.
+
+### 토큰 비용은 얼마나 드나요?
+
+모드와 팀 규모에 따라 다릅니다. quick-build는 $0.5-2, plan-execute는 $3-8, plan-only는 $8-20+ 정도입니다. `/report`에서 실제 사용량을 확인할 수 있습니다.
+
+### 기존 코드베이스에 적용할 수 있나요?
+
+`/hello`로 기존 프로젝트 폴더를 지정하면, `codebase-scanner`가 기술 스택과 구조를 파악합니다. 이 정보가 팀 구성과 토론에 반영됩니다.
+
+### 실행 중 세션이 끊기면 어떻게 되나요?
+
+실행 상태(Phase, 수정 이력, 작업 결과)가 `project.json`에 자동 저장됩니다. `/execute`를 다시 실행하면 이전 Phase부터 재개할 수 있습니다.
+
+### GitHub 연동은 필수인가요?
+
+아닙니다. 기본값은 `github.enabled = false`이고, 켜지 않으면 main 브랜치에 직접 커밋합니다. GitHub CLI가 설치되지 않아도 에러 없이 동작합니다.
+
+### 프로젝트 데이터는 어디에 저장되나요?
+
+`~/.claude/good-vibe/projects/{id}/project.json`에 저장됩니다. 에이전트 오버라이드는 `~/.claude/good-vibe/agent-overrides/`에 있습니다.
 
 ## 라이선스
 

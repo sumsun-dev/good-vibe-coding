@@ -2,6 +2,17 @@
 
 Good Vibe Coding에 기여해주셔서 감사합니다.
 
+## 시작하기
+
+처음 기여한다면 `good first issue` 라벨이 붙은 이슈를 살펴보세요.
+
+기여 방법:
+
+1. 버그 리포트 — 재현 단계와 기대 동작을 이슈로 등록
+2. 기능 제안 — 유즈케이스와 함께 이슈로 등록
+3. 코드 기여 — fork 후 feature branch에서 작업, PR 제출
+4. 문서 개선 — 오타, 누락된 설명, 예제 보강
+
 ## 개발 환경 설정
 
 ```bash
@@ -13,7 +24,7 @@ npm test
 
 - Node.js 18 이상 필수
 - ESM (`"type": "module"`) 프로젝트입니다
-- import 경로에 **`.js` 확장자 필수** (Windows ESM 호환)
+- import 경로에 `.js` 확장자 필수 (Windows ESM 호환)
 
 ## 코드 스타일
 
@@ -31,7 +42,7 @@ npm test
 
 ## 에러 처리
 
-`validators.js`의 에러 팩토리를 사용합니다. **직접 `throw new Error()` 금지.**
+`validators.js`의 에러 팩토리를 사용합니다. 직접 `throw new Error()`를 사용하지 마세요.
 
 ```javascript
 import { inputError, notFoundError } from '../lib/core/validators.js';
@@ -46,7 +57,7 @@ throw new Error('필수 필드 누락');
 
 ## 테스트
 
-TDD 방식으로 진행합니다: **RED -> GREEN -> REFACTOR**
+TDD 방식으로 진행합니다: RED -> GREEN -> REFACTOR
 
 ```bash
 npm test              # 전체 테스트 (Vitest)
@@ -54,7 +65,7 @@ npm run test:watch    # 감시 모드
 npm run test:coverage # 커버리지 리포트
 ```
 
-- 커버리지 목표: **80% 이상**, 핵심 로직은 100%
+- 커버리지 목표: 80% 이상, 핵심 로직은 100%
 - AAA 패턴: Arrange, Act, Assert
 - 테스트 간 의존성 금지, 실제 API 호출 금지 (mock 사용)
 - 코어 모듈: `tests/{module-name}.test.js`
