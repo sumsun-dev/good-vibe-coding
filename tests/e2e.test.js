@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, afterEach } from 'vitest';
 import { execSync } from 'child_process';
-import { mkdtempSync, existsSync, readFileSync } from 'fs';
+import { mkdtempSync, existsSync, readFileSync, readdirSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import { cleanup, verifyAndMaterialize } from '../scripts/lib/engine/execution-verifier.js';
@@ -566,6 +566,47 @@ describe('E2E: CLI 에러 경로', () => {
     expect(result.exitCode).toBe(3);
     expect(result.stderr).toContain('NOT_FOUND');
     expect(result.stderr).toContain('목록을 확인');
+  });
+});
+
+// --- 플러그인 Frontmatter 검증 ---
+
+describe('E2E: 플러그인 frontmatter 검증', () => {
+  const COMMANDS_DIR = resolve('commands');
+  const SKILLS_DIR = resolve('skills');
+
+  it('모든 commands/*.md 파일에 YAML frontmatter(description)가 있다', () => {
+    const files = readdirSync(COMMANDS_DIR).filter((f) => f.endsWith('.md'));
+    expect(files.length).toBeGreaterThan(0);
+
+    const missing = [];
+    for (const file of files) {
+      const content = readFileSync(join(COMMANDS_DIR, file), 'utf-8');
+      if (!content.startsWith('---') || !content.includes('description:')) {
+        missing.push(file);
+      }
+    }
+
+    expect(missing, `frontmatter 누락: ${missing.join(', ')}`).toEqual([]);
+  });
+
+  it('모든 skills/*/SKILL.md 파일에 YAML frontmatter(name, description)가 있다', () => {
+    const skillDirs = readdirSync(SKILLS_DIR, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name);
+    expect(skillDirs.length).toBeGreaterThan(0);
+
+    const missing = [];
+    for (const dir of skillDirs) {
+      const skillPath = join(SKILLS_DIR, dir, 'SKILL.md');
+      if (!existsSync(skillPath)) continue;
+      const content = readFileSync(skillPath, 'utf-8');
+      if (!content.startsWith('---') || !content.includes('name:') || !content.includes('description:')) {
+        missing.push(dir);
+      }
+    }
+
+    expect(missing, `frontmatter 누락: ${missing.join(', ')}`).toEqual([]);
   });
 });
 
