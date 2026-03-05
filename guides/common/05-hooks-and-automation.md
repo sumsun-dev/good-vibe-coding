@@ -58,9 +58,9 @@ Good Vibe Coding에서 제공하는 기본 훅입니다:
 
 ---
 
-## hooks.json 구조
+## definitions.json 구조
 
-훅은 `hooks/hooks.json` 파일에 정의됩니다:
+훅은 `hooks/definitions.json` 파일에 정의됩니다:
 
 ```json
 {
