@@ -123,7 +123,11 @@ export function createFeatureBranch(projectDir, options = {}) {
   } catch (err) {
     // 실패 시 원래 branch로 복원 시도
     if (originalBranch) {
-      try { execFileSync('git', ['checkout', originalBranch], opts); } catch { /* ignore */ }
+      try {
+        execFileSync('git', ['checkout', originalBranch], opts);
+      } catch {
+        /* ignore */
+      }
     }
     const message = err.stderr ? err.stderr.toString() : err.message;
     return { success: false, branchName: null, error: message };

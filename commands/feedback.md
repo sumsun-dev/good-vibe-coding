@@ -1,8 +1,8 @@
 ---
-description: "에이전트 피드백 — 프로젝트 결과 기반 성과 평가"
+description: '에이전트 피드백 — 프로젝트 결과 기반 성과 평가'
 ---
 
-# /feedback — 에이전트 피드백 (프로젝트 결과 기반)
+# good-vibe:feedback — 에이전트 피드백 (프로젝트 결과 기반)
 
 ## 이 커맨드를 실행하면?
 
@@ -98,6 +98,6 @@ echo '{"roleId":"{roleId}","content":"# 오버라이드\n- 수정사항..."}' | 
 - {roleId}: {수정 요약}
 
 관련 커맨드:
-- `/new` — 새 프로젝트 시작
-- `/status` — 프로젝트 상태 확인
+- `good-vibe:new` — 새 프로젝트 시작
+- `good-vibe:status` — 프로젝트 상태 확인
 ```

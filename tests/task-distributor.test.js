@@ -240,6 +240,28 @@ describe('isCodeTask', () => {
   });
 });
 
+describe('buildExecutionPrompt 결과 보고 규격', () => {
+  it('결과 보고 규격 섹션을 포함한다', () => {
+    const task = { id: 'task-1', title: 'API 설계', description: '설명', assignee: 'backend' };
+    const prompt = buildExecutionPrompt(task, SAMPLE_TEAM_MEMBER);
+    expect(prompt).toContain('## 결과 보고 규격 (필수)');
+    expect(prompt).toContain('### 구현 요약');
+    expect(prompt).toContain('### 핵심 파일');
+    expect(prompt).toContain('### 외부 서비스 및 환경변수');
+    expect(prompt).toContain('### 실행 방법');
+    expect(prompt).toContain('### 커스터마이징 포인트');
+  });
+});
+
+describe('buildTddExecutionPrompt 결과 보고 규격', () => {
+  it('TDD 프롬프트에도 결과 보고 규격을 포함한다', () => {
+    const task = { id: 'task-1', title: 'API 구현', description: '설명', assignee: 'backend' };
+    const prompt = buildTddExecutionPrompt(task, SAMPLE_TEAM_MEMBER);
+    expect(prompt).toContain('## 결과 보고 규격 (필수)');
+    expect(prompt).toContain('### 외부 서비스 및 환경변수');
+  });
+});
+
 describe('buildExecutionPrompt with context', () => {
   it('phaseContext를 포함한다', () => {
     const task = { id: 'task-1', title: 'API 구현', description: '설명', assignee: 'backend' };

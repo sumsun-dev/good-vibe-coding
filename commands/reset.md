@@ -1,20 +1,20 @@
 ---
-description: "설정 초기화 — good-vibe-coding 설정 리셋"
+description: '설정 초기화 — good-vibe 설정 리셋'
 ---
 
-# /reset - 설정 초기화
+# good-vibe:reset - 설정 초기화
 
-good-vibe-coding으로 생성된 설정을 초기화합니다.
+good-vibe으로 생성된 설정을 초기화합니다.
 
 ## 실행 방법
 
-`/reset`
+`good-vibe:reset`
 
 ## 진행 절차
 
 ### 1단계: 설정 스캔
 
-`~/.claude/` 디렉토리를 직접 스캔하여 good-vibe-coding이 생성한 파일을 확인합니다.
+`~/.claude/` 디렉토리를 직접 스캔하여 good-vibe이 생성한 파일을 확인합니다.
 
 ```
 현재 설정 파일 목록
@@ -58,7 +58,7 @@ AskUserQuestion으로 사용자에게 묻습니다:
   - agents/code-reviewer-kr.md (백업됨)
   - agents/tdd-coach-kr.md (백업됨)
 
-새로운 설정을 시작하려면 `/onboarding`을 실행하세요.
+새로운 설정을 시작하려면 `good-vibe:onboarding`을 실행하세요.
 이전 설정을 복원하려면 .backup 파일을 사용하세요.
 ```
 

@@ -1,14 +1,14 @@
 ---
-description: "Claude Code 초기 설정 마법사"
+description: 'Claude Code 초기 설정 마법사'
 ---
 
-# /onboarding - Claude Code 초기 설정 마법사
+# good-vibe:onboarding - Claude Code 초기 설정 마법사
 
 한국어 인터랙티브 온보딩을 시작합니다. 아래 단계를 순서대로 진행하세요.
 
 ## 실행 방법
 
-사용자가 `/onboarding`을 입력하면 이 커맨드가 실행됩니다.
+사용자가 `good-vibe:onboarding`을 입력하면 이 커맨드가 실행됩니다.
 
 ## 진행 절차
 
@@ -179,8 +179,8 @@ options:
 모든 설정이 완료되었습니다!
 
 다음 단계:
-  /learn     → 내 역할에 맞는 Claude Code 활용법 배우기
-  /my-config → 현재 설정 확인하기
-  /add-skill → 추가 스킬 설치하기
-  /add-agent → 추가 에이전트 설치하기
+  good-vibe:learn     → 내 역할에 맞는 Claude Code 활용법 배우기
+  good-vibe:my-config → 현재 설정 확인하기
+  good-vibe:add-skill → 추가 스킬 설치하기
+  good-vibe:add-agent → 추가 에이전트 설치하기
 ```

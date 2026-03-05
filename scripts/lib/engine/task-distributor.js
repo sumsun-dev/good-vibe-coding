@@ -81,7 +81,28 @@ export function buildExecutionPrompt(task, teamMember, context = {}) {
 
 ## 지시사항
 위 작업을 당신의 역할과 성격에 맞게 수행하세요.
-결과를 명확하게 보고하세요.`;
+결과를 명확하게 보고하세요.
+
+## 결과 보고 규격 (필수)
+
+### 구현 요약
+- 무엇을 만들었는지 1-3문장으로 설명
+
+### 핵심 파일
+- 생성/수정한 주요 파일과 각각의 역할
+
+### 외부 서비스 및 환경변수
+- 외부 API/서비스를 사용하면 목록 제공:
+  - 환경변수명: 설명 (발급 URL)
+  - 예: TELEGRAM_BOT_TOKEN: 텔레그램 봇 토큰 (https://t.me/botfather)
+- 외부 서비스가 없으면 "없음"으로 표기
+
+### 실행 방법
+- 결과물을 실행/확인하는 구체적 방법
+
+### 커스터마이징 포인트
+- 사용자가 수정할 만한 부분과 방법
+  - 예: "뉴스 소스 변경 → src/config.js의 NEWS_SOURCES 수정"`;
 
   if (context.planExcerpt) {
     prompt += `\n\n## 기획 결정사항\n${context.planExcerpt}`;
@@ -176,7 +197,8 @@ export function isCodeTask(task) {
   return englishKeywords.some((kw) => {
     let re = COMPILED_KEYWORD_REGEXPS.get(kw);
     if (!re) {
-      re = new RegExp(`\\b${kw}\\b`);
+      const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      re = new RegExp(`\\b${escaped}\\b`);
       COMPILED_KEYWORD_REGEXPS.set(kw, re);
     }
     return re.test(searchText);
@@ -231,7 +253,28 @@ export function buildTddExecutionPrompt(task, teamMember, context = {}) {
   - 형식: \`\`\`javascript src/파일명.js
 - 테스트 파일: \`\`\`javascript src/파일명.test.js 또는 tests/파일명.test.js
 - 설정 파일: \`\`\`json package.json
-- 각 Phase의 결과를 순서대로 보고하세요`;
+- 각 Phase의 결과를 순서대로 보고하세요
+
+## 결과 보고 규격 (필수)
+
+### 구현 요약
+- 무엇을 만들었는지 1-3문장으로 설명
+
+### 핵심 파일
+- 생성/수정한 주요 파일과 각각의 역할
+
+### 외부 서비스 및 환경변수
+- 외부 API/서비스를 사용하면 목록 제공:
+  - 환경변수명: 설명 (발급 URL)
+  - 예: TELEGRAM_BOT_TOKEN: 텔레그램 봇 토큰 (https://t.me/botfather)
+- 외부 서비스가 없으면 "없음"으로 표기
+
+### 실행 방법
+- 결과물을 실행/확인하는 구체적 방법
+
+### 커스터마이징 포인트
+- 사용자가 수정할 만한 부분과 방법
+  - 예: "뉴스 소스 변경 → src/config.js의 NEWS_SOURCES 수정"`;
 
   if (context.projectType) {
     prompt += `\n\n## 프로젝트 힌트\n- 프로젝트 유형: ${context.projectType}`;

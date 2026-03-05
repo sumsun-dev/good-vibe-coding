@@ -5,6 +5,13 @@
 
 ## [Unreleased]
 
+### Changed
+
+- **BREAKING**: 플러그인 이름 `good-vibe-coding` → `good-vibe`로 변경
+  - 커맨드 형식: `good-vibe:new`, `good-vibe:execute` 등
+  - 기존 유저: `node scripts/migrate.js`로 자동 마이그레이션
+- 모든 문서의 커맨드 참조를 `good-vibe:xxx` 형태로 통일
+
 ## [1.1.0] - 2026-03-05
 
 ### Added

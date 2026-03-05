@@ -1,6 +1,6 @@
 ---
 name: beginner-guide
-description: "Claude Code 입문자를 위한 단계별 가이드"
+description: 'Claude Code 입문자를 위한 단계별 가이드'
 ---
 
 # Beginner Guide

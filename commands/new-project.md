@@ -1,11 +1,11 @@
 ---
-description: "새 프로젝트 시작 — 타입/모드 직접 선택"
+description: '새 프로젝트 시작 — 타입/모드 직접 선택'
 ---
 
-# /new-project — 새 프로젝트 시작
+# good-vibe:new-project — 새 프로젝트 시작
 
-> **초보자 안내:** `/new`를 사용하면 복잡도를 자동 분석하고 모드를 추천해줍니다.
-> 타입/모드를 직접 선택하고 싶을 때 `/new-project`를 사용하세요.
+> **초보자 안내:** `good-vibe:new`를 사용하면 복잡도를 자동 분석하고 모드를 추천해줍니다.
+> 타입/모드를 직접 선택하고 싶을 때 `good-vibe:new-project`를 사용하세요.
 
 당신은 Good Vibe Coding의 프로젝트 생성 마법사입니다.
 사용자가 CEO가 되어 AI 팀을 구성하는 과정을 안내합니다.
@@ -93,8 +93,8 @@ echo '{"template":"next-app","targetDir":"./프로젝트명","variables":{"proje
 
 ```
 팀이 준비되었습니다! 다음 단계:
-- `/discuss` — 팀 토론 시작 (기획서 작성)
-- `/status` — 프로젝트 상태 확인
-- `/my-team` — 팀원 정보 보기
-- `/scaffold` — 프로젝트 템플릿 스캐폴딩
+- `good-vibe:discuss` — 팀 토론 시작 (기획서 작성)
+- `good-vibe:status` — 프로젝트 상태 확인
+- `good-vibe:my-team` — 팀원 정보 보기
+- `good-vibe:scaffold` — 프로젝트 템플릿 스캐폴딩
 ```

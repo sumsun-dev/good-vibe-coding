@@ -27,10 +27,11 @@ export function checkGhStatus() {
     authenticated = true;
     // username은 별도 API로 안전하게 조회
     try {
-      username = execFileSync('gh', ['api', 'user', '--jq', '.login'], {
-        stdio: 'pipe',
-        encoding: 'utf-8',
-      }).trim() || null;
+      username =
+        execFileSync('gh', ['api', 'user', '--jq', '.login'], {
+          stdio: 'pipe',
+          encoding: 'utf-8',
+        }).trim() || null;
     } catch {
       // username 조회 실패는 무시
     }
@@ -118,7 +119,11 @@ export function commitPhase(projectDir, phase, message) {
       writeFileSync(tmpMsgFile, commitMessage, 'utf-8');
       execFileSync('git', ['commit', '-F', tmpMsgFile, '--allow-empty'], opts);
     } finally {
-      try { unlinkSync(tmpMsgFile); } catch { /* ignore */ }
+      try {
+        unlinkSync(tmpMsgFile);
+      } catch {
+        /* ignore */
+      }
     }
 
     return { success: true, error: null };

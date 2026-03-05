@@ -551,3 +551,36 @@ describe('buildSynthesisPrompt 프롬프트 크기 제한', () => {
     expect(prompt).not.toContain('...(이하 생략)');
   });
 });
+
+// --- 명확화 + 외부 서비스 관련 ---
+
+describe('buildAgentAnalysisPrompt 명확화', () => {
+  it('요구사항 명확화 섹션을 포함한다', () => {
+    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0]);
+    expect(prompt).toContain('## 요구사항 명확화');
+    expect(prompt).toContain('외부 데이터 소스');
+    expect(prompt).toContain('외부 서비스 API 키');
+    expect(prompt).toContain('명확화 필요 사항');
+  });
+});
+
+describe('buildSynthesisPrompt 외부 서비스', () => {
+  it('외부 서비스 연동 섹션을 포함한다', () => {
+    const agentOutputs = [{ roleId: 'cto', role: 'CTO', emoji: '', analysis: '분석 결과' }];
+    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
+    expect(prompt).toContain('### 외부 서비스 연동');
+    expect(prompt).toContain('환경변수명');
+  });
+
+  it('CEO 결정 필요 사항 섹션을 포함한다', () => {
+    const agentOutputs = [{ roleId: 'cto', role: 'CTO', emoji: '', analysis: '분석' }];
+    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
+    expect(prompt).toContain('### CEO 결정 필요 사항');
+  });
+
+  it('명확화 필요 사항 종합 원칙을 포함한다', () => {
+    const agentOutputs = [{ roleId: 'cto', role: 'CTO', emoji: '', analysis: '분석' }];
+    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
+    expect(prompt).toContain('명확화 필요 사항');
+  });
+});

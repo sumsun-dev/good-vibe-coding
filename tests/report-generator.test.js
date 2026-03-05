@@ -4,6 +4,10 @@ import {
   generateRoleSummary,
   generateProjectStats,
   generateExecutiveSummary,
+  extractSection,
+  generateImplementationDetailsSection,
+  generateEnvGuideSection,
+  generateGettingStartedSection,
 } from '../scripts/lib/output/report-generator.js';
 
 const SAMPLE_PROJECT = {
@@ -166,21 +170,250 @@ describe('generateExecutiveSummary', () => {
   it('completed 프로젝트에 적절한 다음 단계를 제안한다', () => {
     const stats = generateProjectStats(SAMPLE_PROJECT);
     const summary = generateExecutiveSummary(SAMPLE_PROJECT, stats);
-    expect(summary).toContain('/report');
-    expect(summary).toContain('/feedback');
+    expect(summary).toContain('good-vibe:report');
+    expect(summary).toContain('good-vibe:feedback');
   });
 
   it('planning 프로젝트에 적절한 다음 단계를 제안한다', () => {
     const project = { ...SAMPLE_PROJECT, status: 'planning' };
     const stats = generateProjectStats(project);
     const summary = generateExecutiveSummary(project, stats);
-    expect(summary).toContain('/discuss');
-    expect(summary).toContain('/approve');
+    expect(summary).toContain('good-vibe:discuss');
+    expect(summary).toContain('good-vibe:approve');
   });
 
   it('generateReport에 Executive Summary가 포함된다', () => {
     const report = generateReport(SAMPLE_PROJECT);
     expect(report).toContain('Executive Summary');
     expect(report).toContain('완료율');
+  });
+
+  it('completed 프로젝트에 .env 설정 안내를 포함한다', () => {
+    const stats = generateProjectStats(SAMPLE_PROJECT);
+    const summary = generateExecutiveSummary(SAMPLE_PROJECT, stats);
+    expect(summary).toContain('.env');
+    expect(summary).toContain('의존성 설치');
+  });
+});
+
+// --- extractSection ---
+
+describe('extractSection', () => {
+  it('마크다운에서 특정 섹션을 추출한다', () => {
+    const text = '### 구현 요약\n텔레그램 봇을 만들었습니다.\n\n### 핵심 파일\n- src/index.js';
+    const result = extractSection(text, '구현 요약');
+    expect(result).toBe('텔레그램 봇을 만들었습니다.');
+  });
+
+  it('마지막 섹션도 추출한다', () => {
+    const text = '### 구현 요약\n요약 내용\n### 커스터마이징 포인트\n- config.js 수정';
+    const result = extractSection(text, '커스터마이징 포인트');
+    expect(result).toBe('- config.js 수정');
+  });
+
+  it('없는 섹션은 null을 반환한다', () => {
+    const text = '### 구현 요약\n내용';
+    expect(extractSection(text, '없는 섹션')).toBeNull();
+  });
+
+  it('빈 입력은 null을 반환한다', () => {
+    expect(extractSection(null, '구현 요약')).toBeNull();
+    expect(extractSection('', '구현 요약')).toBeNull();
+    expect(extractSection('텍스트', null)).toBeNull();
+  });
+
+  it('빈 섹션 내용은 null을 반환한다', () => {
+    const text = '### 구현 요약\n\n### 다음 섹션\n내용';
+    expect(extractSection(text, '구현 요약')).toBeNull();
+  });
+});
+
+// --- generateImplementationDetailsSection ---
+
+describe('generateImplementationDetailsSection', () => {
+  it('phaseResults에서 구현 상세를 추출한다', () => {
+    const project = {
+      executionState: {
+        phaseResults: {
+          1: {
+            taskResults: [
+              {
+                output: '### 구현 요약\n봇 구현 완료\n### 핵심 파일\n- src/bot.js: 메인 봇',
+              },
+            ],
+          },
+        },
+      },
+    };
+    const section = generateImplementationDetailsSection(project);
+    expect(section).toContain('## 구현 상세');
+    expect(section).toContain('봇 구현 완료');
+    expect(section).toContain('src/bot.js');
+  });
+
+  it('데이터가 없으면 빈 문자열을 반환한다', () => {
+    expect(generateImplementationDetailsSection({})).toBe('');
+    expect(generateImplementationDetailsSection({ executionState: null })).toBe('');
+    expect(
+      generateImplementationDetailsSection({
+        executionState: { phaseResults: { 1: { taskResults: [] } } },
+      }),
+    ).toBe('');
+  });
+
+  it('taskOutput 필드도 지원한다', () => {
+    const project = {
+      executionState: {
+        phaseResults: {
+          1: {
+            taskResults: [{ taskOutput: '### 구현 요약\nAPI 구현 완료' }],
+          },
+        },
+      },
+    };
+    const section = generateImplementationDetailsSection(project);
+    expect(section).toContain('API 구현 완료');
+  });
+});
+
+// --- generateEnvGuideSection ---
+
+describe('generateEnvGuideSection', () => {
+  it('환경변수 가이드를 생성한다', () => {
+    const project = {
+      executionState: {
+        phaseResults: {
+          1: {
+            taskResults: [
+              {
+                output:
+                  '### 외부 서비스 및 환경변수\n- TELEGRAM_BOT_TOKEN: 텔레그램 봇 토큰 (https://t.me/botfather)\n- NEWS_API_KEY: 뉴스 API 키',
+              },
+            ],
+          },
+        },
+      },
+    };
+    const section = generateEnvGuideSection(project);
+    expect(section).toContain('## 환경변수 설정 가이드');
+    expect(section).toContain('TELEGRAM_BOT_TOKEN=');
+    expect(section).toContain('NEWS_API_KEY=');
+    expect(section).toContain('.env');
+  });
+
+  it('"없음"이면 빈 문자열을 반환한다', () => {
+    const project = {
+      executionState: {
+        phaseResults: {
+          1: {
+            taskResults: [{ output: '### 외부 서비스 및 환경변수\n없음' }],
+          },
+        },
+      },
+    };
+    expect(generateEnvGuideSection(project)).toBe('');
+  });
+
+  it('데이터가 없으면 빈 문자열을 반환한다', () => {
+    expect(generateEnvGuideSection({})).toBe('');
+  });
+});
+
+// --- generateGettingStartedSection ---
+
+describe('generateGettingStartedSection', () => {
+  it('materializeResult에서 파일 목록을 수집한다', () => {
+    const project = {
+      type: 'telegram-bot',
+      executionState: {
+        phaseResults: {
+          1: {
+            taskResults: [],
+            materializeResult: {
+              files: [{ path: 'src/bot.js' }, { path: 'package.json' }],
+            },
+          },
+        },
+      },
+    };
+    const section = generateGettingStartedSection(project);
+    expect(section).toContain('## 시작 가이드');
+    expect(section).toContain('src/bot.js');
+    expect(section).toContain('package.json');
+  });
+
+  it('에이전트 출력에서 실행 방법을 추출한다', () => {
+    const project = {
+      type: 'web-app',
+      executionState: {
+        phaseResults: {
+          1: {
+            taskResults: [{ output: '### 실행 방법\nnpm run dev로 실행 후 localhost:3000 확인' }],
+          },
+        },
+      },
+    };
+    const section = generateGettingStartedSection(project);
+    expect(section).toContain('npm run dev');
+  });
+
+  it('실행 방법이 없으면 프로젝트 타입별 기본 가이드를 제공한다', () => {
+    const project = {
+      type: 'telegram-bot',
+      executionState: {
+        phaseResults: {
+          1: {
+            taskResults: [],
+            materializeResult: { files: ['src/bot.js'] },
+          },
+        },
+      },
+    };
+    const section = generateGettingStartedSection(project);
+    expect(section).toContain('TELEGRAM_BOT_TOKEN');
+    expect(section).toContain('npm start');
+  });
+
+  it('데이터가 없으면 빈 문자열을 반환한다', () => {
+    expect(generateGettingStartedSection({})).toBe('');
+  });
+});
+
+// --- generateReport 보고서 확장 ---
+
+describe('generateReport (확장 섹션)', () => {
+  it('구현 상세/환경변수/시작 가이드가 데이터 있을 때만 포함된다', () => {
+    const project = {
+      ...SAMPLE_PROJECT,
+      executionState: {
+        startedAt: '2026-03-01T00:00:00Z',
+        phaseResults: {
+          1: {
+            taskResults: [
+              {
+                output: '### 구현 요약\n봇 완성\n### 외부 서비스 및 환경변수\n- BOT_TOKEN: 토큰',
+              },
+            ],
+            materializeResult: { files: [{ path: 'src/bot.js' }] },
+            reviews: [],
+            qualityGate: null,
+            committed: false,
+          },
+        },
+        journal: [],
+        completedPhases: [],
+      },
+    };
+    const report = generateReport(project);
+    expect(report).toContain('## 구현 상세');
+    expect(report).toContain('## 환경변수 설정 가이드');
+    expect(report).toContain('## 시작 가이드');
+  });
+
+  it('데이터가 없으면 확장 섹션을 포함하지 않는다', () => {
+    const report = generateReport(SAMPLE_PROJECT);
+    expect(report).not.toContain('## 구현 상세');
+    expect(report).not.toContain('## 환경변수 설정 가이드');
+    expect(report).not.toContain('## 시작 가이드');
   });
 });

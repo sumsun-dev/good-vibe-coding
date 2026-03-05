@@ -1,14 +1,14 @@
 ---
-description: "스킬 추가 — 추천 카탈로그에서 검색/설치"
+description: '스킬 추가 — 추천 카탈로그에서 검색/설치'
 ---
 
-# /add-skill - 스킬 추가
+# good-vibe:add-skill - 스킬 추가
 
 추천 카탈로그에서 스킬을 검색하고 선택한 스킬을 설치합니다.
 
 ## 실행 방법
 
-`/add-skill` 또는 `/add-skill [스킬명]`
+`good-vibe:add-skill` 또는 `good-vibe:add-skill [스킬명]`
 
 ## 진행 절차
 
@@ -27,7 +27,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js recommendation-catalog
 응답의 `skills` 배열을 AskUserQuestion으로 보여줍니다.
 이미 설치된 스킬은 [설치됨] 표시합니다.
 
-직접 스킬명이 지정된 경우 (`/add-skill project-setup`), 해당 스킬을 바로 Step 3으로 진행합니다.
+직접 스킬명이 지정된 경우 (`good-vibe:add-skill project-setup`), 해당 스킬을 바로 Step 3으로 진행합니다.
 
 ### Step 3: 스킬 설치
 
@@ -43,8 +43,8 @@ echo '{"items":["선택된스킬id"]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.
 
 ```
 설치된 스킬: [스킬명]
-전체 스킬 목록: /my-config에서 확인
-추가 설치: /add-skill을 다시 실행
+전체 스킬 목록: good-vibe:my-config에서 확인
+추가 설치: good-vibe:add-skill을 다시 실행
 ```
 
 ## 에러 처리

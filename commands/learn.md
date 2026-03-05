@@ -1,15 +1,15 @@
 ---
-description: "한국어 학습 가이드 — 역할별 Claude Code 활용법"
+description: '한국어 학습 가이드 — 역할별 Claude Code 활용법'
 ---
 
-# /learn - 한국어 학습 가이드
+# good-vibe:learn - 한국어 학습 가이드
 
 역할에 맞는 Claude Code 활용법을 한국어로 안내합니다.
 
 ## 실행 방법
 
-사용자가 `/learn`을 입력하면 이 커맨드가 실행됩니다.
-`/learn [주제]`로 특정 주제를 학습할 수도 있습니다.
+사용자가 `good-vibe:learn`을 입력하면 이 커맨드가 실행됩니다.
+`good-vibe:learn [주제]`로 특정 주제를 학습할 수도 있습니다.
 
 ## 진행 절차
 
@@ -26,8 +26,8 @@ description: "한국어 학습 가이드 — 역할별 Claude Code 활용법"
 Claude Code 학습 가이드
 
 [공통 기초]
-1. Claude Code란 무엇인가? (/learn 기초)
-2. 기본 사용법 (/learn 사용법)
+1. Claude Code란 무엇인가? (good-vibe:learn 기초)
+2. 기본 사용법 (good-vibe:learn 사용법)
 3. 커맨드와 스킬 활용하기
 4. 에이전트 이해하기
 5. 훅과 자동화
@@ -55,6 +55,6 @@ Claude Code 학습 가이드
 
 해당 가이드 파일(`guides/` 디렉토리)의 내용을 읽어서 대화형으로 안내합니다.
 
-예: `/learn 기초` → `guides/common/01-what-is-claude-code.md` 내용 기반 안내
-예: `/learn 사용법` → `guides/common/02-basic-usage.md` 내용 기반 안내
-예: `/learn TDD` → `guides/developer/tdd-workflow.md` 내용 기반 안내
+예: `good-vibe:learn 기초` → `guides/common/01-what-is-claude-code.md` 내용 기반 안내
+예: `good-vibe:learn 사용법` → `guides/common/02-basic-usage.md` 내용 기반 안내
+예: `good-vibe:learn TDD` → `guides/developer/tdd-workflow.md` 내용 기반 안내

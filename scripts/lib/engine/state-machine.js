@@ -294,6 +294,9 @@ export function computeStateTransition(project, stepResult) {
       break;
 
     case 'materialize':
+      if (stepResult.materializeResult) {
+        phaseResult.materializeResult = stepResult.materializeResult;
+      }
       state.phaseStep = 'review';
       state.lastCompletedStep = 'materialize';
       state.status = 'reviewing';

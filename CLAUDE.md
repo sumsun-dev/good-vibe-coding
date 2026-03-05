@@ -5,10 +5,10 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 ## 설계: CLI-as-API + SDK
 
 - `cli.js`는 경량 라우터. 114개 커맨드를 14개 핸들러 모듈(`scripts/handlers/*.js`)로 lazy-load 디스패치
-- 사용자는 `/hello`, `/new`, `/discuss` 같은 슬래시 커맨드만 씀
+- 사용자는 `good-vibe:hello`, `good-vibe:new`, `good-vibe:discuss` 같은 슬래시 커맨드만 씀
 - 흐름: 슬래시 커맨드 → 에이전트 디스패치 → cli.js → 핸들러 → 코어 라이브러리
 - 에이전트 .md 파일이 `node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js <command>` 형태로 호출
-- **SDK** (`src/`): 동일한 코어 모듈을 프로그래밍 API로 노출. `import { GoodVibe } from 'good-vibe-coding'`
+- **SDK** (`src/`): 동일한 코어 모듈을 프로그래밍 API로 노출. `import { GoodVibe } from 'good-vibe'`
 
 ## 핵심 컨셉
 
@@ -18,7 +18,7 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 
 ## 프로젝트 모드 (3가지)
 
-| 모드             | 팀 규모 | 토론         | 추천 상황           | `/new`에서의 자동 진행                        |
+| 모드             | 팀 규모 | 토론         | 추천 상황           | `good-vibe:new`에서의 자동 진행               |
 | ---------------- | ------- | ------------ | ------------------- | --------------------------------------------- |
 | **quick-build**  | 2-3명   | 생략         | 간단한 봇, 스크립트 | CTO 분석 → 작업 분배 → 실행 → QA 리뷰 → 완료  |
 | **plan-execute** | 3-5명   | 1라운드      | 웹앱, API 서버      | discuss(1라운드) → 자동 승인 → execute → 완료 |
@@ -26,13 +26,13 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 
 ## 실행 모드 (2가지)
 
-| 모드            | 동작                                     | 중단 시점                          |
-| --------------- | ---------------------------------------- | ---------------------------------- |
-| **interactive** | Phase마다 CEO에게 진행 여부 확인         | 매 Phase 완료 후 + 에스컬레이션    |
-| **semi-auto**   | batchSize Phase마다 확인 (기본 3)        | 배치 완료 후 + 에스컬레이션        |
-| **auto**        | 자동 진행                                | 에스컬레이션(수정 2회 실패)만 멈춤 |
+| 모드            | 동작                              | 중단 시점                          |
+| --------------- | --------------------------------- | ---------------------------------- |
+| **interactive** | Phase마다 CEO에게 진행 여부 확인  | 매 Phase 완료 후 + 에스컬레이션    |
+| **semi-auto**   | batchSize Phase마다 확인 (기본 3) | 배치 완료 후 + 에스컬레이션        |
+| **auto**        | 자동 진행                         | 에스컬레이션(수정 2회 실패)만 멈춤 |
 
-- `/execute` 시작 시 선택, SDK는 auto 고정
+- `good-vibe:execute` 시작 시 선택, SDK는 auto 고정
 - `project.mode` (프로젝트 모드) ≠ `executionState.mode` (실행 모드)
 
 ## 프로젝트 상태 전이
@@ -43,27 +43,27 @@ created → planning → approved → executing → reviewing → completed
            (재토론)                          (fix 후 재실행)
 ```
 
-| 상태        | 가능한 커맨드          | 설명                          |
-| ----------- | ---------------------- | ----------------------------- |
-| `created`   | `/new`, `/discuss`     | 프로젝트 생성됨, 팀 구성 완료 |
-| `planning`  | `/discuss`, `/approve` | 토론 중 또는 기획서 작성됨    |
-| `approved`  | `/execute`, `/report`  | CEO 승인 완료, 작업 분배됨    |
-| `executing` | `/status`, (자동 진행) | 실행 중                       |
-| `reviewing` | `/status`, (자동 진행) | 리뷰 중                       |
-| `completed` | `/report`, `/feedback` | 전체 완료                     |
+| 상태        | 가능한 커맨드                            | 설명                          |
+| ----------- | ---------------------------------------- | ----------------------------- |
+| `created`   | `good-vibe:new`, `good-vibe:discuss`     | 프로젝트 생성됨, 팀 구성 완료 |
+| `planning`  | `good-vibe:discuss`, `good-vibe:approve` | 토론 중 또는 기획서 작성됨    |
+| `approved`  | `good-vibe:execute`, `good-vibe:report`  | CEO 승인 완료, 작업 분배됨    |
+| `executing` | `good-vibe:status`, (자동 진행)          | 실행 중                       |
+| `reviewing` | `good-vibe:status`, (자동 진행)          | 리뷰 중                       |
+| `completed` | `good-vibe:report`, `good-vibe:feedback` | 전체 완료                     |
 
 ## 기존 프로젝트 이어서 작업
 
 **중단된 실행 재개:**
 
-- `/execute` 시 이전 실행이 있으면 자동으로 재개 여부를 물어봄
+- `good-vibe:execute` 시 이전 실행이 있으면 자동으로 재개 여부를 물어봄
 - `init-execution`에 `resume: true`로 이전 Phase부터 이어서 진행
 - 실행 상태(Phase, fixAttempt, 저널)가 `project.json`에 보존됨
 
 **프로젝트 전환:**
 
-- `/projects` — 전체 목록 확인
-- `/status` — 현재 프로젝트 상태 확인
+- `good-vibe:projects` — 전체 목록 확인
+- `good-vibe:status` — 현재 프로젝트 상태 확인
 - 대부분의 커맨드는 가장 최근 프로젝트를 자동 선택, 여러 개면 AskUserQuestion으로 선택
 
 ## 모드별 전체 워크플로우
@@ -71,7 +71,7 @@ created → planning → approved → executing → reviewing → completed
 ### quick-build (자동모드)
 
 ```
-/new "텔레그램 봇 만들어줘"
+good-vibe:new "텔레그램 봇 만들어줘"
   → 복잡도: simple → quick-build 자동 선택
   → 팀 구성: CTO, Backend, QA (3명)
   → CTO 아키텍처 분석 (Task 1회)
@@ -81,19 +81,19 @@ created → planning → approved → executing → reviewing → completed
   → QA 리뷰 → quality-gate
   → 통과 시 완료, 실패 시 수정 → 에스컬레이션
   → status: completed
-  → "다음: /report, /feedback"
+  → "다음: good-vibe:report, good-vibe:feedback"
 ```
 
 ### plan-execute (반자동모드)
 
 ```
-/new "팀 프로젝트 관리 웹앱"
+good-vibe:new "팀 프로젝트 관리 웹앱"
   → 복잡도: medium → plan-execute 자동 선택
   → 팀 구성: CTO, PO, Fullstack, Frontend, QA (5명)
-  → /discuss 자동 실행 (1라운드)
+  → good-vibe:discuss 자동 실행 (1라운드)
      → Tier별 병렬 분석 → 종합 → 리뷰 → 수렴 확인
   → 기획서 자동 승인 → 작업 분배
-  → /execute 자동 실행
+  → good-vibe:execute 자동 실행
      → Phase별: 실행 → 구체화 → 리뷰 → 품질게이트 → 커밋
   → status: completed
 ```
@@ -101,13 +101,13 @@ created → planning → approved → executing → reviewing → completed
 ### plan-only (CEO 승인 필요)
 
 ```
-/new "마이크로서비스 SaaS 플랫폼"
+good-vibe:new "마이크로서비스 SaaS 플랫폼"
   → 복잡도: complex → plan-only 자동 선택
   → 팀 구성: 5-8명 (전문가 팀)
-  → /discuss 자동 실행 (최대 3라운드, 수렴까지)
-  → "기획서가 완성되었습니다. /approve로 승인해주세요"
-  → 사용자가 /approve 실행
-  → 사용자가 /execute 실행 (모드 선택: interactive/auto)
+  → good-vibe:discuss 자동 실행 (최대 3라운드, 수렴까지)
+  → "기획서가 완성되었습니다. good-vibe:approve로 승인해주세요"
+  → 사용자가 good-vibe:approve 실행
+  → 사용자가 good-vibe:execute 실행 (모드 선택: interactive/auto)
   → 실행 완료
 ```
 
@@ -115,23 +115,23 @@ created → planning → approved → executing → reviewing → completed
 
 초보자에게는 **필수 6개만** 안내:
 
-1. **필수 6개** — `/hello` → `/new` → `/discuss` → `/approve` → `/execute` → `/report`
-2. **관리 4개** — `/status`, `/feedback`, `/my-team`, `/learn`
-3. **고급 10개** — `/new-project`, `/projects`, `/onboarding`, `/my-config`, `/add-skill`, `/add-agent`, `/scaffold`, `/preset`, `/reset`, `/eval`
+1. **필수 6개** — `good-vibe:hello` → `good-vibe:new` → `good-vibe:discuss` → `good-vibe:approve` → `good-vibe:execute` → `good-vibe:report`
+2. **관리 4개** — `good-vibe:status`, `good-vibe:feedback`, `good-vibe:my-team`, `good-vibe:learn`
+3. **고급 10개** — `good-vibe:new-project`, `good-vibe:projects`, `good-vibe:onboarding`, `good-vibe:my-config`, `good-vibe:add-skill`, `good-vibe:add-agent`, `good-vibe:scaffold`, `good-vibe:preset`, `good-vibe:reset`, `good-vibe:eval`
 
 퀵스타트 가이드: `guides/common/00-quick-start.md`
 
 ## 혼동 방지
 
-| 비교                                    | 차이                                                                               |
-| --------------------------------------- | ---------------------------------------------------------------------------------- |
-| `/new` vs `/new-project`                | 자동(복잡도 분석 → 추천) vs 수동(직접 선택)                                        |
-| `/hello` vs `/onboarding`               | 프로젝트별 세팅 vs 사용자 환경 설정(1회)                                           |
-| `/status` vs `/projects`                | 현재 프로젝트만 vs 전체 목록                                                       |
-| `/hello` → `/new` vs `/new` 단독        | 코드 생성/관리 필요 시 hello 먼저, 기획서/보고서만 필요 시 new만                   |
-| `project.mode` vs `executionState.mode` | 프로젝트 워크플로우(plan-only/plan-execute/quick-build) vs 실행 인터랙션(interactive/semi-auto/auto) |
-| plan-only vs plan-execute               | 둘 다 실행까지 감. plan-only는 /approve 후 수동 /execute, plan-execute는 자동 연결 |
-| approve 되돌리기                        | 실행 시작 전이라면 `/discuss --reset`으로 approved → planning 복귀 가능           |
+| 비교                                                        | 차이                                                                                                 |
+| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `good-vibe:new` vs `good-vibe:new-project`                  | 자동(복잡도 분석 → 추천) vs 수동(직접 선택)                                                          |
+| `good-vibe:hello` vs `good-vibe:onboarding`                 | 프로젝트별 세팅 vs 사용자 환경 설정(1회)                                                             |
+| `good-vibe:status` vs `good-vibe:projects`                  | 현재 프로젝트만 vs 전체 목록                                                                         |
+| `good-vibe:hello` → `good-vibe:new` vs `good-vibe:new` 단독 | 코드 생성/관리 필요 시 hello 먼저, 기획서/보고서만 필요 시 new만                                     |
+| `project.mode` vs `executionState.mode`                     | 프로젝트 워크플로우(plan-only/plan-execute/quick-build) vs 실행 인터랙션(interactive/semi-auto/auto) |
+| plan-only vs plan-execute                                   | 둘 다 실행까지 감. plan-only는 good-vibe:approve 후 수동 good-vibe:execute, plan-execute는 자동 연결 |
+| approve 되돌리기                                            | 실행 시작 전이라면 `good-vibe:discuss --reset`으로 approved → planning 복귀 가능                     |
 
 ## 기술 스택
 
@@ -144,9 +144,9 @@ created → planning → approved → executing → reviewing → completed
 
 ```
 ┌─────────────────────────────────────────────┐
-│  사용자              슬래시 커맨드 6개        │
-│  /hello → /new → /discuss → /approve →      │
-│  /execute → /report                          │
+│  사용자              슬래시 커맨드 6개                    │
+│  good-vibe:hello → good-vibe:new → good-vibe:discuss → │
+│  good-vibe:approve → good-vibe:execute → good-vibe:report │
 ├─────────────────────────────────────────────┤
 │  SDK                 GoodVibe 클래스         │
 │  buildTeam → discuss → execute → report     │
@@ -556,7 +556,7 @@ logs/daily-improvement/
 
 - `aggregateCrossProjectFeedback(roleId, projects)` — 여러 프로젝트에서 동일 역할의 이슈 패턴 집계
 - 3회 이상 반복된 카테고리를 "반복 패턴"으로 추출하여 user-level 오버라이드에 "반복 패턴 주의" 섹션 추가
-- `/feedback` 실행 시 자동으로 크로스프로젝트 분석 수행
+- `good-vibe:feedback` 실행 시 자동으로 크로스프로젝트 분석 수행
 
 ## 프롬프트 버전 관리
 
@@ -668,7 +668,7 @@ throw new AppError('내부 오류', 'SYSTEM_ERROR'); // 기본값
 
 // cli.js 에러 코드 매핑
 // INPUT_ERROR  → exit 2 ("입력 형식을 확인한 후 다시 시도하세요")
-// NOT_FOUND    → exit 3 ("/projects 또는 /status로 목록을 확인하세요")
+// NOT_FOUND    → exit 3 ("good-vibe:projects 또는 good-vibe:status로 목록을 확인하세요")
 // SYSTEM_ERROR → exit 1 ("설정을 확인하거나 Claude Code를 다시 시작하세요")
 // stderr 형식: "오류 [CODE]: message\nhint\n"
 ```

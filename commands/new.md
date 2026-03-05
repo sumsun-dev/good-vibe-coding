@@ -1,16 +1,16 @@
 ---
-description: "통합 프로젝트 시작 — 복잡도 분석 + 팀 구성 + 자동 진행"
+description: '통합 프로젝트 시작 — 복잡도 분석 + 팀 구성 + 자동 진행'
 ---
 
-# /new — 통합 프로젝트 시작
+# good-vibe:new — 통합 프로젝트 시작
 
 프로젝트 아이디어를 받아 복잡도를 분석하고, 적합한 모드로 자동 진행합니다.
 
-> **`/hello` 없이도 `/new`로 바로 시작할 수 있습니다.**
-> `/hello`는 GitHub 저장소와 프로젝트 인프라(폴더, CLAUDE.md)를 먼저 셋업할 때 사용합니다.
+> **`good-vibe:hello` 없이도 `good-vibe:new`로 바로 시작할 수 있습니다.**
+> `good-vibe:hello`는 GitHub 저장소와 프로젝트 인프라(폴더, CLAUDE.md)를 먼저 셋업할 때 사용합니다.
 >
-> - 코드를 직접 생성/관리하고 싶다면 → `/hello` → `/new`
-> - 기획서와 보고서만 필요하다면 → `/new`로 바로 시작
+> - 코드를 직접 생성/관리하고 싶다면 → `good-vibe:hello` → `good-vibe:new`
+> - 기획서와 보고서만 필요하다면 → `good-vibe:new`로 바로 시작
 
 ## 초보자 안내 (처음 실행 시 표시)
 
@@ -22,7 +22,7 @@ Good Vibe Coding에 오신 것을 환영합니다!
 프로젝트 아이디어만 말씀해주시면, AI 팀이 기획부터 실행까지 도와드립니다.
 
 전체 흐름:
-  /new → /discuss → /approve → /execute → /report
+  good-vibe:new → good-vibe:discuss → good-vibe:approve → good-vibe:execute → good-vibe:report
 
 지금은 아이디어만 입력해주세요. 나머지는 단계별로 안내해드립니다.
 ```
@@ -44,7 +44,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js check-version
 header: "업데이트"
 options:
   - label: "업데이트 후 진행 (Recommended)"
-    description: "최신 버전으로 업데이트한 뒤 /new를 다시 실행합니다"
+    description: "최신 버전으로 업데이트한 뒤 good-vibe:new를 다시 실행합니다"
   - label: "이대로 진행"
     description: "현재 버전으로 프로젝트를 시작합니다"
 ```
@@ -60,7 +60,7 @@ options:
   # 플러그인 사용자
   claude plugin update sumsun-dev/good-vibe-coding
 
-업데이트 후 /new를 다시 실행해주세요.
+업데이트 후 good-vibe:new를 다시 실행해주세요.
 ```
 
 이 경우 여기서 커맨드를 종료합니다. "이대로 진행" 선택 시 Step 1로 넘어갑니다.
@@ -367,19 +367,19 @@ echo '{"id":"{프로젝트ID}","status":"completed"}' | node ${CLAUDE_PLUGIN_ROO
 
 ### 모드 B: 간단 기획 후 만들기 (plan-execute)
 
-1. `/discuss` 실행 (1라운드)
+1. `good-vibe:discuss` 실행 (1라운드)
 2. 자동 승인 처리
-3. `/execute` 실행 (리뷰 포함) — 진행률 표시 포함
+3. `good-vibe:execute` 실행 (리뷰 포함) — 진행률 표시 포함
 4. 완료 보고
 
-**진행률 표시:** `/execute` 실행 중 각 Phase 시작/완료, 태스크 진행, ETA를 표시합니다.
+**진행률 표시:** `good-vibe:execute` 실행 중 각 Phase 시작/완료, 태스크 진행, ETA를 표시합니다.
 progress-formatter의 `formatPhaseStart`, `formatPhaseComplete`, `formatProgressBar`, `estimateRemainingTime`을 활용합니다.
 
 ### 모드 C: 팀 토론 후 만들기 (plan-only → execute)
 
-1. `/discuss` 실행 (최대 3라운드, 수렴까지)
-2. `/approve` 실행 (CEO 승인)
-3. `/execute` 실행 (리뷰 포함) — 진행률 표시 포함
+1. `good-vibe:discuss` 실행 (최대 3라운드, 수렴까지)
+2. `good-vibe:approve` 실행 (CEO 승인)
+3. `good-vibe:execute` 실행 (리뷰 포함) — 진행률 표시 포함
 4. 완료 보고
 
 ## Step 6: 완료 안내
@@ -387,7 +387,7 @@ progress-formatter의 `formatPhaseStart`, `formatPhaseComplete`, `formatProgress
 ```
 프로젝트가 완료되었습니다!
 
-/report — 프로젝트 전체 과정을 정리한 보고서를 생성합니다
-/feedback — 팀원별 성과를 분석하고, 다음 프로젝트를 위한 개선점을 제안합니다
-/status — 프로젝트 상태와 작업 진행률을 확인합니다
+good-vibe:report — 프로젝트 전체 과정을 정리한 보고서를 생성합니다
+good-vibe:feedback — 팀원별 성과를 분석하고, 다음 프로젝트를 위한 개선점을 제안합니다
+good-vibe:status — 프로젝트 상태와 작업 진행률을 확인합니다
 ```

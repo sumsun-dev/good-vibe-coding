@@ -1,14 +1,14 @@
 ---
-description: "현재 설정 확인 — 대시보드 형태로 조회"
+description: '현재 설정 확인 — 대시보드 형태로 조회'
 ---
 
-# /my-config - 현재 설정 확인
+# good-vibe:my-config - 현재 설정 확인
 
 현재 Claude Code 설정 상태를 대시보드 형태로 보여줍니다.
 
 ## 실행 방법
 
-사용자가 `/my-config`를 입력하면 이 커맨드가 실행됩니다.
+사용자가 `good-vibe:my-config`를 입력하면 이 커맨드가 실행됩니다.
 
 ## 진행 절차
 
@@ -38,9 +38,9 @@ description: "현재 설정 확인 — 대시보드 형태로 조회"
 └───────────────────────────────────────┘
 ```
 
-4. 설정이 없으면 `/onboarding` 실행을 안내합니다.
+4. 설정이 없으면 `good-vibe:onboarding` 실행을 안내합니다.
 
 ## 추가 옵션
 
-- `/my-config --detail`: 각 파일의 상세 내용 표시
-- `/my-config --json`: JSON 형식으로 출력
+- `good-vibe:my-config --detail`: 각 파일의 상세 내용 표시
+- `good-vibe:my-config --json`: JSON 형식으로 출력

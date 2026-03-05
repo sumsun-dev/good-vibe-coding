@@ -236,7 +236,9 @@ export async function getOptimizedTeam(projectType, complexity, codebaseInfo = n
   // 동적 역할 우선순위 경고
   for (const role of baseRoles) {
     if (!(role in ROLE_PRIORITY)) {
-      process.stderr.write(`[gvc] 동적 역할 "${role}"에 우선순위가 정의되지 않았습니다 (기본값 99 사용)\n`);
+      process.stderr.write(
+        `[gvc] 동적 역할 "${role}"에 우선순위가 정의되지 않았습니다 (기본값 99 사용)\n`,
+      );
     }
   }
 

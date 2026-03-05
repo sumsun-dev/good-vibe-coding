@@ -1,8 +1,8 @@
 /**
- * good-vibe-coding SDK 엔트리 포인트.
+ * good-vibe SDK 엔트리 포인트.
  *
  * @example
- * import { GoodVibe } from 'good-vibe-coding';
+ * import { GoodVibe } from 'good-vibe';
  * const gv = new GoodVibe({ provider: 'claude' });
  * const team = await gv.buildTeam('날씨 알림 봇');
  */

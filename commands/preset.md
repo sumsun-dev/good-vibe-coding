@@ -1,14 +1,14 @@
 ---
-description: "프리셋 적용 — 사전 정의된 설정 일괄 적용"
+description: '프리셋 적용 — 사전 정의된 설정 일괄 적용'
 ---
 
-# /preset - 프리셋 적용
+# good-vibe:preset - 프리셋 적용
 
 사전 정의된 프리셋을 일괄 적용합니다.
 
 ## 실행 방법
 
-`/preset` 또는 `/preset [프리셋명]`
+`good-vibe:preset` 또는 `good-vibe:preset [프리셋명]`
 
 ## 진행 절차
 
@@ -95,11 +95,11 @@ options:
   ~/.claude/CLAUDE.md
   ~/.claude/rules/core.md
 
-/my-config로 현재 설정을 확인할 수 있습니다.
+good-vibe:my-config로 현재 설정을 확인할 수 있습니다.
 ```
 
 ## 에러 처리
 
-- **프리셋 없음**: "해당 프리셋을 찾을 수 없습니다. `/preset`으로 목록을 확인해주세요."
+- **프리셋 없음**: "해당 프리셋을 찾을 수 없습니다. `good-vibe:preset`으로 목록을 확인해주세요."
 - **파일 쓰기 실패**: "프리셋 적용에 실패했습니다. 기존 설정은 백업되어 있습니다."
 - **취소**: "프리셋 적용이 취소되었습니다."

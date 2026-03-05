@@ -7,7 +7,7 @@ import {
   MINIMAL_GITIGNORE,
 } from '../scripts/lib/project/github-manager.js';
 import { execFileSync } from 'child_process';
-import { existsSync, writeFileSync, unlinkSync } from 'fs';
+import { existsSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { config } from '../scripts/lib/core/config.js';
 
@@ -65,7 +65,9 @@ describe('github-manager', () => {
       execFileSync
         .mockReturnValueOnce('gh version 2.40.0') // gh --version
         .mockReturnValueOnce('') // gh auth status (exit 0)
-        .mockImplementationOnce(() => { throw new Error('api failed'); }); // gh api user
+        .mockImplementationOnce(() => {
+          throw new Error('api failed');
+        }); // gh api user
 
       const result = checkGhStatus();
       expect(result.installed).toBe(true);

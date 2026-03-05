@@ -601,7 +601,11 @@ describe('E2E: 플러그인 frontmatter 검증', () => {
       const skillPath = join(SKILLS_DIR, dir, 'SKILL.md');
       if (!existsSync(skillPath)) continue;
       const content = readFileSync(skillPath, 'utf-8');
-      if (!content.startsWith('---') || !content.includes('name:') || !content.includes('description:')) {
+      if (
+        !content.startsWith('---') ||
+        !content.includes('name:') ||
+        !content.includes('description:')
+      ) {
         missing.push(dir);
       }
     }

@@ -1,14 +1,14 @@
 ---
-description: "에이전트 추가 — 추천 카탈로그에서 검색/설치"
+description: '에이전트 추가 — 추천 카탈로그에서 검색/설치'
 ---
 
-# /add-agent - 에이전트 추가
+# good-vibe:add-agent - 에이전트 추가
 
 추천 카탈로그에서 에이전트를 검색하고 선택한 에이전트를 설치합니다.
 
 ## 실행 방법
 
-`/add-agent` 또는 `/add-agent [에이전트명]`
+`good-vibe:add-agent` 또는 `good-vibe:add-agent [에이전트명]`
 
 ## 진행 절차
 
@@ -27,7 +27,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js recommendation-catalog
 응답의 `agents` 배열을 AskUserQuestion으로 보여줍니다.
 이미 설치된 에이전트는 [설치됨] 표시합니다.
 
-직접 에이전트명이 지정된 경우 (`/add-agent code-reviewer-kr`), 해당 에이전트를 바로 Step 3으로 진행합니다.
+직접 에이전트명이 지정된 경우 (`good-vibe:add-agent code-reviewer-kr`), 해당 에이전트를 바로 Step 3으로 진행합니다.
 
 ### Step 3: 에이전트 설치
 
@@ -43,8 +43,8 @@ echo '{"items":["선택된에이전트id"]}' | node ${CLAUDE_PLUGIN_ROOT}/script
 
 ```
 설치된 에이전트: [에이전트명]
-전체 에이전트 목록: /my-config에서 확인
-추가 설치: /add-agent를 다시 실행
+전체 에이전트 목록: good-vibe:my-config에서 확인
+추가 설치: good-vibe:add-agent를 다시 실행
 ```
 
 ## 에러 처리

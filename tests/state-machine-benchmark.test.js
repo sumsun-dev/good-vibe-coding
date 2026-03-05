@@ -97,3 +97,41 @@ describe('computeStateTransition 성능 (#23)', () => {
     expect(avgMs).toBeLessThan(10);
   });
 });
+
+// --- materializeResult 저장 ---
+
+describe('computeStateTransition materialize', () => {
+  it('materializeResult를 phaseResults에 저장한다', () => {
+    const project = makeProjectWithNTasks(5);
+    project.executionState.phaseStep = 'materialize';
+    project.executionState.status = 'executing';
+
+    const stepResult = {
+      completedAction: 'materialize',
+      materializeResult: {
+        totalBlocks: 3,
+        materializedCount: 2,
+        files: [{ path: 'src/app.js' }, { path: 'src/utils.js' }],
+      },
+    };
+
+    const updated = computeStateTransition(project, stepResult);
+    const pr = updated.executionState.phaseResults[1];
+    expect(pr.materializeResult).toBeDefined();
+    expect(pr.materializeResult.totalBlocks).toBe(3);
+    expect(pr.materializeResult.materializedCount).toBe(2);
+    expect(pr.materializeResult.files).toHaveLength(2);
+  });
+
+  it('materializeResult가 없으면 저장하지 않는다', () => {
+    const project = makeProjectWithNTasks(5);
+    project.executionState.phaseStep = 'materialize';
+    project.executionState.status = 'executing';
+
+    const stepResult = { completedAction: 'materialize' };
+
+    const updated = computeStateTransition(project, stepResult);
+    const pr = updated.executionState.phaseResults[1];
+    expect(pr.materializeResult).toBeUndefined();
+  });
+});

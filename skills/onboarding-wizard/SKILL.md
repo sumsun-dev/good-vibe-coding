@@ -1,6 +1,6 @@
 ---
 name: onboarding-wizard
-description: "Claude Code 초기 설정을 대화형으로 진행하는 온보딩 마법사"
+description: 'Claude Code 초기 설정을 대화형으로 진행하는 온보딩 마법사'
 ---
 
 # Onboarding Wizard

@@ -1,8 +1,8 @@
 ---
-description: "접근법 비교 평가 — 단일 프롬프트 vs 멀티에이전트"
+description: '접근법 비교 평가 — 단일 프롬프트 vs 멀티에이전트'
 ---
 
-# /eval — 접근법 비교 평가
+# good-vibe:eval — 접근법 비교 평가
 
 ## 이 커맨드를 실행하면?
 
@@ -141,6 +141,6 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js eval-report --session-id {sessionId}
 ```
 평가가 완료되었습니다!
 - 세션 ID: {sessionId}
-- 다른 프로젝트로 재평가하려면 /eval을 다시 실행하세요
+- 다른 프로젝트로 재평가하려면 good-vibe:eval을 다시 실행하세요
 - 이전 평가 목록: eval-list CLI 명령 사용
 ```

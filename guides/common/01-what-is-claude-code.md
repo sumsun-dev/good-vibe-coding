@@ -34,7 +34,7 @@ Claude Code에게 "나는 이런 사람이고, 이렇게 일해줘"라고 알려
 
 ### 2. 커맨드 (Commands)
 
-`/onboarding`, `/learn` 처럼 슬래시(/)로 시작하는 단축 명령어입니다.
+`good-vibe:onboarding`, `good-vibe:learn` 처럼 플러그인 접두사로 시작하는 단축 명령어입니다.
 자주 하는 작업을 한 번의 입력으로 실행할 수 있습니다.
 
 ### 3. 스킬 (Skills)

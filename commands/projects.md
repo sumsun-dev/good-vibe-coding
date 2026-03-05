@@ -1,8 +1,8 @@
 ---
-description: "프로젝트 목록 — 전체 프로젝트 조회"
+description: '프로젝트 목록 — 전체 프로젝트 조회'
 ---
 
-# /projects — 프로젝트 목록
+# good-vibe:projects — 프로젝트 목록
 
 전체 프로젝트 목록을 보여줍니다.
 
@@ -29,7 +29,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js list-projects
 
 ```
 아직 프로젝트가 없습니다.
-`/new`로 첫 프로젝트를 시작하세요! (수동 설정: `/new-project`)
+`good-vibe:new`로 첫 프로젝트를 시작하세요! (수동 설정: `good-vibe:new-project`)
 ```
 
 ## Step 3: 프로젝트 선택
@@ -37,4 +37,4 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js list-projects
 프로젝트가 있으면 AskUserQuestion으로:
 
 - "프로젝트를 선택하세요"
-- 선택 후 `/status` 정보를 표시
+- 선택 후 `good-vibe:status` 정보를 표시

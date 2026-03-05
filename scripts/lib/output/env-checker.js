@@ -77,7 +77,10 @@ export function checkEnvironment() {
   try {
     handlebarsVersion = execFileSync(
       'node',
-      ['-e', "import('handlebars/package.json',{with:{type:'json'}}).then(m=>process.stdout.write(m.default.version))"],
+      [
+        '-e',
+        "import('handlebars/package.json',{with:{type:'json'}}).then(m=>process.stdout.write(m.default.version))",
+      ],
       { stdio: 'pipe', encoding: 'utf-8', timeout: 5000 },
     ).trim();
   } catch {
