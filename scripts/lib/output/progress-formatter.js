@@ -145,6 +145,107 @@ export function estimateRemainingTime(journal, currentPhase, totalPhases) {
 }
 
 /**
+ * 실패 이력을 Phase별 요약 형식으로 포맷팅한다.
+ * @param {Array<{timestamp: string, action: string, phase: number, failureSummary?: object, fixAttempt?: number}>} journal - 실행 저널
+ * @returns {string} 실패 이력 마크다운
+ */
+export function formatFailureHistory(journal) {
+  if (!Array.isArray(journal) || journal.length === 0) return '실패 이력 없음';
+
+  const failures = journal.filter(
+    (e) => e.failureSummary || e.action === 'escalation-response',
+  );
+
+  if (failures.length === 0) return '실패 이력 없음';
+
+  const lines = ['실패 이력'];
+
+  // Phase별 그룹핑
+  const byPhase = new Map();
+  for (const entry of failures) {
+    const phase = entry.phase || 0;
+    if (!byPhase.has(phase)) byPhase.set(phase, []);
+    byPhase.get(phase).push(entry);
+  }
+
+  for (const [phase, entries] of byPhase) {
+    lines.push(`\nPhase ${phase}:`);
+    for (const entry of entries) {
+      const time = entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString('ko-KR') : '';
+      if (entry.failureSummary) {
+        const cats = (entry.failureSummary.categories || []).join(', ');
+        lines.push(`├─ [${time}] 품질 게이트 실패: ${entry.failureSummary.issueCount}건 (${cats})`);
+      }
+      if (entry.action === 'escalation-response') {
+        lines.push(`├─ [${time}] 에스컬레이션 처리`);
+      }
+    }
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * 토론 진행률을 포맷팅한다.
+ * @param {number} round - 현재 라운드
+ * @param {number} maxRounds - 최대 라운드
+ * @param {number} currentTier - 현재 Tier (1-4)
+ * @param {number} totalTiers - 총 Tier 수
+ * @param {string[]} tierAgents - 현재 Tier 에이전트 목록
+ * @returns {string}
+ */
+export function formatDiscussionProgress(round, maxRounds, currentTier, totalTiers, tierAgents) {
+  const safeAgents = Array.isArray(tierAgents) ? tierAgents : [];
+  const barLength = 8;
+  const progress = totalTiers > 0 ? (currentTier - 1) / totalTiers : 0;
+  const filled = Math.round(progress * barLength);
+  const bar = '█'.repeat(filled) + '░'.repeat(barLength - filled);
+  return `[${bar}] 토론 ${round}/${maxRounds} — Tier ${currentTier}/${totalTiers} (${safeAgents.join(', ')})`;
+}
+
+/**
+ * Tier 내 에이전트 진행 상황을 포맷팅한다.
+ * @param {string} tierName - Tier 이름 (예: "전략/요구사항")
+ * @param {string[]} completedAgents - 완료된 에이전트
+ * @param {string[]} totalAgents - 전체 에이전트
+ * @returns {string}
+ */
+export function formatTierProgress(tierName, completedAgents, totalAgents) {
+  const safeCompleted = Array.isArray(completedAgents) ? completedAgents : [];
+  const safeTotal = Array.isArray(totalAgents) ? totalAgents : [];
+  const lines = [`Tier: ${tierName} (${safeCompleted.length}/${safeTotal.length})`];
+  for (const agent of safeTotal) {
+    const icon = safeCompleted.includes(agent) ? '[v]' : '[ ]';
+    lines.push(`├─ ${icon} ${agent}`);
+  }
+  return lines.join('\n');
+}
+
+/**
+ * 수렴 상태를 포맷팅한다.
+ * @param {number} approvalRate - 승인율 (0-1)
+ * @param {number} threshold - 수렴 임계값 (0-1)
+ * @param {string[]} blockers - 블로커 이슈 목록
+ * @returns {string}
+ */
+export function formatConvergenceStatus(approvalRate, threshold, blockers) {
+  const percent = Math.round((approvalRate || 0) * 100);
+  const thresholdPercent = Math.round((threshold || 0.8) * 100);
+  const converged = approvalRate >= threshold;
+  const status = converged ? 'CONVERGED' : 'NOT CONVERGED';
+  const safeBlockers = Array.isArray(blockers) ? blockers : [];
+
+  let result = `수렴 상태: ${status} (${percent}% / 목표 ${thresholdPercent}%)`;
+  if (safeBlockers.length > 0) {
+    result += `\n블로커: ${safeBlockers.length}건`;
+    for (const blocker of safeBlockers) {
+      result += `\n├─ ${blocker}`;
+    }
+  }
+  return result;
+}
+
+/**
  * 실행 대시보드를 포맷팅한다.
  * @param {object} project - 프로젝트 정보
  * @returns {string}

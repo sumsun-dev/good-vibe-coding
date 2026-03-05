@@ -225,6 +225,10 @@ ${issuesList}`;
       const categories = [...new Set(failureContext.issues.map((i) => i.category))];
       prompt += `\n\n### 이슈 카테고리 분포: ${categories.join(', ')}`;
     }
+    // CEO 피드백이 있으면 수정 프롬프트에 주입
+    if (failureContext.ceoGuidance) {
+      prompt += `\n\n## CEO 지침\n\n${failureContext.ceoGuidance}\n\n**위 지침을 최우선으로 반영하여 수정하세요.**`;
+    }
   }
 
   prompt += `

@@ -3,6 +3,7 @@ import {
   buildSectioned,
   toMarkdownList,
   jsonOutputSection,
+  PROMPT_VERSION,
 } from '../scripts/lib/core/prompt-builder.js';
 
 describe('buildSectioned', () => {
@@ -29,9 +30,16 @@ describe('buildSectioned', () => {
     expect(result).not.toContain('## 빈값');
   });
 
-  it('섹션이 없으면 intro만 반환한다', () => {
-    expect(buildSectioned('intro', [])).toBe('intro');
-    expect(buildSectioned('intro')).toBe('intro');
+  it('섹션이 없으면 intro만 반환한다 (버전 주석 포함)', () => {
+    const result = buildSectioned('intro', []);
+    expect(result).toContain('intro');
+    expect(result).toContain(`prompt-version: ${PROMPT_VERSION}`);
+    expect(result).not.toContain('##');
+  });
+
+  it('프롬프트 버전 주석이 포함된다', () => {
+    const result = buildSectioned('test', [{ title: 'A', content: 'B' }]);
+    expect(result).toContain(`<!-- prompt-version: ${PROMPT_VERSION} -->`);
   });
 });
 

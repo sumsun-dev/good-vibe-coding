@@ -706,3 +706,39 @@ describe('buildRevisionPrompt 최종 시도 경고', () => {
     expect(prompt).toContain('마지막');
   });
 });
+
+describe('buildRevisionPrompt ceoGuidance', () => {
+  const task = { id: 'task-1', title: 'API 설계' };
+  const implementer = { displayName: '도윤', role: 'Backend Developer' };
+
+  it('ceoGuidance가 있으면 CEO 지침 섹션을 포함한다', () => {
+    const reviews = [
+      { issues: [{ severity: 'critical', description: '보안 이슈' }] },
+    ];
+    const failureContext = {
+      attempt: 1,
+      maxAttempts: 2,
+      issues: [],
+      previousAttempts: [],
+      ceoGuidance: 'JWT 인증 대신 OAuth2를 사용하세요',
+    };
+    const prompt = buildRevisionPrompt(task, implementer, reviews, failureContext);
+    expect(prompt).toContain('CEO 지침');
+    expect(prompt).toContain('JWT 인증 대신 OAuth2를 사용하세요');
+    expect(prompt).toContain('최우선으로 반영');
+  });
+
+  it('ceoGuidance가 없으면 CEO 지침 섹션을 생략한다', () => {
+    const reviews = [
+      { issues: [{ severity: 'critical', description: '이슈' }] },
+    ];
+    const failureContext = {
+      attempt: 1,
+      maxAttempts: 2,
+      issues: [],
+      previousAttempts: [],
+    };
+    const prompt = buildRevisionPrompt(task, implementer, reviews, failureContext);
+    expect(prompt).not.toContain('CEO 지침');
+  });
+});

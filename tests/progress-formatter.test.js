@@ -8,6 +8,10 @@ import {
   formatProgressBar,
   estimateRemainingTime,
   formatExecutionDashboard,
+  formatFailureHistory,
+  formatDiscussionProgress,
+  formatTierProgress,
+  formatConvergenceStatus,
 } from '../scripts/lib/output/progress-formatter.js';
 
 // --- formatPhaseStart ---
@@ -313,5 +317,108 @@ describe('formatExecutionDashboard', () => {
     };
     const result = formatExecutionDashboard(project);
     expect(result).toContain('Phase');
+  });
+});
+
+// --- formatFailureHistory ---
+
+describe('formatFailureHistory', () => {
+  it('빈 journal은 실패 이력 없음을 반환한다', () => {
+    expect(formatFailureHistory([])).toBe('실패 이력 없음');
+    expect(formatFailureHistory(null)).toBe('실패 이력 없음');
+  });
+
+  it('실패가 없는 journal은 실패 이력 없음을 반환한다', () => {
+    const journal = [
+      { action: 'execute-tasks', phase: 1, timestamp: new Date().toISOString() },
+      { action: 'commit', phase: 1, timestamp: new Date().toISOString() },
+    ];
+    expect(formatFailureHistory(journal)).toBe('실패 이력 없음');
+  });
+
+  it('실패 이력을 Phase별로 그룹핑한다', () => {
+    const journal = [
+      {
+        action: 'quality-gate',
+        phase: 1,
+        timestamp: new Date().toISOString(),
+        failureSummary: { issueCount: 2, categories: ['security', 'build'] },
+      },
+      {
+        action: 'quality-gate',
+        phase: 2,
+        timestamp: new Date().toISOString(),
+        failureSummary: { issueCount: 1, categories: ['test'] },
+      },
+    ];
+    const result = formatFailureHistory(journal);
+    expect(result).toContain('Phase 1');
+    expect(result).toContain('Phase 2');
+    expect(result).toContain('2건');
+    expect(result).toContain('security');
+  });
+
+  it('에스컬레이션 이벤트를 포함한다', () => {
+    const journal = [
+      { action: 'escalation-response', phase: 1, timestamp: new Date().toISOString() },
+    ];
+    const result = formatFailureHistory(journal);
+    expect(result).toContain('에스컬레이션');
+  });
+});
+
+// --- formatDiscussionProgress ---
+
+describe('formatDiscussionProgress', () => {
+  it('토론 진행률을 표시한다', () => {
+    const result = formatDiscussionProgress(1, 3, 2, 4, ['fullstack', 'frontend']);
+    expect(result).toContain('토론 1/3');
+    expect(result).toContain('Tier 2/4');
+    expect(result).toContain('fullstack');
+  });
+
+  it('진행률 바를 포함한다', () => {
+    const result = formatDiscussionProgress(2, 3, 3, 4, []);
+    expect(result).toMatch(/[█░]/);
+  });
+});
+
+// --- formatTierProgress ---
+
+describe('formatTierProgress', () => {
+  it('Tier 내 에이전트 진행을 표시한다', () => {
+    const result = formatTierProgress('구현', ['backend'], ['backend', 'frontend', 'fullstack']);
+    expect(result).toContain('구현');
+    expect(result).toContain('1/3');
+    expect(result).toContain('[v] backend');
+    expect(result).toContain('[ ] frontend');
+  });
+
+  it('빈 배열을 처리한다', () => {
+    const result = formatTierProgress('전략', [], []);
+    expect(result).toContain('0/0');
+  });
+});
+
+// --- formatConvergenceStatus ---
+
+describe('formatConvergenceStatus', () => {
+  it('수렴 시 CONVERGED를 표시한다', () => {
+    const result = formatConvergenceStatus(0.85, 0.8, []);
+    expect(result).toContain('CONVERGED');
+    expect(result).toContain('85%');
+  });
+
+  it('미수렴 시 NOT CONVERGED를 표시한다', () => {
+    const result = formatConvergenceStatus(0.6, 0.8, ['보안 이슈 미해결']);
+    expect(result).toContain('NOT CONVERGED');
+    expect(result).toContain('60%');
+    expect(result).toContain('블로커');
+    expect(result).toContain('보안 이슈 미해결');
+  });
+
+  it('블로커가 없으면 블로커 섹션을 생략한다', () => {
+    const result = formatConvergenceStatus(0.7, 0.8, []);
+    expect(result).not.toContain('블로커');
   });
 });

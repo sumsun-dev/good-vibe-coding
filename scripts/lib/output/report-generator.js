@@ -87,12 +87,74 @@ function generateCostSection(project) {
   return section;
 }
 
+/**
+ * 1-page Executive Summary를 생성한다.
+ * @param {object} project - 프로젝트 전체 데이터
+ * @param {{ totalTasks: number, completed: number, byRole: object }} stats - 통계
+ * @returns {string} Executive Summary 마크다운
+ */
+export function generateExecutiveSummary(project, stats) {
+  const team = project.team || [];
+  const state = project.executionState;
+
+  // 핵심 결과
+  const completionRate = stats.totalTasks > 0
+    ? Math.round((stats.completed / stats.totalTasks) * 100)
+    : 0;
+
+  let duration = '-';
+  if (state && state.startedAt) {
+    const start = new Date(state.startedAt);
+    const end = state.completedAt ? new Date(state.completedAt) : new Date();
+    const diffMin = Math.round((end - start) / 60000);
+    duration = diffMin >= 60 ? `${Math.floor(diffMin / 60)}시간 ${diffMin % 60}분` : `${diffMin}분`;
+  }
+
+  let section = `## Executive Summary
+
+| 항목 | 결과 |
+|------|------|
+| 완료율 | ${completionRate}% (${stats.completed}/${stats.totalTasks}) |
+| 팀 규모 | ${team.length}명 |
+| 소요 시간 | ${duration} |
+| 모드 | ${project.mode || '-'} |`;
+
+  // Phase별 품질 게이트 통과율
+  if (state && state.phaseResults && typeof state.phaseResults === 'object') {
+    const phases = Object.keys(state.phaseResults);
+    if (phases.length > 0) {
+      const passedPhases = phases.filter((p) => {
+        const pr = state.phaseResults[p];
+        return pr.qualityGate && pr.qualityGate.passed;
+      });
+      section += `\n| 품질 게이트 | ${passedPhases.length}/${phases.length} Phase 통과 |`;
+    }
+  }
+
+  // 다음 단계 제안
+  section += '\n\n### 다음 단계';
+  if (project.status === 'completed') {
+    section += '\n- `/report`로 상세 보고서 확인';
+    section += '\n- `/feedback`으로 에이전트 피드백 분석';
+  } else if (project.status === 'approved') {
+    section += '\n- `/execute`로 실행 시작';
+  } else if (project.status === 'planning') {
+    section += '\n- `/discuss`로 추가 토론 또는 `/approve`로 승인';
+  }
+
+  return section;
+}
+
 export function generateReport(project) {
   const stats = generateProjectStats(project);
   const team = project.team || [];
   const tasks = project.tasks || [];
 
   let report = generateOverviewSection(project, stats, team);
+
+  // Executive Summary 삽입
+  report += '\n\n' + generateExecutiveSummary(project, stats);
+
   report += '\n\n' + generateTeamSection(team, tasks);
   report += '\n\n' + generatePlanSection(project);
   report += '\n\n' + generateStatsTable(stats);

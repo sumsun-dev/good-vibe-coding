@@ -130,7 +130,7 @@ export async function advanceExecution(projectId, stepResult) {
  * @returns {Promise<{project: object, nextStep: object, resumed: boolean}>}
  */
 export async function initExecution(projectId, options = {}) {
-  const { mode = 'interactive', resume = false } = options;
+  const { mode = 'interactive', resume = false, batchSize } = options;
 
   const project = await getProject(projectId);
   if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${projectId}`);
@@ -156,7 +156,8 @@ export async function initExecution(projectId, options = {}) {
   }
 
   // 새 실행 초기화
-  const initialState = createInitialExecutionState(mode);
+  const stateOptions = batchSize ? { batchSize } : {};
+  const initialState = createInitialExecutionState(mode, stateOptions);
   const updatedProject = await updateExecutionState(projectId, initialState);
 
   return {

@@ -3,6 +3,7 @@ import {
   generateReport,
   generateRoleSummary,
   generateProjectStats,
+  generateExecutiveSummary,
 } from '../scripts/lib/output/report-generator.js';
 
 const SAMPLE_PROJECT = {
@@ -130,5 +131,56 @@ describe('generateReport (비용/성능)', () => {
     delete project.metrics;
     const report = generateReport(project);
     expect(report).not.toContain('비용/성능');
+  });
+});
+
+// --- Executive Summary ---
+
+describe('generateExecutiveSummary', () => {
+  it('완료율과 팀 규모를 포함한다', () => {
+    const stats = generateProjectStats(SAMPLE_PROJECT);
+    const summary = generateExecutiveSummary(SAMPLE_PROJECT, stats);
+    expect(summary).toContain('Executive Summary');
+    expect(summary).toContain('75%'); // 3/4
+    expect(summary).toContain('3명');
+  });
+
+  it('실행 상태가 있으면 품질 게이트 통과율을 포함한다', () => {
+    const project = {
+      ...SAMPLE_PROJECT,
+      executionState: {
+        startedAt: '2026-03-01T00:00:00Z',
+        completedAt: '2026-03-01T01:30:00Z',
+        phaseResults: {
+          1: { qualityGate: { passed: true } },
+          2: { qualityGate: { passed: false } },
+        },
+      },
+    };
+    const stats = generateProjectStats(project);
+    const summary = generateExecutiveSummary(project, stats);
+    expect(summary).toContain('1/2 Phase 통과');
+    expect(summary).toContain('1시간 30분');
+  });
+
+  it('completed 프로젝트에 적절한 다음 단계를 제안한다', () => {
+    const stats = generateProjectStats(SAMPLE_PROJECT);
+    const summary = generateExecutiveSummary(SAMPLE_PROJECT, stats);
+    expect(summary).toContain('/report');
+    expect(summary).toContain('/feedback');
+  });
+
+  it('planning 프로젝트에 적절한 다음 단계를 제안한다', () => {
+    const project = { ...SAMPLE_PROJECT, status: 'planning' };
+    const stats = generateProjectStats(project);
+    const summary = generateExecutiveSummary(project, stats);
+    expect(summary).toContain('/discuss');
+    expect(summary).toContain('/approve');
+  });
+
+  it('generateReport에 Executive Summary가 포함된다', () => {
+    const report = generateReport(SAMPLE_PROJECT);
+    expect(report).toContain('Executive Summary');
+    expect(report).toContain('완료율');
   });
 });

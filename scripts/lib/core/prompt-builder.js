@@ -3,6 +3,9 @@
  * 역할 기반 프롬프트 생성에서 반복되는 패턴을 중앙화.
  */
 
+/** 프롬프트 빌더 버전. 프롬프트 구조 변경 시 업데이트. */
+export const PROMPT_VERSION = '1.1.0';
+
 /**
  * 섹션들을 조합하여 프롬프트를 생성한다.
  * 값이 falsy인 섹션은 건너뛴다.
@@ -11,7 +14,7 @@
  * @returns {string} 완성된 프롬프트
  */
 export function buildSectioned(intro, sections = []) {
-  let result = intro;
+  let result = `<!-- prompt-version: ${PROMPT_VERSION} -->\n${intro}`;
   for (const { title, content } of sections) {
     if (!content) continue;
     result += `\n\n## ${title}\n${content}`;

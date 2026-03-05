@@ -14,6 +14,8 @@ import {
   loadProjectOverride,
   listProjectOverrides,
   mergeAgentWithOverrides,
+  aggregateCrossProjectFeedback,
+  formatCrossProjectPatterns,
 } from '../scripts/lib/agent/agent-feedback.js';
 
 const TMP_DIR = resolve('.tmp-test-agent-feedback');
@@ -361,5 +363,97 @@ describe('mergeAgentWithOverrides', () => {
     const merged = mergeAgentWithOverrides('# Base', overrides);
     expect(merged).not.toContain('사용자');
     expect(merged).toContain('유효한 피드백');
+  });
+});
+
+// --- 크로스프로젝트 학습 ---
+
+describe('aggregateCrossProjectFeedback', () => {
+  const makeProject = (roleId, issues) => ({
+    team: [{ roleId }],
+    tasks: [
+      {
+        id: 't1',
+        assignee: roleId,
+        reviews: [{ issues }],
+      },
+    ],
+  });
+
+  it('3회 이상 반복된 카테고리를 패턴으로 추출한다', () => {
+    const projects = [
+      makeProject('backend', [
+        { severity: 'critical', category: 'security', description: 'SQL injection' },
+      ]),
+      makeProject('backend', [
+        { severity: 'critical', category: 'security', description: 'XSS 취약점' },
+      ]),
+      makeProject('backend', [
+        { severity: 'important', category: 'security', description: '인증 누락' },
+      ]),
+    ];
+    const result = aggregateCrossProjectFeedback('backend', projects);
+    expect(result.patterns.length).toBe(1);
+    expect(result.patterns[0].category).toBe('security');
+    expect(result.patterns[0].count).toBe(3);
+    expect(result.totalProjects).toBe(3);
+  });
+
+  it('3회 미만은 패턴에서 제외한다', () => {
+    const projects = [
+      makeProject('backend', [
+        { severity: 'critical', category: 'security', description: '이슈1' },
+      ]),
+      makeProject('backend', [
+        { severity: 'critical', category: 'security', description: '이슈2' },
+      ]),
+    ];
+    const result = aggregateCrossProjectFeedback('backend', projects);
+    expect(result.patterns.length).toBe(0);
+  });
+
+  it('빈 입력을 처리한다', () => {
+    expect(aggregateCrossProjectFeedback('', []).patterns).toEqual([]);
+    expect(aggregateCrossProjectFeedback(null, []).patterns).toEqual([]);
+    expect(aggregateCrossProjectFeedback('backend', null).patterns).toEqual([]);
+  });
+
+  it('해당 역할이 없는 프로젝트는 건너뛴다', () => {
+    const projects = [
+      makeProject('frontend', [
+        { severity: 'critical', category: 'security', description: '이슈' },
+      ]),
+    ];
+    const result = aggregateCrossProjectFeedback('backend', projects);
+    expect(result.patterns).toEqual([]);
+  });
+
+  it('examples는 최대 3개까지 수집한다', () => {
+    const projects = Array.from({ length: 5 }, () =>
+      makeProject('backend', [
+        { severity: 'critical', category: 'build', description: '빌드 실패' },
+      ]),
+    );
+    const result = aggregateCrossProjectFeedback('backend', projects);
+    expect(result.patterns[0].examples.length).toBe(3);
+  });
+});
+
+describe('formatCrossProjectPatterns', () => {
+  it('패턴을 마크다운으로 포맷팅한다', () => {
+    const patterns = [
+      { category: 'security', count: 5, examples: ['SQL injection', 'XSS'] },
+      { category: 'build', count: 3, examples: ['타입 오류'] },
+    ];
+    const result = formatCrossProjectPatterns(patterns);
+    expect(result).toContain('반복 패턴 주의');
+    expect(result).toContain('security');
+    expect(result).toContain('5회');
+    expect(result).toContain('SQL injection');
+  });
+
+  it('빈 패턴은 빈 문자열을 반환한다', () => {
+    expect(formatCrossProjectPatterns([])).toBe('');
+    expect(formatCrossProjectPatterns(null)).toBe('');
   });
 });

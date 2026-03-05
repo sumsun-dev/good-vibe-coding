@@ -74,13 +74,18 @@ export function isValidTransition(from, to) {
  * @param {'interactive'|'auto'} [mode='interactive'] - 실행 모드
  * @returns {object} 초기 ExecutionState
  */
-export function createInitialExecutionState(mode = 'interactive') {
+export function createInitialExecutionState(mode = 'interactive', options = {}) {
+  const validModes = ['interactive', 'semi-auto', 'auto'];
+  const resolvedMode = validModes.includes(mode) ? mode : 'interactive';
+  const batchSize = resolvedMode === 'semi-auto' ? (options.batchSize || 3) : 0;
+
   return {
     status: 'executing',
     currentPhase: 1,
     phaseStep: 'execute-tasks',
     fixAttempt: 0,
-    mode: mode === 'auto' ? 'auto' : 'interactive',
+    mode: resolvedMode,
+    batchSize,
     lastCompletedStep: null,
     completedPhases: [],
     pendingEscalation: null,
@@ -105,7 +110,7 @@ export function isValidExecutionState(state) {
   if (!VALID_PHASE_STEPS.includes(state.phaseStep)) return false;
   if (typeof state.currentPhase !== 'number' || state.currentPhase < 1) return false;
   if (typeof state.fixAttempt !== 'number' || state.fixAttempt < 0) return false;
-  if (!['interactive', 'auto'].includes(state.mode)) return false;
+  if (!['interactive', 'semi-auto', 'auto'].includes(state.mode)) return false;
   if (!Array.isArray(state.completedPhases)) return false;
   // 시맨틱 검증 강화
   if (state.fixAttempt > MAX_FIX_ATTEMPTS) return false;
@@ -164,6 +169,14 @@ const STEP_HANDLERS = {
         action: 'confirm-next-phase',
         phase,
         description: `Phase ${phase} 완료. Phase ${phase + 1}로 진행할까요?`,
+      };
+    }
+    // semi-auto: batchSize Phase마다 확인 (예: batchSize=3이면 Phase 3, 6, 9... 에서 확인)
+    if (state.mode === 'semi-auto' && state.batchSize > 0 && phase % state.batchSize === 0) {
+      return {
+        action: 'confirm-next-phase',
+        phase,
+        description: `Phase ${phase} 완료 (${state.batchSize}개 배치 완료). Phase ${phase + 1}로 진행할까요?`,
       };
     }
     return {
@@ -369,6 +382,13 @@ export function computeStateTransition(project, stepResult) {
           state.phaseStep = 'fix';
           state.status = 'fixing';
           state.pendingEscalation = null;
+          // CEO 피드백을 failureContext에 주입
+          if (stepResult.ceoGuidance) {
+            state.failureContext = {
+              ...(state.failureContext || {}),
+              ceoGuidance: stepResult.ceoGuidance,
+            };
+          }
           break;
         case 'skip':
           state.phaseStep = 'commit';

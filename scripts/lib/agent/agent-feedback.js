@@ -226,6 +226,77 @@ export async function autoApplyFeedback(feedbackList) {
   }
 }
 
+/**
+ * 여러 프로젝트에서 동일 역할의 이슈 패턴을 집계한다.
+ * 3회 이상 반복된 카테고리를 "반복 패턴"으로 추출한다.
+ * @param {string} roleId - 역할 ID
+ * @param {Array<object>} projects - 프로젝트 배열 (team, tasks 포함)
+ * @param {number} [minRepeat=3] - 반복 패턴 최소 횟수
+ * @returns {{ patterns: Array<{category: string, count: number, examples: string[]}>, totalProjects: number }}
+ */
+export function aggregateCrossProjectFeedback(roleId, projects, minRepeat = 3) {
+  if (!roleId || !Array.isArray(projects) || projects.length === 0) {
+    return { patterns: [], totalProjects: 0 };
+  }
+
+  const categoryMap = new Map();
+
+  for (const project of projects) {
+    const team = project.team || [];
+    if (!team.some((m) => m.roleId === roleId)) continue;
+
+    const tasks = (project.tasks || []).filter((t) => t.assignee === roleId);
+    const issues = tasks
+      .flatMap((t) => t.reviews || [])
+      .flatMap((r) => r.issues || [])
+      .filter((i) => i.severity === 'critical' || i.severity === 'important');
+
+    for (const issue of issues) {
+      const category = issue.category || issue.severity || 'unknown';
+      if (!categoryMap.has(category)) {
+        categoryMap.set(category, { count: 0, examples: [] });
+      }
+      const entry = categoryMap.get(category);
+      entry.count += 1;
+      if (entry.examples.length < 3) {
+        entry.examples.push(issue.description || '');
+      }
+    }
+  }
+
+  const patterns = [...categoryMap.entries()]
+    .filter(([, data]) => data.count >= minRepeat)
+    .map(([category, data]) => ({
+      category,
+      count: data.count,
+      examples: data.examples,
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  return { patterns, totalProjects: projects.length };
+}
+
+/**
+ * 크로스프로젝트 패턴을 오버라이드 마크다운으로 변환한다.
+ * @param {Array<{category: string, count: number, examples: string[]}>} patterns
+ * @returns {string} 마크다운 텍스트
+ */
+export function formatCrossProjectPatterns(patterns) {
+  if (!patterns || patterns.length === 0) return '';
+
+  let md = '### 반복 패턴 주의 (크로스프로젝트 분석)\n\n';
+  md += '아래 카테고리의 이슈가 여러 프로젝트에서 반복되었습니다. 특별히 주의하세요.\n\n';
+
+  for (const { category, count, examples } of patterns) {
+    md += `- **${category}** (${count}회 반복)\n`;
+    for (const ex of examples) {
+      if (ex) md += `  - ${ex}\n`;
+    }
+  }
+
+  return md;
+}
+
 // --- 프로젝트 레벨 오버라이드 ---
 
 const PROJECT_OVERRIDES_SUBDIR = '.good-vibe/agent-overrides';
