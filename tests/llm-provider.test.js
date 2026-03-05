@@ -149,7 +149,9 @@ describe('parseProviderResponse', () => {
   });
 
   it('알 수 없는 프로바이더는 에러를 던진다', () => {
-    expect(() => parseProviderResponse('unknown', { text: 'test' }, 'model')).toThrow('지원하지 않는 프로바이더 응답');
+    expect(() => parseProviderResponse('unknown', { text: 'test' }, 'model')).toThrow(
+      '지원하지 않는 프로바이더 응답',
+    );
   });
 });
 
@@ -270,7 +272,8 @@ describe('callLLM', () => {
 
   it('429 시 재시도 후 성공한다 (#29)', async () => {
     mockLoadAuth.mockResolvedValue({ type: 'api-key', apiKey: 'sk-ant-test' });
-    const fetchMock = vi.fn()
+    const fetchMock = vi
+      .fn()
       .mockResolvedValueOnce({ ok: false, status: 429, text: async () => 'Rate limited' })
       .mockResolvedValueOnce({
         ok: true,

@@ -15,7 +15,7 @@ export function buildDiscussionPrompt(project, team, round) {
   const teamSection = team
     .map((m, i) => {
       const lines = [
-        `### ${i + 1}. ${m.emoji} ${m.displayName} (${m.role})`,
+        `### ${i + 1}. ${m.displayName} (${m.role})`,
         `- 성격: ${m.trait}`,
         `- 말투: ${m.speakingStyle}`,
         `- 전문 분야: ${(m.skills || []).join(', ')}`,
@@ -106,7 +106,7 @@ export function parseDiscussionOutput(rawOutput) {
 export function buildSingleAgentDiscussionPrompt(project, teamMember, context = {}) {
   const round = context.round || 1;
 
-  let prompt = `당신은 ${teamMember.emoji} **${teamMember.displayName}** (${teamMember.role})입니다.
+  let prompt = `당신은 **${teamMember.displayName}** (${teamMember.role})입니다.
 
 ## 당신의 성격
 - 특성: ${teamMember.trait}

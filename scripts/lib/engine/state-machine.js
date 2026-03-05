@@ -360,8 +360,10 @@ export function computeStateTransition(project, stepResult) {
       switch (stepResult.escalationDecision) {
         case 'continue':
           state.escalationCount = (state.escalationCount || 0) + 1;
-          if (state.escalationCount > 3) {
-            throw inputError('에스컬레이션 최대 횟수(3회)를 초과했습니다. skip 또는 abort를 선택하세요.');
+          if (state.escalationCount > config.execution.maxEscalationAttempts) {
+            throw inputError(
+              `에스컬레이션 최대 횟수(${config.execution.maxEscalationAttempts}회)를 초과했습니다. skip 또는 abort를 선택하세요.`,
+            );
           }
           state.fixAttempt = 0;
           state.phaseStep = 'fix';
@@ -386,13 +388,20 @@ export function computeStateTransition(project, stepResult) {
       throw inputError(`알 수 없는 completedAction: ${stepResult.completedAction}`);
   }
 
+  // 전이 유효성 검증
+  const fromStep = project.executionState.phaseStep;
+  const toStep = state.phaseStep;
+  if (fromStep !== toStep && !isValidTransition(fromStep, toStep)) {
+    throw inputError(`유효하지 않은 상태 전이: ${fromStep} → ${toStep}`);
+  }
+
   // 저널 기록
   state.journal = [...(state.journal || [])];
   const journalEntry = {
     timestamp: new Date().toISOString(),
     action: stepResult.completedAction,
-    fromStep: project.executionState.phaseStep,
-    toStep: state.phaseStep,
+    fromStep,
+    toStep,
     phase: state.currentPhase,
   };
   if (stepResult.completedAction === 'quality-gate' && state.failureContext) {

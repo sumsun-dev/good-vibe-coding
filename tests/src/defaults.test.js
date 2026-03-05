@@ -12,7 +12,9 @@ describe('DEFAULTS', () => {
   });
 
   it('변경 시도가 무시된다', () => {
-    expect(() => { DEFAULTS.maxDiscussionRounds = 999; }).toThrow();
+    expect(() => {
+      DEFAULTS.maxDiscussionRounds = 999;
+    }).toThrow();
   });
 });
 

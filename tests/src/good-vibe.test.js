@@ -109,7 +109,7 @@ describe('GoodVibe', () => {
         type: 'custom',
         mode: 'plan-execute',
         status: 'completed',
-        team: [{ roleId: 'cto', emoji: '🧑‍💻', displayName: 'CTO', role: 'CTO' }],
+        team: [{ roleId: 'cto', emoji: '', displayName: 'CTO', role: 'CTO' }],
         tasks: [{ id: '1', title: 'Task 1', assignee: 'cto', status: 'completed' }],
         discussion: { planDocument: '# Plan', rounds: [] },
       };

@@ -17,7 +17,7 @@ const SAMPLE_TEAM = [
   {
     roleId: 'cto',
     displayName: '민준',
-    emoji: '🏗️',
+    emoji: '',
     role: 'CTO',
     trait: '전략적이고 큰 그림을 보는',
     speakingStyle: '확신 있고 명확한 기술 리더 스타일',
@@ -26,7 +26,7 @@ const SAMPLE_TEAM = [
   {
     roleId: 'backend',
     displayName: '도윤',
-    emoji: '🔧',
+    emoji: '',
     role: 'Backend Developer',
     trait: '체계적이고 설계 중심의',
     speakingStyle: '논리적이고 구조화된 설명 스타일',
@@ -35,7 +35,7 @@ const SAMPLE_TEAM = [
   {
     roleId: 'qa',
     displayName: '지민',
-    emoji: '🧪',
+    emoji: '',
     role: 'QA Engineer',
     trait: '빈틈없이 꼼꼼한',
     speakingStyle: '조심스럽고 혹시... 로 시작하는 스타일',

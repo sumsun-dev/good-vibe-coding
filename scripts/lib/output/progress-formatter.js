@@ -13,7 +13,7 @@
 export function formatPhaseStart(phase, totalPhases, tasks) {
   const safeTasks = Array.isArray(tasks) ? tasks : [];
   const assignees = [...new Set(safeTasks.map((t) => t.assignee).filter(Boolean))];
-  return `━━━ Phase ${phase}/${totalPhases} 시작 ━━━\n📋 태스크 ${safeTasks.length}개 | 담당: ${assignees.join(', ') || '미정'}`;
+  return `--- Phase ${phase}/${totalPhases} 시작 ---\n태스크 ${safeTasks.length}개 | 담당: ${assignees.join(', ') || '미정'}`;
 }
 
 /**
@@ -25,7 +25,7 @@ export function formatPhaseStart(phase, totalPhases, tasks) {
  */
 export function formatPhaseComplete(phase, totalPhases, phaseResult) {
   const status = phaseResult.passed ? 'PASS' : 'FAIL';
-  return `✅ Phase ${phase}/${totalPhases} 완료\n├─ 태스크: ${phaseResult.taskCount}개\n├─ 리뷰: ${phaseResult.reviewCount}건 (critical ${phaseResult.criticalCount})\n└─ 품질: ${status}`;
+  return `Phase ${phase}/${totalPhases} 완료\n├─ 태스크: ${phaseResult.taskCount}개\n├─ 리뷰: ${phaseResult.reviewCount}건 (critical ${phaseResult.criticalCount})\n└─ 품질: ${status}`;
 }
 
 /**
@@ -39,9 +39,9 @@ export function formatTaskProgress(tasks, completedIds) {
   const safeCompleted = new Set(Array.isArray(completedIds) ? completedIds : []);
   const completedCount = safeTasks.filter((t) => safeCompleted.has(t.id)).length;
 
-  const lines = [`🔨 태스크 (${completedCount}/${safeTasks.length})`];
+  const lines = [`태스크 (${completedCount}/${safeTasks.length})`];
   for (const task of safeTasks) {
-    const icon = safeCompleted.has(task.id) ? '✅' : '⏳';
+    const icon = safeCompleted.has(task.id) ? '[v]' : '[ ]';
     lines.push(`├─ ${icon} ${task.title} (${task.assignee})`);
   }
   return lines.join('\n');
@@ -58,9 +58,9 @@ export function formatReviewProgress(reviewers, completedReviewers) {
   const safeCompleted = new Set(Array.isArray(completedReviewers) ? completedReviewers : []);
   const completedCount = safeReviewers.filter((r) => safeCompleted.has(r)).length;
 
-  const lines = [`🔍 리뷰 (${completedCount}/${safeReviewers.length})`];
+  const lines = [`리뷰 (${completedCount}/${safeReviewers.length})`];
   for (const reviewer of safeReviewers) {
-    const icon = safeCompleted.has(reviewer) ? '✅' : '⏳';
+    const icon = safeCompleted.has(reviewer) ? '[v]' : '[ ]';
     lines.push(`├─ ${icon} ${reviewer}`);
   }
   return lines.join('\n');
@@ -73,10 +73,10 @@ export function formatReviewProgress(reviewers, completedReviewers) {
  */
 export function formatQualityGateResult(result) {
   if (result.passed) {
-    return '✅ 품질 게이트 통과 (PASS)';
+    return '품질 게이트 통과 (PASS)';
   }
   const fix = result.fixProgress ? ` → 수정 ${result.fixProgress}` : '';
-  return `⚠️ 품질 게이트 실패 (FAIL) (critical ${result.criticalCount})${fix}`;
+  return `품질 게이트 실패 (FAIL) (critical ${result.criticalCount})${fix}`;
 }
 
 /**
@@ -151,7 +151,7 @@ export function estimateRemainingTime(journal, currentPhase, totalPhases) {
  */
 export function formatExecutionDashboard(project) {
   if (!project.executionState) {
-    return '⏸️ 실행 대기 (시작 전)';
+    return '실행 대기 (시작 전)';
   }
 
   const { currentPhase, totalPhases, currentAction, journal, phaseResults } =
@@ -162,14 +162,14 @@ export function formatExecutionDashboard(project) {
 
   const phaseEntries = Array.isArray(phaseResults)
     ? phaseResults
-    : (phaseResults && typeof phaseResults === 'object')
+    : phaseResults && typeof phaseResults === 'object'
       ? Object.entries(phaseResults).map(([phase, pr]) => ({ phase: Number(phase), ...pr }))
       : [];
 
   if (phaseEntries.length > 0) {
     lines.push('');
     for (const pr of phaseEntries) {
-      const status = pr.passed || (pr.qualityGate && pr.qualityGate.passed) ? '✅' : '❌';
+      const status = pr.passed || (pr.qualityGate && pr.qualityGate.passed) ? '[PASS]' : '[FAIL]';
       const taskCount = pr.taskCount || (pr.taskResults || []).length || 0;
       lines.push(`${status} Phase ${pr.phase}: 태스크 ${taskCount}개`);
     }
@@ -177,7 +177,7 @@ export function formatExecutionDashboard(project) {
 
   const eta = estimateRemainingTime(journal || [], currentPhase, totalPhases);
   if (eta) {
-    lines.push(`\n⏱️ 약 ${eta.estimatedMinutes}분 남음 (신뢰도: ${eta.confidence})`);
+    lines.push(`\n약 ${eta.estimatedMinutes}분 남음 (신뢰도: ${eta.confidence})`);
   }
 
   return lines.join('\n');

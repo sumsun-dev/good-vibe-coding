@@ -12,16 +12,38 @@ import { config } from '../core/config.js';
 
 /** 프로젝트 타입별 가중치 프로파일 */
 const WEIGHT_PROFILES = {
-  default: { scope: 0.30, userStory: 0.20, techStack: 0.15, constraints: 0.15, successCriteria: 0.20 },
-  'web-app': { scope: 0.25, userStory: 0.25, techStack: 0.20, constraints: 0.15, successCriteria: 0.15 },
-  'cli-tool': { scope: 0.35, userStory: 0.15, techStack: 0.15, constraints: 0.10, successCriteria: 0.25 },
-  'api-server': { scope: 0.30, userStory: 0.15, techStack: 0.20, constraints: 0.20, successCriteria: 0.15 },
+  default: { scope: 0.3, userStory: 0.2, techStack: 0.15, constraints: 0.15, successCriteria: 0.2 },
+  'web-app': {
+    scope: 0.25,
+    userStory: 0.25,
+    techStack: 0.2,
+    constraints: 0.15,
+    successCriteria: 0.15,
+  },
+  'cli-tool': {
+    scope: 0.35,
+    userStory: 0.15,
+    techStack: 0.15,
+    constraints: 0.1,
+    successCriteria: 0.25,
+  },
+  'api-server': {
+    scope: 0.3,
+    userStory: 0.15,
+    techStack: 0.2,
+    constraints: 0.2,
+    successCriteria: 0.15,
+  },
 };
 
 const DIMENSIONS = ['scope', 'userStory', 'techStack', 'constraints', 'successCriteria'];
 
-function clamp01(v) { return Math.max(0, Math.min(1, v)); }
-function round4(v) { return Math.round(v * 10000) / 10000; }
+function clamp01(v) {
+  return Math.max(0, Math.min(1, v));
+}
+function round4(v) {
+  return Math.round(v * 10000) / 10000;
+}
 
 /**
  * 프로젝트 타입에 따른 가중치 프로파일을 반환한다.
@@ -35,7 +57,7 @@ export function getWeightProfile(projectType, hasCodebaseInfo = false) {
   if (hasCodebaseInfo) {
     const reduction = base.techStack - 0.05;
     base.techStack = 0.05;
-    const others = Object.keys(base).filter(k => k !== 'techStack');
+    const others = Object.keys(base).filter((k) => k !== 'techStack');
     const bonus = reduction / others.length;
     for (const k of others) base[k] = round4(base[k] + bonus);
   }
@@ -199,10 +221,12 @@ export function parseClarityResult(rawOutput) {
   const weights = getWeightProfile('default');
   const clarity = calculateClarity(dimensions, weights);
 
-  const gaps = DIMENSIONS.filter(d => dimensions[d].score < (config.clarity?.dimensionThreshold ?? 0.6));
+  const gaps = DIMENSIONS.filter(
+    (d) => dimensions[d].score < (config.clarity?.dimensionThreshold ?? 0.6),
+  );
 
   const questions = Array.isArray(parsed.questions)
-    ? parsed.questions.filter(q => q && q.question && Array.isArray(q.options))
+    ? parsed.questions.filter((q) => q && q.question && Array.isArray(q.options))
     : [];
 
   return {
@@ -254,7 +278,7 @@ export function shouldProceed(clarity, previousClarity) {
   }
 
   if (previousClarity !== null && previousClarity !== undefined) {
-    if ((clarity - previousClarity) < minImprovement) {
+    if (clarity - previousClarity < minImprovement) {
       return { proceed: true, reason: 'stagnation' };
     }
   }
@@ -273,7 +297,7 @@ export function filterQuestions(questions, dimensions) {
 
   const dimThreshold = config.clarity?.dimensionThreshold ?? 0.6;
 
-  return questions.filter(q => {
+  return questions.filter((q) => {
     const dimScore = dimensions[q.dimension]?.score;
     return dimScore === undefined || dimScore < dimThreshold;
   });

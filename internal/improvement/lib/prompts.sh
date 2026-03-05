@@ -6,7 +6,7 @@
 # ── Improver 프롬프트 (Phase 1) ──────────────────────────
 build_improver_prompt() {
   local run_dir="$1"
-  node "${SCRIPT_DIR}/lib/improvement/prompt-builder.js" improver "$run_dir" 2>/dev/null || {
+  node "${SCRIPT_DIR}/lib/prompt-builder.js" improver "$run_dir" 2>/dev/null || {
     # fallback: 최소 프롬프트
     echo "먼저 CLAUDE.md 파일을 읽고 프로젝트 컨벤션을 반드시 준수하세요. 코드 품질, 보안, 성능을 분석하고 critical/important 이슈만 수정하세요."
   }
@@ -15,7 +15,7 @@ build_improver_prompt() {
 # ── Reviewer 프롬프트 (Phase 2) ──────────────────────────
 build_reviewer_prompt() {
   local pr_number="$1"
-  node "${SCRIPT_DIR}/lib/improvement/prompt-builder.js" reviewer \
+  node "${SCRIPT_DIR}/lib/prompt-builder.js" reviewer \
     "{\"prNumber\":${pr_number}}" 2>/dev/null || {
     echo "PR #${pr_number}을 깊이 있게 리뷰하세요. CLAUDE.md를 읽고, gh pr diff ${pr_number}으로 변경사항을 확인한 후 MUST/SHOULD 기준으로 판정하세요."
   }
@@ -36,7 +36,7 @@ build_fixer_prompt() {
     --arg reviewBody "$review_body" \
     '{prNumber: $prNumber, cycle: $cycle, maxCycles: $maxCycles, reviewBody: $reviewBody}')
 
-  node "${SCRIPT_DIR}/lib/improvement/prompt-builder.js" fixer "$json_args" 2>/dev/null || {
+  node "${SCRIPT_DIR}/lib/prompt-builder.js" fixer "$json_args" 2>/dev/null || {
     echo "PR #${pr_number}의 [MUST] 이슈를 수정하세요 (cycle ${cycle}/${MAX_FIX_CYCLES}). 리뷰: ${review_body}"
   }
 }
@@ -55,7 +55,7 @@ build_rereviewer_prompt() {
     --arg previousMust "$previous_must_issues" \
     '{prNumber: $prNumber, cycle: $cycle, maxCycles: $maxCycles, previousMust: $previousMust}')
 
-  node "${SCRIPT_DIR}/lib/improvement/prompt-builder.js" rereviewer "$json_args" 2>/dev/null || {
+  node "${SCRIPT_DIR}/lib/prompt-builder.js" rereviewer "$json_args" 2>/dev/null || {
     echo "PR #${pr_number}을 재리뷰하세요 (cycle ${cycle}/${MAX_FIX_CYCLES}). 이전 이슈: ${previous_must_issues}"
   }
 }
@@ -71,7 +71,7 @@ build_evaluator_prompt() {
     --arg runDir "$run_dir" \
     '{round: $round, runDir: $runDir}')
 
-  node "${SCRIPT_DIR}/lib/improvement/prompt-builder.js" evaluator "$json_args" 2>/dev/null || {
+  node "${SCRIPT_DIR}/lib/prompt-builder.js" evaluator "$json_args" 2>/dev/null || {
     echo "코드베이스를 평가하세요. JSON 형식으로 7영역 점수를 출력하세요. 코드를 수정하지 마세요."
   }
 }
@@ -87,7 +87,7 @@ build_round_improver_prompt() {
     --arg runDir "$run_dir" \
     '{round: $round, runDir: $runDir}')
 
-  node "${SCRIPT_DIR}/lib/improvement/prompt-builder.js" round-improver "$json_args" 2>/dev/null || {
+  node "${SCRIPT_DIR}/lib/prompt-builder.js" round-improver "$json_args" 2>/dev/null || {
     build_improver_prompt "$run_dir"
   }
 }

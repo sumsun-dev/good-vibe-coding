@@ -3,7 +3,7 @@ import {
   countMustIssues,
   parseReviewStatusFromBody,
   interpretClaudeExit,
-} from '../../scripts/lib/improvement/review-parser.js';
+} from '../../internal/lib/review-parser.js';
 
 describe('review-parser', () => {
   describe('countMustIssues', () => {

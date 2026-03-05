@@ -12,22 +12,22 @@
 
 **이미지와 대체 텍스트:**
 ```html
-<!-- ✅ 의미 있는 이미지: 설명적 alt -->
+<!-- 의미 있는 이미지: 설명적 alt -->
 <img src="chart.png" alt="2024년 매출 추이: 1분기 1억, 4분기 3억으로 성장" />
 
-<!-- ✅ 장식 이미지: 빈 alt -->
+<!-- 장식 이미지: 빈 alt -->
 <img src="decoration.png" alt="" />
 
-<!-- ❌ alt 속성 누락 -->
+<!-- alt 속성 누락 -->
 <img src="chart.png" />
 ```
 
 **색상 대비:**
 ```css
-/* ✅ 대비율 4.5:1 이상 */
+/* 대비율 4.5:1 이상 */
 .text { color: #333333; background: #ffffff; }  /* 대비율 12.6:1 */
 
-/* ❌ 대비율 미달 */
+/* 대비율 미달 */
 .text { color: #999999; background: #ffffff; }  /* 대비율 2.8:1 */
 ```
 
@@ -35,13 +35,13 @@
 
 **키보드 접근:**
 ```html
-<!-- ✅ 키보드로 접근 가능한 버튼 -->
+<!-- 키보드로 접근 가능한 버튼 -->
 <button onclick="handleClick()">제출</button>
 
-<!-- ❌ div를 버튼으로 사용 (키보드 접근 불가) -->
+<!-- div를 버튼으로 사용 (키보드 접근 불가) -->
 <div onclick="handleClick()">제출</div>
 
-<!-- ✅ div를 버튼으로 써야 한다면 -->
+<!-- div를 버튼으로 써야 한다면 -->
 <div role="button" tabindex="0"
      onclick="handleClick()"
      onkeydown="if(event.key==='Enter') handleClick()">
@@ -51,13 +51,13 @@
 
 **포커스 관리:**
 ```css
-/* ✅ 포커스 표시 스타일 */
+/* 포커스 표시 스타일 */
 :focus-visible {
   outline: 2px solid #0066cc;
   outline-offset: 2px;
 }
 
-/* ❌ 포커스 표시 제거 */
+/* 포커스 표시 제거 */
 :focus { outline: none; }
 ```
 
@@ -65,11 +65,11 @@
 
 **폼 레이블:**
 ```html
-<!-- ✅ label과 input 연결 -->
+<!-- label과 input 연결 -->
 <label for="email">이메일</label>
 <input id="email" type="email" required />
 
-<!-- ✅ 에러 메시지 연결 -->
+<!-- 에러 메시지 연결 -->
 <input id="email" aria-describedby="email-error" />
 <p id="email-error" role="alert">올바른 이메일 형식이 아닙니다</p>
 ```
@@ -78,13 +78,13 @@
 
 **ARIA 속성:**
 ```html
-<!-- ✅ 모달 다이얼로그 -->
+<!-- 모달 다이얼로그 -->
 <div role="dialog" aria-labelledby="modal-title" aria-modal="true">
   <h2 id="modal-title">확인</h2>
   <p>정말 삭제하시겠습니까?</p>
 </div>
 
-<!-- ✅ 실시간 업데이트 영역 -->
+<!-- 실시간 업데이트 영역 -->
 <div aria-live="polite" aria-atomic="true">
   3개의 새 알림이 있습니다
 </div>
@@ -106,9 +106,9 @@
 
 | 상태 | 항목 | 위치 | WCAG |
 |------|------|------|------|
-| ✅ | 제목 구조 | 전체 | 1.3.1 |
-| ⚠️ | 색상 대비 | `.btn-secondary` | 1.4.3 |
-| ❌ | ALT 텍스트 | `img.hero` | 1.1.1 |
+| 합격 | 제목 구조 | 전체 | 1.3.1 |
+| 경고 | 색상 대비 | `.btn-secondary` | 1.4.3 |
+| 실패 | ALT 텍스트 | `img.hero` | 1.1.1 |
 
 ---
 

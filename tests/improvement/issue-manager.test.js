@@ -6,7 +6,7 @@ import {
   extractFilePathsFromBody,
   verifyIssueResolution,
   trackCrossRoundIssues,
-} from '../../scripts/lib/improvement/issue-manager.js';
+} from '../../internal/lib/issue-manager.js';
 
 describe('issue-manager', () => {
   describe('verifyCreatedIssues', () => {
@@ -119,9 +119,7 @@ describe('issue-manager', () => {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
       const result = findStaleIssues({
         staleDays: 14,
-        ghIssueFn: () => [
-          { number: 1, title: '오래된 이슈', createdAt: thirtyDaysAgo },
-        ],
+        ghIssueFn: () => [{ number: 1, title: '오래된 이슈', createdAt: thirtyDaysAgo }],
       });
       expect(result).toHaveLength(1);
       expect(result[0].number).toBe(1);
@@ -132,9 +130,7 @@ describe('issue-manager', () => {
       const now = new Date().toISOString();
       const result = findStaleIssues({
         staleDays: 14,
-        ghIssueFn: () => [
-          { number: 1, title: '새 이슈', createdAt: now },
-        ],
+        ghIssueFn: () => [{ number: 1, title: '새 이슈', createdAt: now }],
       });
       expect(result).toHaveLength(0);
     });
@@ -143,9 +139,7 @@ describe('issue-manager', () => {
       const exactlyStale = new Date(Date.now() - 14 * 86400000).toISOString();
       const result = findStaleIssues({
         staleDays: 14,
-        ghIssueFn: () => [
-          { number: 1, title: '정확히 14일', createdAt: exactlyStale },
-        ],
+        ghIssueFn: () => [{ number: 1, title: '정확히 14일', createdAt: exactlyStale }],
       });
       expect(result).toHaveLength(1);
     });

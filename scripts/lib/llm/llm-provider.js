@@ -15,7 +15,12 @@ import { AppError, inputError, notFoundError } from '../core/validators.js';
 const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
 
 /** 재시도 가능한 네트워크 에러 코드 */
-const RETRYABLE_ERROR_CODES = new Set(['ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'UND_ERR_CONNECT_TIMEOUT']);
+const RETRYABLE_ERROR_CODES = new Set([
+  'ETIMEDOUT',
+  'ECONNRESET',
+  'ECONNREFUSED',
+  'UND_ERR_CONNECT_TIMEOUT',
+]);
 
 /** 프로바이더별 API 엔드포인트 */
 const PROVIDER_ENDPOINTS = {
@@ -92,11 +97,20 @@ export async function callLLM(providerId, prompt, options = {}) {
       }
     } catch (err) {
       // 이미 재시도 불가로 판정된 에러는 즉시 재throw
-      if (err instanceof AppError && err.statusCode && !RETRYABLE_STATUS_CODES.has(err.statusCode)) {
+      if (
+        err instanceof AppError &&
+        err.statusCode &&
+        !RETRYABLE_STATUS_CODES.has(err.statusCode)
+      ) {
         throw err;
       }
       // 네트워크 에러 중 재시도 가능한 것만 재시도
-      if (!(err instanceof AppError) && !RETRYABLE_ERROR_CODES.has(err.cause?.code) && err.code !== 'UND_ERR_CONNECT_TIMEOUT' && err.name !== 'TimeoutError') {
+      if (
+        !(err instanceof AppError) &&
+        !RETRYABLE_ERROR_CODES.has(err.cause?.code) &&
+        err.code !== 'UND_ERR_CONNECT_TIMEOUT' &&
+        err.name !== 'TimeoutError'
+      ) {
         throw err;
       }
       lastError = err;

@@ -5,7 +5,7 @@
 TDD(Test-Driven Development)는 테스트를 먼저 작성하고, 그 테스트를 통과시키는 코드를 구현하는 개발 방법론입니다.
 
 ```
-🔴 RED → 🟢 GREEN → 🔄 REFACTOR
+RED → GREEN → REFACTOR
 실패하는    통과시키는    코드를
 테스트 작성  코드 구현     정리
 ```
@@ -38,7 +38,7 @@ describe('add', () => {
 
 이 시점에서 테스트를 실행하면 실패합니다 (파일이 없으니까):
 ```bash
-npm test  # 🔴 FAIL
+npm test  # FAIL
 ```
 
 ### 2단계: GREEN (최소한의 코드로 통과)
@@ -53,7 +53,7 @@ export function add(a, b) {
 ```
 
 ```bash
-npm test  # 🟢 PASS
+npm test  # PASS
 ```
 
 ### 3단계: REFACTOR (코드 정리)

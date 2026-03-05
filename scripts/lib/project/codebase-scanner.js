@@ -153,20 +153,23 @@ async function collectFiles(dir, root, depth = 0) {
 async function loadManifests(projectPath) {
   const manifests = {};
 
-  for (const name of MANIFEST_FILES) {
-    try {
-      const content = await readFile(resolve(projectPath, name), 'utf-8');
-      if (name === 'package.json') {
-        try {
-          manifests[name] = JSON.parse(content);
-        } catch {
-          /* 손상된 package.json 무시 */
-        }
-      } else {
-        manifests[name] = content;
+  const results = await Promise.allSettled(
+    MANIFEST_FILES.map((name) =>
+      readFile(resolve(projectPath, name), 'utf-8').then((content) => ({ name, content })),
+    ),
+  );
+
+  for (const result of results) {
+    if (result.status !== 'fulfilled') continue;
+    const { name, content } = result.value;
+    if (name === 'package.json') {
+      try {
+        manifests[name] = JSON.parse(content);
+      } catch {
+        /* 손상된 package.json 무시 */
       }
-    } catch {
-      // 파일이 없으면 무시
+    } else {
+      manifests[name] = content;
     }
   }
 

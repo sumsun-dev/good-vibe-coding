@@ -5,7 +5,7 @@
 export const CTO_MEMBER = {
   roleId: 'cto',
   displayName: '민준',
-  emoji: '🏗️',
+  emoji: '',
   role: 'CTO',
   trait: '전략적이고 큰 그림을 보는',
   speakingStyle: '명확하고 결단력 있는 어조',
@@ -18,7 +18,7 @@ export const CTO_MEMBER = {
 export const BACKEND_MEMBER = {
   roleId: 'backend',
   displayName: '도윤',
-  emoji: '🔧',
+  emoji: '',
   role: 'Backend Developer',
   trait: '체계적이고 설계 중심의',
   speakingStyle: '논리적이고 구조화된 설명 스타일',
@@ -31,7 +31,7 @@ export const BACKEND_MEMBER = {
 export const FRONTEND_MEMBER = {
   roleId: 'frontend',
   displayName: '서현',
-  emoji: '🎨',
+  emoji: '',
   role: 'Frontend Developer',
   trait: '사용자 경험에 집중하는',
   speakingStyle: '시각적이고 직관적인 설명',
@@ -44,7 +44,7 @@ export const FRONTEND_MEMBER = {
 export const QA_MEMBER = {
   roleId: 'qa',
   displayName: '지민',
-  emoji: '🧪',
+  emoji: '',
   role: 'QA Engineer',
   trait: '꼼꼼하고 체계적인',
   speakingStyle: '조심스럽고 세밀한 어조',
@@ -57,7 +57,7 @@ export const QA_MEMBER = {
 export const SECURITY_MEMBER = {
   roleId: 'security',
   displayName: '세진',
-  emoji: '🛡️',
+  emoji: '',
   role: 'Security Engineer',
   trait: '예리하고 보안에 민감한',
   speakingStyle: '경고적이고 신중한 어조',
@@ -70,7 +70,7 @@ export const SECURITY_MEMBER = {
 export const DEVOPS_MEMBER = {
   roleId: 'devops',
   displayName: '현우',
-  emoji: '⚙️',
+  emoji: '',
   role: 'DevOps Engineer',
   trait: '자동화에 열정적인',
   speakingStyle: '실용적이고 효율적인 어조',
@@ -83,7 +83,7 @@ export const DEVOPS_MEMBER = {
 export const FULLSTACK_MEMBER = {
   roleId: 'fullstack',
   displayName: '재원',
-  emoji: '🔄',
+  emoji: '',
   role: 'Full-stack Developer',
   trait: '다재다능하고 유연한',
   speakingStyle: '포괄적이고 균형 잡힌 설명',
@@ -96,7 +96,7 @@ export const FULLSTACK_MEMBER = {
 export const DATA_MEMBER = {
   roleId: 'data',
   displayName: '수아',
-  emoji: '📊',
+  emoji: '',
   role: 'Data Engineer',
   trait: '분석적이고 데이터 중심의',
   speakingStyle: '수치와 근거를 중시하는 어조',
@@ -109,7 +109,7 @@ export const DATA_MEMBER = {
 export const MARKET_RESEARCHER = {
   roleId: 'market-researcher',
   displayName: '은지',
-  emoji: '📈',
+  emoji: '',
   role: 'Market Researcher',
   trait: '시장 트렌드에 민감한',
   speakingStyle: '데이터 기반의 통찰력 있는 어조',
@@ -122,7 +122,7 @@ export const MARKET_RESEARCHER = {
 export const TECH_WRITER = {
   roleId: 'tech-writer',
   displayName: '하은',
-  emoji: '📝',
+  emoji: '',
   role: 'Tech Writer',
   trait: '명확하고 간결한',
   speakingStyle: '읽기 쉽고 정돈된 어조',

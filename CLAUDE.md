@@ -4,7 +4,7 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 
 ## 설계: CLI-as-API + SDK
 
-- `cli.js`는 경량 라우터. 114개 커맨드를 14개 핸들러 모듈(`scripts/handlers/*.js`)로 lazy-load 디스패치
+- `cli.js`는 경량 라우터. 116개 커맨드를 14개 핸들러 모듈(`scripts/handlers/*.js`)로 lazy-load 디스패치
 - 사용자는 `/hello`, `/new`, `/discuss` 같은 슬래시 커맨드만 씀
 - 흐름: 슬래시 커맨드 → 에이전트 디스패치 → cli.js → 핸들러 → 코어 라이브러리
 - 에이전트 .md 파일이 `node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js <command>` 형태로 호출
@@ -202,10 +202,12 @@ created → planning → approved → executing → reviewing → completed
 - `pr-manager.js` — Pull Request 생성/관리 (gh CLI 래퍼, graceful skip)
 - `ci-generator.js` — GitHub Actions CI 워크플로우 자동 생성 (Node/Python/Go/Java)
 
-**`engine/`** — 실행 엔진 (11개)
+**`engine/`** — 실행 엔진 (13개)
 - `orchestrator.js` — 멀티에이전트 오케스트레이션 (4-tier 병렬 디스패치, 수렴 확인, 역할별 피드백 주입)
 - `discussion-engine.js` — 토론 프롬프트 생성
-- `execution-loop.js` — 실행 상태 머신 (시맨틱 검증, 저널, 부실 감지, 실패 복구, 기여도 자동 수집)
+- `state-machine.js` — 실행 상태 전이 (순수 함수, Phase 내 액션 흐름 정의)
+- `execution-utils.js` — 실행 유틸리티 (실패 분류, 실패 컨텍스트, 기여도 추출, 부실 감지)
+- `execution-loop.js` — 실행 루프 드라이버 (state-machine 기반 전이, 시맨틱 검증, 저널, 실패 복구, 기여도 수집)
 - `task-distributor.js` — 작업 분배 + 실행 계획 (리뷰 페이즈 자동 삽입, TDD, 코드 태스크 판별, 페이즈 컨텍스트 주입)
 - `review-engine.js` — 크로스 리뷰 (도메인 매칭 리뷰어 선정, 2단계 품질 게이트, 수정 이력 기반 리비전 프롬프트)
 - `cross-model-strategy.js` — 구현자와 다른 모델로 리뷰어 배정 (라운드로빈, fallback)
@@ -220,9 +222,10 @@ created → planning → approved → executing → reviewing → completed
 - `gemini-bridge.js` — Gemini CLI 래퍼 (shell injection 방지)
 - `auth-manager.js` — 멀티프로바이더 인증 (크레덴셜 CRUD)
 
-**`agent/`** — 에이전트/팀 (8개)
+**`agent/`** — 에이전트/팀 (9개)
 - `team-builder.js` — 팀 추천/구성
 - `complexity-analyzer.js` — 복잡도 분석 (모드/팀 규모/모델 추천)
+- `clarity-analyzer.js` — 프로젝트 설명 명확도 분석 (5차원 평가, 적응형 가중치, 수렴 판정)
 - `recommendation-engine.js` — 스킬/에이전트 추천 (멀티시그널, 한국어 조사 제거, LLM 호출 없음)
 - `agent-optimizer.js` — 에이전트 중복/효율 최적화 (bigram 유사도, 기여도 점수, 유니버셜 리뷰어 보호)
 - `agent-feedback.js` — 프로젝트 결과 분석 → 에이전트 오버라이드 저장
@@ -230,8 +233,9 @@ created → planning → approved → executing → reviewing → completed
 - `setup-installer.js` — 스킬/에이전트 설치
 - `dynamic-role-designer.js` — 프로젝트별 맞춤 역할 설계 (프롬프트/파서, dynamic: true)
 
-**`output/`** — 보고/환경 (3개)
+**`output/`** — 보고/환경 (4개)
 - `report-generator.js` — 보고서 생성
+- `progress-formatter.js` — 실행 진행률 포맷팅 (Phase 시작/완료, 태스크/리뷰 진행률, 품질 게이트, 대시보드)
 - `env-checker.js` — 통합 환경 헬스체크 (node/npm/git 필수, gh/gemini 선택)
 - `update-checker.js` — 버전 확인 + 업데이트 가능 여부 (git fetch --dry-run + HEAD 비교)
 
@@ -247,7 +251,7 @@ created → planning → approved → executing → reviewing → completed
 - `adapter.js` — Claude Code 환경에서 SDK 초기화
 
 **CLI 레이어**
-- `cli.js` — 라우터 (114개 커맨드, 14개 핸들러로 디스패치)
+- `cli.js` — 라우터 (116개 커맨드, 14개 핸들러로 디스패치)
 - `cli-utils.js` — readStdin, output, outputOk, parseArgs
 - `handlers/*.js` — 14개 핸들러: project, team, discussion, execution, review, build, eval, auth, feedback, infra, metrics, template, task, recommendation
 
@@ -259,9 +263,12 @@ created → planning → approved → executing → reviewing → completed
 | 수렴 | `convergence.maxRounds` | 3 | 최대 토론 라운드 |
 | 실행 | `execution.maxFixAttempts` | 2 | Phase당 수정 시도, 초과 시 CEO 에스컬레이션 |
 | 실행 | `execution.maxAgentCalls` | 500 | 세션당 에이전트 호출 상한 (무한 루프 방지) |
+| 실행 | `execution.maxEscalationAttempts` | 3 | 에스컬레이션 최대 횟수 |
+| 실행 | `execution.maxOutputLines` | 200 | 에이전트 출력 최대 라인 |
 | 리뷰 | `review.minReviewers` | 2 | 최소 리뷰어 수 |
 | 리뷰 | `review.maxReviewers` | 3 | 최대 리뷰어 수 |
 | 리뷰 | `review.maxRevisionRounds` | 2 | 리비전 최대 라운드 |
+| 리뷰 | `review.maxImportantIssues` | 10 | Important 이슈 최대 포함 수 |
 | 유사도 | `similarity.redundancyThreshold` | 0.7 | 에이전트 중복 감지 Jaccard 임계값 |
 | 유사도 | `similarity.contributionThreshold` | 0.5 | 기여도 미달 시 제거 대상 |
 | 빌드 | `build.defaultTimeout` | 30s | Node/Python 빌드 타임아웃 |
@@ -272,12 +279,29 @@ created → planning → approved → executing → reviewing → completed
 | 팀 | `team.complex` | 5-8명 | plan-only |
 | 추천 | `recommendation.minScore` | 3 | 추천 노출 최소 점수 |
 | LLM | `llm.defaultTimeout` | 60s | LLM 호출 타임아웃 |
+| LLM | `llm.defaultMaxTokens` | 4096 | 기본 최대 토큰 |
+| LLM | `llm.pingTimeout` | 15s | 연결 확인 타임아웃 |
+| LLM | `llm.maxRetries` | 3 | 재시도 횟수 |
 | GitHub | `github.enabled` | false | GitHub 협업 기능 활성화 |
 | GitHub | `github.branchStrategy` | timestamp | 브랜치 네이밍 전략 (timestamp/phase/custom) |
 | GitHub | `github.baseBranch` | main | 베이스 브랜치 |
 | GitHub | `github.autoPush` | true | 브랜치 자동 push |
 | GitHub | `github.autoCreatePR` | true | 실행 완료 후 자동 PR 생성 |
 | GitHub | `github.prDraft` | false | PR을 Draft로 생성 |
+| 품질 | `quality.criticalPenalty` | 20 | Critical 이슈 감점 |
+| 품질 | `quality.importantPenalty` | 5 | Important 이슈 감점 |
+| 품질 | `quality.fixAttemptPenalty` | 10 | 수정 시도 감점 |
+| 품질 | `quality.buildFailurePenalty` | 30 | 빌드 실패 감점 |
+| 품질 | `quality.firstPhaseWeight` | 0.3 | 첫 Phase 가중치 |
+| 진화 | `evolution.targetScore` | 80 | A/B 평가 목표 점수 |
+| 진화 | `evolution.maxGenerations` | 3 | 최대 세대 수 |
+| 진화 | `evolution.minImprovement` | 5 | 최소 개선 폭 |
+| 명확도 | `clarity.threshold` | 0.8 | 명확도 목표 |
+| 명확도 | `clarity.dimensionThreshold` | 0.6 | 차원별 최소 점수 |
+| 태스크분류 | `taskClassification.engineerRoles` | 5개 역할 | 코드 태스크 판별 대상 |
+| CLI | `cli.suggestionThreshold` | 3 | NL→커맨드 매핑 최소 점수 |
+| 코드베이스 | `codebase.ignoredDirs` | 11개 | 스캔 제외 디렉토리 |
+| 코드베이스 | `codebase.techStackMap` | 16개 | 기술→도메인 매핑 |
 
 ## 토론 플로우
 
@@ -347,6 +371,9 @@ github.enabled = true
 
 ## Daily Improvement 자율 파이프라인
 
+> **내부 개발 도구** — 이 섹션은 Good Vibe Coding 코드베이스 자체를 자동 개선하는 CI/CD 파이프라인이다.
+> 사용자가 자기 프로젝트에 사용하는 기능이 아님. 코드는 `internal/` 디렉토리에 위치.
+
 VPS + Claude Code CLI로 매일 KST 자정에 코드베이스를 **Round Loop 파이프라인**으로 자동 분석 → 이슈 생성 → 코드 수정 → PR 생성 → 독립 리뷰 → 수정 루프 → SLA 평가 → SLA 달성까지 반복 → 보고서 → 머지 요청. CEO는 GitHub에서 merge만 결정.
 
 ```
@@ -407,7 +434,7 @@ daily-improvement.sh (오케스트레이터)
 ### 파일 구조
 
 ```
-scripts/
+internal/
   daily-improvement.sh              # 오케스트레이터 (Phase 0 → Round Loop → Phase 4)
   improvement/
     config.env                      # 타임아웃, SLA/Round/Session 상수
@@ -421,22 +448,22 @@ scripts/
     phase3-fix-loop.sh              # fix-review 사이클 루프
     phase-eval.sh                   # 7영역 SLA 품질 평가
     phase4-report.sh                # 보고서 + SLA 대시보드 + 텔레그램 + 히스토리
-scripts/lib/improvement/
-  prompt-builder.js                 # Improver/Reviewer/Fixer/Evaluator/RoundImprover 프롬프트 생성
-  history-analyzer.js               # history.jsonl CRUD + 요약 (totalRounds/slaScore 포함)
-  sla-evaluator.js                  # 7영역 SLA 점수 파싱, 달성 판정, 피드백 생성
-  issue-manager.js                  # 이슈 검증, closes 연결, stale 정리
-  review-parser.js                  # 리뷰 결과 파싱
-  pipeline-utils.js                 # 파이프라인 유틸리티
+  lib/
+    prompt-builder.js               # Improver/Reviewer/Fixer/Evaluator/RoundImprover 프롬프트 생성
+    history-analyzer.js             # history.jsonl CRUD + 요약 (totalRounds/slaScore 포함)
+    sla-evaluator.js                # 7영역 SLA 점수 파싱, 달성 판정, 피드백 생성
+    issue-manager.js                # 이슈 검증, closes 연결, stale 정리
+    review-parser.js                # 리뷰 결과 파싱
+    pipeline-utils.js               # 파이프라인 유틸리티
 logs/daily-improvement/
   history.jsonl                     # 실행 이력 (append-only, totalRounds/slaScore 포함)
 ```
 
 ### 실행 정보
 
-- **스크립트**: `scripts/daily-improvement.sh` (VPS cron 실행)
+- **스크립트**: `internal/daily-improvement.sh` (VPS cron 실행)
 - **이슈 템플릿**: `.github/ISSUE_TEMPLATE/improvement.md`
-- **수동 실행**: `bash scripts/daily-improvement.sh`
+- **수동 실행**: `bash internal/daily-improvement.sh`
 - **인증**: Claude Max Plan OAuth (별도 API key 불필요)
 
 ### 타임아웃 설정
@@ -610,7 +637,7 @@ throw new AppError('내부 오류', 'SYSTEM_ERROR');  // 기본값
 // INPUT_ERROR  → exit 2 ("입력 형식을 확인한 후 다시 시도하세요")
 // NOT_FOUND    → exit 3 ("/projects 또는 /status로 목록을 확인하세요")
 // SYSTEM_ERROR → exit 1 ("설정을 확인하거나 Claude Code를 다시 시작하세요")
-// stderr 형식: "오류 [CODE]: message\n💡 hint\n"
+// stderr 형식: "오류 [CODE]: message\nhint\n"
 ```
 
 ## 테스트 컨벤션

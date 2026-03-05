@@ -74,7 +74,7 @@ options:
 GitHub CLI(gh)가 설치되지 않았습니다.
 GitHub 저장소 연결을 원하시면 아래 가이드를 따라 설치하세요:
 
-📦 설치 방법:
+설치 방법:
   macOS:   brew install gh
   Windows: winget install --id GitHub.cli
   Linux:   https://github.com/cli/cli/blob/trunk/docs/install_linux.md
@@ -99,7 +99,7 @@ options:
 ```
 GitHub CLI(gh)가 설치되어 있지만 로그인되지 않았습니다.
 
-🔑 인증 방법:
+인증 방법:
   gh auth login
   → GitHub.com 선택 → HTTPS 선택 → 브라우저로 인증
 
@@ -127,10 +127,10 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js check-gemini-status
 
 **미설치 시 안내:**
 ```
-💡 Gemini CLI를 설치하면 /execute에서 크로스 모델 리뷰를 사용할 수 있습니다.
+Gemini CLI를 설치하면 /execute에서 크로스 모델 리뷰를 사용할 수 있습니다.
    (Claude + Gemini가 각각 리뷰하여 더 높은 품질 보장)
 
-📦 설치 방법:
+설치 방법:
   npm install -g @google/gemini-cli
 
 필수는 아닙니다 — Claude만으로도 충분히 리뷰가 진행됩니다.
@@ -170,17 +170,17 @@ echo '{"projectDir":"{경로}","remoteUrl":"{URL}"}' | node ${CLAUDE_PLUGIN_ROOT
 ## Step 5: 완료 안내
 
 ```
-🎉 프로젝트 인프라가 준비되었습니다!
+프로젝트 인프라가 준비되었습니다!
 
-📁 프로젝트 경로: {projectDir}
-📄 생성된 파일:
+프로젝트 경로: {projectDir}
+생성된 파일:
   - CLAUDE.md
   - README.md
   - .gitignore
   - .good-vibe/agents/code-reviewer.md
   - .good-vibe/agents/tdd-coach.md
 
-{GitHub 연결 시: 🔗 GitHub: {url}}
+{GitHub 연결 시: GitHub: {url}}
 
 다음 단계:
   /new — 프로젝트 기획 (복잡도 분석 + 팀 구성)

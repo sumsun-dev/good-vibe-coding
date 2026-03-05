@@ -196,9 +196,9 @@ function levenshtein(a, b) {
 }
 
 const ERROR_HINTS = {
-  INPUT_ERROR: '💡 입력 형식을 확인한 후 다시 시도하세요.',
-  NOT_FOUND: '💡 /projects 또는 /status로 목록을 확인하세요.',
-  SYSTEM_ERROR: '💡 설정을 확인하거나 Claude Code를 다시 시작하세요.',
+  INPUT_ERROR: '입력 형식을 확인한 후 다시 시도하세요.',
+  NOT_FOUND: '/projects 또는 /status로 목록을 확인하세요.',
+  SYSTEM_ERROR: '설정을 확인하거나 Claude Code를 다시 시작하세요.',
 };
 
 async function main() {
@@ -210,7 +210,7 @@ async function main() {
   if (!handler && command) {
     const nlCommand = resolveNaturalLanguage(command);
     if (nlCommand) {
-      process.stderr.write(`💬 "${command}" → /${nlCommand} 으로 매핑합니다.\n`);
+      process.stderr.write(`"${command}" → /${nlCommand} 으로 매핑합니다.\n`);
       handler = await resolveCommand(nlCommand);
     }
   }

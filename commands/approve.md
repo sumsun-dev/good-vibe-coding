@@ -30,7 +30,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js list-projects
 discussion.rounds가 있으면 수렴 이력을 함께 보여주세요:
 
 ```
-📊 토론 수렴 이력:
+토론 수렴 이력:
 - 라운드 1: 승인율 60% (미수렴) — 3명 중 2명 반대
   주요 논점: [미합의 사항 요약]
 - 라운드 2: 승인율 80% (수렴) — 5명 중 4명 승인

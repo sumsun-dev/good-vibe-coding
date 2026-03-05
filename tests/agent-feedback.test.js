@@ -33,9 +33,9 @@ const SAMPLE_PROJECT = {
   type: 'web-app',
   status: 'completed',
   team: [
-    { roleId: 'cto', displayName: '민준', emoji: '🏗️', role: 'CTO' },
-    { roleId: 'backend', displayName: '도윤', emoji: '🔧', role: 'Backend Developer' },
-    { roleId: 'qa', displayName: '지민', emoji: '🧪', role: 'QA Engineer' },
+    { roleId: 'cto', displayName: '민준', emoji: '', role: 'CTO' },
+    { roleId: 'backend', displayName: '도윤', emoji: '', role: 'Backend Developer' },
+    { roleId: 'qa', displayName: '지민', emoji: '', role: 'QA Engineer' },
   ],
   tasks: [
     {

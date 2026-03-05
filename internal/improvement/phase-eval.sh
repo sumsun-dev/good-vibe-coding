@@ -31,7 +31,7 @@ run_phase_eval() {
 
   local eval_result
   local node_exit=0
-  eval_result=$(node "${SCRIPT_DIR}/lib/improvement/sla-evaluator.js" evaluate \
+  eval_result=$(node "${SCRIPT_DIR}/lib/sla-evaluator.js" evaluate \
     "$eval_output" "$SLA_TARGET" "$MIN_SCORE_IMPROVEMENT" \
     $prev_scores_arg 2>>"$LOG_FILE") || node_exit=$?
 

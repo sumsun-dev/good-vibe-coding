@@ -20,7 +20,7 @@ function cliExec(command, input) {
       encoding: 'utf-8',
       timeout: 10_000,
       env: childEnv,
-    })
+    }),
   );
 }
 

@@ -65,7 +65,7 @@ function buildRoleQuestions(teamMember) {
 export function buildAgentAnalysisPrompt(project, teamMember, context = {}) {
   const round = context.round || 1;
 
-  let prompt = `당신은 ${teamMember.emoji} **${teamMember.displayName}** (${teamMember.role})입니다.
+  let prompt = `당신은 **${teamMember.displayName}** (${teamMember.role})입니다.
 
 ## 당신의 성격
 - 특성: ${teamMember.trait}
@@ -85,9 +85,10 @@ ${buildRoleQuestions(teamMember)}`;
 
   if (context.previousSynthesis) {
     const maxLen = 3000;
-    const truncated = context.previousSynthesis.length > maxLen
-      ? context.previousSynthesis.slice(0, maxLen) + '\n...(truncated)'
-      : context.previousSynthesis;
+    const truncated =
+      context.previousSynthesis.length > maxLen
+        ? context.previousSynthesis.slice(0, maxLen) + '\n...(truncated)'
+        : context.previousSynthesis;
     prompt += `\n\n## 이전 라운드 기획서\n다음은 이전 라운드에서 종합된 기획서입니다. 이를 기반으로 수정/보완 의견을 제시하세요.\n\n${truncated}`;
   }
 
@@ -114,8 +115,16 @@ export function buildSynthesisPrompt(project, agentOutputs, round) {
     throw inputError('에이전트 분석 결과가 없습니다');
   }
 
+  const MAX_ANALYSIS_LENGTH = 3000;
+
   const analysisSection = agentOutputs
-    .map((o) => `### ${o.emoji} ${o.role} (${o.roleId})\n${o.analysis}`)
+    .map((o) => {
+      const analysis =
+        o.analysis && o.analysis.length > MAX_ANALYSIS_LENGTH
+          ? o.analysis.slice(0, MAX_ANALYSIS_LENGTH) + '\n...(이하 생략)'
+          : o.analysis;
+      return `### ${o.role} (${o.roleId})\n${analysis}`;
+    })
     .join('\n\n---\n\n');
 
   return `다음은 프로젝트 "${project.name}"에 대한 ${agentOutputs.length}명의 팀원 분석 결과입니다.
@@ -161,7 +170,7 @@ ${analysisSection}
  * @returns {string} 리뷰 프롬프트
  */
 export function buildReviewPrompt(teamMember, synthesizedPlan, round) {
-  return `당신은 ${teamMember.emoji} **${teamMember.displayName}** (${teamMember.role})입니다.
+  return `당신은 **${teamMember.displayName}** (${teamMember.role})입니다.
 
 ## 당신의 성격
 - 특성: ${teamMember.trait}
@@ -269,14 +278,18 @@ export function trackConvergenceEvolution(currentResult, previousRounds) {
   const safeRounds = Array.isArray(previousRounds) ? previousRounds : [];
   const approvalHistory = [...safeRounds.map((r) => r.approvalRate), currentResult.approvalRate];
 
-  const lastRate = safeRounds.length > 0 ? safeRounds[safeRounds.length - 1].approvalRate : currentResult.approvalRate;
+  const lastRate =
+    safeRounds.length > 0
+      ? safeRounds[safeRounds.length - 1].approvalRate
+      : currentResult.approvalRate;
   const velocity = currentResult.approvalRate - lastRate;
 
   let trend = 'stagnating';
   if (velocity > 0.05) trend = 'improving';
   else if (velocity < -0.05) trend = 'declining';
 
-  const prevBlockers = safeRounds.length > 0 ? safeRounds[safeRounds.length - 1].blockers || [] : [];
+  const prevBlockers =
+    safeRounds.length > 0 ? safeRounds[safeRounds.length - 1].blockers || [] : [];
   const resolvedBlockers = prevBlockers.filter((b) => !currentResult.blockers.includes(b));
   const newBlockers = currentResult.blockers.filter((b) => !prevBlockers.includes(b));
 

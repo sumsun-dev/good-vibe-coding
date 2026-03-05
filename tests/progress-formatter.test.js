@@ -43,26 +43,51 @@ describe('formatPhaseStart', () => {
 
 describe('formatPhaseComplete', () => {
   it('완료된 Phase 번호를 표시한다', () => {
-    const result = formatPhaseComplete(1, 3, { taskCount: 3, reviewCount: 6, criticalCount: 0, passed: true });
+    const result = formatPhaseComplete(1, 3, {
+      taskCount: 3,
+      reviewCount: 6,
+      criticalCount: 0,
+      passed: true,
+    });
     expect(result).toContain('Phase 1/3');
   });
 
   it('태스크 수와 리뷰 수를 표시한다', () => {
-    const result = formatPhaseComplete(1, 3, { taskCount: 3, reviewCount: 6, criticalCount: 0, passed: true });
+    const result = formatPhaseComplete(1, 3, {
+      taskCount: 3,
+      reviewCount: 6,
+      criticalCount: 0,
+      passed: true,
+    });
     expect(result).toContain('3');
     expect(result).toContain('6');
   });
 
   it('critical 이슈 수를 표시한다', () => {
-    const result = formatPhaseComplete(2, 3, { taskCount: 2, reviewCount: 4, criticalCount: 2, passed: false });
+    const result = formatPhaseComplete(2, 3, {
+      taskCount: 2,
+      reviewCount: 4,
+      criticalCount: 2,
+      passed: false,
+    });
     expect(result).toContain('2');
   });
 
   it('PASS/FAIL 상태를 표시한다', () => {
-    const passed = formatPhaseComplete(1, 3, { taskCount: 3, reviewCount: 6, criticalCount: 0, passed: true });
+    const passed = formatPhaseComplete(1, 3, {
+      taskCount: 3,
+      reviewCount: 6,
+      criticalCount: 0,
+      passed: true,
+    });
     expect(passed).toContain('PASS');
 
-    const failed = formatPhaseComplete(1, 3, { taskCount: 3, reviewCount: 6, criticalCount: 1, passed: false });
+    const failed = formatPhaseComplete(1, 3, {
+      taskCount: 3,
+      reviewCount: 6,
+      criticalCount: 1,
+      passed: false,
+    });
     expect(failed).toContain('FAIL');
   });
 });

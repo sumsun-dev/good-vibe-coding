@@ -13,7 +13,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js list-projects
 프로젝트가 있으면 표 형태로 보여주세요:
 
 ```
-📁 프로젝트 목록
+프로젝트 목록
 ━━━━━━━━━━━━━━━━
 
 | # | 프로젝트 | 타입 | 상태 | 팀원 | 작업 | 생성일 |

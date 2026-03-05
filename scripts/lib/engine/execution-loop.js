@@ -41,7 +41,12 @@ export {
 } from './execution-utils.js';
 
 // Internal imports for I/O functions
-import { getNextExecutionStep, computeStateTransition, createInitialExecutionState, isValidExecutionState } from './state-machine.js';
+import {
+  getNextExecutionStep,
+  computeStateTransition,
+  createInitialExecutionState,
+  isValidExecutionState,
+} from './state-machine.js';
 import { extractContributions, getTasksForPhase } from './execution-utils.js';
 
 /**
@@ -66,12 +71,16 @@ export async function advanceExecution(projectId, stepResult) {
       phase,
       fixAttempts: updatedProject.executionState.fixAttempt,
       taskCount: phaseTasks.length,
-    }).catch((err) => { process.stderr.write(`[gvc] metrics error: ${err.message}\n`); });
+    }).catch((err) => {
+      process.stderr.write(`[gvc] metrics error: ${err.message}\n`);
+    });
   }
   if (stepResult.completedAction === 'review' && stepResult.reviews) {
     const contributions = extractContributions(stepResult.reviews);
     if (contributions.length > 0) {
-      recordContributions(projectId, contributions).catch((err) => { process.stderr.write(`[gvc] contributions error: ${err.message}\n`); });
+      recordContributions(projectId, contributions).catch((err) => {
+        process.stderr.write(`[gvc] contributions error: ${err.message}\n`);
+      });
     }
   }
 
@@ -92,7 +101,18 @@ export async function advanceExecution(projectId, stepResult) {
           });
         }
       })
-      .catch((err) => { process.stderr.write(`[gvc] PR creation error: ${err.message}\n`); });
+      .catch(async (err) => {
+        process.stderr.write(`[gvc] PR creation error: ${err.message}\n`);
+        try {
+          await addPullRequest(projectId, {
+            url: null,
+            branchName: updatedProject.executionState.branchName,
+            error: err.message,
+          });
+        } catch {
+          /* 기록 실패도 무시 — fire-and-forget */
+        }
+      });
   }
 
   return {

@@ -12,7 +12,7 @@ const SAMPLE_TEAM = [
   {
     roleId: 'cto',
     displayName: '민준',
-    emoji: '🏗️',
+    emoji: '',
     role: 'CTO',
     trait: '전략적',
     speakingStyle: '명확한',
@@ -23,7 +23,7 @@ const SAMPLE_TEAM = [
   {
     roleId: 'backend',
     displayName: '도윤',
-    emoji: '🔧',
+    emoji: '',
     role: 'Backend Developer',
     trait: '체계적',
     speakingStyle: '논리적',
@@ -34,7 +34,7 @@ const SAMPLE_TEAM = [
   {
     roleId: 'qa',
     displayName: '지민',
-    emoji: '🧪',
+    emoji: '',
     role: 'QA Engineer',
     trait: '꼼꼼한',
     speakingStyle: '조심스러운',
@@ -45,7 +45,7 @@ const SAMPLE_TEAM = [
   {
     roleId: 'security',
     displayName: '세진',
-    emoji: '🛡️',
+    emoji: '',
     role: 'Security Engineer',
     trait: '예리한',
     speakingStyle: '신중한',
@@ -56,7 +56,7 @@ const SAMPLE_TEAM = [
   {
     roleId: 'uiux',
     displayName: '하윤',
-    emoji: '🖌️',
+    emoji: '',
     role: 'UI/UX Designer',
     trait: '창의적',
     speakingStyle: '부드러운',
@@ -67,7 +67,7 @@ const SAMPLE_TEAM = [
   {
     roleId: 'fullstack',
     displayName: '서준',
-    emoji: '⚡',
+    emoji: '',
     role: 'Full-stack Developer',
     trait: '다재다능한',
     speakingStyle: '실용적',
@@ -78,7 +78,7 @@ const SAMPLE_TEAM = [
   {
     roleId: 'frontend',
     displayName: '수아',
-    emoji: '🎨',
+    emoji: '',
     role: 'Frontend Developer',
     trait: '세밀한',
     speakingStyle: '친절한',
@@ -209,7 +209,11 @@ describe('selectReviewers', () => {
   it('이전 리뷰어에게 -0.5 피로도 페널티를 적용한다 (#24)', () => {
     const task = { id: 'task-1', assignee: 'uiux' };
     const withoutPrev = selectReviewers(task, SAMPLE_TEAM);
-    const withPrev = selectReviewers(task, SAMPLE_TEAM, withoutPrev.map((r) => r.roleId));
+    const withPrev = selectReviewers(
+      task,
+      SAMPLE_TEAM,
+      withoutPrev.map((r) => r.roleId),
+    );
     // 이전 리뷰어와 새 리뷰어의 구성이 달라질 수 있음
     // 최소한 피로도 적용 후에도 리뷰어가 선정됨
     expect(withPrev.length).toBeGreaterThanOrEqual(2);
@@ -693,7 +697,7 @@ describe('checkQualityGate important 경고', () => {
 describe('buildRevisionPrompt 최종 시도 경고', () => {
   it('최종 시도 시 경고 문구를 포함한다', () => {
     const task = { id: 'task-1', title: '구현' };
-    const implementer = { emoji: '🧑‍💻', displayName: '풀스택', role: 'fullstack' };
+    const implementer = { emoji: '', displayName: '풀스택', role: 'fullstack' };
     const reviews = [
       { issues: [{ severity: 'critical', description: '보안 취약점', suggestion: '수정 필요' }] },
     ];

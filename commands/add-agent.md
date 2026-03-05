@@ -20,7 +20,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js recommendation-catalog
 ```
 
 응답의 `agents` 배열을 AskUserQuestion으로 보여줍니다.
-이미 설치된 에이전트는 ✅ 표시합니다.
+이미 설치된 에이전트는 [설치됨] 표시합니다.
 
 직접 에이전트명이 지정된 경우 (`/add-agent code-reviewer-kr`), 해당 에이전트를 바로 Step 3으로 진행합니다.
 

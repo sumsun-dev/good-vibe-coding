@@ -32,7 +32,7 @@ describe('loadRoleCatalog', () => {
     for (const role of Object.values(catalog.roles)) {
       expect(role.id).toBeTruthy();
       expect(role.displayName).toBeTruthy();
-      expect(role.emoji).toBeTruthy();
+      expect(role.emoji).toBeDefined();
       expect(role.category).toBeTruthy();
       expect(role.skills).toBeDefined();
       expect(Array.isArray(role.defaultTools)).toBe(true);
@@ -84,7 +84,7 @@ describe('buildTeam', () => {
     expect(team.length).toBe(2);
     expect(team[0].roleId).toBe('cto');
     expect(team[0].displayName).toBeTruthy();
-    expect(team[0].emoji).toBeTruthy();
+    expect(team[0].emoji).toBeDefined();
   });
 
   it('페르소나 선택을 반영한다', async () => {
@@ -132,7 +132,7 @@ describe('buildTeam', () => {
     for (const member of team) {
       expect(member.roleId).toBeTruthy();
       expect(member.displayName).toBeTruthy();
-      expect(member.emoji).toBeTruthy();
+      expect(member.emoji).toBeDefined();
       expect(member.role).toBeTruthy();
       expect(member.model).toBeTruthy();
       expect(Array.isArray(member.skills)).toBe(true);

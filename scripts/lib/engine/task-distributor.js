@@ -67,7 +67,7 @@ export function parseTaskList(rawOutput) {
  * @returns {string} 실행 프롬프트
  */
 export function buildExecutionPrompt(task, teamMember, context = {}) {
-  let prompt = `당신은 ${teamMember.emoji} **${teamMember.displayName}** (${teamMember.role})입니다.
+  let prompt = `당신은 **${teamMember.displayName}** (${teamMember.role})입니다.
 
 ## 당신의 성격
 - 특성: ${teamMember.trait}
@@ -198,7 +198,7 @@ export function isCodeTask(task) {
 export function buildTddExecutionPrompt(task, teamMember, context = {}) {
   const testFramework = context.testFramework || 'vitest';
 
-  let prompt = `당신은 ${teamMember.emoji} **${teamMember.displayName}** (${teamMember.role})입니다.
+  let prompt = `당신은 **${teamMember.displayName}** (${teamMember.role})입니다.
 
 ## 당신의 성격
 - 특성: ${teamMember.trait}

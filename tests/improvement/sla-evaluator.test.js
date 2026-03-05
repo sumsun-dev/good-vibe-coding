@@ -7,7 +7,7 @@ import {
   buildRoundFeedback,
   buildRoundMetrics,
   buildSlaDashboard,
-} from '../../scripts/lib/improvement/sla-evaluator.js';
+} from '../../internal/lib/sla-evaluator.js';
 
 describe('sla-evaluator', () => {
   const fullScores = {
@@ -158,8 +158,24 @@ describe('sla-evaluator', () => {
     });
 
     it('dimensionDeltas를 올바르게 계산한다', () => {
-      const prev = { architecture: 6.0, safety: 7.0, promptQuality: 5.0, reflection: 6.0, errorHandling: 7.0, testCoverage: 6.0, docConsistency: 5.0 };
-      const current = { architecture: 8.0, safety: 7.0, promptQuality: 6.0, reflection: 6.0, errorHandling: 7.5, testCoverage: 7.0, docConsistency: 5.5 };
+      const prev = {
+        architecture: 6.0,
+        safety: 7.0,
+        promptQuality: 5.0,
+        reflection: 6.0,
+        errorHandling: 7.0,
+        testCoverage: 6.0,
+        docConsistency: 5.0,
+      };
+      const current = {
+        architecture: 8.0,
+        safety: 7.0,
+        promptQuality: 6.0,
+        reflection: 6.0,
+        errorHandling: 7.5,
+        testCoverage: 7.0,
+        docConsistency: 5.5,
+      };
       const result = calculateImprovement(prev, current, 0.3);
       expect(result.dimensionDeltas.architecture).toBe(2.0);
       expect(result.dimensionDeltas.safety).toBe(0);
@@ -226,7 +242,7 @@ describe('sla-evaluator', () => {
       expect(dashboard).toContain('SLA 대시보드');
       expect(dashboard).toContain('Round');
       expect(dashboard).toContain('Architecture');
-      expect(dashboard).toContain('✅');
+      expect(dashboard).toContain('O');
     });
 
     it('빈 메트릭이면 기본 메시지를 반환한다', () => {
@@ -235,9 +251,7 @@ describe('sla-evaluator', () => {
     });
 
     it('최종 SLA 요약을 포함한다', () => {
-      const metrics = [
-        { round: 1, scores: fullScores, average: 6.5, met: false, stagnant: true },
-      ];
+      const metrics = [{ round: 1, scores: fullScores, average: 6.5, met: false, stagnant: true }];
       const dashboard = buildSlaDashboard(metrics);
       expect(dashboard).toContain('최종 SLA');
       expect(dashboard).toContain('미달');

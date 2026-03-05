@@ -558,14 +558,14 @@ describe('E2E: CLI 에러 경로', () => {
     const result = cliExecRaw('create-project', {});
     expect(result.exitCode).toBe(2);
     expect(result.stderr).toContain('INPUT_ERROR');
-    expect(result.stderr).toContain('💡');
+    expect(result.stderr).toContain('입력 형식을 확인');
   });
 
   it('존재하지 않는 프로젝트 조회 시 NOT_FOUND exit 3과 에러 힌트를 반환한다', () => {
     const result = cliExecRaw('get-project --id non-existent-id-xyz');
     expect(result.exitCode).toBe(3);
     expect(result.stderr).toContain('NOT_FOUND');
-    expect(result.stderr).toContain('💡');
+    expect(result.stderr).toContain('목록을 확인');
   });
 });
 

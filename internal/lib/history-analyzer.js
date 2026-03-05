@@ -260,17 +260,18 @@ if (
       const [file] = args;
       const entries = readEntries(file);
       // DI: CLI에서는 실제 gh 호출
-      const { execSync } = await import('child_process');
+      const { execFileSync } = await import('child_process');
       const ghPrViewFn = (prNumber) => {
-        // Shell injection 방지: 정수만 허용
+        // Shell injection 방지: 정수만 허용 + execFileSync 사용
         const safeNumber = parseInt(prNumber, 10);
         if (Number.isNaN(safeNumber) || safeNumber <= 0) return 'UNKNOWN';
         try {
           const ghTimeout = parseInt(process.env.GH_TIMEOUT, 10) || 15_000;
-          return execSync(`gh pr view ${safeNumber} --json state --jq '.state'`, {
-            encoding: 'utf-8',
-            timeout: ghTimeout,
-          }).trim();
+          return execFileSync(
+            'gh',
+            ['pr', 'view', String(safeNumber), '--json', 'state', '--jq', '.state'],
+            { encoding: 'utf-8', timeout: ghTimeout },
+          ).trim();
         } catch {
           return 'UNKNOWN';
         }

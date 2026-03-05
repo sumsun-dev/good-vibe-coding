@@ -12,7 +12,12 @@ import {
 const [, , , ...args] = process.argv;
 
 function toTemplateSummary(t) {
-  return { name: t.name, displayName: t.displayName, description: t.description, projectType: t.projectType };
+  return {
+    name: t.name,
+    displayName: t.displayName,
+    description: t.description,
+    projectType: t.projectType,
+  };
 }
 
 export const commands = {

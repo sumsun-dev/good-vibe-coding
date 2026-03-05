@@ -16,6 +16,7 @@ import {
   extractContributions,
   computeStateTransition,
 } from '../scripts/lib/engine/execution-loop.js';
+import { config } from '../scripts/lib/core/config.js';
 import {
   createProject,
   addProjectTasks,
@@ -1299,7 +1300,12 @@ describe('computeStateTransition 불변성', () => {
   it('원본 프로젝트의 executionState를 변경하지 않는다', () => {
     const originalState = createInitialExecutionState('auto');
     originalState.phaseResults = {
-      1: { taskResults: [{ id: 'task-1', output: 'original' }], reviews: [], qualityGate: null, committed: false },
+      1: {
+        taskResults: [{ id: 'task-1', output: 'original' }],
+        reviews: [],
+        qualityGate: null,
+        committed: false,
+      },
     };
     const project = {
       id: 'immutability-test',
@@ -1321,5 +1327,72 @@ describe('computeStateTransition 불변성', () => {
     expect(project.executionState.phaseStep).toBe('execute-tasks');
     // 결과는 변경되어야 함
     expect(result.executionState.phaseStep).toBe('materialize');
+  });
+});
+
+describe('config.execution.maxEscalationAttempts 참조', () => {
+  it('config에 maxEscalationAttempts가 존재한다', () => {
+    expect(config.execution.maxEscalationAttempts).toBe(3);
+  });
+
+  it('maxEscalationAttempts 초과 시 에러를 던진다', () => {
+    const state = createInitialExecutionState('auto');
+    state.status = 'escalated';
+    state.phaseStep = 'quality-gate';
+    state.fixAttempt = 2;
+    state.pendingEscalation = { reason: 'test' };
+    state.escalationCount = config.execution.maxEscalationAttempts;
+    const project = {
+      id: 'esc-test',
+      name: '에스컬레이션 테스트',
+      tasks: [{ id: 't1', title: 't1', phase: 1, assignee: 'backend' }],
+      executionState: state,
+    };
+    expect(() =>
+      computeStateTransition(project, {
+        completedAction: 'escalation-response',
+        escalationDecision: 'continue',
+      }),
+    ).toThrow('에스컬레이션 최대 횟수');
+  });
+});
+
+describe('유효하지 않은 상태 전이 검증', () => {
+  it('execute-tasks에서 quality-gate로 직접 전이 시 에러를 던진다', () => {
+    const state = createInitialExecutionState('auto');
+    state.phaseStep = 'execute-tasks';
+    state.status = 'executing';
+    const project = {
+      id: 'trans-test',
+      name: '전이 테스트',
+      tasks: [{ id: 't1', title: 't1', phase: 1, assignee: 'backend' }],
+      executionState: state,
+    };
+    expect(() =>
+      computeStateTransition(project, {
+        completedAction: 'quality-gate',
+        qualityGateResult: { passed: true },
+      }),
+    ).toThrow('유효하지 않은 상태 전이');
+  });
+});
+
+describe('PR 생성 실패 시 addPullRequest에 error 포함', () => {
+  it('PR 실패 정보가 기록된다', async () => {
+    // addPullRequest에 error 필드를 포함해 호출할 수 있는지 확인
+    const { addPullRequest } = await import('../scripts/lib/project/project-manager.js');
+    const project = await createTestProject();
+    await initExecution(project.id);
+    // addPullRequest에 error 필드 포함 호출
+    await addPullRequest(project.id, {
+      url: null,
+      branchName: 'gv/test-branch',
+      error: 'PR creation failed: gh not found',
+    });
+    const updated = await getProject(project.id);
+    expect(updated.pullRequests).toHaveLength(1);
+    expect(updated.pullRequests[0].url).toBeNull();
+    expect(updated.pullRequests[0].error).toBe('PR creation failed: gh not found');
+    expect(updated.pullRequests[0].branchName).toBe('gv/test-branch');
   });
 });

@@ -1,6 +1,6 @@
 // sla-evaluator.js — 7영역 SLA 품질 평가 (Round Loop용)
 // Shell에서 호출: node sla-evaluator.js evaluate <output-file> <sla-target> <min-improvement> [prev-scores-file]
-//                  node sla-evaluator.js dashboard <round-metrics.jsonl>
+// node sla-evaluator.js dashboard <round-metrics.jsonl>
 
 import { readFileSync } from 'fs';
 
@@ -165,7 +165,7 @@ export function buildSlaDashboard(roundMetrics) {
   // 행
   for (const m of roundMetrics) {
     const dimValues = SLA_DIMENSIONS.map((d) => m.scores?.[d]?.toFixed(1) ?? '-').join(' | ');
-    const met = m.met ? '✅' : '❌';
+    const met = m.met ? 'O' : 'X';
     lines.push(`| ${m.round} | ${dimValues} | ${m.average?.toFixed(1) ?? '-'} | ${met} |`);
   }
 

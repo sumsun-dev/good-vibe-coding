@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdir, rm, readFile } from 'fs/promises';
+import { mkdir, rm, readFile, writeFile } from 'fs/promises';
 import { resolve } from 'path';
 import {
   createProject,
@@ -22,7 +22,6 @@ import {
   recordMetrics,
   recordContributions,
 } from '../scripts/lib/project/project-manager.js';
-
 
 const TMP_DIR = resolve('.tmp-test-project-manager');
 
@@ -150,6 +149,17 @@ describe('listProjects', () => {
     const list = await listProjects();
     expect(list).toEqual([]);
   });
+
+  it('손상된 project.json이 있어도 나머지 프로젝트를 정상 조회한다', async () => {
+    const good = await createProject('정상', 'web-app', '정상 프로젝트');
+    // 손상된 프로젝트 디렉토리 생성
+    const corruptDir = resolve(TMP_DIR, 'corrupt-project');
+    await mkdir(corruptDir, { recursive: true });
+    await writeFile(resolve(corruptDir, 'project.json'), '{invalid json!!!');
+    const list = await listProjects();
+    expect(list.length).toBe(1);
+    expect(list[0].id).toBe(good.id);
+  });
 });
 
 describe('updateProjectStatus', () => {
@@ -173,7 +183,7 @@ describe('setProjectTeam', () => {
   it('팀을 설정한다', async () => {
     const project = await createProject('봇', 'telegram-bot', '설명');
     const team = [
-      { roleId: 'cto', personalityVariant: 'visionary', displayName: '민준', emoji: '🏗️' },
+      { roleId: 'cto', personalityVariant: 'visionary', displayName: '민준', emoji: '' },
     ];
     const updated = await setProjectTeam(project.id, team);
     expect(updated.team).toEqual(team);
@@ -182,10 +192,10 @@ describe('setProjectTeam', () => {
   it('팀을 교체한다', async () => {
     const project = await createProject('봇', 'telegram-bot', '설명');
     await setProjectTeam(project.id, [
-      { roleId: 'cto', personalityVariant: 'visionary', displayName: '민준', emoji: '🏗️' },
+      { roleId: 'cto', personalityVariant: 'visionary', displayName: '민준', emoji: '' },
     ]);
     const newTeam = [
-      { roleId: 'backend', personalityVariant: 'architect', displayName: '도윤', emoji: '🔧' },
+      { roleId: 'backend', personalityVariant: 'architect', displayName: '도윤', emoji: '' },
     ];
     const updated = await setProjectTeam(project.id, newTeam);
     expect(updated.team).toEqual(newTeam);
@@ -537,7 +547,9 @@ describe('recordMetrics', () => {
 
 describe('에러 타입 검증 (Phase 2)', () => {
   it('존재하지 않는 프로젝트는 NOT_FOUND AppError를 던진다', async () => {
-    await expect(updateProjectStatus('no-exist', 'approved')).rejects.toThrow('프로젝트를 찾을 수 없습니다');
+    await expect(updateProjectStatus('no-exist', 'approved')).rejects.toThrow(
+      '프로젝트를 찾을 수 없습니다',
+    );
     await expect(updateProjectStatus('no-exist', 'approved')).rejects.toMatchObject({
       code: 'NOT_FOUND',
     });
@@ -553,15 +565,21 @@ describe('에러 타입 검증 (Phase 2)', () => {
 
   it('존재하지 않는 태스크는 NOT_FOUND AppError를 던진다', async () => {
     const project = await createProject('에러테스트2', 'web-app', '설명');
-    await expect(updateTaskStatus(project.id, 'no-task', 'completed')).rejects.toThrow('태스크를 찾을 수 없습니다');
+    await expect(updateTaskStatus(project.id, 'no-task', 'completed')).rejects.toThrow(
+      '태스크를 찾을 수 없습니다',
+    );
     await expect(updateTaskStatus(project.id, 'no-task', 'completed')).rejects.toMatchObject({
       code: 'NOT_FOUND',
     });
   });
 
   it('유효하지 않은 모드는 INPUT_ERROR AppError를 던진다', async () => {
-    await expect(createProject('에러테스트3', 'web-app', '설명', { mode: 'bad-mode' })).rejects.toThrow('유효하지 않은 모드');
-    await expect(createProject('에러테스트4', 'web-app', '설명', { mode: 'bad-mode' })).rejects.toMatchObject({
+    await expect(
+      createProject('에러테스트3', 'web-app', '설명', { mode: 'bad-mode' }),
+    ).rejects.toThrow('유효하지 않은 모드');
+    await expect(
+      createProject('에러테스트4', 'web-app', '설명', { mode: 'bad-mode' }),
+    ).rejects.toMatchObject({
       code: 'INPUT_ERROR',
     });
   });
@@ -608,9 +626,7 @@ describe('withProjectLock 락 누수 방지', () => {
   it('fn 에러 후에도 다음 쓰기가 정상 동작한다', async () => {
     const project = await createProject('락 테스트', 'web-app', '설명');
     // 첫 번째 쓰기: 에러 발생
-    await expect(
-      updateProjectStatus(project.id, 'INVALID_STATUS'),
-    ).rejects.toThrow();
+    await expect(updateProjectStatus(project.id, 'INVALID_STATUS')).rejects.toThrow();
     // 두 번째 쓰기: 락이 해제되어 정상 동작해야 함
     const updated = await updateProjectStatus(project.id, 'approved');
     expect(updated.status).toBe('approved');

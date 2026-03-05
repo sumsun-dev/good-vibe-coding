@@ -46,7 +46,7 @@ options:
 선택한 프리셋과 현재 설정의 차이점을 보여줍니다:
 
 ```
-📋 변경 사항 미리보기:
+변경 사항 미리보기:
 
 현재 역할: 개발자
 적용할 스택: Next.js + Supabase
@@ -82,14 +82,14 @@ options:
 
 완료 메시지:
 ```
-✅ 프리셋이 적용되었습니다!
+프리셋이 적용되었습니다!
 
 적용된 프리셋: Next.js + Supabase
 변경된 파일:
   ~/.claude/CLAUDE.md
   ~/.claude/rules/core.md
 
-💡 /my-config로 현재 설정을 확인할 수 있습니다.
+/my-config로 현재 설정을 확인할 수 있습니다.
 ```
 
 ## 에러 처리

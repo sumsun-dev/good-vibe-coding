@@ -4,7 +4,7 @@ import {
   readRecentEntries,
   buildHistorySummary,
   checkMergeStatus,
-} from '../../scripts/lib/improvement/history-analyzer.js';
+} from '../../internal/lib/history-analyzer.js';
 
 describe('history-analyzer', () => {
   describe('buildHistoryEntry', () => {
@@ -194,9 +194,7 @@ describe('history-analyzer', () => {
     });
 
     it('누락 카테고리 재탐색 지침을 포함한다', () => {
-      const entries = [
-        { date: '2026-03-01', issues: 1, categories: ['quality'], approved: true },
-      ];
+      const entries = [{ date: '2026-03-01', issues: 1, categories: ['quality'], approved: true }];
       const summary = buildHistorySummary(entries);
       expect(summary).toContain('security 이슈가 발견되지 않았습니다');
       expect(summary).toContain('performance 이슈가 발견되지 않았습니다');
@@ -229,8 +227,22 @@ describe('history-analyzer', () => {
 
     it('SLA 추이를 표시한다', () => {
       const entries = [
-        { date: '2026-03-01', issues: 2, categories: ['quality'], approved: true, slaScore: 6.5, totalRounds: 2 },
-        { date: '2026-03-02', issues: 1, categories: ['quality'], approved: true, slaScore: 7.2, totalRounds: 3 },
+        {
+          date: '2026-03-01',
+          issues: 2,
+          categories: ['quality'],
+          approved: true,
+          slaScore: 6.5,
+          totalRounds: 2,
+        },
+        {
+          date: '2026-03-02',
+          issues: 1,
+          categories: ['quality'],
+          approved: true,
+          slaScore: 7.2,
+          totalRounds: 3,
+        },
       ];
       const summary = buildHistorySummary(entries);
       expect(summary).toContain('SLA 추이');
@@ -241,16 +253,21 @@ describe('history-analyzer', () => {
     });
 
     it('SLA 점수가 없는 엔트리는 SLA 추이에서 제외한다', () => {
-      const entries = [
-        { date: '2026-03-01', issues: 1, categories: [], approved: true },
-      ];
+      const entries = [{ date: '2026-03-01', issues: 1, categories: [], approved: true }];
       const summary = buildHistorySummary(entries);
       expect(summary).not.toContain('SLA 추이');
     });
 
     it('엔트리에 SLA/라운드 정보를 표시한다', () => {
       const entries = [
-        { date: '2026-03-01', issues: 1, categories: [], approved: true, slaScore: 7.0, totalRounds: 2 },
+        {
+          date: '2026-03-01',
+          issues: 1,
+          categories: [],
+          approved: true,
+          slaScore: 7.0,
+          totalRounds: 2,
+        },
       ];
       const summary = buildHistorySummary(entries);
       expect(summary).toContain('SLA: 7/10');
@@ -261,7 +278,11 @@ describe('history-analyzer', () => {
   describe('checkMergeStatus', () => {
     it('MERGED 상태 엔트리의 mergedAt을 업데이트한다', () => {
       const entries = [
-        { date: new Date().toISOString().slice(0, 10), mergedAt: null, prUrl: 'https://github.com/repo/pull/42' },
+        {
+          date: new Date().toISOString().slice(0, 10),
+          mergedAt: null,
+          prUrl: 'https://github.com/repo/pull/42',
+        },
       ];
       const ghPrViewFn = () => 'MERGED';
       const updated = checkMergeStatus(entries, ghPrViewFn);
@@ -270,7 +291,11 @@ describe('history-analyzer', () => {
 
     it('이미 mergedAt이 있는 엔트리는 건너뛴다', () => {
       const entries = [
-        { date: new Date().toISOString().slice(0, 10), mergedAt: '2026-03-01', prUrl: 'https://github.com/repo/pull/42' },
+        {
+          date: new Date().toISOString().slice(0, 10),
+          mergedAt: '2026-03-01',
+          prUrl: 'https://github.com/repo/pull/42',
+        },
       ];
       const ghPrViewFn = vi.fn();
       const updated = checkMergeStatus(entries, ghPrViewFn);
@@ -279,7 +304,9 @@ describe('history-analyzer', () => {
     });
 
     it('prUrl이 없는 엔트리는 건너뛴다', () => {
-      const entries = [{ date: new Date().toISOString().slice(0, 10), mergedAt: null, prUrl: null }];
+      const entries = [
+        { date: new Date().toISOString().slice(0, 10), mergedAt: null, prUrl: null },
+      ];
       const ghPrViewFn = vi.fn();
       checkMergeStatus(entries, ghPrViewFn);
       expect(ghPrViewFn).not.toHaveBeenCalled();
@@ -296,7 +323,11 @@ describe('history-analyzer', () => {
 
     it('OPEN 상태면 mergedAt을 변경하지 않는다', () => {
       const entries = [
-        { date: new Date().toISOString().slice(0, 10), mergedAt: null, prUrl: 'https://github.com/repo/pull/42' },
+        {
+          date: new Date().toISOString().slice(0, 10),
+          mergedAt: null,
+          prUrl: 'https://github.com/repo/pull/42',
+        },
       ];
       const ghPrViewFn = () => 'OPEN';
       const updated = checkMergeStatus(entries, ghPrViewFn);

@@ -210,7 +210,9 @@ describe('connectWithApiKey', () => {
   });
 
   it('유효하지 않은 프로바이더 ID는 에러를 던진다', async () => {
-    await expect(connectWithApiKey('invalid-provider', 'sk-key')).rejects.toThrow('유효하지 않은 프로바이더');
+    await expect(connectWithApiKey('invalid-provider', 'sk-key')).rejects.toThrow(
+      '유효하지 않은 프로바이더',
+    );
     await expect(connectWithApiKey(null, 'sk-key')).rejects.toThrow('유효하지 않은 프로바이더');
   });
 
