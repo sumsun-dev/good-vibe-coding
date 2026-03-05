@@ -598,7 +598,7 @@ logs/daily-improvement/
 
 ### 새 기능 추가 (커맨드/핸들러)
 
-1. **커맨드 정의** — `commands/new-command.md` 작성 (에이전트 실행 지침)
+1. **커맨드 정의** — `commands/new-command.md` 작성 (YAML frontmatter 필수, 에이전트 실행 지침)
 2. **코어 로직** — `scripts/lib/{category}/new-module.js` 구현
 3. **핸들러 등록** — `scripts/handlers/{handler}.js`에 `commands` 객체에 커맨드 추가
 4. **COMMAND_MAP 등록** — `scripts/cli.js`의 `COMMAND_MAP`에 `'command-name': 'handler'` 추가
@@ -606,6 +606,8 @@ logs/daily-improvement/
 
 체크리스트:
 
+- [ ] `commands/*.md`에 YAML frontmatter 포함 (`---\ndescription: "..."\n---`)
+- [ ] `skills/*/SKILL.md`에 YAML frontmatter 포함 (`---\nname: ...\ndescription: "..."\n---`)
 - [ ] import에 `.js` 확장자 포함
 - [ ] `requireFields`로 필수 입력 검증
 - [ ] 에러 시 `inputError` / `notFoundError` 사용 (직접 `throw new Error` 금지)
