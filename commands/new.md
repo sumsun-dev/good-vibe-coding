@@ -70,6 +70,72 @@ options:
 자유롭게 설명해주세요. (예: "날씨를 알려주는 텔레그램 봇", "팀 프로젝트 관리 웹앱")
 ```
 
+## Step 1.5: 명확도 검사 (clarity >= 0.8 까지)
+
+설명이 충분히 명확한지 수학적으로 평가하고, 부족하면 선택형 질문으로 보강합니다.
+
+**변수 초기화:**
+- `previousClarity = null`
+- `currentDescription = 사용자 입력`
+- `projectType = null` (아직 미판단)
+
+### Loop:
+
+#### 1.5.A: 명확도 분석
+
+```bash
+echo '{"description": "{currentDescription}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js clarity-check
+```
+
+생성된 프롬프트를 Task tool (LLM)로 실행한 후 결과를 파싱합니다:
+
+```bash
+echo '{"rawOutput": "LLM 응답"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js parse-clarity
+```
+
+결과: `{ clarity, dimensions, gaps, questions[], summary }`
+
+#### 1.5.B: 수렴 판정
+
+- **clarity >= 0.8** → "✅ 명확도 {clarity*100}% — Step 2로 진행합니다." → Step 2로
+- **stagnation** (이전 대비 개선 < 5%, rounds > 1) → "ℹ️ 현재 설명으로 진행합니다 ({clarity*100}%)." → Step 2로
+- **otherwise** → 질문 단계로
+
+#### 1.5.C: 질문 (score < 0.6 차원만)
+
+gaps에 해당하는 questions만 AskUserQuestion으로 한꺼번에 표시합니다.
+각 질문에 선택형 옵션 + Other를 포함합니다.
+
+**표시 형식:**
+```
+📊 명확도 분석: {clarity*100}%
+
+{summary}
+
+차원별 점수:
+- scope: {score*100}%
+- userStory: {score*100}%
+- techStack: {score*100}%
+- constraints: {score*100}%
+- successCriteria: {score*100}%
+```
+
+AskUserQuestion으로 부족한 차원의 질문들을 표시합니다 (최대 4개).
+
+#### 1.5.D: 설명 보강
+
+사용자 답변을 수집한 후 설명을 보강합니다:
+
+```bash
+echo '{"original": "{currentDescription}", "answers": [{...}]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js enrich-description
+```
+
+- `previousClarity = clarity`
+- `currentDescription = enriched`
+- Loop 반복 (1.5.A로)
+
+---
+
 ## Step 2: 복잡도 자동 분석
 
 프로젝트 설명을 분석하여 복잡도를 판단합니다:
@@ -83,6 +149,25 @@ echo '{"description": "사용자 입력"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/
 ```bash
 echo '{"rawOutput": "분석 결과"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js parse-complexity
 ```
+
+**결과 표시:**
+
+`dimensions`가 있으면 차원별 점수를 상세히 표시합니다:
+
+```
+📊 복잡도 분석: {level} ({complexityScore*100}점)
+
+{reasoning}
+
+차원별 점수:
+- 기능 범위: {featureScope.score*100}% — {featureScope.evidence}
+- 데이터 모델: {dataComplexity.score*100}% — {dataComplexity.evidence}
+- 외부 연동: {integrations.score*100}% — {integrations.evidence}
+- 인증/보안: {authSecurity.score*100}% — {authSecurity.evidence}
+- 확장성: {scalability.score*100}% — {scalability.evidence}
+```
+
+`dimensions`가 없으면 기존처럼 `{level}` + `{reasoning}`만 표시합니다.
 
 ## Step 3: 모드 선택
 
@@ -252,14 +337,17 @@ echo '{"id":"{프로젝트ID}","status":"completed"}' | node ${CLAUDE_PLUGIN_ROO
 
 1. `/discuss` 실행 (1라운드)
 2. 자동 승인 처리
-3. `/execute` 실행 (리뷰 포함)
+3. `/execute` 실행 (리뷰 포함) — 진행률 표시 포함
 4. 완료 보고
+
+**진행률 표시:** `/execute` 실행 중 각 Phase 시작/완료, 태스크 진행, ETA를 표시합니다.
+progress-formatter의 `formatPhaseStart`, `formatPhaseComplete`, `formatProgressBar`, `estimateRemainingTime`을 활용합니다.
 
 ### 모드 C: 팀 토론 후 만들기 (plan-only → execute)
 
 1. `/discuss` 실행 (최대 3라운드, 수렴까지)
 2. `/approve` 실행 (CEO 승인)
-3. `/execute` 실행 (리뷰 포함)
+3. `/execute` 실행 (리뷰 포함) — 진행률 표시 포함
 4. 완료 보고
 
 ## Step 6: 완료 안내

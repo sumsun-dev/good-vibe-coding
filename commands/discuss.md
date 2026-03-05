@@ -83,12 +83,38 @@ echo '{"teamMember": {...}, "synthesizedPlan": "...", "round": 1}' | node ${CLAU
 
 ## Step 7: 수렴 확인
 
+이전 라운드 정보가 있으면 `previousRounds`를 함께 전달하여 진화 추이를 확인합니다:
+
+```bash
+echo '{"reviews": [...], "previousRounds": [{"approvalRate": 0.6, "blockers": ["이슈A"]}]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js check-convergence
+```
+
+`previousRounds`가 없으면 기존처럼 동작합니다:
+
 ```bash
 echo '{"reviews": [...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js check-convergence
 ```
 
+**진화 추이 표시** (`evolution` 필드가 있을 때):
+
+```
+📊 라운드 {N} 수렴 상태
+
+승인율 추이:
+  Round 1: 60% ████████░░░░
+  Round 2: 75% ██████████░░
+  Round 3: 85% ███████████░
+
+개선 속도: +10% ({trend})
+
+블로커 변화:
+  ✅ 해결: {resolvedBlockers}
+  ⚠️ 신규: {newBlockers}
+```
+
 - **수렴 (80% 이상 승인)** → Step 8로 진행
 - **미수렴** → Round 2로 (Step 4로 돌아감, 각 에이전트에게 이전 기획서 + 피드백 전달)
+  - 다음 라운드의 `previousRounds`에 현재 라운드 `{ approvalRate, blockers }`를 추가
 - **최대 3라운드**: 3라운드까지 미수렴 시 강제 수렴. 미해결 이견은 "미합의 사항"으로 기록
 
 ## Step 8: 기획서 저장

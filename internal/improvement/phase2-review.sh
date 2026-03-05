@@ -21,7 +21,7 @@ run_phase2() {
   local ci_status="pending"
 
   while [[ "$ci_waited" -lt "$CI_WAIT_TIMEOUT" ]]; do
-    ci_status=$(gh pr checks "$pr_number" --json state --jq 'map(.state) | if all(. == "SUCCESS") then "success" elif any(. == "FAILURE") then "failure" elif any(. == "PENDING" or . == "QUEUED" or . == "IN_PROGRESS") then "pending" else "none" end' 2>/dev/null || echo "none")
+    ci_status=$(gh pr checks "$pr_number" --json state --jq 'if length == 0 then "none" elif map(.state) | all(. == "SUCCESS") then "success" elif map(.state) | any(. == "FAILURE") then "failure" elif map(.state) | any(. == "PENDING" or . == "QUEUED" or . == "IN_PROGRESS") then "pending" else "none" end' 2>/dev/null || echo "none")
 
     case "$ci_status" in
       success)
@@ -55,21 +55,21 @@ run_phase2() {
   log_phase "Phase2" "Claude Reviewer 세션 시작 (timeout: ${PHASE2_TIMEOUT}s)..."
 
   local claude_exit=0
-  timeout "$PHASE2_TIMEOUT" claude -p "$prompt" --dangerously-skip-permissions >> "$LOG_FILE" 2>&1 || claude_exit=$?
+  timeout "$PHASE2_TIMEOUT" claude -p "$prompt" >> "$LOG_FILE" 2>&1 || claude_exit=$?
 
   local exit_reason
   exit_reason=$(interpret_claude_exit "$claude_exit")
   log_phase "Phase2" "Claude Reviewer 종료: ${exit_reason}"
 
   if [[ "$exit_reason" == "timeout" || "$exit_reason" == "killed" ]]; then
-    send_telegram "" "Phase 2 ${exit_reason} — Reviewer 세션이 시간 초과되었습니다"
+    log_phase "Phase2" "품질 검토 시간 초과"
     write_run_file "review-status" "TIMEOUT"
     return "$EXIT_TIMEOUT"
   fi
 
   # ── 리뷰 결과 확인 ────────────────────────────────────
   local review_state
-  review_state=$(gh pr reviews "$pr_number" --json state --jq 'last | .state' 2>/dev/null || echo "UNKNOWN")
+  review_state=$(parse_review_status "$pr_number")
 
   log_phase "Phase2" "리뷰 결과: ${review_state}"
 
@@ -80,7 +80,7 @@ run_phase2() {
     CHANGES_REQUESTED)
       write_run_file "review-status" "CHANGES_REQUESTED"
       # 리뷰 코멘트 저장 (Phase 3에서 사용)
-      gh pr reviews "$pr_number" --json body --jq 'last | .body' > "${RUN_DIR}/review-body.txt" 2>/dev/null || true
+      gh pr view "$pr_number" --json reviews --jq '.reviews | last | .body' > "${RUN_DIR}/review-body.txt" 2>/dev/null || true
       ;;
     *)
       # 리뷰가 제대로 실행되지 않은 경우 — CHANGES_REQUESTED로 간주

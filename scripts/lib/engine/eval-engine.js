@@ -124,7 +124,7 @@ export function scoreTechnicalDepth(output) {
  * 비용 효율성을 계산한다.
  * @param {{ tokenCount: number }} result - 접근법 결과
  * @param {string} [model='claude'] - 모델 이름 ('claude' | 'openai' | 'gemini')
- * @returns {{ estimatedCost: number, tokensUsed: number, costPerQualityPoint: number }}
+ * @returns {{ estimatedCost: number, tokensUsed: number }}
  */
 export function calculateCostEfficiency(result, model = 'claude') {
   const tokensUsed = result.tokenCount || 0;
@@ -134,7 +134,6 @@ export function calculateCostEfficiency(result, model = 'claude') {
   return {
     estimatedCost,
     tokensUsed,
-    costPerQualityPoint: estimatedCost,
   };
 }
 
@@ -147,6 +146,7 @@ export function calculateCostEfficiency(result, model = 'claude') {
  */
 function normalizeCostScore(cost, maxCost) {
   if (maxCost === 0) return 100;
+  if (cost === maxCost) return 50;
   return Math.round((1 - cost / maxCost) * 100);
 }
 

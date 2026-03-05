@@ -2,6 +2,120 @@
 # phase4-report.sh — 보고서 + 텔레그램 알림 + 히스토리 기록 + 정리
 # 오케스트레이터에서 source 해서 호출
 
+# ── 카테고리 요약 생성 ────────────────────────────────────
+# 이슈 라벨에서 카테고리 추출 → 한글 매핑 → 요약 문장 반환
+build_category_summary() {
+  local categories_json="$1"
+  local issue_count="$2"
+
+  local parts=()
+  if echo "$categories_json" | jq -e 'map(select(. == "security")) | length > 0' > /dev/null 2>&1; then
+    parts+=("보안 취약점")
+  fi
+  if echo "$categories_json" | jq -e 'map(select(. == "performance")) | length > 0' > /dev/null 2>&1; then
+    parts+=("성능 개선")
+  fi
+  if echo "$categories_json" | jq -e 'map(select(. == "quality")) | length > 0' > /dev/null 2>&1; then
+    parts+=("코드 품질")
+  fi
+  if echo "$categories_json" | jq -e 'map(select(. == "bug" or . == "logic")) | length > 0' > /dev/null 2>&1; then
+    parts+=("버그 수정")
+  fi
+
+  local summary
+  if [[ ${#parts[@]} -gt 0 ]]; then
+    local joined
+    joined=$(IFS=', '; echo "${parts[*]}")
+    summary="${joined} 등 ${issue_count}건을 발견하고 수정했어요."
+  else
+    summary="${issue_count}건의 개선점을 발견하고 수정했어요."
+  fi
+  echo "$summary"
+}
+
+# ── 카테고리 요약 (마크다운) ──────────────────────────────
+build_category_summary_markdown() {
+  local categories_json="$1"
+  local issue_count="$2"
+
+  local lines=()
+  if echo "$categories_json" | jq -e 'map(select(. == "security")) | length > 0' > /dev/null 2>&1; then
+    local cnt
+    cnt=$(echo "$categories_json" | jq '[.[] | select(. == "security")] | length')
+    lines+=("- 보안 취약점 ${cnt}건")
+  fi
+  if echo "$categories_json" | jq -e 'map(select(. == "performance")) | length > 0' > /dev/null 2>&1; then
+    local cnt
+    cnt=$(echo "$categories_json" | jq '[.[] | select(. == "performance")] | length')
+    lines+=("- 성능 개선 ${cnt}건")
+  fi
+  if echo "$categories_json" | jq -e 'map(select(. == "quality")) | length > 0' > /dev/null 2>&1; then
+    local cnt
+    cnt=$(echo "$categories_json" | jq '[.[] | select(. == "quality")] | length')
+    lines+=("- 코드 품질 ${cnt}건")
+  fi
+  if echo "$categories_json" | jq -e 'map(select(. == "bug" or . == "logic")) | length > 0' > /dev/null 2>&1; then
+    local cnt
+    cnt=$(echo "$categories_json" | jq '[.[] | select(. == "bug" or . == "logic")] | length')
+    lines+=("- 버그 수정 ${cnt}건")
+  fi
+
+  # 매칭 안 된 카테고리 수 계산
+  local known_count
+  known_count=$(echo "$categories_json" | jq '[.[] | select(. == "security" or . == "performance" or . == "quality" or . == "bug" or . == "logic")] | length')
+  local total
+  total=$(echo "$categories_json" | jq 'length')
+  local other_count=$((total - known_count))
+  if [[ "$other_count" -gt 0 ]]; then
+    lines+=("- 기타 개선 ${other_count}건")
+  fi
+
+  if [[ ${#lines[@]} -gt 0 ]]; then
+    printf '%s\n' "${lines[@]}"
+  else
+    echo "- 코드 개선 ${issue_count}건"
+  fi
+}
+
+# ── 검토 결과 친화적 변환 ────────────────────────────────
+build_review_result_friendly() {
+  local review_status="$1"
+  local review_body_file="$2"
+
+  case "$review_status" in
+    APPROVED)
+      echo "자동 검토를 통과했습니다. 확인 후 머지해주세요."
+      ;;
+    CHANGES_REQUESTED)
+      local result="자동 검토에서 추가 확인이 필요한 부분이 있습니다."$'\n'
+
+      if [[ -f "$review_body_file" ]]; then
+        local must_items should_items
+        must_items=$(grep -E '\[MUST\]' "$review_body_file" 2>/dev/null | sed 's/^[[:space:]]*//' | sed 's/\[MUST\][[:space:]]*//' || echo "")
+        should_items=$(grep -E '\[SHOULD\]' "$review_body_file" 2>/dev/null | sed 's/^[[:space:]]*//' | sed 's/\[SHOULD\][[:space:]]*//' || echo "")
+
+        if [[ -n "$must_items" ]]; then
+          result+=$'\n'"**필수 확인 사항:**"$'\n'
+          while IFS= read -r line; do
+            [[ -n "$line" ]] && result+="- ${line}"$'\n'
+          done <<< "$must_items"
+        fi
+        if [[ -n "$should_items" ]]; then
+          result+=$'\n'"**추가 개선 제안:**"$'\n'
+          while IFS= read -r line; do
+            [[ -n "$line" ]] && result+="- ${line}"$'\n'
+          done <<< "$should_items"
+        fi
+      fi
+
+      echo "$result"
+      ;;
+    *)
+      echo "검토 결과를 확인할 수 없습니다. 직접 확인해주세요."
+      ;;
+  esac
+}
+
 run_phase4() {
   log_phase "Phase4" "=== 보고서 + 알림 시작 ==="
 
@@ -28,18 +142,22 @@ run_phase4() {
   local file_count=0
   file_count=$(git diff --name-only "${BASE_BRANCH}..HEAD" 2>/dev/null | wc -l | tr -d ' ')
 
-  # 카테고리 수집
+  # 카테고리 수집 (이슈별 라벨 → 중복 포함 배열)
   local categories="[]"
   if [[ -f "${RUN_DIR}/issues-created.txt" ]]; then
     local cats
     cats=$(while read -r num; do
       gh issue view "$num" --json labels --jq '.labels[].name' 2>/dev/null
-    done < "${RUN_DIR}/issues-created.txt" | grep -E '^(quality|security|performance)$' | sort -u || echo "")
+    done < "${RUN_DIR}/issues-created.txt" | grep -E '^(quality|security|performance|bug|logic)$' || echo "")
 
     if [[ -n "$cats" ]]; then
       categories=$(echo "$cats" | jq -Rnc '[inputs | select(length > 0)]')
     fi
   fi
+
+  # 카테고리 요약 생성
+  local category_summary
+  category_summary=$(build_category_summary "$categories" "$issue_count")
 
   # metrics.json 생성
   jq -nc \
@@ -87,7 +205,7 @@ run_phase4() {
     # 생성된 이슈 목록
     local issues_section=""
     if [[ -f "${RUN_DIR}/issues-created.txt" ]] && [[ -s "${RUN_DIR}/issues-created.txt" ]]; then
-      issues_section=$'\n## 발견 및 수정한 문제\n\n'
+      issues_section=$'\n### 발견한 문제 목록\n\n'
       while read -r num; do
         local issue_title issue_labels
         issue_title=$(gh issue view "$num" --json title --jq '.title' 2>/dev/null || echo "제목 조회 실패")
@@ -105,103 +223,40 @@ run_phase4() {
     local diff_stat
     diff_stat=$(git diff --stat "${BASE_BRANCH}..HEAD" 2>/dev/null || echo "")
     if [[ -n "$diff_stat" ]]; then
-      diff_stat_section=$'\n## 수정된 파일 상세\n\n```\n'"${diff_stat}"$'\n```\n'
+      diff_stat_section=$'\n### 수정된 파일\n\n```\n'"${diff_stat}"$'\n```\n'
     fi
 
-    # 리뷰 요약 ([MUST]/[SHOULD] 추출)
-    local review_summary_section=""
-    if [[ -f "${RUN_DIR}/review-body.txt" ]]; then
-      local must_items should_items
-      must_items=$(grep -E '\[MUST\]' "${RUN_DIR}/review-body.txt" 2>/dev/null | sed 's/^[[:space:]]*//' || echo "")
-      should_items=$(grep -E '\[SHOULD\]' "${RUN_DIR}/review-body.txt" 2>/dev/null | sed 's/^[[:space:]]*//' || echo "")
+    # 카테고리 요약 (마크다운)
+    local category_summary_md
+    category_summary_md=$(build_category_summary_markdown "$categories" "$issue_count")
 
-      if [[ -n "$must_items" || -n "$should_items" ]]; then
-        review_summary_section=$'\n## 검토 의견\n\n'
-        if [[ -n "$must_items" ]]; then
-          review_summary_section+="**필수 수정:**"$'\n'
-          while IFS= read -r line; do
-            review_summary_section+="- ${line}"$'\n'
-          done <<< "$must_items"
-        fi
-        if [[ -n "$should_items" ]]; then
-          review_summary_section+=$'\n'"**권장 개선:**"$'\n'
-          while IFS= read -r line; do
-            review_summary_section+="- ${line}"$'\n'
-          done <<< "$should_items"
-        fi
-      fi
+    # 검토 결과 (친화적)
+    local review_result_friendly
+    review_result_friendly=$(build_review_result_friendly "$review_status" "${RUN_DIR}/review-body.txt")
+
+    # 검토 결과 섹션
+    local review_section=""
+    if [[ -n "$review_result_friendly" ]]; then
+      review_section=$'\n### 검토 결과\n\n'"${review_result_friendly}"
     fi
-
-    # review_status 한글 매핑
-    local review_status_display
-    case "$review_status" in
-      APPROVED) review_status_display="승인됨" ;;
-      CHANGES_REQUESTED) review_status_display="수정 필요" ;;
-      UNKNOWN) review_status_display="확인 중" ;;
-      *) review_status_display="$review_status" ;;
-    esac
-
-    # SLA 대시보드 섹션
-    local sla_dashboard_section=""
-    if [[ -f "${RUN_DIR}/round-metrics.jsonl" ]]; then
-      local dashboard
-      dashboard=$(node "${SCRIPT_DIR}/lib/sla-evaluator.js" dashboard \
-        "${RUN_DIR}/round-metrics.jsonl" 2>/dev/null || echo "")
-      if [[ -n "$dashboard" ]]; then
-        sla_dashboard_section=$'\n'"${dashboard}"$'\n'
-      fi
-    fi
-
-    # 라운드 정보
-    local round_display=""
-    if [[ "$total_rounds" -gt 1 ]]; then
-      local round_stop_display
-      case "$round_stop_reason" in
-        sla_met) round_stop_display="SLA 달성" ;;
-        stagnant) round_stop_display="개선 정체" ;;
-        time_limit) round_stop_display="시간 제한" ;;
-        max_rounds) round_stop_display="최대 라운드" ;;
-        weekly_limit) round_stop_display="주간 한도" ;;
-        session_limit) round_stop_display="세션 한도" ;;
-        no_findings) round_stop_display="추가 발견 없음" ;;
-        *) round_stop_display="${round_stop_reason:-완료}" ;;
-      esac
-      round_display=" (${total_rounds} rounds, ${round_stop_display})"
-    fi
-
-    # 종료 사유 표시
-    local stop_display=""
-    local stop_reason
-    stop_reason=$(read_file_or_default "${RUN_DIR}/stop-reason" "")
-    case "$stop_reason" in
-      no_progress) stop_display=" (진행 없음 → 조기 중단)" ;;
-      max_cycles) stop_display=" (안전장치 도달)" ;;
-      time_limit) stop_display=" (시간 제한)" ;;
-    esac
 
     local pr_body
     pr_body=$(cat <<BODY_EOF
-## 오늘의 자동 코드 개선 결과
+## 오늘의 코드 개선 요약
 
-| 항목 | 값 |
-|------|-----|
-| 실행일 | ${run_date} |
-| 발견한 문제 | ${issue_count}건 |
-| 수정 횟수 | ${commit_count}회 |
-| 수정된 파일 | ${file_count}개 |
-| 검토 결과 | ${review_status_display} |
-| 피드백 반영 | ${fix_cycles}회${stop_display} |
-| 라운드 | ${total_rounds}회${round_display} |
-| SLA 점수 | ${last_sla_score:-N/A}/10 |
-${sla_dashboard_section}${issues_section}${diff_stat_section}${review_summary_section}
-## 확인 체크리스트
+${run_date}에 자동으로 코드를 점검하고 개선했습니다.
 
-- [ ] 수정 내용이 적절한지 확인
-- [ ] 발견된 문제와 수정이 일치하는지 검토
-- [ ] 테스트가 정상 통과하는지 확인
+### 무엇을 개선했나요?
+
+${category_summary_md}
+
+> 총 ${issue_count}건의 개선점을 발견하고, ${file_count}개 파일을 수정했습니다.
+${issues_section}${diff_stat_section}${review_section}
+---
+
+- [ ] 수정 내용 확인
 - [ ] 머지 승인
 
----
 Generated by Daily Improvement Pipeline
 BODY_EOF
 )
@@ -218,10 +273,8 @@ BODY_EOF
         log_phase "Phase4" "자동 머지 시도 (squash)..."
         if gh pr merge "$pr_number" --squash --delete-branch >> "$LOG_FILE" 2>&1; then
           log_phase "Phase4" "자동 머지 완료"
-          send_telegram "" "자동 머지 완료 (PR #${pr_number})"
         else
           log_phase "Phase4" "자동 머지 실패 — 수동 확인 필요"
-          send_telegram "" "자동 머지 실패 — 수동 확인 필요 (PR #${pr_number})"
         fi
       fi
     fi
@@ -230,39 +283,31 @@ BODY_EOF
   # ── 텔레그램 알림 ─────────────────────────────────────
   case "$review_status" in
     APPROVED)
-      send_telegram "" "검토 통과 — 확인 후 머지해주세요
-발견: ${issue_count}건 | 파일: ${file_count}개 | 라운드: ${total_rounds}회 | SLA: ${last_sla_score:-N/A}/10
-PR: ${pr_url}"
+      send_telegram "" "오늘의 코드 개선이 완료되었습니다!
+
+${category_summary}
+수정한 파일: ${file_count}개
+
+확인 후 승인해주세요:
+${pr_url}"
       ;;
     CHANGES_REQUESTED)
-      local tg_round_info=""
-      if [[ "$total_rounds" -gt 1 ]]; then
-        tg_round_info="라운드: ${total_rounds}회 | SLA: ${last_sla_score:-N/A}/10
-"
-      fi
-      case "${hist_stop_reason:-unknown}" in
-        no_progress)
-          send_telegram "" "수정 진행 없음 — ${fix_cycles}회 시도 후 중단
-${tg_round_info}[MUST] 이슈가 줄지 않아 조기 종료했습니다
-PR: ${pr_url}"
-          ;;
-        max_cycles)
-          send_telegram "" "안전장치 — ${fix_cycles}회 수정 후 중단
-${tg_round_info}PR: ${pr_url}"
-          ;;
-        time_limit)
-          send_telegram "" "시간 제한 — ${fix_cycles}회 수정 후 중단
-${tg_round_info}PR: ${pr_url}"
-          ;;
-        *)
-          send_telegram "" "검토 미통과 — 확인이 필요합니다
-${tg_round_info}PR: ${pr_url}"
-          ;;
-      esac
+      send_telegram "" "오늘의 코드 개선 결과를 알려드려요.
+
+${category_summary}
+일부 수정이 완벽하지 않아 확인이 필요합니다.
+
+직접 확인해주세요:
+${pr_url}"
       ;;
     *)
-      send_telegram "" "완료 (검토 결과: ${review_status})
-발견: ${issue_count}건 | 라운드: ${total_rounds}회 | PR: ${pr_url}"
+      send_telegram "" "오늘의 코드 개선 결과를 알려드려요.
+
+${category_summary}
+수정한 파일: ${file_count}개
+
+확인해주세요:
+${pr_url}"
       ;;
   esac
 
@@ -286,6 +331,10 @@ run_phase4_no_findings() {
     delete_branch "$BRANCH_NAME" 2>/dev/null || true
   fi
 
+  # 텔레그램 알림
+  send_telegram "" "오늘은 추가로 개선할 점을 찾지 못했어요.
+코드가 깨끗한 상태입니다!"
+
   log_phase "Phase4" "=== 발견 없음 정리 완료 ==="
 }
 
@@ -304,9 +353,8 @@ run_phase4_error() {
   append_history "$run_date" "0" "[]" "null" "0" "null" ""
 
   # 텔레그램 알림
-  send_telegram "" "실행 중 오류 발생: ${error_msg}
-PR: ${pr_url}
-로그: ${LOG_FILE}"
+  send_telegram "" "코드 점검 중 문제가 생겼어요.
+다음 점검 때 자동으로 다시 시도합니다."
 
   log_phase "Phase4" "=== 에러 정리 완료 ==="
 }

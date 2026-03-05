@@ -200,6 +200,32 @@ export function mergeAgentWithOverride(baseMd, overrideMd) {
 ${overrideMd.trim()}`;
 }
 
+/**
+ * 피드백 리스트를 자동으로 오버라이드 파일에 적용한다.
+ * 기존 오버라이드가 있으면 .bak으로 백업 후 덮어쓴다.
+ * @param {Array<{roleId: string, feedback: string}>|null} feedbackList - 피드백 배열
+ */
+export async function autoApplyFeedback(feedbackList) {
+  if (!feedbackList || feedbackList.length === 0) return;
+
+  await ensureDir(overridesDir);
+
+  for (const { roleId, feedback } of feedbackList) {
+    if (!feedback) continue;
+
+    const filePath = resolve(overridesDir, `${roleId}.md`);
+    const bakPath = `${filePath}.bak`;
+
+    // 기존 파일이 있으면 백업
+    if (await fileExists(filePath)) {
+      const existing = await readFile(filePath, 'utf-8');
+      await writeFile(bakPath, existing, 'utf-8');
+    }
+
+    await writeFile(filePath, feedback, 'utf-8');
+  }
+}
+
 // --- 프로젝트 레벨 오버라이드 ---
 
 const PROJECT_OVERRIDES_SUBDIR = '.good-vibe/agent-overrides';

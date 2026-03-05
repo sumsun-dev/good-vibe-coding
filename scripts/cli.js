@@ -91,6 +91,9 @@ const COMMAND_MAP = {
   'complexity-analysis': 'eval',
   'parse-complexity': 'eval',
   'complexity-defaults': 'eval',
+  'clarity-check': 'eval',
+  'parse-clarity': 'eval',
+  'enrich-description': 'eval',
   // auth
   connect: 'auth',
   disconnect: 'auth',

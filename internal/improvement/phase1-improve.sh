@@ -26,7 +26,7 @@ run_phase1() {
   log_phase "Phase1" "Claude 세션 종료: ${exit_reason}"
 
   if [[ "$exit_reason" == "timeout" || "$exit_reason" == "killed" ]]; then
-    send_telegram "" "코드 분석이 시간 초과되었습니다"
+    log_phase "Phase1" "코드 분석 시간 초과"
     # 미커밋 변경사항 백업 후 정리
     if has_changes; then
       git diff > "${RUN_DIR}/rollback-phase1-timeout.patch" 2>/dev/null || true
@@ -75,11 +75,11 @@ run_phase1() {
 
       if [[ "$lint_ok" == "false" ]]; then
         write_run_file "phase1-exit-code" "$EXIT_LINT_FAIL"
-        send_telegram "" "코드 검사 실패 — 수정을 되돌렸습니다 (이슈는 유지)"
+        log_phase "Phase1" "lint 실패 — 변경사항 롤백"
         return "$EXIT_LINT_FAIL"
       else
         write_run_file "phase1-exit-code" "$EXIT_TEST_FAIL"
-        send_telegram "" "테스트 실패 — 수정을 되돌렸습니다 (이슈는 유지)"
+        log_phase "Phase1" "테스트 실패 — 변경사항 롤백"
         return "$EXIT_TEST_FAIL"
       fi
     fi
@@ -161,6 +161,14 @@ BODY_EOF
   # ── 생성된 이슈 목록 수집 ─────────────────────────────
   # 오늘 생성된 automated 이슈 목록
   gh issue list --label "automated,improvement" --state open --json number --jq '.[].number' > "${RUN_DIR}/issues-created.txt" 2>/dev/null || true
+
+  # ── 분석 완료 텔레그램 알림 ─────────────────────────────
+  local issue_count
+  issue_count=$(wc -l < "${RUN_DIR}/issues-created.txt" 2>/dev/null | tr -d ' ')
+  if [[ "${issue_count:-0}" -gt 0 ]]; then
+    send_telegram "" "점검 완료! ${issue_count}건의 개선점을 발견했어요.
+지금부터 수정 작업을 진행합니다."
+  fi
 
   write_run_file "phase1-exit-code" "0"
   log_phase "Phase1" "=== 분석 + 수정 완료 ==="

@@ -1,7 +1,7 @@
 ---
 name: Improvement
 about: 코드 개선 사항 제안
-labels: improvement
+labels: improvement, automated
 ---
 
 ## 카테고리

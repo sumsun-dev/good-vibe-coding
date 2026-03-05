@@ -64,6 +64,8 @@ echo '{"tasks": [...], "team": [...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.
 
 action이 `complete` 또는 `already-completed`가 될 때까지 아래를 반복합니다.
 
+**진행률 표시:** 각 action 처리 시 progress-formatter의 함수들을 활용하여 진행 상황을 표시합니다.
+
 ### 2.1 다음 단계 조회
 
 ```bash
@@ -74,12 +76,28 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js next-step --id {ID}
 
 #### `execute-tasks` — 태스크 실행
 
+**Phase 시작 시 표시:**
+```
+{formatPhaseStart(phase, totalPhases, tasks)}
+{formatProgressBar(phase, totalPhases, 'execute-tasks')}
+```
+
+ETA가 있으면 (Phase 1 완료 후부터):
+```
+⏱️ 약 {N}분 남음
+```
+
 같은 Phase의 작업을 Task tool로 **병렬** 실행합니다.
 
 1. 팀원 에이전트를 Task 도구로 호출
 2. 작업 내용과 팀원 페르소나 전달
 3. Phase 2 이상이면 이전 Phase의 컨텍스트(phaseContext, planExcerpt)를 함께 전달
 4. 결과 수집
+
+**각 Task 완료 시 표시:**
+```
+{formatTaskProgress(tasks, completedIds)}
+```
 
 #### `materialize` — 코드 구체화 (코드 태스크만)
 
@@ -141,6 +159,17 @@ echo '{"projectDir": "/path/to/project", "phase": N, "message": "Phase N: ..."}'
 프로젝트에 infraPath가 있고 git이 초기화돼 있을 때만 실행.
 
 #### `build-context` — Phase 컨텍스트 생성
+
+**Phase 완료 시 표시:**
+```
+{formatPhaseComplete(phase, totalPhases, phaseResult)}
+{formatProgressBar(nextPhase, totalPhases, 'build-context')}
+```
+
+ETA가 있으면:
+```
+⏱️ 약 {N}분 남음
+```
 
 1. 태스크 출력 저장:
 ```bash

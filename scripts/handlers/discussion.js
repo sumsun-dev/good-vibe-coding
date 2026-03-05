@@ -19,6 +19,7 @@ import {
   buildReviewPrompt,
   checkConvergence,
   groupAgentsForParallelDispatch,
+  trackConvergenceEvolution,
 } from '../lib/engine/orchestrator.js';
 import {
   buildDiscussionDispatchPlan,
@@ -73,7 +74,11 @@ export const commands = {
   'check-convergence': async () => {
     const data = await readStdin();
     const result = checkConvergence(data.reviews);
-    output(result);
+    if (Array.isArray(data.previousRounds) && data.previousRounds.length > 0) {
+      output(trackConvergenceEvolution(result, data.previousRounds));
+    } else {
+      output(result);
+    }
   },
 
   'group-agents': async () => {

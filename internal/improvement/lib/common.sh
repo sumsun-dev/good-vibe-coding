@@ -65,7 +65,7 @@ start_watchdog() {
   (
     sleep "$timeout_sec"
     log "WATCHDOG: 전체 타임아웃 (${timeout_sec}s) 초과"
-    send_telegram "" "전체 제한 시간 초과 — 자동 종료되었습니다"
+    log_phase "Watchdog" "전체 제한 시간 초과 — 자동 종료"
     # 부모 프로세스 그룹 전체 종료
     kill -TERM -- "-$(ps -o pgid= -p "$parent_pid" 2>/dev/null | tr -d ' ')" 2>/dev/null \
       || kill -TERM "$parent_pid" 2>/dev/null || true
@@ -189,7 +189,7 @@ EMERGENCY_STOP_FILE="/tmp/gv-daily-improvement.stop"
 check_emergency_stop() {
   if [[ -f "$EMERGENCY_STOP_FILE" ]]; then
     log "긴급 정지 파일 감지 — 파이프라인 중단"
-    send_telegram "" "긴급 정지 요청으로 파이프라인을 중단합니다"
+    log_phase "Emergency" "긴급 정지 파일 감지 — 파이프라인 중단"
     rm -f "$EMERGENCY_STOP_FILE" 2>/dev/null || true
     exit "$EXIT_ERROR"
   fi
@@ -345,19 +345,19 @@ run_claude_safe() {
         if [[ "$attempt" -lt "$SESSION_MAX_RETRIES" ]]; then
           local delay=$((SESSION_RETRY_DELAY * attempt))
           log_phase "$phase_name" "${delay}초 대기 후 새 세션으로 재시도 (exponential backoff)..."
-          send_telegram "" "${phase_name}: 세션 한도 도달 — ${delay}초 후 재시도 (${attempt}/${SESSION_MAX_RETRIES})"
+          log_phase "$phase_name" "세션 한도 도달 — ${delay}초 후 재시도 (${attempt}/${SESSION_MAX_RETRIES})"
           sleep "$delay"
         fi
         ;;
       weekly_limit)
         log_phase "$phase_name" "주간 한도 도달 — 재시도 불가"
-        send_telegram "" "${phase_name}: 주간 한도 소진 — 파이프라인 일시 중단"
+        log_phase "$phase_name" "주간 한도 소진 — 파이프라인 일시 중단"
         save_checkpoint "${CURRENT_ROUND:-1}" "$phase_name" "weekly_limit_reached"
         return "$claude_exit"
         ;;
       auth_error)
         log_phase "$phase_name" "인증 오류 — 재시도 불가"
-        send_telegram "" "${phase_name}: 인증 오류 — claude login 필요"
+        log_phase "$phase_name" "인증 오류 — claude login 필요"
         return "$claude_exit"
         ;;
       network)

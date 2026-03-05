@@ -313,7 +313,6 @@ describe('calculateCostEfficiency', () => {
     const result = calculateCostEfficiency({ tokenCount: 0 });
     expect(result.estimatedCost).toBe(0);
     expect(result.tokensUsed).toBe(0);
-    expect(result.costPerQualityPoint).toBe(0);
   });
 
   it('tokenCount가 없는 경우를 처리한다', () => {
@@ -373,8 +372,8 @@ describe('compareApproaches', () => {
     const comparison = compareApproaches(session);
     const ranking = comparison.rankings[0];
 
-    // 단일 접근법이면 비용 효율 100 (비용이 maxCost와 같으므로 0)
-    // 단일일 때 normalizeCostScore는 (1 - cost/maxCost) * 100 = 0
+    // 단일 접근법이면 비용 효율 50 (cost === maxCost 보정)
+    expect(ranking.costEfficiency).toBe(50);
     const expectedOverall = Math.round(
       ranking.completeness * 0.4 + ranking.technicalDepth * 0.4 + ranking.costEfficiency * 0.2,
     );

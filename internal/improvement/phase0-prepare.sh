@@ -7,12 +7,22 @@ run_phase0() {
 
   # ── git 최신화 ─────────────────────────────────────────
   log_phase "Phase0" "git checkout ${BASE_BRANCH} && git pull..."
-  git checkout "${BASE_BRANCH}" >> "$LOG_FILE" 2>&1
-  git pull --rebase origin "${BASE_BRANCH}" >> "$LOG_FILE" 2>&1
+  git checkout "${BASE_BRANCH}" >> "$LOG_FILE" 2>&1 || {
+    log_phase "Phase0" "ERROR: git checkout ${BASE_BRANCH} 실패"
+    return "$EXIT_ERROR"
+  }
+  git pull --rebase origin "${BASE_BRANCH}" >> "$LOG_FILE" 2>&1 || {
+    log_phase "Phase0" "ERROR: git pull 실패 — rebase abort 시도"
+    git rebase --abort >> "$LOG_FILE" 2>&1 || true
+    return "$EXIT_ERROR"
+  }
 
   # ── 의존성 설치 ────────────────────────────────────────
   log_phase "Phase0" "npm ci..."
-  npm ci --ignore-scripts >> "$LOG_FILE" 2>&1
+  npm ci --ignore-scripts >> "$LOG_FILE" 2>&1 || {
+    log_phase "Phase0" "ERROR: npm ci 실패"
+    return "$EXIT_ERROR"
+  }
 
   # ── RUN_DIR 생성 ───────────────────────────────────────
   local run_id

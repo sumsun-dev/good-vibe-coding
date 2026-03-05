@@ -17,19 +17,26 @@ import {
   parseComplexityAnalysis,
   getDefaultsForComplexity,
 } from '../lib/agent/complexity-analyzer.js';
-import { inputError } from '../lib/core/validators.js';
+import {
+  buildClarityCheckPrompt as buildClarityPrompt,
+  parseClarityResult,
+  enrichDescription,
+} from '../lib/agent/clarity-analyzer.js';
+import { inputError, requireFields } from '../lib/core/validators.js';
 
 const [, , , ...args] = process.argv;
 
 export const commands = {
   'eval-create': async () => {
     const data = await readStdin();
+    requireFields(data, ['projectDescription', 'approaches']);
     const session = createEvalSession(data.projectDescription, data.approaches);
     output(session);
   },
 
   'eval-record': async () => {
     const data = await readStdin();
+    requireFields(data, ['sessionId', 'approach', 'result']);
     const session = await loadEvalSession(data.sessionId);
     const updated = recordApproachResult(session, data.approach, data.result);
     await saveEvalSession(updated);
@@ -60,18 +67,21 @@ export const commands = {
 
   'eval-baseline-prompt': async () => {
     const data = await readStdin();
+    requireFields(data, ['description']);
     const prompt = buildSinglePromptBaseline(data.description);
     output({ prompt });
   },
 
   'complexity-analysis': async () => {
     const data = await readStdin();
+    requireFields(data, ['description']);
     const prompt = buildComplexityAnalysisPrompt(data.description);
     output({ prompt });
   },
 
   'parse-complexity': async () => {
     const data = await readStdin();
+    requireFields(data, ['rawOutput']);
     const result = parseComplexityAnalysis(data.rawOutput);
     output(result);
   },
@@ -80,5 +90,26 @@ export const commands = {
     const opts = parseArgs(args);
     const defaults = getDefaultsForComplexity(opts.level);
     output(defaults);
+  },
+
+  'clarity-check': async () => {
+    const data = await readStdin();
+    requireFields(data, ['description']);
+    const prompt = buildClarityPrompt(data.description, data.projectType, data.codebaseInfo);
+    output({ prompt });
+  },
+
+  'parse-clarity': async () => {
+    const data = await readStdin();
+    requireFields(data, ['rawOutput']);
+    const result = parseClarityResult(data.rawOutput);
+    output(result);
+  },
+
+  'enrich-description': async () => {
+    const data = await readStdin();
+    requireFields(data, ['original']);
+    const enriched = enrichDescription(data.original, data.answers || []);
+    output({ enriched });
   },
 };

@@ -76,7 +76,7 @@ export PIPELINE_START=$(date +%s)
 # Watchdog 시작
 start_watchdog "$TOTAL_TIMEOUT"
 
-send_telegram "" "오늘의 자동 코드 개선을 시작합니다"
+send_telegram "" "안녕하세요! 오늘의 코드 점검을 시작합니다."
 
 # ── Phase 0: 사전 준비 ────────────────────────────────────
 phase0_exit=0
@@ -94,7 +94,7 @@ if [[ "$phase0_exit" -ne 0 ]]; then
 fi
 # RUN_DIR, BRANCH_NAME이 export됨
 
-send_telegram "" "준비 완료 — 코드베이스 분석을 시작합니다"
+log_phase "Phase0" "준비 완료 — 코드베이스 분석 시작"
 
 check_emergency_stop
 
@@ -111,7 +111,7 @@ resume_round=$(read_checkpoint "round" "0")
 if [[ "$resume_round" -gt 0 ]]; then
   round=$((resume_round - 1))  # 실패한 라운드부터 재시작
   log "체크포인트에서 재개: Round ${resume_round}부터"
-  send_telegram "" "이전 중단 지점에서 재개 (Round ${resume_round})"
+  log_phase "Checkpoint" "이전 중단 지점에서 재개 (Round ${resume_round})"
 fi
 
 # ── 다음 라운드 가능 판정 ──────────────────────────────────
@@ -142,9 +142,9 @@ while can_start_next_round; do
   log "=========================================="
 
   if [[ "$round" -eq 1 ]]; then
-    send_telegram "" "Round ${round}: 코드 분석 중"
+    log_phase "Round" "Round ${round}: 코드 분석 중"
   else
-    send_telegram "" "Round ${round}: SLA 미달 영역 개선 중"
+    log_phase "Round" "Round ${round}: SLA 미달 영역 개선 중"
   fi
 
   # ── Phase 1: 분석 + 수정 ──────────────────────────────────
@@ -209,7 +209,7 @@ while can_start_next_round; do
 
   # ── Phase 2: 독립 리뷰 ────────────────────────────────────
   local_pr_number=$(read_file_or_default "${RUN_DIR}/pr-number" "?")
-  send_telegram "" "Round ${round}: 품질 검토 중 (PR #${local_pr_number})"
+  log_phase "Round" "Round ${round}: 품질 검토 중 (PR #${local_pr_number})"
 
   phase2_exit=0
   run_phase2 || phase2_exit=$?
@@ -223,7 +223,7 @@ while can_start_next_round; do
 
   # ── Phase 3: 수정 루프 ────────────────────────────────────
   if [[ "$phase2_exit" -eq 0 ]]; then
-    send_telegram "" "Round ${round}: 피드백 반영 중 (PR #${local_pr_number})"
+    log_phase "Round" "Round ${round}: 피드백 반영 중 (PR #${local_pr_number})"
     run_phase3 || true
   fi
   save_checkpoint "$round" "phase3" "completed"
