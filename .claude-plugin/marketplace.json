@@ -11,16 +11,9 @@
   "plugins": [
     {
       "name": "good-vibe-coding",
-      "source": ".",
+      "source": "./",
       "description": "AI 팀을 구성하고 프로젝트를 관리하세요. CEO가 되어 가상 AI 팀원들과 기획부터 실행까지.",
       "version": "1.1.0",
-      "author": {
-        "name": "sumsun-dev"
-      },
-      "homepage": "https://github.com/sumsun-dev/good-vibe-coding",
-      "repository": "https://github.com/sumsun-dev/good-vibe-coding",
-      "license": "MIT",
-      "keywords": ["ai-team", "multi-agent", "korean", "project-management"],
       "category": "productivity"
     }
   ]
