@@ -23,6 +23,12 @@ export default [
     },
   },
   {
+    files: ['internal/**/*.js'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
+  {
     ignores: ['node_modules/', '.tmp*', 'coverage/', '*.backup'],
   },
 ];
