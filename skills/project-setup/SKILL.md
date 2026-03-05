@@ -1,3 +1,8 @@
+---
+name: project-setup
+description: "프로젝트 인프라 셋업 — 폴더/파일/GitHub 자동 생성"
+---
+
 # Project Setup
 
 프로젝트 인프라 셋업을 위한 재사용 가능한 스킬입니다.

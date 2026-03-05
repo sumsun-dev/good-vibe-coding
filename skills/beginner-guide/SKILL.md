@@ -1,3 +1,8 @@
+---
+name: beginner-guide
+description: "Claude Code 입문자를 위한 단계별 가이드"
+---
+
 # Beginner Guide
 
 Claude Code 입문자를 위한 단계별 가이드를 제공합니다.

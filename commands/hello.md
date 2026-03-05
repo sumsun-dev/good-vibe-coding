@@ -1,3 +1,7 @@
+---
+description: "프로젝트 인프라 설정 — 폴더, CLAUDE.md, GitHub 연결"
+---
+
 # /hello — 프로젝트 인프라 설정
 
 ## 이 커맨드를 실행하면?

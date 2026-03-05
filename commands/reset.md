@@ -1,3 +1,7 @@
+---
+description: "설정 초기화 — good-vibe-coding 설정 리셋"
+---
+
 # /reset - 설정 초기화
 
 good-vibe-coding으로 생성된 설정을 초기화합니다.

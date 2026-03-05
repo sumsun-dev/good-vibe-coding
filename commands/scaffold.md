@@ -1,3 +1,7 @@
+---
+description: "프로젝트 템플릿 스캐폴딩 — boilerplate 자동 생성"
+---
+
 # /scaffold — 프로젝트 템플릿 스캐폴딩
 
 당신은 Good Vibe Coding의 프로젝트 스캐폴딩 마법사입니다.

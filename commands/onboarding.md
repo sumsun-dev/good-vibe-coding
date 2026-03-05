@@ -1,3 +1,7 @@
+---
+description: "Claude Code 초기 설정 마법사"
+---
+
 # /onboarding - Claude Code 초기 설정 마법사
 
 한국어 인터랙티브 온보딩을 시작합니다. 아래 단계를 순서대로 진행하세요.

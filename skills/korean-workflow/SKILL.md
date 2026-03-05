@@ -1,3 +1,8 @@
+---
+name: korean-workflow
+description: "한국어 워크플로우 가이드 — 역할별 작업 흐름 안내"
+---
+
 # Korean Workflow
 
 한국어 워크플로우 가이드를 제공합니다.

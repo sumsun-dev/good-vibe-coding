@@ -1,3 +1,7 @@
+---
+description: "한국어 학습 가이드 — 역할별 Claude Code 활용법"
+---
+
 # /learn - 한국어 학습 가이드
 
 역할에 맞는 Claude Code 활용법을 한국어로 안내합니다.
