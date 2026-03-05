@@ -4,7 +4,7 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 
 ## 설계: CLI-as-API + SDK
 
-- `cli.js`는 경량 라우터. 116개 커맨드를 14개 핸들러 모듈(`scripts/handlers/*.js`)로 lazy-load 디스패치
+- `cli.js`는 경량 라우터. 114개 커맨드를 14개 핸들러 모듈(`scripts/handlers/*.js`)로 lazy-load 디스패치
 - 사용자는 `/hello`, `/new`, `/discuss` 같은 슬래시 커맨드만 씀
 - 흐름: 슬래시 커맨드 → 에이전트 디스패치 → cli.js → 핸들러 → 코어 라이브러리
 - 에이전트 .md 파일이 `node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js <command>` 형태로 호출
@@ -26,10 +26,11 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 
 ## 실행 모드 (2가지)
 
-| 모드            | 동작                             | 중단 시점                          |
-| --------------- | -------------------------------- | ---------------------------------- |
-| **interactive** | Phase마다 CEO에게 진행 여부 확인 | 매 Phase 완료 후 + 에스컬레이션    |
-| **auto**        | 자동 진행                        | 에스컬레이션(수정 2회 실패)만 멈춤 |
+| 모드            | 동작                                     | 중단 시점                          |
+| --------------- | ---------------------------------------- | ---------------------------------- |
+| **interactive** | Phase마다 CEO에게 진행 여부 확인         | 매 Phase 완료 후 + 에스컬레이션    |
+| **semi-auto**   | batchSize Phase마다 확인 (기본 3)        | 배치 완료 후 + 에스컬레이션        |
+| **auto**        | 자동 진행                                | 에스컬레이션(수정 2회 실패)만 멈춤 |
 
 - `/execute` 시작 시 선택, SDK는 auto 고정
 - `project.mode` (프로젝트 모드) ≠ `executionState.mode` (실행 모드)
@@ -128,8 +129,9 @@ created → planning → approved → executing → reviewing → completed
 | `/hello` vs `/onboarding`               | 프로젝트별 세팅 vs 사용자 환경 설정(1회)                                           |
 | `/status` vs `/projects`                | 현재 프로젝트만 vs 전체 목록                                                       |
 | `/hello` → `/new` vs `/new` 단독        | 코드 생성/관리 필요 시 hello 먼저, 기획서/보고서만 필요 시 new만                   |
-| `project.mode` vs `executionState.mode` | 프로젝트 모드(plan-only/plan-execute/quick-build) vs 실행 모드(interactive/auto)   |
+| `project.mode` vs `executionState.mode` | 프로젝트 워크플로우(plan-only/plan-execute/quick-build) vs 실행 인터랙션(interactive/semi-auto/auto) |
 | plan-only vs plan-execute               | 둘 다 실행까지 감. plan-only는 /approve 후 수동 /execute, plan-execute는 자동 연결 |
+| approve 되돌리기                        | 실행 시작 전이라면 `/discuss --reset`으로 approved → planning 복귀 가능           |
 
 ## 기술 스택
 
@@ -152,7 +154,7 @@ created → planning → approved → executing → reviewing → completed
 │  AI 팀원             15개 역할               │
 │  Tier별 병렬 분석 + 크로스 리뷰              │
 ├─────────────────────────────────────────────┤
-│  내부 API            CLI-as-API (116개)      │
+│  내부 API            CLI-as-API (114개)      │
 │  에이전트가 호출하는 인터페이스               │
 ├─────────────────────────────────────────────┤
 │  코어 라이브러리      53개 모듈 + 14개 핸들러  │
@@ -344,10 +346,13 @@ Phase N:
     → failureContext 저장 (이슈 + 카테고리 + 이전 시도)
     → 수정 프롬프트에 이전 시도 + 카테고리 분포 주입 (critical/important만, minor 제외)
     → fix (최대 2회, fixAttempt는 Phase당 리셋)
-    → 2회 초과 → CEO 에스컬레이션 (continue/skip/abort)
+    → 2회 초과 → CEO 에스컬레이션:
+        continue: 핵심 기능이라 반드시 성공해야 할 때 (ceoGuidance 주입 가능)
+        skip: 부가 기능이라 나중에 추가 가능할 때
+        abort: 기획 자체를 재검토해야 할 때
   → commit-phase → build-context (이전 Phase 출력을 다음 Phase 프롬프트에 주입)
   → 메트릭 기록 (fire-and-forget, 실행 블로킹 없음)
-  → interactive 모드면 confirm-next-phase, auto면 자동 진행
+  → interactive 모드면 confirm-next-phase, semi-auto면 batchSize 체크, auto면 자동 진행
 ```
 
 - **실행 모드**: `interactive` (Phase 간 CEO 확인) / `auto` (자동 진행)
@@ -546,6 +551,18 @@ logs/daily-improvement/
 - **기여도 점수**: `(critical×3 + uniqueIssues) / reviewCount` — 빈 승인 리뷰는 -0.5 패널티
 - **유니버셜 리뷰어**: qa, security, cto는 중복 판정되어도 제거 불가 (기여도 낮으면 경고만)
 - **팀 규모 최적화**: 기여도 최하위 비유니버셜 역할부터 제거
+
+## 크로스프로젝트 학습
+
+- `aggregateCrossProjectFeedback(roleId, projects)` — 여러 프로젝트에서 동일 역할의 이슈 패턴 집계
+- 3회 이상 반복된 카테고리를 "반복 패턴"으로 추출하여 user-level 오버라이드에 "반복 패턴 주의" 섹션 추가
+- `/feedback` 실행 시 자동으로 크로스프로젝트 분석 수행
+
+## 프롬프트 버전 관리
+
+- `PROMPT_VERSION` 상수 (`prompt-builder.js`) — 현재 `1.1.0`
+- `buildSectioned` 출력에 `<!-- prompt-version: X.X.X -->` 주석 자동 삽입
+- 프롬프트 구조 변경 시 버전 업데이트하여 추적 가능
 
 ## 추천 엔진
 
