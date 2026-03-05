@@ -77,12 +77,14 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js next-step --id {ID}
 #### `execute-tasks` — 태스크 실행
 
 **Phase 시작 시 표시:**
+
 ```
 {formatPhaseStart(phase, totalPhases, tasks)}
 {formatProgressBar(phase, totalPhases, 'execute-tasks')}
 ```
 
 ETA가 있으면 (Phase 1 완료 후부터):
+
 ```
 ⏱️ 약 {N}분 남음
 ```
@@ -95,6 +97,7 @@ ETA가 있으면 (Phase 1 완료 후부터):
 4. 결과 수집
 
 **각 Task 완료 시 표시:**
+
 ```
 {formatTaskProgress(tasks, completedIds)}
 ```
@@ -118,11 +121,13 @@ echo '{"taskOutput": "...", "task": {...}, "projectDir": "/path/to/project"}' | 
 #### `review` — 크로스 리뷰
 
 1. 리뷰어 선정 (최소 2명, 도메인 매칭):
+
 ```bash
 echo '{"task": {...}, "team": [...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js select-reviewers
 ```
 
 2. cross-model 전략 시 프로바이더 배정:
+
 ```bash
 echo '{"reviewers": [...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js resolve-review-assignments
 ```
@@ -161,22 +166,26 @@ echo '{"projectDir": "/path/to/project", "phase": N, "message": "Phase N: ..."}'
 #### `build-context` — Phase 컨텍스트 생성
 
 **Phase 완료 시 표시:**
+
 ```
 {formatPhaseComplete(phase, totalPhases, phaseResult)}
 {formatProgressBar(nextPhase, totalPhases, 'build-context')}
 ```
 
 ETA가 있으면:
+
 ```
 ⏱️ 약 {N}분 남음
 ```
 
 1. 태스크 출력 저장:
+
 ```bash
 echo '{"id":"{ID}","taskId":"{태스크ID}","output":"..."}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js save-task-output
 ```
 
 2. Phase 컨텍스트 생성:
+
 ```bash
 echo '{"completedTasks": [...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js build-phase-context
 ```
@@ -194,6 +203,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js get-failure-context --id {ID}
 ```
 
 미해결 critical 이슈를 보여준 뒤 세 가지 선택지를 제시합니다:
+
 - **계속 수정** — 한 번 더 시도
 - **건너뛰기** — 이 Phase는 넘어감
 - **중단** — 실행 종료

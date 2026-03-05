@@ -12,6 +12,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js list-templates
 ```
 
 AskUserQuestion으로 템플릿을 선택하게 하세요:
+
 - 각 템플릿의 displayName + description을 옵션으로 보여줍니다.
 
 ## Step 2: 변수 입력
@@ -23,11 +24,13 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js get-template --name {템플릿이름}
 ```
 
 템플릿의 `variables` 항목을 기반으로 AskUserQuestion으로 필요한 변수를 수집합니다:
+
 - 각 변수의 prompt를 질문으로, default를 기본값으로 안내
 
 ## Step 3: 대상 디렉토리 확인
 
 AskUserQuestion으로 스캐폴딩 대상 디렉토리를 확인하세요:
+
 - 기본값: `./{projectName}`
 - "이미 파일이 있으면 어떻게 할까요?" — 옵션: "기존 파일 보존 (Recommended)", "덮어쓰기"
 

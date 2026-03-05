@@ -18,18 +18,18 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 
 ## 프로젝트 모드 (3가지)
 
-| 모드 | 팀 규모 | 토론 | 추천 상황 | `/new`에서의 자동 진행 |
-|------|---------|------|----------|----------------------|
-| **quick-build** | 2-3명 | 생략 | 간단한 봇, 스크립트 | CTO 분석 → 작업 분배 → 실행 → QA 리뷰 → 완료 |
-| **plan-execute** | 3-5명 | 1라운드 | 웹앱, API 서버 | discuss(1라운드) → 자동 승인 → execute → 완료 |
-| **plan-only** | 5-8명 | 최대 3라운드 | 대규모 시스템 | discuss(수렴까지) → CEO 승인 → execute → 완료 |
+| 모드             | 팀 규모 | 토론         | 추천 상황           | `/new`에서의 자동 진행                        |
+| ---------------- | ------- | ------------ | ------------------- | --------------------------------------------- |
+| **quick-build**  | 2-3명   | 생략         | 간단한 봇, 스크립트 | CTO 분석 → 작업 분배 → 실행 → QA 리뷰 → 완료  |
+| **plan-execute** | 3-5명   | 1라운드      | 웹앱, API 서버      | discuss(1라운드) → 자동 승인 → execute → 완료 |
+| **plan-only**    | 5-8명   | 최대 3라운드 | 대규모 시스템       | discuss(수렴까지) → CEO 승인 → execute → 완료 |
 
 ## 실행 모드 (2가지)
 
-| 모드 | 동작 | 중단 시점 |
-|------|------|----------|
-| **interactive** | Phase마다 CEO에게 진행 여부 확인 | 매 Phase 완료 후 + 에스컬레이션 |
-| **auto** | 자동 진행 | 에스컬레이션(수정 2회 실패)만 멈춤 |
+| 모드            | 동작                             | 중단 시점                          |
+| --------------- | -------------------------------- | ---------------------------------- |
+| **interactive** | Phase마다 CEO에게 진행 여부 확인 | 매 Phase 완료 후 + 에스컬레이션    |
+| **auto**        | 자동 진행                        | 에스컬레이션(수정 2회 실패)만 멈춤 |
 
 - `/execute` 시작 시 선택, SDK는 auto 고정
 - `project.mode` (프로젝트 모드) ≠ `executionState.mode` (실행 모드)
@@ -42,23 +42,25 @@ created → planning → approved → executing → reviewing → completed
            (재토론)                          (fix 후 재실행)
 ```
 
-| 상태 | 가능한 커맨드 | 설명 |
-|------|-------------|------|
-| `created` | `/new`, `/discuss` | 프로젝트 생성됨, 팀 구성 완료 |
-| `planning` | `/discuss`, `/approve` | 토론 중 또는 기획서 작성됨 |
-| `approved` | `/execute`, `/report` | CEO 승인 완료, 작업 분배됨 |
-| `executing` | `/status`, (자동 진행) | 실행 중 |
-| `reviewing` | `/status`, (자동 진행) | 리뷰 중 |
-| `completed` | `/report`, `/feedback` | 전체 완료 |
+| 상태        | 가능한 커맨드          | 설명                          |
+| ----------- | ---------------------- | ----------------------------- |
+| `created`   | `/new`, `/discuss`     | 프로젝트 생성됨, 팀 구성 완료 |
+| `planning`  | `/discuss`, `/approve` | 토론 중 또는 기획서 작성됨    |
+| `approved`  | `/execute`, `/report`  | CEO 승인 완료, 작업 분배됨    |
+| `executing` | `/status`, (자동 진행) | 실행 중                       |
+| `reviewing` | `/status`, (자동 진행) | 리뷰 중                       |
+| `completed` | `/report`, `/feedback` | 전체 완료                     |
 
 ## 기존 프로젝트 이어서 작업
 
 **중단된 실행 재개:**
+
 - `/execute` 시 이전 실행이 있으면 자동으로 재개 여부를 물어봄
 - `init-execution`에 `resume: true`로 이전 Phase부터 이어서 진행
 - 실행 상태(Phase, fixAttempt, 저널)가 `project.json`에 보존됨
 
 **프로젝트 전환:**
+
 - `/projects` — 전체 목록 확인
 - `/status` — 현재 프로젝트 상태 확인
 - 대부분의 커맨드는 가장 최근 프로젝트를 자동 선택, 여러 개면 AskUserQuestion으로 선택
@@ -120,14 +122,14 @@ created → planning → approved → executing → reviewing → completed
 
 ## 혼동 방지
 
-| 비교 | 차이 |
-|------|------|
-| `/new` vs `/new-project` | 자동(복잡도 분석 → 추천) vs 수동(직접 선택) |
-| `/hello` vs `/onboarding` | 프로젝트별 세팅 vs 사용자 환경 설정(1회) |
-| `/status` vs `/projects` | 현재 프로젝트만 vs 전체 목록 |
-| `/hello` → `/new` vs `/new` 단독 | 코드 생성/관리 필요 시 hello 먼저, 기획서/보고서만 필요 시 new만 |
-| `project.mode` vs `executionState.mode` | 프로젝트 모드(plan-only/plan-execute/quick-build) vs 실행 모드(interactive/auto) |
-| plan-only vs plan-execute | 둘 다 실행까지 감. plan-only는 /approve 후 수동 /execute, plan-execute는 자동 연결 |
+| 비교                                    | 차이                                                                               |
+| --------------------------------------- | ---------------------------------------------------------------------------------- |
+| `/new` vs `/new-project`                | 자동(복잡도 분석 → 추천) vs 수동(직접 선택)                                        |
+| `/hello` vs `/onboarding`               | 프로젝트별 세팅 vs 사용자 환경 설정(1회)                                           |
+| `/status` vs `/projects`                | 현재 프로젝트만 vs 전체 목록                                                       |
+| `/hello` → `/new` vs `/new` 단독        | 코드 생성/관리 필요 시 hello 먼저, 기획서/보고서만 필요 시 new만                   |
+| `project.mode` vs `executionState.mode` | 프로젝트 모드(plan-only/plan-execute/quick-build) vs 실행 모드(interactive/auto)   |
+| plan-only vs plan-execute               | 둘 다 실행까지 감. plan-only는 /approve 후 수동 /execute, plan-execute는 자동 연결 |
 
 ## 기술 스택
 
@@ -175,6 +177,7 @@ created → planning → approved → executing → reviewing → completed
 ## 코어 모듈 (`scripts/lib/`)
 
 **`core/`** — 기반 유틸리티 (12개)
+
 - `validators.js` — 입력 검증 + AppError (inputError/notFoundError/systemError)
 - `config.js` — 중앙 설정 (Object.freeze, 전체 정책 상수)
 - `schema-validator.js` — 경량 스키마 검증 (외부 의존성 0)
@@ -189,6 +192,7 @@ created → planning → approved → executing → reviewing → completed
 - `nl-router.js` — 자연어 → 커맨드 매핑 (규칙 기반, LLM 호출 없음)
 
 **`project/`** — 프로젝트 관리 (12개)
+
 - `project-manager.js` — CRUD + 상태 관리 (원자적 잠금, AppError, 기여도 기록)
 - `project-scaffolder.js` — 프로젝트 인프라 생성 (폴더, CLAUDE.md, README.md, 에이전트)
 - `project-metrics.js` — 비용/토큰 추적, 에이전트 기여도, 대시보드
@@ -203,6 +207,7 @@ created → planning → approved → executing → reviewing → completed
 - `ci-generator.js` — GitHub Actions CI 워크플로우 자동 생성 (Node/Python/Go/Java)
 
 **`engine/`** — 실행 엔진 (13개)
+
 - `orchestrator.js` — 멀티에이전트 오케스트레이션 (4-tier 병렬 디스패치, 수렴 확인, 역할별 피드백 주입)
 - `discussion-engine.js` — 토론 프롬프트 생성
 - `state-machine.js` — 실행 상태 전이 (순수 함수, Phase 내 액션 흐름 정의)
@@ -218,11 +223,13 @@ created → planning → approved → executing → reviewing → completed
 - `acceptance-criteria.js` — 수락 기준 생성/파싱/검증 (기획서 기반 AC)
 
 **`llm/`** — LLM/외부 연동 (3개)
+
 - `llm-provider.js` — LLM 프로바이더 추상화 (Claude/OpenAI/Gemini)
 - `gemini-bridge.js` — Gemini CLI 래퍼 (shell injection 방지)
 - `auth-manager.js` — 멀티프로바이더 인증 (크레덴셜 CRUD)
 
 **`agent/`** — 에이전트/팀 (9개)
+
 - `team-builder.js` — 팀 추천/구성
 - `complexity-analyzer.js` — 복잡도 분석 (모드/팀 규모/모델 추천)
 - `clarity-analyzer.js` — 프로젝트 설명 명확도 분석 (5차원 평가, 적응형 가중치, 수렴 판정)
@@ -234,12 +241,14 @@ created → planning → approved → executing → reviewing → completed
 - `dynamic-role-designer.js` — 프로젝트별 맞춤 역할 설계 (프롬프트/파서, dynamic: true)
 
 **`output/`** — 보고/환경 (4개)
+
 - `report-generator.js` — 보고서 생성
 - `progress-formatter.js` — 실행 진행률 포맷팅 (Phase 시작/완료, 태스크/리뷰 진행률, 품질 게이트, 대시보드)
 - `env-checker.js` — 통합 환경 헬스체크 (node/npm/git 필수, gh/gemini 선택)
 - `update-checker.js` — 버전 확인 + 업데이트 가능 여부 (git fetch --dry-run + HEAD 비교)
 
 **SDK** (`src/`)
+
 - `good-vibe.js` — GoodVibe 메인 클래스 (buildTeam, discuss, execute, report)
 - `discusser.js` — 토론 루프 드라이버 (orchestrator + LLM 연결)
 - `executor.js` — 실행 루프 드라이버 (execution-loop + LLM 연결)
@@ -248,60 +257,62 @@ created → planning → approved → executing → reviewing → completed
 - `index.js` — 엔트리 포인트
 
 **Claude Code 어댑터** (`plugin/`)
+
 - `adapter.js` — Claude Code 환경에서 SDK 초기화
 
 **CLI 레이어**
+
 - `cli.js` — 라우터 (116개 커맨드, 14개 핸들러로 디스패치)
 - `cli-utils.js` — readStdin, output, outputOk, parseArgs
 - `handlers/*.js` — 14개 핸들러: project, team, discussion, execution, review, build, eval, auth, feedback, infra, metrics, template, task, recommendation
 
 ## 정책 상수 (`config.js`)
 
-| 영역 | 상수 | 값 | 설명 |
-|------|------|----|------|
-| 수렴 | `convergence.threshold` | 0.8 | 80% 승인 시 기획서 확정 |
-| 수렴 | `convergence.maxRounds` | 3 | 최대 토론 라운드 |
-| 실행 | `execution.maxFixAttempts` | 2 | Phase당 수정 시도, 초과 시 CEO 에스컬레이션 |
-| 실행 | `execution.maxAgentCalls` | 500 | 세션당 에이전트 호출 상한 (무한 루프 방지) |
-| 실행 | `execution.maxEscalationAttempts` | 3 | 에스컬레이션 최대 횟수 |
-| 실행 | `execution.maxOutputLines` | 200 | 에이전트 출력 최대 라인 |
-| 리뷰 | `review.minReviewers` | 2 | 최소 리뷰어 수 |
-| 리뷰 | `review.maxReviewers` | 3 | 최대 리뷰어 수 |
-| 리뷰 | `review.maxRevisionRounds` | 2 | 리비전 최대 라운드 |
-| 리뷰 | `review.maxImportantIssues` | 10 | Important 이슈 최대 포함 수 |
-| 유사도 | `similarity.redundancyThreshold` | 0.7 | 에이전트 중복 감지 Jaccard 임계값 |
-| 유사도 | `similarity.contributionThreshold` | 0.5 | 기여도 미달 시 제거 대상 |
-| 빌드 | `build.defaultTimeout` | 30s | Node/Python 빌드 타임아웃 |
-| 빌드 | `build.goTimeout` | 45s | Go 빌드 타임아웃 |
-| 빌드 | `build.javaTimeout` | 60s | Java/Maven 빌드 타임아웃 |
-| 팀 | `team.simple` | 2-3명 | quick-build |
-| 팀 | `team.medium` | 3-5명 | plan-execute |
-| 팀 | `team.complex` | 5-8명 | plan-only |
-| 추천 | `recommendation.minScore` | 3 | 추천 노출 최소 점수 |
-| LLM | `llm.defaultTimeout` | 60s | LLM 호출 타임아웃 |
-| LLM | `llm.defaultMaxTokens` | 4096 | 기본 최대 토큰 |
-| LLM | `llm.pingTimeout` | 15s | 연결 확인 타임아웃 |
-| LLM | `llm.maxRetries` | 3 | 재시도 횟수 |
-| GitHub | `github.enabled` | false | GitHub 협업 기능 활성화 |
-| GitHub | `github.branchStrategy` | timestamp | 브랜치 네이밍 전략 (timestamp/phase/custom) |
-| GitHub | `github.baseBranch` | main | 베이스 브랜치 |
-| GitHub | `github.autoPush` | true | 브랜치 자동 push |
-| GitHub | `github.autoCreatePR` | true | 실행 완료 후 자동 PR 생성 |
-| GitHub | `github.prDraft` | false | PR을 Draft로 생성 |
-| 품질 | `quality.criticalPenalty` | 20 | Critical 이슈 감점 |
-| 품질 | `quality.importantPenalty` | 5 | Important 이슈 감점 |
-| 품질 | `quality.fixAttemptPenalty` | 10 | 수정 시도 감점 |
-| 품질 | `quality.buildFailurePenalty` | 30 | 빌드 실패 감점 |
-| 품질 | `quality.firstPhaseWeight` | 0.3 | 첫 Phase 가중치 |
-| 진화 | `evolution.targetScore` | 80 | A/B 평가 목표 점수 |
-| 진화 | `evolution.maxGenerations` | 3 | 최대 세대 수 |
-| 진화 | `evolution.minImprovement` | 5 | 최소 개선 폭 |
-| 명확도 | `clarity.threshold` | 0.8 | 명확도 목표 |
-| 명확도 | `clarity.dimensionThreshold` | 0.6 | 차원별 최소 점수 |
-| 태스크분류 | `taskClassification.engineerRoles` | 5개 역할 | 코드 태스크 판별 대상 |
-| CLI | `cli.suggestionThreshold` | 3 | NL→커맨드 매핑 최소 점수 |
-| 코드베이스 | `codebase.ignoredDirs` | 11개 | 스캔 제외 디렉토리 |
-| 코드베이스 | `codebase.techStackMap` | 16개 | 기술→도메인 매핑 |
+| 영역       | 상수                               | 값        | 설명                                        |
+| ---------- | ---------------------------------- | --------- | ------------------------------------------- |
+| 수렴       | `convergence.threshold`            | 0.8       | 80% 승인 시 기획서 확정                     |
+| 수렴       | `convergence.maxRounds`            | 3         | 최대 토론 라운드                            |
+| 실행       | `execution.maxFixAttempts`         | 2         | Phase당 수정 시도, 초과 시 CEO 에스컬레이션 |
+| 실행       | `execution.maxAgentCalls`          | 500       | 세션당 에이전트 호출 상한 (무한 루프 방지)  |
+| 실행       | `execution.maxEscalationAttempts`  | 3         | 에스컬레이션 최대 횟수                      |
+| 실행       | `execution.maxOutputLines`         | 200       | 에이전트 출력 최대 라인                     |
+| 리뷰       | `review.minReviewers`              | 2         | 최소 리뷰어 수                              |
+| 리뷰       | `review.maxReviewers`              | 3         | 최대 리뷰어 수                              |
+| 리뷰       | `review.maxRevisionRounds`         | 2         | 리비전 최대 라운드                          |
+| 리뷰       | `review.maxImportantIssues`        | 10        | Important 이슈 최대 포함 수                 |
+| 유사도     | `similarity.redundancyThreshold`   | 0.7       | 에이전트 중복 감지 Jaccard 임계값           |
+| 유사도     | `similarity.contributionThreshold` | 0.5       | 기여도 미달 시 제거 대상                    |
+| 빌드       | `build.defaultTimeout`             | 30s       | Node/Python 빌드 타임아웃                   |
+| 빌드       | `build.goTimeout`                  | 45s       | Go 빌드 타임아웃                            |
+| 빌드       | `build.javaTimeout`                | 60s       | Java/Maven 빌드 타임아웃                    |
+| 팀         | `team.simple`                      | 2-3명     | quick-build                                 |
+| 팀         | `team.medium`                      | 3-5명     | plan-execute                                |
+| 팀         | `team.complex`                     | 5-8명     | plan-only                                   |
+| 추천       | `recommendation.minScore`          | 3         | 추천 노출 최소 점수                         |
+| LLM        | `llm.defaultTimeout`               | 60s       | LLM 호출 타임아웃                           |
+| LLM        | `llm.defaultMaxTokens`             | 4096      | 기본 최대 토큰                              |
+| LLM        | `llm.pingTimeout`                  | 15s       | 연결 확인 타임아웃                          |
+| LLM        | `llm.maxRetries`                   | 3         | 재시도 횟수                                 |
+| GitHub     | `github.enabled`                   | false     | GitHub 협업 기능 활성화                     |
+| GitHub     | `github.branchStrategy`            | timestamp | 브랜치 네이밍 전략 (timestamp/phase/custom) |
+| GitHub     | `github.baseBranch`                | main      | 베이스 브랜치                               |
+| GitHub     | `github.autoPush`                  | true      | 브랜치 자동 push                            |
+| GitHub     | `github.autoCreatePR`              | true      | 실행 완료 후 자동 PR 생성                   |
+| GitHub     | `github.prDraft`                   | false     | PR을 Draft로 생성                           |
+| 품질       | `quality.criticalPenalty`          | 20        | Critical 이슈 감점                          |
+| 품질       | `quality.importantPenalty`         | 5         | Important 이슈 감점                         |
+| 품질       | `quality.fixAttemptPenalty`        | 10        | 수정 시도 감점                              |
+| 품질       | `quality.buildFailurePenalty`      | 30        | 빌드 실패 감점                              |
+| 품질       | `quality.firstPhaseWeight`         | 0.3       | 첫 Phase 가중치                             |
+| 진화       | `evolution.targetScore`            | 80        | A/B 평가 목표 점수                          |
+| 진화       | `evolution.maxGenerations`         | 3         | 최대 세대 수                                |
+| 진화       | `evolution.minImprovement`         | 5         | 최소 개선 폭                                |
+| 명확도     | `clarity.threshold`                | 0.8       | 명확도 목표                                 |
+| 명확도     | `clarity.dimensionThreshold`       | 0.6       | 차원별 최소 점수                            |
+| 태스크분류 | `taskClassification.engineerRoles` | 5개 역할  | 코드 태스크 판별 대상                       |
+| CLI        | `cli.suggestionThreshold`          | 3         | NL→커맨드 매핑 최소 점수                    |
+| 코드베이스 | `codebase.ignoredDirs`             | 11개      | 스캔 제외 디렉토리                          |
+| 코드베이스 | `codebase.techStackMap`            | 16개      | 기술→도메인 매핑                            |
 
 ## 토론 플로우
 
@@ -411,15 +422,15 @@ daily-improvement.sh (오케스트레이터)
 
 ### 7영역 SLA 평가
 
-| 영역 | 평가 대상 |
-|------|----------|
-| architecture | 모듈 구조, 의존성, SRP, 레이어 분리 |
-| safety | 보안 취약점, 입력 검증, injection 방지 |
-| promptQuality | AI 프롬프트 명확성, 출력 형식 강제 |
-| reflection | 히스토리 반영, 적응형 분석 |
-| errorHandling | AppError 사용, graceful degradation |
-| testCoverage | 테스트 존재/품질, 커버리지 |
-| docConsistency | CLAUDE.md/README.md와 코드 일치 |
+| 영역           | 평가 대상                              |
+| -------------- | -------------------------------------- |
+| architecture   | 모듈 구조, 의존성, SRP, 레이어 분리    |
+| safety         | 보안 취약점, 입력 검증, injection 방지 |
+| promptQuality  | AI 프롬프트 명확성, 출력 형식 강제     |
+| reflection     | 히스토리 반영, 적응형 분석             |
+| errorHandling  | AppError 사용, graceful degradation    |
+| testCoverage   | 테스트 존재/품질, 커버리지             |
+| docConsistency | CLAUDE.md/README.md와 코드 일치        |
 
 - SLA 목표: 7.0/10 (환경변수 `SLA_TARGET`으로 조정)
 - 개선 정체 감지: 라운드 간 평균 개선폭 < 0.3이면 조기 종료
@@ -468,14 +479,14 @@ logs/daily-improvement/
 
 ### 타임아웃 설정
 
-| Phase | 타임아웃 | 역할 |
-|-------|----------|------|
-| Phase 1 (Improver) | 4h | 분석+수정+테스트 |
-| Phase 2 (Reviewer) | 2h | 컨텍스트 읽기+깊이 리뷰 |
-| Phase 3 (Fixer) | 1.5h/사이클 | 수정 작업 |
-| Phase 3 (Re-reviewer) | 1h/사이클 | 재리뷰 |
-| Phase Eval (Evaluator) | 1h | 7영역 SLA 평가 (read-only) |
-| 전체 파이프라인 | 14h | Round Loop × N (14h에 graceful 종료) |
+| Phase                  | 타임아웃    | 역할                                 |
+| ---------------------- | ----------- | ------------------------------------ |
+| Phase 1 (Improver)     | 4h          | 분석+수정+테스트                     |
+| Phase 2 (Reviewer)     | 2h          | 컨텍스트 읽기+깊이 리뷰              |
+| Phase 3 (Fixer)        | 1.5h/사이클 | 수정 작업                            |
+| Phase 3 (Re-reviewer)  | 1h/사이클   | 재리뷰                               |
+| Phase Eval (Evaluator) | 1h          | 7영역 SLA 평가 (read-only)           |
+| 전체 파이프라인        | 14h         | Round Loop × N (14h에 graceful 종료) |
 
 ### 리뷰 품질 기준
 
@@ -488,24 +499,24 @@ logs/daily-improvement/
 
 ### 안전장치
 
-| 안전장치 | 구현 |
-|----------|------|
-| 동시 실행 방지 | `flock -n` (파일 락) |
-| 전체 타임아웃 | watchdog 프로세스 (14h) |
-| Phase별 타임아웃 | `timeout N claude -p` |
-| master 직접 커밋 방지 | `assert_not_on_master()` |
-| lint/test 실패 롤백 | `git reset HEAD && git checkout -- .` |
-| 빈 PR 방지 | `git diff --name-only` 확인 |
-| Claude 세션 한도 재시도 | `run_claude_safe` — 세션 한도 시 5분 대기 후 새 세션 (최대 3회) |
-| Claude 주간 한도 | checkpoint 저장 → 텔레그램 알림 → 다음 실행에서 재개 |
-| Claude 인증 만료 | 텔레그램 "재로그인 필요" 알림 → 즉시 종료 |
-| 네트워크 오류 | 5분 대기 후 재시도 (최대 3회) |
-| Checkpoint/재개 | `checkpoint.json`에 라운드/Phase 진행상황 저장 → 다음 실행에서 자동 재개 |
-| 긴급 정지 파일 | `/tmp/gv-daily-improvement.stop` 감지 시 즉시 중단 |
-| gh CLI 재시도 | `retry_gh` — exponential backoff (최대 3회) |
-| 텔레그램 실패 내성 | `\|\| true` |
-| 30일 로그 정리 | `find -mtime +30 -delete` |
-| SLA 정체 감지 | 라운드 간 개선폭 < 0.3이면 조기 종료 |
+| 안전장치                | 구현                                                                     |
+| ----------------------- | ------------------------------------------------------------------------ |
+| 동시 실행 방지          | `flock -n` (파일 락)                                                     |
+| 전체 타임아웃           | watchdog 프로세스 (14h)                                                  |
+| Phase별 타임아웃        | `timeout N claude -p`                                                    |
+| master 직접 커밋 방지   | `assert_not_on_master()`                                                 |
+| lint/test 실패 롤백     | `git reset HEAD && git checkout -- .`                                    |
+| 빈 PR 방지              | `git diff --name-only` 확인                                              |
+| Claude 세션 한도 재시도 | `run_claude_safe` — 세션 한도 시 5분 대기 후 새 세션 (최대 3회)          |
+| Claude 주간 한도        | checkpoint 저장 → 텔레그램 알림 → 다음 실행에서 재개                     |
+| Claude 인증 만료        | 텔레그램 "재로그인 필요" 알림 → 즉시 종료                                |
+| 네트워크 오류           | 5분 대기 후 재시도 (최대 3회)                                            |
+| Checkpoint/재개         | `checkpoint.json`에 라운드/Phase 진행상황 저장 → 다음 실행에서 자동 재개 |
+| 긴급 정지 파일          | `/tmp/gv-daily-improvement.stop` 감지 시 즉시 중단                       |
+| gh CLI 재시도           | `retry_gh` — exponential backoff (최대 3회)                              |
+| 텔레그램 실패 내성      | `\|\| true`                                                              |
+| 30일 로그 정리          | `find -mtime +30 -delete`                                                |
+| SLA 정체 감지           | 라운드 간 개선폭 < 0.3이면 조기 종료                                     |
 
 **중단 기준**: SLA 달성, 개선 정체, 시간 제한, 세션/주간 한도 소진, 빈 결과 3회 연속
 
@@ -524,7 +535,7 @@ logs/daily-improvement/
   → commitPhase
 ```
 
-- **파일명 감지**: `` ```js src/app.js `` (fence) 또는 `// filename: src/app.js` (코멘트) 두 방식 지원
+- **파일명 감지**: ` ```js src/app.js ` (fence) 또는 `// filename: src/app.js` (코멘트) 두 방식 지원
 - **보안**: `npm install --ignore-scripts` (LLM 생성 코드의 postinstall 방지), `assertWithinRoot` (path traversal 차단)
 - **dry-run 모드**: 파일 기록 없이 구체화 시뮬레이션 가능
 - **결과 카운터**: totalBlocks, materializedCount, skippedCount, unmaterializableCount, failedCount, existsSkippedCount, dryRunCount
@@ -545,6 +556,7 @@ logs/daily-improvement/
 ## 에이전트 구성 (23개)
 
 **팀 에이전트 (15개)** — `agents/team-*.md`
+
 - Leadership: CTO (priority 1), PO (priority 2)
 - Engineering: Fullstack (3), Frontend (4), Backend (4), QA (6), DevOps (7), Data (5), Security (5)
 - Design: UI/UX (3)
@@ -552,6 +564,7 @@ logs/daily-improvement/
 - Research: Market (2), Business (2), Tech (5), Design (5)
 
 **서포트 에이전트 (8개)** — `agents/`
+
 - onboarding-guide, mentor-kr, code-reviewer-kr, tdd-coach-kr
 - doc-reviewer-kr, content-editor-kr, data-analyst-kr, accessibility-checker
 
@@ -575,6 +588,7 @@ logs/daily-improvement/
 5. **테스트** — `tests/new-module.test.js` (unit) + `tests/handlers/{handler}.test.js` (E2E)
 
 체크리스트:
+
 - [ ] import에 `.js` 확장자 포함
 - [ ] `requireFields`로 필수 입력 검증
 - [ ] 에러 시 `inputError` / `notFoundError` 사용 (직접 `throw new Error` 금지)
@@ -591,21 +605,21 @@ logs/daily-improvement/
 import { readStdin, output, outputOk, parseArgs } from '../cli-utils.js';
 import { requireFields, inputError, notFoundError } from '../lib/core/validators.js';
 
-const [,, , ...args] = process.argv;
+const [, , , ...args] = process.argv;
 
 export const commands = {
   'command-name': async () => {
-    const data = await readStdin();          // stdin에서 JSON 파싱
+    const data = await readStdin(); // stdin에서 JSON 파싱
     requireFields(data, ['field1', 'field2']); // 필수 필드 검증
     const result = await coreFunction(data);
-    output(result);                          // JSON 출력
+    output(result); // JSON 출력
   },
 
   'another-command': async () => {
-    const opts = parseArgs(args);            // --key value 파싱
+    const opts = parseArgs(args); // --key value 파싱
     const item = await getItem(opts.id);
     if (!item) throw notFoundError(`항목을 찾을 수 없습니다: ${opts.id}`);
-    outputOk({ id: opts.id });               // { success: true, id: ... }
+    outputOk({ id: opts.id }); // { success: true, id: ... }
   },
 };
 ```
@@ -629,9 +643,9 @@ echo '{"stepResult": {"status": "completed"}}' | node cli.js advance-execution -
 
 ```javascript
 // 에러 생성 (validators.js)
-throw inputError('필수 필드 누락');      // AppError { code: 'INPUT_ERROR' }
-throw notFoundError('프로젝트 없음');     // AppError { code: 'NOT_FOUND' }
-throw new AppError('내부 오류', 'SYSTEM_ERROR');  // 기본값
+throw inputError('필수 필드 누락'); // AppError { code: 'INPUT_ERROR' }
+throw notFoundError('프로젝트 없음'); // AppError { code: 'NOT_FOUND' }
+throw new AppError('내부 오류', 'SYSTEM_ERROR'); // 기본값
 
 // cli.js 에러 코드 매핑
 // INPUT_ERROR  → exit 2 ("입력 형식을 확인한 후 다시 시도하세요")
@@ -644,10 +658,10 @@ throw new AppError('내부 오류', 'SYSTEM_ERROR');  // 기본값
 
 ### 파일 위치
 
-| 대상 | 테스트 파일 | 타입 |
-|------|------------|------|
-| 코어 모듈 (`scripts/lib/**/*.js`) | `tests/{module-name}.test.js` | Unit |
-| 핸들러 (`scripts/handlers/*.js`) | `tests/handlers/{handler-name}.test.js` | E2E |
+| 대상                              | 테스트 파일                             | 타입 |
+| --------------------------------- | --------------------------------------- | ---- |
+| 코어 모듈 (`scripts/lib/**/*.js`) | `tests/{module-name}.test.js`           | Unit |
+| 핸들러 (`scripts/handlers/*.js`)  | `tests/handlers/{handler-name}.test.js` | E2E  |
 
 ### mock 패턴 (Unit)
 
@@ -660,7 +674,7 @@ const TMP_DIR = resolve('.tmp-test-{module-name}');
 
 beforeEach(async () => {
   await mkdir(TMP_DIR, { recursive: true });
-  setBaseDir(TMP_DIR);  // 테스트용 디렉토리 격리
+  setBaseDir(TMP_DIR); // 테스트용 디렉토리 격리
 });
 
 afterEach(async () => {
@@ -682,7 +696,7 @@ function cliExec(command, input) {
       input: JSON.stringify(input),
       encoding: 'utf-8',
       timeout: 10_000,
-    })
+    }),
   );
 }
 
@@ -711,10 +725,10 @@ npm run test:coverage # 커버리지 리포트 (목표 80%+)
 
 ## 데이터 저장 경로
 
-| 데이터 | 경로 |
-|--------|------|
-| 프로젝트 | `~/.claude/good-vibe/projects/{id}/project.json` |
-| 에이전트 오버라이드 (사용자) | `~/.claude/good-vibe/agent-overrides/{roleId}.md` |
-| 에이전트 오버라이드 (프로젝트) | `{projectDir}/.good-vibe/agent-overrides/{roleId}.md` |
-| 커스텀 템플릿 | `~/.claude/good-vibe/custom-templates/` (*.json) |
-| Built-in 템플릿 | `presets/templates/` (next-app, express-api, cli-app, telegram-bot, npm-library) |
+| 데이터                         | 경로                                                                             |
+| ------------------------------ | -------------------------------------------------------------------------------- |
+| 프로젝트                       | `~/.claude/good-vibe/projects/{id}/project.json`                                 |
+| 에이전트 오버라이드 (사용자)   | `~/.claude/good-vibe/agent-overrides/{roleId}.md`                                |
+| 에이전트 오버라이드 (프로젝트) | `{projectDir}/.good-vibe/agent-overrides/{roleId}.md`                            |
+| 커스텀 템플릿                  | `~/.claude/good-vibe/custom-templates/` (\*.json)                                |
+| Built-in 템플릿                | `presets/templates/` (next-app, express-api, cli-app, telegram-bot, npm-library) |

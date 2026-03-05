@@ -1,23 +1,13 @@
-name: CI
-
-on:
-  push:
-    branches: [{{baseBranch}}]
-  pull_request:
-    branches: [{{baseBranch}}]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: '{{goVersion}}'
+name: CI on: push: branches: [{{baseBranch}}] pull_request: branches: [{{baseBranch}}] jobs: test:
+runs-on: ubuntu-latest steps: - uses: actions/checkout@v4 - uses: actions/setup-go@v5 with:
+go-version: '{{goVersion}}'
 {{#if lintCommand}}
-      - run: {{lintCommand}}
+  - run:
+  {{lintCommand}}
 {{/if}}
 {{#if buildCommand}}
-      - run: {{buildCommand}}
+  - run:
+  {{buildCommand}}
 {{/if}}
-      - run: {{testCommand}}
+- run:
+{{testCommand}}

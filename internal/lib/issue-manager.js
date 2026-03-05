@@ -108,7 +108,10 @@ export function verifyIssueResolution({ issues = [], diffText = '' }) {
   return issues.map((issue) => {
     const issuePaths = extractFilePathsFromBody(issue.body);
     const filesMatched = issuePaths.filter((p) =>
-      changedFiles.some((cf) => cf === p || cf.endsWith(`/${p}`) || p.endsWith(`/${cf}`) || basename(cf) === basename(p)),
+      changedFiles.some(
+        (cf) =>
+          cf === p || cf.endsWith(`/${p}`) || p.endsWith(`/${cf}`) || basename(cf) === basename(p),
+      ),
     );
     return {
       issueNumber: issue.number,
@@ -126,7 +129,11 @@ export function verifyIssueResolution({ issues = [], diffText = '' }) {
  * @param {string} params.diffText - 현재 라운드 diff
  * @returns {{ resolved: number[], stillOpen: number[], newIssues: number[] }}
  */
-export function trackCrossRoundIssues({ previousRoundIssues = [], currentRoundIssues = [], diffText = '' }) {
+export function trackCrossRoundIssues({
+  previousRoundIssues = [],
+  currentRoundIssues = [],
+  diffText = '',
+}) {
   const prevSet = new Set(previousRoundIssues);
   const currentSet = new Set(currentRoundIssues);
 
@@ -191,7 +198,18 @@ if (
         try {
           const output = execFileSync(
             'gh',
-            ['issue', 'list', '--label', label, '--state', 'open', '--json', 'number', '--jq', '.[].number'],
+            [
+              'issue',
+              'list',
+              '--label',
+              label,
+              '--state',
+              'open',
+              '--json',
+              'number',
+              '--jq',
+              '.[].number',
+            ],
             { encoding: 'utf-8', timeout: 10_000 },
           ).trim();
           return output

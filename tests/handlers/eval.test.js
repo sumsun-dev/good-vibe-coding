@@ -115,7 +115,11 @@ describe('eval handler', () => {
     it('접근법 결과를 기록해야 한다', async () => {
       const session = { id: 'eval-1', results: {} };
       const updated = { id: 'eval-1', results: { a: { output: 'test' } } };
-      readStdin.mockResolvedValue({ sessionId: 'eval-1', approach: 'a', result: { output: 'test' } });
+      readStdin.mockResolvedValue({
+        sessionId: 'eval-1',
+        approach: 'a',
+        result: { output: 'test' },
+      });
       loadEvalSession.mockResolvedValue(session);
       recordApproachResult.mockReturnValue(updated);
       saveEvalSession.mockResolvedValue(undefined);

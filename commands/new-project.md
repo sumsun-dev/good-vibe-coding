@@ -32,6 +32,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js recommend-team --type {선택된타입
 ```
 
 추천 팀원을 이모지와 함께 보여주고, AskUserQuestion으로 확인:
+
 - "추천 팀을 확인하세요. 수정하시겠습니까?"
 - 옵션: "이대로 진행", "팀원 추가", "팀원 변경"
 
@@ -45,6 +46,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js role-catalog
 
 각 역할별로 AskUserQuestion으로 페르소나 변형을 선택하게 하세요.
 team-personalities.json에서 각 역할의 2개 변형을 보여줍니다:
+
 - 변형 이름 + 성격 + 인사말
 
 ## Step 4: 프로젝트 생성
@@ -60,6 +62,7 @@ echo '{"name":"프로젝트명","type":"타입","description":"설명","mode":"p
 ```
 
 생성 후 팀 소개 메시지를 출력하세요:
+
 - 각 팀원의 이모지 + 이름 + 역할 + 인사말
 - "팀이 준비되었습니다!"
 
@@ -72,6 +75,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js list-templates --type {선택된타입
 ```
 
 템플릿이 있으면 AskUserQuestion으로 스캐폴딩 여부를 물어보세요:
+
 - "프로젝트 템플릿으로 초기 코드를 생성할까요?"
 - 옵션: 사용 가능한 템플릿 목록 (displayName) + "스킵"
 

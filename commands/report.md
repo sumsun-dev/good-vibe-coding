@@ -29,6 +29,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js report --id {프로젝트ID}
 
 생성된 보고서를 마크다운으로 표시하세요.
 보고서에는 다음이 포함됩니다:
+
 - 프로젝트 개요
 - 팀원별 기여
 - 기획서

@@ -33,17 +33,17 @@
   --text-disabled: #9ca3af;
 
   /* 간격 */
-  --spacing-xs: 0.25rem;   /* 4px */
-  --spacing-sm: 0.5rem;    /* 8px */
-  --spacing-md: 1rem;      /* 16px */
-  --spacing-lg: 1.5rem;    /* 24px */
-  --spacing-xl: 2rem;      /* 32px */
+  --spacing-xs: 0.25rem; /* 4px */
+  --spacing-sm: 0.5rem; /* 8px */
+  --spacing-md: 1rem; /* 16px */
+  --spacing-lg: 1.5rem; /* 24px */
+  --spacing-xl: 2rem; /* 32px */
 
   /* 폰트 */
-  --font-size-sm: 0.875rem;  /* 14px */
-  --font-size-md: 1rem;      /* 16px */
-  --font-size-lg: 1.25rem;   /* 20px */
-  --font-size-xl: 1.5rem;    /* 24px */
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-md: 1rem; /* 16px */
+  --font-size-lg: 1.25rem; /* 20px */
+  --font-size-xl: 1.5rem; /* 24px */
 
   /* 둥근 모서리 */
   --radius-sm: 0.25rem;
@@ -106,8 +106,14 @@
   border: 1px solid var(--color-primary);
 }
 
-.btn--sm { padding: var(--spacing-xs) var(--spacing-sm); font-size: var(--font-size-sm); }
-.btn--lg { padding: var(--spacing-md) var(--spacing-lg); font-size: var(--font-size-lg); }
+.btn--sm {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  font-size: var(--font-size-sm);
+}
+.btn--lg {
+  padding: var(--spacing-md) var(--spacing-lg);
+  font-size: var(--font-size-lg);
+}
 ```
 
 ### 카드 컴포넌트
@@ -137,6 +143,7 @@
 ## Claude Code 활용법
 
 ### 디자인 토큰 관리
+
 ```
 > 이 CSS에서 하드코딩된 색상값을 CSS 변수로 변환해줘
 > 디자인 토큰 파일을 만들어줘
@@ -144,6 +151,7 @@
 ```
 
 ### 컴포넌트 생성
+
 ```
 > BEM 네이밍으로 Alert 컴포넌트를 만들어줘
 > 이 컴포넌트에 반응형 스타일을 추가해줘
@@ -151,7 +159,9 @@
 ```
 
 ### css_format 훅 활용
+
 `css_format` 훅이 활성화되어 있으면, CSS 파일 편집 시 하드코딩된 색상값을 자동으로 감지합니다:
+
 ```
 하드코딩된 색상값이 있습니다. CSS 변수 사용을 권장합니다.
 ```
@@ -162,24 +172,34 @@
 
 ```css
 /* 모바일 퍼스트 */
-.container { padding: var(--spacing-md); }
+.container {
+  padding: var(--spacing-md);
+}
 
 /* 태블릿 */
 @media (min-width: 768px) {
-  .container { padding: var(--spacing-lg); max-width: 720px; }
+  .container {
+    padding: var(--spacing-lg);
+    max-width: 720px;
+  }
 }
 
 /* 데스크톱 */
 @media (min-width: 1024px) {
-  .container { padding: var(--spacing-xl); max-width: 960px; }
+  .container {
+    padding: var(--spacing-xl);
+    max-width: 960px;
+  }
 }
 ```
 
 ## 디자이너 워크플로우에서의 위치
+
 ```
 [1.분석] → [2.구조설계] → [3.구현] → [4.검증] → [5.QA]
               ^^^여기
 ```
 
 ## 관련 가이드
+
 - [접근성 가이드](./accessibility.md) → 접근성을 고려한 컴포넌트 설계

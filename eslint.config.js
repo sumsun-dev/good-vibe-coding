@@ -23,11 +23,6 @@ export default [
     },
   },
   {
-    ignores: [
-      'node_modules/',
-      '.tmp*',
-      'coverage/',
-      '*.backup',
-    ],
+    ignores: ['node_modules/', '.tmp*', 'coverage/', '*.backup'],
   },
 ];

@@ -32,6 +32,7 @@ gh auth login
 ### /hello에서 자동 연동
 
 `/hello` 실행 시 gh CLI가 설치 + 인증되어 있으면:
+
 - 비공개/공개 저장소 중 선택 가능
 - 저장소 생성 → git init → 초기 커밋 → push 자동 처리
 - 이후 `/execute`에서 작성한 코드가 자동으로 커밋됨
@@ -82,6 +83,7 @@ SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ### /discuss에서 활용
 
 팀 토론 시 "Supabase를 사용해서 인증과 데이터베이스를 구현해줘"라고 요청하면:
+
 - CTO가 Supabase 기반 아키텍처를 설계
 - Backend 개발자가 Supabase 클라이언트 코드를 계획
 - Security 엔지니어가 Row Level Security(RLS) 정책을 제안
@@ -89,6 +91,7 @@ SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ### /execute에서 활용
 
 실행 시 Supabase 관련 코드가 자동으로 생성됩니다:
+
 - 데이터베이스 스키마 (SQL 마이그레이션)
 - Supabase 클라이언트 초기화 코드
 - 인증 헬퍼 함수
@@ -169,11 +172,11 @@ await fetch(webhookUrl, {
 
 ### 자동화 워크플로우 예시
 
-| 트리거 | 액션 |
-|--------|------|
-| GitHub PR 생성 | Slack 알림 발송 |
-| 프로젝트 완료 | 보고서 이메일 전송 |
-| 일일 스케줄 | 프로젝트 상태 요약 전송 |
+| 트리거         | 액션                    |
+| -------------- | ----------------------- |
+| GitHub PR 생성 | Slack 알림 발송         |
+| 프로젝트 완료  | 보고서 이메일 전송      |
+| 일일 스케줄    | 프로젝트 상태 요약 전송 |
 
 ---
 
@@ -181,13 +184,13 @@ await fetch(webhookUrl, {
 
 프로젝트 유형별 추천 서비스 조합입니다:
 
-| 프로젝트 유형 | 추천 조합 | 설명 |
-|--------------|-----------|------|
-| **SaaS 웹앱** | Next.js + Supabase + Vercel | 풀스택, 인증/DB 내장, 자동 배포 |
-| **API 서버** | Express/FastAPI + Supabase + GitHub Actions | 백엔드 중심, CI/CD 파이프라인 |
-| **텔레그램 봇** | Node.js + Supabase + n8n | 봇 로직 + 데이터 저장 + 자동화 |
-| **정적 사이트** | Next.js + Vercel | 빠른 배포, CDN 지원 |
-| **데이터 파이프라인** | Python + Supabase + n8n | 데이터 수집/가공/저장 자동화 |
+| 프로젝트 유형         | 추천 조합                                   | 설명                            |
+| --------------------- | ------------------------------------------- | ------------------------------- |
+| **SaaS 웹앱**         | Next.js + Supabase + Vercel                 | 풀스택, 인증/DB 내장, 자동 배포 |
+| **API 서버**          | Express/FastAPI + Supabase + GitHub Actions | 백엔드 중심, CI/CD 파이프라인   |
+| **텔레그램 봇**       | Node.js + Supabase + n8n                    | 봇 로직 + 데이터 저장 + 자동화  |
+| **정적 사이트**       | Next.js + Vercel                            | 빠른 배포, CDN 지원             |
+| **데이터 파이프라인** | Python + Supabase + n8n                     | 데이터 수집/가공/저장 자동화    |
 
 ---
 

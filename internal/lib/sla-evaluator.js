@@ -130,7 +130,14 @@ export function buildRoundFeedback(slaStatus, scores) {
  * @param {object} params
  * @returns {object}
  */
-export function buildRoundMetrics({ round, scores, slaStatus, improvement = null, issueCount = 0, commitCount = 0 }) {
+export function buildRoundMetrics({
+  round,
+  scores,
+  slaStatus,
+  improvement = null,
+  issueCount = 0,
+  commitCount = 0,
+}) {
   return {
     round,
     scores: { ...scores },
@@ -258,7 +265,9 @@ if (
 
       const parsed = parseEvaluatorResponse(text);
       if (!parsed) {
-        console.log(JSON.stringify({ met: false, average: 0, stagnant: false, feedback: 'JSON 파싱 실패' }));
+        console.log(
+          JSON.stringify({ met: false, average: 0, stagnant: false, feedback: 'JSON 파싱 실패' }),
+        );
         break;
       }
 
@@ -276,15 +285,17 @@ if (
       const improvement = calculateImprovement(prevScores, parsed.scores, minImprovement);
       const feedback = buildRoundFeedback(slaStatus, parsed.scores);
 
-      console.log(JSON.stringify({
-        ...slaStatus,
-        scores: parsed.scores,
-        summary: parsed.summary,
-        improvement: improvement.improvement,
-        stagnant: improvement.stagnant,
-        dimensionDeltas: improvement.dimensionDeltas,
-        feedback,
-      }));
+      console.log(
+        JSON.stringify({
+          ...slaStatus,
+          scores: parsed.scores,
+          summary: parsed.summary,
+          improvement: improvement.improvement,
+          stagnant: improvement.stagnant,
+          dimensionDeltas: improvement.dimensionDeltas,
+          feedback,
+        }),
+      );
       break;
     }
     case 'dashboard': {

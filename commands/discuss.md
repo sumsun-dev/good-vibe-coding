@@ -59,6 +59,7 @@ echo '{"project": {...}, "teamMember": {...}, "context": {"round": 1}}' | node $
 4. **Tier 3-4** 에이전트 디스패치 (Tier 1+2 결과 포함)
 
 각 에이전트 호출 시:
+
 ```
 {emoji} {이름}이(가) 프로젝트를 분석 중입니다...
 ```
@@ -134,6 +135,7 @@ echo '{"claudeMdPath":"{infraPath}/CLAUDE.md","sectionName":"architecture-placeh
 ```
 
 **추출할 내용:**
+
 - 기획서의 기술 아키텍처 섹션
 - 주요 컴포넌트/모듈 구조
 - 데이터 플로우
@@ -145,6 +147,7 @@ echo '{"claudeMdPath":"{infraPath}/CLAUDE.md","sectionName":"architecture-placeh
 프로젝트 모드에 따라 차등 안내합니다:
 
 **plan-execute 모드:**
+
 ```
 기획서가 완성되었습니다! (라운드 {N}에서 수렴, 승인율 {X}%)
 
@@ -153,6 +156,7 @@ echo '{"claudeMdPath":"{infraPath}/CLAUDE.md","sectionName":"architecture-placeh
 ```
 
 **plan-only 모드:**
+
 ```
 기획서가 완성되었습니다! (라운드 {N}에서 수렴, 승인율 {X}%)
 

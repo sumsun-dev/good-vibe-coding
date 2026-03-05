@@ -24,13 +24,21 @@ export function buildHistoryEntry({
     date,
     issues: Number(issues) || 0,
     categories: Array.isArray(categories) ? categories : [],
-    approved: approved === true || approved === 'true' ? true : approved === false || approved === 'false' ? false : null,
+    approved:
+      approved === true || approved === 'true'
+        ? true
+        : approved === false || approved === 'false'
+          ? false
+          : null,
     fixCycles: Number(fixCycles) || 0,
     mergedAt: null,
     prUrl: prUrl && prUrl !== 'null' ? prUrl : null,
     stopReason: stopReason && stopReason !== '' ? stopReason : null,
     totalRounds: Number(totalRounds) || 1,
-    slaScore: slaScore !== null && slaScore !== undefined && slaScore !== 'null' ? Number(slaScore) || null : null,
+    slaScore:
+      slaScore !== null && slaScore !== undefined && slaScore !== 'null'
+        ? Number(slaScore) || null
+        : null,
   });
 }
 
@@ -108,7 +116,9 @@ export function buildHistorySummary(entries, { historyDays = 7 } = {}) {
 
     const statusText = buildStatusText(entry);
     const catDisplay = JSON.stringify(entry.categories || []);
-    const slaInfo = entry.slaScore ? ` (SLA: ${entry.slaScore}/10, ${entry.totalRounds || 1}R)` : '';
+    const slaInfo = entry.slaScore
+      ? ` (SLA: ${entry.slaScore}/10, ${entry.totalRounds || 1}R)`
+      : '';
     lines.push(`- ${entry.date}: ${entry.issues || 0}건 ${catDisplay} → ${statusText}${slaInfo}`);
   }
 
@@ -157,7 +167,9 @@ export function buildHistorySummary(entries, { historyDays = 7 } = {}) {
   if (totalRuns >= 2) {
     const approvalPct = Math.floor((approvedCount * 100) / totalRuns);
     if (approvalPct < 50) {
-      lines.push(`- 리뷰 통과율이 낮습니다 (${approvedCount}/${totalRuns}). 수정 품질에 집중하세요.`);
+      lines.push(
+        `- 리뷰 통과율이 낮습니다 (${approvedCount}/${totalRuns}). 수정 품질에 집중하세요.`,
+      );
     }
   }
 
@@ -232,7 +244,18 @@ if (
 
   switch (command) {
     case 'append': {
-      const [file, date, issues, categories, approved, fixCycles, prUrl, stopReason, totalRounds, slaScore] = args;
+      const [
+        file,
+        date,
+        issues,
+        categories,
+        approved,
+        fixCycles,
+        prUrl,
+        stopReason,
+        totalRounds,
+        slaScore,
+      ] = args;
       const line = buildHistoryEntry({
         date,
         issues: Number(issues),

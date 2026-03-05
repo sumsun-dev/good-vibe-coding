@@ -17,12 +17,12 @@ npm test
 
 ## 코드 스타일
 
-| 대상 | 규칙 | 예시 |
-|------|------|------|
-| 파일명 | kebab-case | `project-manager.js` |
-| 변수/함수 | camelCase | `buildTeam`, `maxRounds` |
-| 클래스/타입 | PascalCase | `AppError`, `GoodVibe` |
-| 상수 | SCREAMING_SNAKE_CASE | `MAX_FIX_ATTEMPTS` |
+| 대상        | 규칙                 | 예시                     |
+| ----------- | -------------------- | ------------------------ |
+| 파일명      | kebab-case           | `project-manager.js`     |
+| 변수/함수   | camelCase            | `buildTeam`, `maxRounds` |
+| 클래스/타입 | PascalCase           | `AppError`, `GoodVibe`   |
+| 상수        | SCREAMING_SNAKE_CASE | `MAX_FIX_ATTEMPTS`       |
 
 - 함수: 최대 50줄, early return 우선 (중첩 최대 4단계)
 - 파일: 최대 800줄, 초과 시 분리
@@ -62,12 +62,12 @@ npm run test:coverage # 커버리지 리포트
 
 ## 브랜치 전략
 
-| 브랜치 | 용도 |
-|--------|------|
-| `main` | 배포 가능한 안정 버전 |
-| `develop` | 개발 통합 브랜치 |
-| `feature/xxx` | 새 기능 개발 |
-| `fix/xxx` | 버그 수정 |
+| 브랜치        | 용도                  |
+| ------------- | --------------------- |
+| `main`        | 배포 가능한 안정 버전 |
+| `develop`     | 개발 통합 브랜치      |
+| `feature/xxx` | 새 기능 개발          |
+| `fix/xxx`     | 버그 수정             |
 
 ## 커밋 컨벤션
 

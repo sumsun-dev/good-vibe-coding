@@ -5,7 +5,15 @@
       "displayName": "웹 애플리케이션",
       "description": "풀스택 웹 앱 (SPA/SSR)",
       "recommendedTeam": ["cto", "fullstack", "qa"],
-      "optionalRoles": ["uiux", "devops", "security", "market-researcher", "business-researcher", "tech-researcher", "design-researcher"],
+      "optionalRoles": [
+        "uiux",
+        "devops",
+        "security",
+        "market-researcher",
+        "business-researcher",
+        "tech-researcher",
+        "design-researcher"
+      ],
       "suggestedStack": "nextjs-supabase",
       "suggestedTemplate": "next-app"
     },
@@ -13,7 +21,13 @@
       "displayName": "API 서버",
       "description": "REST/GraphQL API 백엔드",
       "recommendedTeam": ["cto", "backend", "qa"],
-      "optionalRoles": ["devops", "security", "tech-writer", "tech-researcher", "business-researcher"],
+      "optionalRoles": [
+        "devops",
+        "security",
+        "tech-writer",
+        "tech-researcher",
+        "business-researcher"
+      ],
       "suggestedTemplate": "express-api"
     },
     "telegram-bot": {
@@ -34,7 +48,13 @@
       "displayName": "모바일 앱",
       "description": "React Native / Flutter 앱",
       "recommendedTeam": ["cto", "fullstack", "uiux", "qa"],
-      "optionalRoles": ["backend", "devops", "market-researcher", "business-researcher", "design-researcher"]
+      "optionalRoles": [
+        "backend",
+        "devops",
+        "market-researcher",
+        "business-researcher",
+        "design-researcher"
+      ]
     },
     "chrome-extension": {
       "displayName": "Chrome 확장",
@@ -77,7 +97,22 @@
       "displayName": "커스텀 프로젝트",
       "description": "사용자 정의 프로젝트",
       "recommendedTeam": ["cto"],
-      "optionalRoles": ["fullstack", "frontend", "backend", "qa", "uiux", "devops", "data", "security", "po", "tech-writer", "market-researcher", "business-researcher", "tech-researcher", "design-researcher"]
+      "optionalRoles": [
+        "fullstack",
+        "frontend",
+        "backend",
+        "qa",
+        "uiux",
+        "devops",
+        "data",
+        "security",
+        "po",
+        "tech-writer",
+        "market-researcher",
+        "business-researcher",
+        "tech-researcher",
+        "design-researcher"
+      ]
     }
   }
 }

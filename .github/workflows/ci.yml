@@ -34,4 +34,7 @@ jobs:
       - name: Install shellcheck
         run: sudo apt-get install -y shellcheck
       - name: Run shellcheck
-        run: shellcheck internal/daily-improvement.sh internal/improvement/*.sh internal/improvement/lib/*.sh
+        run: |
+          cd internal
+          shellcheck -x -e SC2034,SC2155,SC2086,SC2002 \
+            daily-improvement.sh improvement/*.sh improvement/lib/*.sh

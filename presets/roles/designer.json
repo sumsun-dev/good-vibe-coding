@@ -4,12 +4,20 @@
   "description": "UI/UX 디자이너, 웹 퍼블리셔를 위한 Claude Code 설정",
   "category": "role",
   "agents": [
-    { "template": "accessibility-checker", "config": { "model": "haiku", "tools": ["Read", "Grep", "Glob", "Bash"] } }
+    {
+      "template": "accessibility-checker",
+      "config": { "model": "haiku", "tools": ["Read", "Grep", "Glob", "Bash"] }
+    }
   ],
   "orchestration": {
     "enabled": true,
     "steps": [
-      { "phase": "접근성 검사", "agent": "accessibility-checker", "trigger": "HTML/CSS 구현 후", "description": "WCAG 2.1 AA 기준으로 접근성을 검사합니다" }
+      {
+        "phase": "접근성 검사",
+        "agent": "accessibility-checker",
+        "trigger": "HTML/CSS 구현 후",
+        "description": "WCAG 2.1 AA 기준으로 접근성을 검사합니다"
+      }
     ]
   },
   "skills": ["design-system", "css-helper"],

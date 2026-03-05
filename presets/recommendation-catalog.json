@@ -64,7 +64,17 @@
       "type": "agent",
       "model": "sonnet",
       "keywords": ["리뷰", "코드리뷰", "보안", "성능", "품질", "review"],
-      "applicableProjectTypes": ["web-app", "api-server", "cli-tool", "library", "mobile-app", "chrome-extension", "python-app", "go-service", "java-app"],
+      "applicableProjectTypes": [
+        "web-app",
+        "api-server",
+        "cli-tool",
+        "library",
+        "mobile-app",
+        "chrome-extension",
+        "python-app",
+        "go-service",
+        "java-app"
+      ],
       "complexityRange": ["medium", "complex"],
       "targetRoles": ["fullstack", "frontend", "backend", "qa", "security"],
       "priority": "high"
@@ -78,7 +88,15 @@
       "type": "agent",
       "model": "haiku",
       "keywords": ["tdd", "테스트", "test", "red", "green", "refactor"],
-      "applicableProjectTypes": ["web-app", "api-server", "cli-tool", "library", "python-app", "go-service", "java-app"],
+      "applicableProjectTypes": [
+        "web-app",
+        "api-server",
+        "cli-tool",
+        "library",
+        "python-app",
+        "go-service",
+        "java-app"
+      ],
       "complexityRange": ["medium", "complex"],
       "targetRoles": ["fullstack", "frontend", "backend", "qa"],
       "priority": "high"

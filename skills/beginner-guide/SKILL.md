@@ -3,37 +3,42 @@
 Claude Code 입문자를 위한 단계별 가이드를 제공합니다.
 
 ## 트리거
+
 - `/learn` 커맨드에서 호출
 - 사용자가 기본적인 질문을 할 때 자동 활성화
 - "어떻게 해?", "뭐야?", "모르겠어", "처음이에요" 키워드 감지
 
 ## 입력
+
 - 사용자가 알고 싶은 주제 (선택)
 - 현재 역할 (`~/.claude/CLAUDE.md`에서 확인)
 
 ## 플로우
 
 ### 1단계: 주제 파악
+
 사용자의 질문이나 `/learn` 뒤의 키워드로 주제를 파악합니다.
 
 ### 2단계: 가이드 매핑
+
 주제 → 가이드 파일 매핑:
 
-| 주제 키워드 | 가이드 파일 |
-|------------|------------|
-| 기초, 소개, 뭐야 | `guides/common/01-what-is-claude-code.md` |
-| 사용법, 어떻게, 시작 | `guides/common/02-basic-usage.md` |
-| 커맨드, 스킬, 명령어 | `guides/common/03-commands-and-skills.md` |
-| 에이전트, 도우미 | `guides/common/04-agents.md` |
-| 훅, 자동화 | `guides/common/05-hooks-and-automation.md` |
-| TDD, 테스트 | `guides/developer/tdd-workflow.md` |
-| 리뷰, 코드리뷰 | `guides/developer/code-review.md` |
-| PRD, 기획서 | `guides/pm/prd-writing.md` |
-| 이슈, 티켓 | `guides/pm/issue-management.md` |
-| 접근성, a11y | `guides/designer/accessibility.md` |
-| 디자인시스템, 토큰 | `guides/designer/design-system.md` |
+| 주제 키워드          | 가이드 파일                                |
+| -------------------- | ------------------------------------------ |
+| 기초, 소개, 뭐야     | `guides/common/01-what-is-claude-code.md`  |
+| 사용법, 어떻게, 시작 | `guides/common/02-basic-usage.md`          |
+| 커맨드, 스킬, 명령어 | `guides/common/03-commands-and-skills.md`  |
+| 에이전트, 도우미     | `guides/common/04-agents.md`               |
+| 훅, 자동화           | `guides/common/05-hooks-and-automation.md` |
+| TDD, 테스트          | `guides/developer/tdd-workflow.md`         |
+| 리뷰, 코드리뷰       | `guides/developer/code-review.md`          |
+| PRD, 기획서          | `guides/pm/prd-writing.md`                 |
+| 이슈, 티켓           | `guides/pm/issue-management.md`            |
+| 접근성, a11y         | `guides/designer/accessibility.md`         |
+| 디자인시스템, 토큰   | `guides/designer/design-system.md`         |
 
 ### 3단계: 목차 표시
+
 키워드가 없거나 "목차"를 요청하면 전체 가이드 목록을 보여줍니다:
 
 ```
@@ -55,17 +60,22 @@ Claude Code 학습 가이드
 ```
 
 ### 4단계: 가이드 내용 전달
+
 선택된 가이드 파일을 읽어 사용자에게 전달합니다.
+
 - 한 번에 전체 내용을 보여주되, 긴 경우 섹션별로 나눠서 표시
 - 각 섹션 끝에 "계속 보시겠어요?" 확인
 
 ### 5단계: 대화형 학습
+
 가이드 내용을 바탕으로 사용자와 대화하며 학습을 도와줍니다:
+
 - 이해 확인 질문
 - 실습 과제 제안
 - 관련 가이드 추천
 
 ## 학습 스타일 원칙
+
 - **쉬운 말**: 전문 용어는 처음 등장 시 반드시 설명
 - **예시 중심**: 개념 설명 후 실제 사용 예시를 반드시 포함
 - **점진적**: 쉬운 것 → 어려운 것 순서로 안내
@@ -73,6 +83,7 @@ Claude Code 학습 가이드
 - **반복 확인**: 이해했는지 자주 확인하고 모르면 다시 설명
 
 ## 중요 규칙
+
 - 항상 한국어로 안내
 - 가이드 파일이 없으면 "준비 중입니다" 메시지 + 대안 제안
 - 역할에 맞지 않는 심화 가이드를 무리하게 추천하지 않기

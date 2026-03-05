@@ -364,7 +364,10 @@ if (
     case 'evaluator': {
       if (params.runDir) {
         try {
-          params.previousFeedback = readFileSync(`${params.runDir}/eval-feedback-round${(params.round || 1) - 1}.txt`, 'utf-8');
+          params.previousFeedback = readFileSync(
+            `${params.runDir}/eval-feedback-round${(params.round || 1) - 1}.txt`,
+            'utf-8',
+          );
         } catch {
           params.previousFeedback = '';
         }
@@ -386,7 +389,10 @@ if (
           params.existingIssues = '[]';
         }
         try {
-          params.evalFeedback = readFileSync(`${runDir}/eval-feedback-round${(params.round || 2) - 1}.txt`, 'utf-8');
+          params.evalFeedback = readFileSync(
+            `${runDir}/eval-feedback-round${(params.round || 2) - 1}.txt`,
+            'utf-8',
+          );
         } catch {
           params.evalFeedback = '';
         }

@@ -4,11 +4,13 @@
 **사용자용 기능이 아닙니다.**
 
 ## 구성
+
 - `daily-improvement.sh` — 오케스트레이터 (VPS cron)
 - `improvement/` — Phase 스크립트 + 설정
 - `lib/` — Node.js 모듈 (프롬프트 생성, SLA 평가 등)
 
 ## 실행
+
 ```bash
 bash internal/daily-improvement.sh
 ```

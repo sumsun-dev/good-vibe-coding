@@ -37,6 +37,7 @@ describe('add', () => {
 ```
 
 이 시점에서 테스트를 실행하면 실패합니다 (파일이 없으니까):
+
 ```bash
 npm test  # FAIL
 ```
@@ -86,6 +87,7 @@ it('사용자를 생성한다', async () => {
 ```
 
 ### 좋은 테스트의 특징
+
 - **독립적**: 다른 테스트에 의존하지 않음
 - **반복 가능**: 몇 번을 실행해도 같은 결과
 - **빠름**: 외부 API 호출 없이 실행 (mock 사용)
@@ -96,6 +98,7 @@ it('사용자를 생성한다', async () => {
 ## Vitest 실전 예시
 
 ### 기본 테스트
+
 ```javascript
 import { describe, it, expect } from 'vitest';
 
@@ -108,6 +111,7 @@ describe('formatDate', () => {
 ```
 
 ### Mock 사용
+
 ```javascript
 import { describe, it, expect, vi } from 'vitest';
 
@@ -130,16 +134,17 @@ describe('fetchUser', () => {
 ```
 
 ### beforeEach/afterEach
+
 ```javascript
 describe('UserService', () => {
   let db;
 
   beforeEach(() => {
-    db = createTestDB();  // 매 테스트 전 초기화
+    db = createTestDB(); // 매 테스트 전 초기화
   });
 
   afterEach(() => {
-    db.cleanup();  // 매 테스트 후 정리
+    db.cleanup(); // 매 테스트 후 정리
   });
 
   it('사용자를 저장한다', async () => {
@@ -154,17 +159,20 @@ describe('UserService', () => {
 ## Claude Code에서 TDD 활용
 
 ### tdd-coach-kr 에이전트 활용
+
 ```
 > @tdd-coach-kr 로그인 기능을 TDD로 구현하고 싶어
 ```
 
 에이전트가 다음을 안내합니다:
+
 1. 먼저 작성할 테스트 케이스 제안
 2. RED 상태 확인
 3. GREEN을 위한 최소 구현 가이드
 4. REFACTOR 포인트 제시
 
 ### 개발자 워크플로우에서의 위치
+
 ```
 [1.기획] → [2.Side Impact] → [3.TDD] → [4.구현] → [5.검증] → [6.리뷰]
                                 ^^^여기
@@ -173,4 +181,5 @@ describe('UserService', () => {
 TDD는 워크플로우의 3단계에서 수행됩니다. Side Impact 분석이 끝난 후, 테스트를 먼저 작성합니다.
 
 ## 관련 가이드
+
 - [코드 리뷰](./code-review.md) → TDD 이후 리뷰 단계

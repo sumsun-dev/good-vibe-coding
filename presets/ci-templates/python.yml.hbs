@@ -1,24 +1,11 @@
-name: CI
-
-on:
-  push:
-    branches: [{{baseBranch}}]
-  pull_request:
-    branches: [{{baseBranch}}]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [{{join pythonVersions ", "}}]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{{{raw}}}}${{ matrix.python-version }}${{{{/raw}}}}
-      - run: pip install -r requirements.txt
+name: CI on: push: branches: [{{baseBranch}}] pull_request: branches: [{{baseBranch}}] jobs: test:
+runs-on: ubuntu-latest strategy: matrix: python-version: [{{join pythonVersions ', '}}] steps: -
+uses: actions/checkout@v4 - uses: actions/setup-python@v5 with: python-version: ${{#raw}}$\{{
+  matrix.python-version }}${{/raw}}
+- run: pip install -r requirements.txt
 {{#if lintCommand}}
-      - run: {{lintCommand}}
+  - run:
+  {{lintCommand}}
 {{/if}}
-      - run: {{testCommand}}
+- run:
+{{testCommand}}

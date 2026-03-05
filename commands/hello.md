@@ -16,6 +16,7 @@ GitHub 저장소를 생성하여 연결합니다.
 AskUserQuestion으로 다음 정보를 수집합니다:
 
 **질문 1: 프로젝트 이름**
+
 ```
 질문: "프로젝트 이름을 입력해 주세요"
 header: "이름"
@@ -25,6 +26,7 @@ options:
 ```
 
 **질문 2: 한 줄 설명**
+
 ```
 질문: "프로젝트를 한 줄로 설명해 주세요"
 header: "설명"
@@ -34,6 +36,7 @@ options:
 ```
 
 **질문 3: 기술 스택**
+
 ```
 질문: "기술 스택을 선택해 주세요"
 header: "스택"
@@ -57,6 +60,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js check-gh-status
 결과에 따라:
 
 **gh 설치 + 인증 완료 시:**
+
 ```
 질문: "GitHub 저장소를 만들까요?"
 header: "GitHub"
@@ -70,6 +74,7 @@ options:
 ```
 
 **gh 미설치 시:**
+
 ```
 GitHub CLI(gh)가 설치되지 않았습니다.
 GitHub 저장소 연결을 원하시면 아래 가이드를 따라 설치하세요:
@@ -96,6 +101,7 @@ options:
 ```
 
 **gh 설치됨 + 미인증 시:**
+
 ```
 GitHub CLI(gh)가 설치되어 있지만 로그인되지 않았습니다.
 
@@ -126,6 +132,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js check-gemini-status
 ```
 
 **미설치 시 안내:**
+
 ```
 Gemini CLI를 설치하면 /execute에서 크로스 모델 리뷰를 사용할 수 있습니다.
    (Claude + Gemini가 각각 리뷰하여 더 높은 품질 보장)
@@ -147,6 +154,7 @@ echo '{"name":"{이름}","description":"{설명}","techStack":"{스택}"}' | nod
 ```
 
 생성되는 파일:
+
 - `CLAUDE.md` — AI 에이전트 컨텍스트 (플레이스홀더 섹션 포함)
 - `README.md` — 프로젝트 문서
 - `.gitignore` — 스택별 제외 파일

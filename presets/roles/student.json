@@ -9,7 +9,12 @@
   "orchestration": {
     "enabled": true,
     "steps": [
-      { "phase": "학습 가이드", "agent": "mentor-kr", "trigger": "새로운 개념 학습 시", "description": "단계적으로 개념을 설명하고 실습을 유도합니다" }
+      {
+        "phase": "학습 가이드",
+        "agent": "mentor-kr",
+        "trigger": "새로운 개념 학습 시",
+        "description": "단계적으로 개념을 설명하고 실습을 유도합니다"
+      }
     ]
   },
   "skills": ["beginner-guide"],
