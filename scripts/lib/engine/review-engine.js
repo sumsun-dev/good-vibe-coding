@@ -52,10 +52,7 @@ export function selectReviewers(task, team, previousReviewerIds = []) {
   scored.sort((a, b) => b.score - a.score);
 
   const minReviewers = candidates.length === 0 ? 0 : config.review.minReviewers;
-  const count = Math.max(
-    minReviewers,
-    Math.min(config.review.maxReviewers, scored.length),
-  );
+  const count = Math.max(minReviewers, Math.min(config.review.maxReviewers, scored.length));
   return scored.slice(0, count).map((s) => s.member);
 }
 

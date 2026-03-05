@@ -254,8 +254,18 @@ describe('parseReviewOutput', () => {
   });
 
   it('빈 입력은 미승인으로 처리한다', () => {
-    expect(parseReviewOutput('')).toEqual({ approved: false, feedback: '', issues: [], parseError: true });
-    expect(parseReviewOutput(null)).toEqual({ approved: false, feedback: '', issues: [], parseError: true });
+    expect(parseReviewOutput('')).toEqual({
+      approved: false,
+      feedback: '',
+      issues: [],
+      parseError: true,
+    });
+    expect(parseReviewOutput(null)).toEqual({
+      approved: false,
+      feedback: '',
+      issues: [],
+      parseError: true,
+    });
   });
 
   it('파싱 불가능한 텍스트는 feedback으로 사용한다', () => {
@@ -354,8 +364,18 @@ describe('checkConvergence', () => {
   });
 
   it('빈 리뷰 배열은 미수렴으로 처리한다', () => {
-    expect(checkConvergence([])).toEqual({ converged: false, approvalRate: 0, blockers: [], noReviews: true });
-    expect(checkConvergence(null)).toEqual({ converged: false, approvalRate: 0, blockers: [], noReviews: true });
+    expect(checkConvergence([])).toEqual({
+      converged: false,
+      approvalRate: 0,
+      blockers: [],
+      noReviews: true,
+    });
+    expect(checkConvergence(null)).toEqual({
+      converged: false,
+      approvalRate: 0,
+      blockers: [],
+      noReviews: true,
+    });
   });
 
   it('모두 거부하면 수렴하지 않는다', () => {
@@ -516,9 +536,7 @@ describe('checkConvergence 빈 reviews noReviews 플래그', () => {
 describe('buildSynthesisPrompt 프롬프트 크기 제한', () => {
   it('3000자 초과 analysis를 절단한다', () => {
     const longAnalysis = 'A'.repeat(5000);
-    const agentOutputs = [
-      { roleId: 'cto', role: 'CTO', emoji: '', analysis: longAnalysis },
-    ];
+    const agentOutputs = [{ roleId: 'cto', role: 'CTO', emoji: '', analysis: longAnalysis }];
     const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
     expect(prompt).not.toContain('A'.repeat(5000));
     expect(prompt).toContain('A'.repeat(3000));
@@ -527,9 +545,7 @@ describe('buildSynthesisPrompt 프롬프트 크기 제한', () => {
 
   it('3000자 이하 analysis는 절단하지 않는다', () => {
     const shortAnalysis = 'B'.repeat(2000);
-    const agentOutputs = [
-      { roleId: 'cto', role: 'CTO', emoji: '', analysis: shortAnalysis },
-    ];
+    const agentOutputs = [{ roleId: 'cto', role: 'CTO', emoji: '', analysis: shortAnalysis }];
     const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
     expect(prompt).toContain(shortAnalysis);
     expect(prompt).not.toContain('...(이하 생략)');

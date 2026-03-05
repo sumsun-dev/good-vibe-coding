@@ -156,9 +156,7 @@ export function resolveModel(role, complexity, taskType) {
  */
 export function getTeamSummary(team) {
   if (!team || team.length === 0) return '';
-  return team
-    .map((m) => `**${m.displayName}** (${m.role}) — "${m.greeting}"`)
-    .join('\n');
+  return team.map((m) => `**${m.displayName}** (${m.role}) — "${m.greeting}"`).join('\n');
 }
 
 /**

@@ -209,7 +209,11 @@ describe('selectReviewers', () => {
   it('이전 리뷰어에게 -0.5 피로도 페널티를 적용한다 (#24)', () => {
     const task = { id: 'task-1', assignee: 'uiux' };
     const withoutPrev = selectReviewers(task, SAMPLE_TEAM);
-    const withPrev = selectReviewers(task, SAMPLE_TEAM, withoutPrev.map((r) => r.roleId));
+    const withPrev = selectReviewers(
+      task,
+      SAMPLE_TEAM,
+      withoutPrev.map((r) => r.roleId),
+    );
     // 이전 리뷰어와 새 리뷰어의 구성이 달라질 수 있음
     // 최소한 피로도 적용 후에도 리뷰어가 선정됨
     expect(withPrev.length).toBeGreaterThanOrEqual(2);

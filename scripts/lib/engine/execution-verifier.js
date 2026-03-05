@@ -79,7 +79,11 @@ export const BUILD_STRATEGIES = {
           encoding: 'utf-8',
           stdio: ['pipe', 'pipe', 'pipe'],
         });
-        return { success: true, output: [installOut, buildOut].filter(Boolean).join('\n'), exitCode: 0 };
+        return {
+          success: true,
+          output: [installOut, buildOut].filter(Boolean).join('\n'),
+          exitCode: 0,
+        };
       }
       // package.json 없으면 JS 파일 syntax check
       const jsFiles = findFilesByExtension(tempDir, '.js');
@@ -131,7 +135,11 @@ export const BUILD_STRATEGIES = {
         });
         if (out) outputs.push(out);
       }
-      return { success: true, output: outputs.join('\n') || 'python compile check passed', exitCode: 0 };
+      return {
+        success: true,
+        output: outputs.join('\n') || 'python compile check passed',
+        exitCode: 0,
+      };
     },
     test: (tempDir) => {
       const output = execFileSync('python3', ['-m', 'pytest'], {

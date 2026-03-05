@@ -78,9 +78,10 @@ export function buildComplexityAnalysisPrompt(description, codebaseInfo = null) 
   let codebaseSection = '';
   if (codebaseInfo) {
     const fileStructure = codebaseInfo.fileStructure || '없음';
-    const truncatedStructure = fileStructure.length > MAX_FILE_STRUCTURE_LENGTH
-      ? fileStructure.slice(0, MAX_FILE_STRUCTURE_LENGTH) + '...(truncated)'
-      : fileStructure;
+    const truncatedStructure =
+      fileStructure.length > MAX_FILE_STRUCTURE_LENGTH
+        ? fileStructure.slice(0, MAX_FILE_STRUCTURE_LENGTH) + '...(truncated)'
+        : fileStructure;
     codebaseSection = `\n\n## 코드베이스 정보
 - 기술 스택: ${(codebaseInfo.techStack || []).join(', ') || '없음'}
 - 파일 구조: ${truncatedStructure}

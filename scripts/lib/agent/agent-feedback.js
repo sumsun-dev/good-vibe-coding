@@ -4,7 +4,7 @@
  * 승인된 수정을 오버라이드 파일로 저장한다.
  */
 
-import { readFile, writeFile, stat } from 'fs/promises';
+import { readFile, writeFile, stat, rename } from 'fs/promises';
 import { resolve } from 'path';
 import { ensureDir, fileExists, listFilesByExtension } from '../core/file-writer.js';
 import { parseJsonArray } from '../core/json-parser.js';
@@ -259,6 +259,26 @@ export async function listProjectOverrides(projectDir) {
  * @param {Array<{source: string, content: string}>} overrides - 오버라이드 배열
  * @returns {string} 병합된 최종 .md 텍스트
  */
+/**
+ * 피드백 리스트를 자동으로 에이전트 오버라이드에 적용한다.
+ * 기존 오버라이드가 있으면 .bak으로 백업 후 덮어쓴다.
+ * @param {Array<{roleId: string, feedback: string}>|null} feedbackList
+ */
+export async function autoApplyFeedback(feedbackList) {
+  if (!feedbackList || !Array.isArray(feedbackList)) return;
+
+  for (const item of feedbackList) {
+    if (!item.feedback) continue;
+
+    const filePath = resolve(overridesDir, `${item.roleId}.md`);
+    if (await fileExists(filePath)) {
+      await rename(filePath, `${filePath}.bak`);
+    }
+
+    await saveAgentOverride(item.roleId, item.feedback);
+  }
+}
+
 export function mergeAgentWithOverrides(baseMd, overrides) {
   if (!overrides || overrides.length === 0) return baseMd || '';
   if (!baseMd) baseMd = '';

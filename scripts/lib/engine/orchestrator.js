@@ -85,9 +85,10 @@ ${buildRoleQuestions(teamMember)}`;
 
   if (context.previousSynthesis) {
     const maxLen = 3000;
-    const truncated = context.previousSynthesis.length > maxLen
-      ? context.previousSynthesis.slice(0, maxLen) + '\n...(truncated)'
-      : context.previousSynthesis;
+    const truncated =
+      context.previousSynthesis.length > maxLen
+        ? context.previousSynthesis.slice(0, maxLen) + '\n...(truncated)'
+        : context.previousSynthesis;
     prompt += `\n\n## 이전 라운드 기획서\n다음은 이전 라운드에서 종합된 기획서입니다. 이를 기반으로 수정/보완 의견을 제시하세요.\n\n${truncated}`;
   }
 
@@ -118,9 +119,10 @@ export function buildSynthesisPrompt(project, agentOutputs, round) {
 
   const analysisSection = agentOutputs
     .map((o) => {
-      const analysis = o.analysis && o.analysis.length > MAX_ANALYSIS_LENGTH
-        ? o.analysis.slice(0, MAX_ANALYSIS_LENGTH) + '\n...(이하 생략)'
-        : o.analysis;
+      const analysis =
+        o.analysis && o.analysis.length > MAX_ANALYSIS_LENGTH
+          ? o.analysis.slice(0, MAX_ANALYSIS_LENGTH) + '\n...(이하 생략)'
+          : o.analysis;
       return `### ${o.role} (${o.roleId})\n${analysis}`;
     })
     .join('\n\n---\n\n');
@@ -276,14 +278,18 @@ export function trackConvergenceEvolution(currentResult, previousRounds) {
   const safeRounds = Array.isArray(previousRounds) ? previousRounds : [];
   const approvalHistory = [...safeRounds.map((r) => r.approvalRate), currentResult.approvalRate];
 
-  const lastRate = safeRounds.length > 0 ? safeRounds[safeRounds.length - 1].approvalRate : currentResult.approvalRate;
+  const lastRate =
+    safeRounds.length > 0
+      ? safeRounds[safeRounds.length - 1].approvalRate
+      : currentResult.approvalRate;
   const velocity = currentResult.approvalRate - lastRate;
 
   let trend = 'stagnating';
   if (velocity > 0.05) trend = 'improving';
   else if (velocity < -0.05) trend = 'declining';
 
-  const prevBlockers = safeRounds.length > 0 ? safeRounds[safeRounds.length - 1].blockers || [] : [];
+  const prevBlockers =
+    safeRounds.length > 0 ? safeRounds[safeRounds.length - 1].blockers || [] : [];
   const resolvedBlockers = prevBlockers.filter((b) => !currentResult.blockers.includes(b));
   const newBlockers = currentResult.blockers.filter((b) => !prevBlockers.includes(b));
 

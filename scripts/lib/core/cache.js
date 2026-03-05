@@ -25,15 +25,17 @@ export class LazyCache {
   async get() {
     if (this._loaded) return this._data;
     if (!this._pending) {
-      this._pending = this._loader().then((data) => {
-        this._data = data;
-        this._loaded = true;
-        this._pending = null;
-        return data;
-      }).catch((err) => {
-        this._pending = null;
-        throw err;
-      });
+      this._pending = this._loader()
+        .then((data) => {
+          this._data = data;
+          this._loaded = true;
+          this._pending = null;
+          return data;
+        })
+        .catch((err) => {
+          this._pending = null;
+          throw err;
+        });
     }
     return this._pending;
   }

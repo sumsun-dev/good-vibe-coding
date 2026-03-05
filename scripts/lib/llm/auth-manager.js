@@ -208,7 +208,9 @@ const VALID_PROVIDER_IDS = ['claude', 'openai', 'gemini'];
 
 export async function connectWithApiKey(providerId, apiKey) {
   if (!providerId || !VALID_PROVIDER_IDS.includes(providerId)) {
-    throw inputError(`유효하지 않은 프로바이더: ${providerId}. 지원: ${VALID_PROVIDER_IDS.join(', ')}`);
+    throw inputError(
+      `유효하지 않은 프로바이더: ${providerId}. 지원: ${VALID_PROVIDER_IDS.join(', ')}`,
+    );
   }
   if (!apiKey || apiKey.trim() === '') {
     throw inputError('API Key가 비어있습니다');

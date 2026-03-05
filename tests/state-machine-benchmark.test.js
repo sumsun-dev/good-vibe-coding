@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { computeStateTransition, createInitialExecutionState } from '../scripts/lib/engine/state-machine.js';
+import {
+  computeStateTransition,
+  createInitialExecutionState,
+} from '../scripts/lib/engine/state-machine.js';
 
 /**
  * structuredClone 성능 가드레일 (#23)

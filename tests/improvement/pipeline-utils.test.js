@@ -27,9 +27,9 @@ describe('pipeline-utils', () => {
     });
 
     it('허용되지 않은 명령은 즉시 에러를 throw한다', () => {
-      expect(() =>
-        retryCommand('rm -rf /', { maxRetries: 1, baseDelay: 10 }),
-      ).toThrow(/허용되지 않은 명령/);
+      expect(() => retryCommand('rm -rf /', { maxRetries: 1, baseDelay: 10 })).toThrow(
+        /허용되지 않은 명령/,
+      );
     });
 
     it('허용된 명령 프리픽스만 실행한다', () => {

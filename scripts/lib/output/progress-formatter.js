@@ -162,7 +162,7 @@ export function formatExecutionDashboard(project) {
 
   const phaseEntries = Array.isArray(phaseResults)
     ? phaseResults
-    : (phaseResults && typeof phaseResults === 'object')
+    : phaseResults && typeof phaseResults === 'object'
       ? Object.entries(phaseResults).map(([phase, pr]) => ({ phase: Number(phase), ...pr }))
       : [];
 

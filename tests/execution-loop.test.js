@@ -1300,7 +1300,12 @@ describe('computeStateTransition 불변성', () => {
   it('원본 프로젝트의 executionState를 변경하지 않는다', () => {
     const originalState = createInitialExecutionState('auto');
     originalState.phaseResults = {
-      1: { taskResults: [{ id: 'task-1', output: 'original' }], reviews: [], qualityGate: null, committed: false },
+      1: {
+        taskResults: [{ id: 'task-1', output: 'original' }],
+        reviews: [],
+        qualityGate: null,
+        committed: false,
+      },
     };
     const project = {
       id: 'immutability-test',

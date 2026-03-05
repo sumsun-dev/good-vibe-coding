@@ -12,7 +12,12 @@ import {
 } from '../lib/project/project-manager.js';
 import { generateReport } from '../lib/output/report-generator.js';
 import { scanCodebase } from '../lib/project/codebase-scanner.js';
-import { requireFields, inputError, notFoundError, assertWithinRoot } from '../lib/core/validators.js';
+import {
+  requireFields,
+  inputError,
+  notFoundError,
+  assertWithinRoot,
+} from '../lib/core/validators.js';
 import { getCommandSchema, listCommandSchemas } from '../lib/core/command-schemas.js';
 
 const [, , , ...args] = process.argv;

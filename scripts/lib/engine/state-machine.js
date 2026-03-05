@@ -361,7 +361,9 @@ export function computeStateTransition(project, stepResult) {
         case 'continue':
           state.escalationCount = (state.escalationCount || 0) + 1;
           if (state.escalationCount > config.execution.maxEscalationAttempts) {
-            throw inputError(`에스컬레이션 최대 횟수(${config.execution.maxEscalationAttempts}회)를 초과했습니다. skip 또는 abort를 선택하세요.`);
+            throw inputError(
+              `에스컬레이션 최대 횟수(${config.execution.maxEscalationAttempts}회)를 초과했습니다. skip 또는 abort를 선택하세요.`,
+            );
           }
           state.fixAttempt = 0;
           state.phaseStep = 'fix';

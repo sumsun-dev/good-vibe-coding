@@ -154,7 +154,9 @@ async function loadManifests(projectPath) {
   const manifests = {};
 
   const results = await Promise.allSettled(
-    MANIFEST_FILES.map((name) => readFile(resolve(projectPath, name), 'utf-8').then((content) => ({ name, content }))),
+    MANIFEST_FILES.map((name) =>
+      readFile(resolve(projectPath, name), 'utf-8').then((content) => ({ name, content })),
+    ),
   );
 
   for (const result of results) {

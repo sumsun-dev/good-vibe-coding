@@ -929,9 +929,7 @@ describe('shell injection 방지 (execFileSync)', () => {
   });
 
   it('공백이 포함된 JS 파일명도 안전하게 처리한다', () => {
-    const blocks = [
-      { language: 'javascript', filename: 'my file.js', content: 'const x = 1;\n' },
-    ];
+    const blocks = [{ language: 'javascript', filename: 'my file.js', content: 'const x = 1;\n' }];
     const { tempDir } = writeTemporaryProject(blocks, 'cli-tool');
     tempDirs.push(tempDir);
 

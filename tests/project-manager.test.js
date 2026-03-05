@@ -23,7 +23,6 @@ import {
   recordContributions,
 } from '../scripts/lib/project/project-manager.js';
 
-
 const TMP_DIR = resolve('.tmp-test-project-manager');
 
 beforeEach(async () => {
@@ -548,7 +547,9 @@ describe('recordMetrics', () => {
 
 describe('에러 타입 검증 (Phase 2)', () => {
   it('존재하지 않는 프로젝트는 NOT_FOUND AppError를 던진다', async () => {
-    await expect(updateProjectStatus('no-exist', 'approved')).rejects.toThrow('프로젝트를 찾을 수 없습니다');
+    await expect(updateProjectStatus('no-exist', 'approved')).rejects.toThrow(
+      '프로젝트를 찾을 수 없습니다',
+    );
     await expect(updateProjectStatus('no-exist', 'approved')).rejects.toMatchObject({
       code: 'NOT_FOUND',
     });
@@ -564,15 +565,21 @@ describe('에러 타입 검증 (Phase 2)', () => {
 
   it('존재하지 않는 태스크는 NOT_FOUND AppError를 던진다', async () => {
     const project = await createProject('에러테스트2', 'web-app', '설명');
-    await expect(updateTaskStatus(project.id, 'no-task', 'completed')).rejects.toThrow('태스크를 찾을 수 없습니다');
+    await expect(updateTaskStatus(project.id, 'no-task', 'completed')).rejects.toThrow(
+      '태스크를 찾을 수 없습니다',
+    );
     await expect(updateTaskStatus(project.id, 'no-task', 'completed')).rejects.toMatchObject({
       code: 'NOT_FOUND',
     });
   });
 
   it('유효하지 않은 모드는 INPUT_ERROR AppError를 던진다', async () => {
-    await expect(createProject('에러테스트3', 'web-app', '설명', { mode: 'bad-mode' })).rejects.toThrow('유효하지 않은 모드');
-    await expect(createProject('에러테스트4', 'web-app', '설명', { mode: 'bad-mode' })).rejects.toMatchObject({
+    await expect(
+      createProject('에러테스트3', 'web-app', '설명', { mode: 'bad-mode' }),
+    ).rejects.toThrow('유효하지 않은 모드');
+    await expect(
+      createProject('에러테스트4', 'web-app', '설명', { mode: 'bad-mode' }),
+    ).rejects.toMatchObject({
       code: 'INPUT_ERROR',
     });
   });
@@ -619,9 +626,7 @@ describe('withProjectLock 락 누수 방지', () => {
   it('fn 에러 후에도 다음 쓰기가 정상 동작한다', async () => {
     const project = await createProject('락 테스트', 'web-app', '설명');
     // 첫 번째 쓰기: 에러 발생
-    await expect(
-      updateProjectStatus(project.id, 'INVALID_STATUS'),
-    ).rejects.toThrow();
+    await expect(updateProjectStatus(project.id, 'INVALID_STATUS')).rejects.toThrow();
     // 두 번째 쓰기: 락이 해제되어 정상 동작해야 함
     const updated = await updateProjectStatus(project.id, 'approved');
     expect(updated.status).toBe('approved');
