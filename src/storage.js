@@ -51,18 +51,19 @@ export class FileStorage {
     const { readdir, readFile } = await import('fs/promises');
     try {
       const entries = await readdir(this._baseDir, { withFileTypes: true });
-      const projects = [];
-      for (const entry of entries) {
-        if (!entry.isDirectory()) continue;
-        const filePath = resolve(this._baseDir, entry.name, 'project.json');
-        try {
-          const content = await readFile(filePath, 'utf-8');
-          projects.push(JSON.parse(content));
-        } catch {
-          // skip invalid entries
-        }
-      }
-      return projects;
+      const dirs = entries.filter((e) => e.isDirectory());
+      const results = await Promise.all(
+        dirs.map(async (entry) => {
+          const filePath = resolve(this._baseDir, entry.name, 'project.json');
+          try {
+            const content = await readFile(filePath, 'utf-8');
+            return JSON.parse(content);
+          } catch {
+            return null;
+          }
+        }),
+      );
+      return results.filter(Boolean);
     } catch (err) {
       if (err.code === 'ENOENT') return [];
       throw err;
