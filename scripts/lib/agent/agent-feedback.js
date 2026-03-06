@@ -210,20 +210,21 @@ export async function autoApplyFeedback(feedbackList) {
 
   await ensureDir(overridesDir);
 
-  for (const { roleId, feedback } of feedbackList) {
-    if (!feedback) continue;
+  await Promise.all(
+    feedbackList
+      .filter(({ feedback }) => feedback)
+      .map(async ({ roleId, feedback }) => {
+        const filePath = resolve(overridesDir, `${roleId}.md`);
+        const bakPath = `${filePath}.bak`;
 
-    const filePath = resolve(overridesDir, `${roleId}.md`);
-    const bakPath = `${filePath}.bak`;
+        if (await fileExists(filePath)) {
+          const existing = await readFile(filePath, 'utf-8');
+          await writeFile(bakPath, existing, 'utf-8');
+        }
 
-    // 기존 파일이 있으면 백업
-    if (await fileExists(filePath)) {
-      const existing = await readFile(filePath, 'utf-8');
-      await writeFile(bakPath, existing, 'utf-8');
-    }
-
-    await writeFile(filePath, feedback, 'utf-8');
-  }
+        await writeFile(filePath, feedback, 'utf-8');
+      }),
+  );
 }
 
 /**

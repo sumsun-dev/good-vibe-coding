@@ -58,13 +58,20 @@ export function validateTemplate(template) {
  */
 async function loadTemplatesFromDir(dir) {
   const entries = await listFilesByExtension(dir, '.json');
+  if (entries.length === 0) return [];
+
+  const results = await Promise.allSettled(
+    entries.map((entry) => readJsonFile(resolve(dir, entry))),
+  );
+
   const templates = [];
-  for (const entry of entries) {
-    try {
-      const data = await readJsonFile(resolve(dir, entry));
-      if (data) templates.push(data);
-    } catch (err) {
-      process.stderr.write(`경고: 템플릿 파일 로드 실패 (${entry}): ${err.message}\n`);
+  for (let i = 0; i < results.length; i++) {
+    if (results[i].status === 'fulfilled' && results[i].value) {
+      templates.push(results[i].value);
+    } else if (results[i].status === 'rejected') {
+      process.stderr.write(
+        `경고: 템플릿 파일 로드 실패 (${entries[i]}): ${results[i].reason?.message || results[i].reason}\n`,
+      );
     }
   }
   return templates;
