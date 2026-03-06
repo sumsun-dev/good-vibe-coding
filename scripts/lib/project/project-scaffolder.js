@@ -1,4 +1,4 @@
-import { resolve } from 'path';
+import { resolve, basename } from 'path';
 import { readFile } from 'fs/promises';
 import { ensureDir, safeWriteFile, writeFiles, fileExists } from '../core/file-writer.js';
 import { renderTemplate } from './template-engine.js';
@@ -214,11 +214,15 @@ export async function setupProjectInfra(options) {
  * @returns {Promise<{success: boolean, error?: string}>}
  */
 export async function appendToClaudeMd(claudeMdPath, sectionName, content) {
-  if (!(await fileExists(claudeMdPath))) {
+  const resolved = resolve(claudeMdPath);
+  if (basename(resolved) !== 'CLAUDE.md') {
+    throw inputError('claudeMdPath는 CLAUDE.md 파일이어야 합니다');
+  }
+  if (!(await fileExists(resolved))) {
     return { success: false, error: 'CLAUDE.md 파일을 찾을 수 없습니다' };
   }
 
-  const existing = await readFile(claudeMdPath, 'utf-8');
+  const existing = await readFile(resolved, 'utf-8');
   const placeholder = `<!-- ${sectionName} -->`;
 
   if (!existing.includes(placeholder)) {
@@ -226,7 +230,7 @@ export async function appendToClaudeMd(claudeMdPath, sectionName, content) {
   }
 
   const updated = existing.replace(placeholder, content);
-  await safeWriteFile(claudeMdPath, updated, { overwrite: true, backup: true });
+  await safeWriteFile(resolved, updated, { overwrite: true, backup: true });
 
   return { success: true };
 }

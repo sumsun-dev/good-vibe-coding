@@ -224,13 +224,26 @@ describe('project-scaffolder', () => {
     });
 
     it('파일이 없으면 실패를 반환한다', async () => {
-      const result = await appendToClaudeMd(resolve(TMP_DIR, 'nonexistent.md'), 'test', 'content');
+      const nonexistentDir = resolve(TMP_DIR, 'nonexistent');
+      const result = await appendToClaudeMd(
+        resolve(nonexistentDir, 'CLAUDE.md'),
+        'test',
+        'content',
+      );
       expect(result.success).toBe(false);
       expect(result.error).toContain('찾을 수 없습니다');
     });
 
+    it('CLAUDE.md가 아닌 파일을 거부한다', async () => {
+      const evilPath = resolve(TMP_DIR, 'evil.md');
+      await expect(appendToClaudeMd(evilPath, 'test', 'content')).rejects.toThrow(
+        'CLAUDE.md 파일이어야 합니다',
+      );
+    });
+
     it('플레이스홀더가 없으면 실패를 반환한다', async () => {
-      const claudeMdPath = resolve(TMP_DIR, 'no-placeholder.md');
+      const claudeMdPath = resolve(TMP_DIR, 'sub', 'CLAUDE.md');
+      await mkdir(dirname(claudeMdPath), { recursive: true });
       await writeFile(claudeMdPath, '# Test\nNo placeholder here', 'utf-8');
 
       const result = await appendToClaudeMd(claudeMdPath, 'nonexistent-section', 'content');
@@ -239,7 +252,8 @@ describe('project-scaffolder', () => {
     });
 
     it('교체 후 백업 파일이 생성된다', async () => {
-      const claudeMdPath = resolve(TMP_DIR, 'backup-test.md');
+      const claudeMdPath = resolve(TMP_DIR, 'backup', 'CLAUDE.md');
+      await mkdir(dirname(claudeMdPath), { recursive: true });
       await writeFile(claudeMdPath, '<!-- decisions-placeholder -->', 'utf-8');
 
       await appendToClaudeMd(claudeMdPath, 'decisions-placeholder', '결정 사항');

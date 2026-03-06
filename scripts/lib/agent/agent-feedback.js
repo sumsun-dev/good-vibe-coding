@@ -8,8 +8,8 @@ import { readFile, writeFile, stat } from 'fs/promises';
 import { resolve } from 'path';
 import { ensureDir, fileExists, listFilesByExtension } from '../core/file-writer.js';
 import { parseJsonArray } from '../core/json-parser.js';
-import { validateRoleId } from '../core/validators.js';
-import { agentOverridesDir } from '../core/app-paths.js';
+import { validateRoleId, assertWithinRoot } from '../core/validators.js';
+import { agentOverridesDir, projectsDir } from '../core/app-paths.js';
 import { buildSectioned, toMarkdownList } from '../core/prompt-builder.js';
 
 const DEFAULT_OVERRIDES_DIR = agentOverridesDir();
@@ -310,6 +310,7 @@ const PROJECT_OVERRIDES_SUBDIR = '.good-vibe/agent-overrides';
  */
 export async function saveProjectOverride(projectDir, roleId, content) {
   validateRoleId(roleId);
+  assertWithinRoot(resolve(projectDir), projectsDir(), 'projectDir');
   const dir = resolve(projectDir, PROJECT_OVERRIDES_SUBDIR);
   await ensureDir(dir);
   const filePath = resolve(dir, `${roleId}.md`);
@@ -324,6 +325,7 @@ export async function saveProjectOverride(projectDir, roleId, content) {
  */
 export async function loadProjectOverride(projectDir, roleId) {
   validateRoleId(roleId);
+  assertWithinRoot(resolve(projectDir), projectsDir(), 'projectDir');
   const filePath = resolve(projectDir, PROJECT_OVERRIDES_SUBDIR, `${roleId}.md`);
   if (!(await fileExists(filePath))) return null;
   return readFile(filePath, 'utf-8');
@@ -335,6 +337,7 @@ export async function loadProjectOverride(projectDir, roleId) {
  * @returns {Promise<Array<{roleId: string, updatedAt: string}>>}
  */
 export async function listProjectOverrides(projectDir) {
+  assertWithinRoot(resolve(projectDir), projectsDir(), 'projectDir');
   const dir = resolve(projectDir, PROJECT_OVERRIDES_SUBDIR);
   const files = await listFilesByExtension(dir, '.md');
   if (files.length === 0) return [];
