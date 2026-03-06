@@ -32,18 +32,17 @@ export function extractInstructions(markdownContent) {
  * @returns {Promise<Record<string, string>>} 에이전트명 → 지시사항 맵
  */
 export async function extractAllInstructions(agents) {
-  const result = {};
-
-  for (const agent of agents) {
-    const name = agent.template;
-    try {
-      const filePath = resolve(AGENTS_DIR, `${name}.md`);
-      const content = await readFile(filePath, 'utf-8');
-      result[name] = extractInstructions(content);
-    } catch {
-      result[name] = '';
-    }
-  }
-
-  return result;
+  const entries = await Promise.all(
+    agents.map(async (agent) => {
+      const name = agent.template;
+      try {
+        const filePath = resolve(AGENTS_DIR, `${name}.md`);
+        const content = await readFile(filePath, 'utf-8');
+        return [name, extractInstructions(content)];
+      } catch {
+        return [name, ''];
+      }
+    }),
+  );
+  return Object.fromEntries(entries);
 }
