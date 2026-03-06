@@ -381,18 +381,18 @@ export async function listEvalSessions() {
   const files = await listFilesByExtension(evalDir, '.json');
   if (files.length === 0) return [];
 
-  const sessions = [];
-  for (const file of files) {
-    const filePath = resolve(evalDir, file);
-    const session = await readJsonFile(filePath);
-    if (!session) continue;
-    sessions.push({
-      sessionId: session.sessionId,
-      projectDescription: session.projectDescription,
-      createdAt: session.createdAt,
-      approachCount: session.approaches.length,
-    });
-  }
+  const loaded = await Promise.all(
+    files.map(async (file) => {
+      const session = await readJsonFile(resolve(evalDir, file));
+      if (!session) return null;
+      return {
+        sessionId: session.sessionId,
+        projectDescription: session.projectDescription,
+        createdAt: session.createdAt,
+        approachCount: session.approaches.length,
+      };
+    }),
+  );
 
-  return sessions;
+  return loaded.filter(Boolean);
 }
