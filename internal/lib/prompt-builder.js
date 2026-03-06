@@ -75,7 +75,7 @@ ${historySummary}
       - 라벨: automated,improvement,{category}
       - 본문: 파일 경로, 라인, 현재 코드, 개선안
    b. 코드 직접 수정
-4. 수정 후 \`npm run lint && npm test\` 실행, 통과 확인
+4. 수정 후 \`npm run format && npm run lint && npm test\` 실행, 통과 확인
 5. 실패 시 수정 롤백 (\`git checkout -- .\`), 이슈만 생성
 6. 변경사항 없으면 아무것도 하지 말 것 (빈 PR 금지)
 7. 커밋: conventional commit (fix|refactor|chore(scope): 설명)
@@ -164,7 +164,7 @@ ${reviewBody}
    a. 해당 파일 전체를 읽고 맥락 파악
    b. 수정 적용
    c. 수정이 다른 기능에 영향 없는지 확인
-4. 수정 후 \`npm run lint && npm test\` 실행
+4. 수정 후 \`npm run format && npm run lint && npm test\` 실행
 5. 실패 시 \`git checkout -- .\`로 롤백 후, 성공하는 수정만 적용
 6. conventional commit으로 커밋:
    \`fix(review): [MUST] 이슈 수정 — cycle ${cycle}\`

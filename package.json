@@ -25,7 +25,18 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write \"scripts/**/*.js\" \"src/**/*.js\" \"plugin/**/*.js\" \"tests/**/*.js\"",
     "format:check": "prettier --check \"scripts/**/*.js\" \"src/**/*.js\" \"plugin/**/*.js\" \"tests/**/*.js\"",
-    "prepublishOnly": "npm test && npm run lint && npm run format:check"
+    "validate": "npm run format:check && npm run lint && npm test",
+    "prepublishOnly": "npm test && npm run lint && npm run format:check",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.js": [
+      "prettier --write",
+      "eslint --fix"
+    ],
+    "*.md": [
+      "prettier --write"
+    ]
   },
   "keywords": [
     "claude-code",
@@ -60,6 +71,8 @@
     "eslint": "^9.39.3",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.4.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
     "prettier": "^3.8.1",
     "vitest": "^3.0.0"
   },

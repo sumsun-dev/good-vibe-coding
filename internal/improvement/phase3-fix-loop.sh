@@ -88,6 +88,7 @@ run_phase3() {
       local lint_ok=true
       local test_ok=true
 
+      npm run format >> "$LOG_FILE" 2>&1 || true
       npm run lint >> "$LOG_FILE" 2>&1 || lint_ok=false
       npm test >> "$LOG_FILE" 2>&1 || test_ok=false
 
