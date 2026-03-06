@@ -13,6 +13,11 @@ vi.mock('../../scripts/lib/project/project-manager.js', () => ({
 vi.mock('../../scripts/lib/core/validators.js', () => ({
   notFoundError: vi.fn((msg) => new Error(msg)),
   inputError: vi.fn((msg) => new Error(msg)),
+  requireFields: vi.fn((data, fields) => {
+    for (const f of fields) {
+      if (!(f in data)) throw new Error(`필수 필드 누락: ${f}`);
+    }
+  }),
 }));
 
 vi.mock('../../scripts/lib/engine/discussion-engine.js', () => ({
@@ -34,6 +39,17 @@ vi.mock('../../scripts/lib/engine/dispatch-plan-generator.js', () => ({
   buildExecutionDispatchPlan: vi.fn(),
 }));
 
+vi.mock('../../scripts/lib/project/prd-generator.js', () => ({
+  buildPrdPrompt: vi.fn(),
+  parsePrdResult: vi.fn(),
+  formatPrdForDisplay: vi.fn(),
+}));
+
+vi.mock('../../scripts/lib/engine/acceptance-criteria.js', () => ({
+  buildAcceptanceCriteriaPrompt: vi.fn(),
+  parseAcceptanceCriteria: vi.fn(),
+}));
+
 import { readStdin, output } from '../../scripts/cli-utils.js';
 import { buildPlanDocument } from '../../scripts/lib/engine/discussion-engine.js';
 import {
@@ -41,6 +57,11 @@ import {
   checkConvergence,
   groupAgentsForParallelDispatch,
 } from '../../scripts/lib/engine/orchestrator.js';
+import {
+  buildPrdPrompt,
+  parsePrdResult,
+  formatPrdForDisplay,
+} from '../../scripts/lib/project/prd-generator.js';
 import { commands } from '../../scripts/handlers/discussion.js';
 
 describe('discussion handler', () => {
@@ -97,6 +118,60 @@ describe('discussion handler', () => {
 
       await commands['check-convergence']();
       expect(output).toHaveBeenCalledWith(result);
+    });
+  });
+
+  describe('generate-prd-prompt', () => {
+    it('PRD 프롬프트를 생성해야 한다', async () => {
+      readStdin.mockResolvedValue({
+        description: '채팅 앱',
+        clarityDimensions: { scope: { score: 0.9 } },
+      });
+      buildPrdPrompt.mockReturnValue('PRD 프롬프트');
+
+      await commands['generate-prd-prompt']();
+      expect(buildPrdPrompt).toHaveBeenCalledWith('채팅 앱', { scope: { score: 0.9 } }, null);
+      expect(output).toHaveBeenCalledWith({ prompt: 'PRD 프롬프트' });
+    });
+
+    it('codebaseInfo가 있으면 전달해야 한다', async () => {
+      const codebaseInfo = { techStack: ['React'] };
+      readStdin.mockResolvedValue({
+        description: '앱',
+        clarityDimensions: {},
+        codebaseInfo,
+      });
+      buildPrdPrompt.mockReturnValue('prompt');
+
+      await commands['generate-prd-prompt']();
+      expect(buildPrdPrompt).toHaveBeenCalledWith('앱', {}, codebaseInfo);
+    });
+
+    it('필수 필드 누락 시 에러', async () => {
+      readStdin.mockResolvedValue({ description: '앱' });
+      await expect(commands['generate-prd-prompt']()).rejects.toThrow('clarityDimensions');
+    });
+  });
+
+  describe('parse-prd', () => {
+    it('PRD를 파싱하고 formatted를 반환해야 한다', async () => {
+      const prd = { overview: '채팅 앱', coreFeatures: [] };
+      readStdin.mockResolvedValue({ rawOutput: '{"overview":"채팅 앱"}' });
+      parsePrdResult.mockReturnValue(prd);
+      formatPrdForDisplay.mockReturnValue('## 프로젝트 개요\n채팅 앱');
+
+      await commands['parse-prd']();
+      expect(parsePrdResult).toHaveBeenCalledWith('{"overview":"채팅 앱"}');
+      expect(formatPrdForDisplay).toHaveBeenCalledWith(prd);
+      expect(output).toHaveBeenCalledWith({
+        prd,
+        formatted: '## 프로젝트 개요\n채팅 앱',
+      });
+    });
+
+    it('필수 필드 누락 시 에러', async () => {
+      readStdin.mockResolvedValue({});
+      await expect(commands['parse-prd']()).rejects.toThrow('rawOutput');
     });
   });
 

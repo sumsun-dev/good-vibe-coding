@@ -96,41 +96,18 @@ Task tool 프롬프트:
    → 생성된 프롬프트를 LLM으로 실행
    → echo '{"rawOutput": "LLM 응답"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js parse-clarity
 
-2. 명확도 >= 0.8이면 복잡도도 분석:
-   echo '{"description": "{currentDescription}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js complexity-analysis
-   → 생성된 프롬프트를 LLM으로 실행
-   → echo '{"rawOutput": "LLM 응답"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js parse-complexity
-
 반환 (JSON):
 - clarity: 명확도 점수
 - dimensions: 차원별 점수
 - summary: 명확도 요약
 - questions: 부족한 차원의 질문 배열 (clarity < 0.8일 때만)
-- complexity: { level, score, reasoning, dimensions } (clarity >= 0.8일 때만)
 
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
 
 ### 1.5.B: 결과 처리 (메인 세션)
 
-- **clarity >= 0.8**: 복잡도 결과 표시 → Step 3로
-
-  복잡도 표시 형식 — `dimensions`가 있으면:
-
-  ```
-  📊 복잡도 분석: {level} ({complexityScore*100}점)
-
-  {reasoning}
-
-  차원별 점수:
-  - 기능 범위: {featureScope.score*100}% — {featureScope.evidence}
-  - 데이터 모델: {dataComplexity.score*100}% — {dataComplexity.evidence}
-  - 외부 연동: {integrations.score*100}% — {integrations.evidence}
-  - 인증/보안: {authSecurity.score*100}% — {authSecurity.evidence}
-  - 확장성: {scalability.score*100}% — {scalability.evidence}
-  ```
-
-  `dimensions`가 없으면 `{level}` + `{reasoning}`만 표시합니다.
+- **clarity >= 0.8**: 명확도 통과 표시 → Step 2(PRD 생성)로
 
 - **clarity < 0.8**: 차원별 점수 + 질문 표시 → 1.5.C로
 
@@ -165,7 +142,6 @@ Task tool 프롬프트:
    → 생성된 프롬프트를 LLM으로 실행 → enriched description 획득
 
 2. 보강된 설명으로 명확도 재분석 (1.5.A와 동일 절차)
-3. clarity >= 0.8이면 복잡도도 분석
 
 반환: 1.5.A와 동일 형식 + enrichedDescription
 
@@ -174,7 +150,99 @@ CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 
 결과 처리: `currentDescription = enrichedDescription`, 1.5.B로 돌아감 (clarity >= 0.8까지 반복)
 
-## Step 3: 모드 선택
+## Step 2: PRD 생성 + CEO 확인 (Ralph Loop)
+
+> **Thin Controller:** PRD 생성은 Task tool로 위임. 메인 세션은 결과 표시 + CEO 피드백만.
+
+명확도 통과 후, 복잡도 분석 전에 경량 PRD를 생성하여 CEO에게 보여줍니다.
+CEO가 방향성을 확인한 후 PRD 기반으로 복잡도를 분석하면 더 정확한 판단이 가능합니다.
+
+**변수 초기화:**
+
+- `prd = null`
+- `prdFeedback = null`
+
+### 2.A: PRD 생성 (Task tool)
+
+Task tool 프롬프트:
+
+```
+PRD를 생성하세요.
+
+1. PRD 프롬프트 생성:
+   echo '{"description":"{currentDescription}","clarityDimensions":{dimensions}{codebaseInfo가 있으면: ,"codebaseInfo":{codebaseInfo}}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js generate-prd-prompt
+
+2. 생성된 프롬프트를 LLM으로 실행
+
+3. PRD 파싱:
+   echo '{"rawOutput":"LLM 응답"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js parse-prd
+
+{prdFeedback이 있으면: "LLM 실행 시 다음 CEO 피드백을 프롬프트에 추가하세요: {prdFeedback}"}
+
+반환: { prd, formatted }
+CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
+```
+
+### 2.B: CEO 확인 (메인 세션)
+
+PRD 마크다운(`formatted`)을 CEO에게 표시한 후 AskUserQuestion:
+
+```
+질문: "이 방향으로 진행할까요?"
+header: "PRD 확인"
+options:
+  - label: "이대로 진행 (Recommended)"
+    description: "이 PRD를 기반으로 복잡도 분석 + 팀 구성을 진행합니다"
+  - label: "수정 요청"
+    description: "구체적 피드백을 입력하면 PRD를 다시 생성합니다"
+  - label: "처음부터 다시"
+    description: "프로젝트 아이디어 입력부터 다시 시작합니다"
+```
+
+- **"이대로 진행"** → `prd` 저장 → Step 3로
+- **"수정 요청"** → CEO 피드백을 `prdFeedback`에 저장 → 2.A로 (prdFeedback 주입)
+- **"처음부터 다시"** → Step 1로 돌아감
+
+## Step 3: 복잡도 분석 + 모드 선택
+
+### 3.A: 복잡도 분석 (Task tool)
+
+PRD를 기반으로 복잡도를 분석합니다:
+
+Task tool 프롬프트:
+
+```
+복잡도를 분석하세요.
+
+1. echo '{"description":"{currentDescription}","prd":{prd}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js complexity-analysis
+   → 생성된 프롬프트를 LLM으로 실행
+   → echo '{"rawOutput":"LLM 응답"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js parse-complexity
+
+반환: { level, score, reasoning, dimensions }
+
+CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
+```
+
+### 3.B: 복잡도 결과 표시 (메인 세션)
+
+복잡도 표시 형식 — `dimensions`가 있으면:
+
+```
+복잡도 분석: {level} ({complexityScore*100}점)
+
+{reasoning}
+
+차원별 점수:
+- 기능 범위: {featureScope.score*100}% — {featureScope.evidence}
+- 데이터 모델: {dataComplexity.score*100}% — {dataComplexity.evidence}
+- 외부 연동: {integrations.score*100}% — {integrations.evidence}
+- 인증/보안: {authSecurity.score*100}% — {authSecurity.evidence}
+- 확장성: {scalability.score*100}% — {scalability.evidence}
+```
+
+`dimensions`가 없으면 `{level}` + `{reasoning}`만 표시합니다.
+
+### 3.C: 모드 선택
 
 ### 첫 프로젝트 사용자 (기존 프로젝트 없음)
 
@@ -233,8 +301,8 @@ Task tool 프롬프트:
 2. 팀 추천:
    node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js recommend-team --type {type}
 
-3. 프로젝트 생성:
-   echo '{"name": "{name}", "type": "{type}", "description": "{description}", "mode": "{mode}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js create-project
+3. 프로젝트 생성 (PRD 포함):
+   echo '{"name": "{name}", "type": "{type}", "description": "{description}", "mode": "{mode}", "prd": {prd}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js create-project
 
 4. 팀 빌드 + 저장:
    echo '{"roleIds": [...], "complexity": "{level}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js build-team
@@ -309,7 +377,7 @@ Task tool 프롬프트:
 프로젝트 ID: {ID}의 CTO 아키텍처 분석을 실행하세요.
 
 1. CTO 분석 프롬프트 생성:
-   echo '{"project": {...}, "teamMember": {CTO팀원}, "context": {"round": 1}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js agent-analysis-prompt
+   echo '{"project": {...}, "teamMember": {CTO팀원}, "context": {"round": 1, "prd": {prd}}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js agent-analysis-prompt
 
 2. {ceoFeedback이 있으면: "context.ceoFeedback에 다음을 추가하세요: {ceoFeedback}"}
 
@@ -441,8 +509,9 @@ Task tool 프롬프트:
 1. commands/discuss.md의 Step 2-5를 실행합니다 (Tier별 분석 + 종합).
    Step 5.5(CEO 확인)과 Step 6-9(리뷰/수렴)는 실행하지 마세요.
 2. {ceoFeedback이 있으면: "CEO 피드백을 context.ceoFeedback으로 전달하세요: {ceoFeedback}"}
-3. 기획서에 Mermaid 아키텍처 다이어그램과 화면 구조를 반드시 포함하세요.
-4. 반환: 기획서 핵심 요약(500자 이내) + Mermaid 다이어그램 + 기술 스택/작업 규모 요약 + 수렴 상태
+3. 에이전트 분석/종합 시 context.prd = {prd}를 전달하세요.
+4. 기획서에 Mermaid 아키텍처 다이어그램과 화면 구조를 반드시 포함하세요.
+5. 반환: 기획서 핵심 요약(500자 이내) + Mermaid 다이어그램 + 기술 스택/작업 규모 요약 + 수렴 상태
 
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
@@ -578,8 +647,9 @@ Task tool 프롬프트:
    Step 5.5(CEO 확인)과 Step 6-9(리뷰/수렴)는 실행하지 마세요.
 2. {ceoFeedback이 있으면: "CEO 피드백을 context.ceoFeedback으로 전달하세요: {ceoFeedback}"}
 3. {roundNumber > 1이면: "이전 라운드 기획서를 context.previousSynthesis로 전달하세요"}
-4. 기획서에 Mermaid 아키텍처 다이어그램과 화면 구조를 반드시 포함하세요.
-5. 반환: 기획서 핵심 요약(500자 이내) + Mermaid 다이어그램 + 기술 스택/작업 규모 요약 + 수렴 상태
+4. 에이전트 분석/종합 시 context.prd = {prd}를 전달하세요.
+5. 기획서에 Mermaid 아키텍처 다이어그램과 화면 구조를 반드시 포함하세요.
+6. 반환: 기획서 핵심 요약(500자 이내) + Mermaid 다이어그램 + 기술 스택/작업 규모 요약 + 수렴 상태
 
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```

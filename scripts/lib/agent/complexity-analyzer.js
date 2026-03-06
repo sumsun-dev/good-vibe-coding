@@ -68,7 +68,7 @@ export function deriveComplexityLevel(score) {
  * @param {string} description - 프로젝트 설명
  * @returns {string} 복잡도 분석 프롬프트
  */
-export function buildComplexityAnalysisPrompt(description, codebaseInfo = null) {
+export function buildComplexityAnalysisPrompt(description, codebaseInfo = null, prd = null) {
   if (!description || description.trim() === '') {
     return '';
   }
@@ -92,10 +92,26 @@ export function buildComplexityAnalysisPrompt(description, codebaseInfo = null) 
     }`;
   }
 
+  let prdSection = '';
+  if (prd) {
+    const features = (prd.coreFeatures || []).join('\n- ');
+    const stack = (prd.technicalRequirements?.stack || []).join(', ');
+    const integrations = (prd.technicalRequirements?.integrations || []).join(', ');
+    const constraints = (prd.technicalRequirements?.constraints || []).join(', ');
+    prdSection = `\n\n## PRD (CEO 승인 완료)
+- 핵심 기능:\n- ${features}
+- 기술 스택: ${stack}
+- 외부 연동: ${integrations}
+- 제약사항: ${constraints}
+- PRD 예상 규모: ${prd.estimatedScope?.complexity || 'unknown'} — ${prd.estimatedScope?.reasoning || ''}
+
+위 PRD를 참고하여 복잡도를 더 정확하게 평가하세요.`;
+  }
+
   return `다음 프로젝트 설명을 분석하여 복잡도를 판단하세요.
 
 ## 프로젝트 설명
-${description}${codebaseSection}
+${description}${codebaseSection}${prdSection}
 
 ## 복잡도 판단 기준 (5차원 평가)
 

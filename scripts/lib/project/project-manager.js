@@ -151,6 +151,7 @@ export async function createProject(name, type, description, options = {}) {
     createdAt: new Date().toISOString(),
     status: 'planning',
     mode,
+    prd: options.prd || null,
     infraPath: options.infraPath || null,
     githubUrl: options.githubUrl || null,
     team: [],

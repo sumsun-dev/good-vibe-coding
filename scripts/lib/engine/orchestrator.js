@@ -83,7 +83,7 @@ export function buildAgentAnalysisPrompt(project, teamMember, context = {}) {
 ## 분석 요청 (라운드 ${round})
 당신의 역할과 전문성에 기반하여 이 프로젝트를 분석하세요.
 당신의 말투와 성격으로 응답하세요.
-${project.codebaseInfo ? `\n## 코드베이스 정보\n- 기술 스택: ${(project.codebaseInfo.techStack || []).join(', ')}\n- 파일 구조: ${project.codebaseInfo.fileStructure || '없음'}\n` : ''}
+${project.codebaseInfo ? `\n## 코드베이스 정보\n- 기술 스택: ${(project.codebaseInfo.techStack || []).join(', ')}\n- 파일 구조: ${project.codebaseInfo.fileStructure || '없음'}\n` : ''}${context.prd ? `\n## PRD (CEO 승인 완료)\n- 개요: ${context.prd.overview || ''}\n- 핵심 기능: ${(context.prd.coreFeatures || []).join(', ')}\n- 성공 기준: ${(context.prd.successCriteria || []).join('; ')}\n이 PRD 방향을 유지하면서 분석하세요.\n` : ''}
 ${buildRoleQuestions(teamMember)}`;
 
   if (context.previousSynthesis) {
@@ -159,7 +159,7 @@ export function buildSynthesisPrompt(project, agentOutputs, round, context = {})
 - 이름: ${project.name}
 - 유형: ${project.type}
 - 설명: ${project.description}
-${project.codebaseInfo ? `\n## 코드베이스 정보\n- 기술 스택: ${(project.codebaseInfo.techStack || []).join(', ')}\n- 파일 구조: ${project.codebaseInfo.fileStructure || '없음'}\n` : ''}
+${project.codebaseInfo ? `\n## 코드베이스 정보\n- 기술 스택: ${(project.codebaseInfo.techStack || []).join(', ')}\n- 파일 구조: ${project.codebaseInfo.fileStructure || '없음'}\n` : ''}${context.prd ? `\n## PRD (CEO 승인 완료)\n- 개요: ${context.prd.overview || ''}\n- 핵심 기능: ${(context.prd.coreFeatures || []).join(', ')}\n- 성공 기준: ${(context.prd.successCriteria || []).join('; ')}\n기획서는 이 PRD 방향을 유지하되, 팀 분석을 반영하여 더 구체화하세요.\n` : ''}
 ## 팀원별 분석 결과
 
 ${analysisSection}

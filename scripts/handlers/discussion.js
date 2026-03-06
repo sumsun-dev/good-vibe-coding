@@ -3,12 +3,17 @@
  */
 import { readStdin, output, parseArgs } from '../cli-utils.js';
 import { getProject } from '../lib/project/project-manager.js';
-import { notFoundError, inputError } from '../lib/core/validators.js';
+import { notFoundError, inputError, requireFields } from '../lib/core/validators.js';
 import {
   buildDiscussionPrompt,
   buildPlanDocument,
   buildSingleAgentDiscussionPrompt,
 } from '../lib/engine/discussion-engine.js';
+import {
+  buildPrdPrompt,
+  parsePrdResult,
+  formatPrdForDisplay,
+} from '../lib/project/prd-generator.js';
 import {
   buildAcceptanceCriteriaPrompt,
   parseAcceptanceCriteria,
@@ -112,6 +117,25 @@ export const commands = {
     if (!data.rawOutput) throw inputError('rawOutput 필드가 필요합니다');
     const criteria = parseAcceptanceCriteria(data.rawOutput);
     output({ criteria });
+  },
+
+  'generate-prd-prompt': async () => {
+    const data = await readStdin();
+    requireFields(data, ['description', 'clarityDimensions']);
+    const prompt = buildPrdPrompt(
+      data.description,
+      data.clarityDimensions,
+      data.codebaseInfo || null,
+    );
+    output({ prompt });
+  },
+
+  'parse-prd': async () => {
+    const data = await readStdin();
+    requireFields(data, ['rawOutput']);
+    const prd = parsePrdResult(data.rawOutput);
+    const formatted = formatPrdForDisplay(prd);
+    output({ prd, formatted });
   },
 
   'execution-dispatch-plan': async () => {

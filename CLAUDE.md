@@ -234,6 +234,7 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 - `branch-manager.js` — feature branch 생성/관리 (timestamp/phase/custom 전략, graceful skip)
 - `pr-manager.js` — Pull Request 생성/관리 (gh CLI 래퍼, graceful skip)
 - `ci-generator.js` — GitHub Actions CI 워크플로우 자동 생성 (Node/Python/Go/Java)
+- `prd-generator.js` — PRD 프롬프트 생성/파싱/포맷 (명확도 → 복잡도 사이 CEO 확인용)
 
 **`engine/`** — 실행 엔진 (13개)
 

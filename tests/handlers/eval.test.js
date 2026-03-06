@@ -192,7 +192,7 @@ describe('eval handler', () => {
       buildComplexityAnalysisPrompt.mockReturnValue('분석 프롬프트');
 
       await commands['complexity-analysis']();
-      expect(buildComplexityAnalysisPrompt).toHaveBeenCalledWith('복잡한 프로젝트');
+      expect(buildComplexityAnalysisPrompt).toHaveBeenCalledWith('복잡한 프로젝트', null, null);
       expect(output).toHaveBeenCalledWith({ prompt: '분석 프롬프트' });
     });
 

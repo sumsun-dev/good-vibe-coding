@@ -75,7 +75,11 @@ export const commands = {
   'complexity-analysis': async () => {
     const data = await readStdin();
     requireFields(data, ['description']);
-    const prompt = buildComplexityAnalysisPrompt(data.description);
+    const prompt = buildComplexityAnalysisPrompt(
+      data.description,
+      data.codebaseInfo || null,
+      data.prd || null,
+    );
     output({ prompt });
   },
 

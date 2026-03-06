@@ -53,6 +53,8 @@ const COMMAND_MAP = {
   'group-agents': 'discussion',
   'discussion-dispatch-plan': 'discussion',
   'execution-dispatch-plan': 'discussion',
+  'generate-prd-prompt': 'discussion',
+  'parse-prd': 'discussion',
   'generate-acceptance-criteria': 'discussion',
   'parse-acceptance-criteria': 'discussion',
   // execution
