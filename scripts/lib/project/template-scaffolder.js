@@ -184,14 +184,15 @@ export async function scaffold(templateName, targetDir, userVars = {}, options =
     }
   }
 
-  // 파일 쓰기
-  const results = [];
-  for (const file of renderedFiles) {
-    const fullPath = resolve(targetDir, file.path);
-    assertWithinRoot(fullPath, targetDir, 'template file path');
-    const result = await safeWriteFile(fullPath, file.content, { overwrite, backup });
-    results.push({ path: file.path, ...result });
-  }
+  // 파일 쓰기 (병렬)
+  const results = await Promise.all(
+    renderedFiles.map(async (file) => {
+      const fullPath = resolve(targetDir, file.path);
+      assertWithinRoot(fullPath, targetDir, 'template file path');
+      const result = await safeWriteFile(fullPath, file.content, { overwrite, backup });
+      return { path: file.path, ...result };
+    }),
+  );
 
   return {
     files: results,

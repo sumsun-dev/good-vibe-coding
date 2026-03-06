@@ -17,15 +17,20 @@ import {
   aggregateCrossProjectFeedback,
   formatCrossProjectPatterns,
 } from '../scripts/lib/agent/agent-feedback.js';
+import { configure, resetConfiguration } from '../scripts/lib/core/app-paths.js';
 
 const TMP_DIR = resolve('.tmp-test-agent-feedback');
+const PROJECT_DIR = resolve(TMP_DIR, 'projects', 'test-project');
 
 beforeEach(async () => {
   await mkdir(TMP_DIR, { recursive: true });
+  await mkdir(PROJECT_DIR, { recursive: true });
   setOverridesDir(TMP_DIR);
+  configure({ baseDir: TMP_DIR });
 });
 
 afterEach(async () => {
+  resetConfiguration();
   await rm(TMP_DIR, { recursive: true, force: true });
 });
 
@@ -291,39 +296,52 @@ describe('mergeAgentWithOverride', () => {
 
 describe('saveProjectOverride / loadProjectOverride', () => {
   it('프로젝트 레벨 오버라이드를 저장하고 로드한다', async () => {
-    await saveProjectOverride(TMP_DIR, 'backend', '# 프로젝트 레벨 개선\n- 에러 처리 강화');
-    const content = await loadProjectOverride(TMP_DIR, 'backend');
+    await saveProjectOverride(PROJECT_DIR, 'backend', '# 프로젝트 레벨 개선\n- 에러 처리 강화');
+    const content = await loadProjectOverride(PROJECT_DIR, 'backend');
     expect(content).toContain('프로젝트 레벨 개선');
     expect(content).toContain('에러 처리 강화');
   });
 
   it('존재하지 않는 오버라이드는 null을 반환한다', async () => {
-    const content = await loadProjectOverride(TMP_DIR, 'nonexistent');
+    const content = await loadProjectOverride(PROJECT_DIR, 'nonexistent');
     expect(content).toBeNull();
   });
 
   it('경로 순회 roleId를 거부한다', async () => {
-    await expect(saveProjectOverride(TMP_DIR, '../etc/passwd', 'x')).rejects.toThrow(
+    await expect(saveProjectOverride(PROJECT_DIR, '../etc/passwd', 'x')).rejects.toThrow(
       '유효하지 않은 roleId',
     );
-    await expect(loadProjectOverride(TMP_DIR, '../../etc/passwd')).rejects.toThrow(
+    await expect(loadProjectOverride(PROJECT_DIR, '../../etc/passwd')).rejects.toThrow(
       '유효하지 않은 roleId',
+    );
+  });
+
+  it('projectsDir 밖의 경로를 거부한다', async () => {
+    await expect(saveProjectOverride('/tmp/evil', 'backend', 'x')).rejects.toThrow(
+      '허용 범위를 벗어났습니다',
+    );
+    await expect(loadProjectOverride('/tmp/evil', 'backend')).rejects.toThrow(
+      '허용 범위를 벗어났습니다',
     );
   });
 });
 
 describe('listProjectOverrides', () => {
   it('프로젝트 레벨 오버라이드 목록을 반환한다', async () => {
-    await saveProjectOverride(TMP_DIR, 'cto', '# CTO');
-    await saveProjectOverride(TMP_DIR, 'backend', '# Backend');
-    const list = await listProjectOverrides(TMP_DIR);
+    await saveProjectOverride(PROJECT_DIR, 'cto', '# CTO');
+    await saveProjectOverride(PROJECT_DIR, 'backend', '# Backend');
+    const list = await listProjectOverrides(PROJECT_DIR);
     expect(list.length).toBe(2);
     expect(list.map((l) => l.roleId).sort()).toEqual(['backend', 'cto']);
   });
 
   it('디렉토리가 없으면 빈 배열을 반환한다', async () => {
-    const list = await listProjectOverrides(resolve(TMP_DIR, 'nonexistent'));
+    const list = await listProjectOverrides(resolve(PROJECT_DIR, 'nonexistent'));
     expect(list).toEqual([]);
+  });
+
+  it('projectsDir 밖의 경로를 거부한다', async () => {
+    await expect(listProjectOverrides('/tmp/evil')).rejects.toThrow('허용 범위를 벗어났습니다');
   });
 });
 

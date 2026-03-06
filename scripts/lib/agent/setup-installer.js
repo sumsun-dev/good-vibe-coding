@@ -69,20 +69,22 @@ export async function installItem(item) {
 }
 
 /**
- * 여러 항목을 순차 설치한다.
+ * 여러 항목을 병렬 설치한다.
  * @param {Array<object>} items - 카탈로그 항목 배열
  * @returns {Promise<Array<{id: string, installed: boolean, skipped: boolean, path: string}>>}
  */
 export async function installItems(items) {
-  const results = [];
-  for (const item of items) {
-    try {
-      results.push(await installItem(item));
-    } catch (err) {
-      results.push({ id: item.id, installed: false, skipped: false, error: err.message, path: '' });
-    }
-  }
-  return results;
+  const settled = await Promise.allSettled(items.map((item) => installItem(item)));
+  return settled.map((result, i) => {
+    if (result.status === 'fulfilled') return result.value;
+    return {
+      id: items[i].id,
+      installed: false,
+      skipped: false,
+      error: result.reason?.message || String(result.reason),
+      path: '',
+    };
+  });
 }
 
 /**

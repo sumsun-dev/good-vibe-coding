@@ -96,8 +96,10 @@ export async function scanCodebase(projectPath) {
     throw new AppError(`디렉토리가 아닙니다: ${projectPath}`, 'INPUT_ERROR');
   }
 
-  const files = await collectFiles(projectPath, projectPath);
-  const manifests = await loadManifests(projectPath);
+  const [files, manifests] = await Promise.all([
+    collectFiles(projectPath, projectPath),
+    loadManifests(projectPath),
+  ]);
 
   const { techStack, dependencies } = detectTechStack(files, manifests);
   const languages = countLanguages(files);
