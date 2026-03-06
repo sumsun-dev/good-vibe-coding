@@ -348,8 +348,10 @@ export function trackConvergenceEvolution(currentResult, previousRounds) {
 
   const prevBlockers =
     safeRounds.length > 0 ? safeRounds[safeRounds.length - 1].blockers || [] : [];
-  const resolvedBlockers = prevBlockers.filter((b) => !currentResult.blockers.includes(b));
-  const newBlockers = currentResult.blockers.filter((b) => !prevBlockers.includes(b));
+  const currentBlockerSet = new Set(currentResult.blockers);
+  const prevBlockerSet = new Set(prevBlockers);
+  const resolvedBlockers = prevBlockers.filter((b) => !currentBlockerSet.has(b));
+  const newBlockers = currentResult.blockers.filter((b) => !prevBlockerSet.has(b));
 
   return {
     ...currentResult,

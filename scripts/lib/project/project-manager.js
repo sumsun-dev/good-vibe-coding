@@ -2,7 +2,7 @@ import { writeFile, readdir } from 'fs/promises';
 import { resolve } from 'path';
 import { randomBytes } from 'crypto';
 import { ensureDir, fileExists, readJsonFile } from '../core/file-writer.js';
-import { inputError, notFoundError, AppError } from '../core/validators.js';
+import { inputError, notFoundError, AppError, assertWithinRoot } from '../core/validators.js';
 import {
   createMetricsSnapshot,
   recordAgentCall,
@@ -51,7 +51,9 @@ export function generateProjectId(name) {
  * @returns {string} 디렉토리 경로
  */
 export function getProjectDir(projectId) {
-  return resolve(baseDir, projectId);
+  const fullPath = resolve(baseDir, projectId);
+  assertWithinRoot(fullPath, baseDir, 'projectId');
+  return fullPath;
 }
 
 /**
