@@ -480,28 +480,48 @@ export async function verifyExecution(taskOutput, task) {
  * @returns {Promise<{verified: boolean|null, buildResult?: object, testResult?: object, codeBlockCount: number, tempDir?: string, materializeResult?: object}>}
  */
 export async function verifyAndMaterialize(taskOutput, task, projectDir, options = {}) {
-  const verifyResult = await verifyExecution(taskOutput, task);
+  // 코드 블록을 1회만 추출하여 검증과 기록에 재사용 (중복 파싱 방지)
+  const codeBlocks = extractCodeBlocks(taskOutput);
 
-  if (verifyResult.verified === null || verifyResult.verified === false) {
+  if (codeBlocks.length === 0) {
+    return { verified: null, reason: 'no-code-blocks', codeBlockCount: 0 };
+  }
+
+  const classified = classifyCodeBlocks(codeBlocks);
+  const projectType = task?.projectType || 'cli-tool';
+
+  const writeResult = writeTemporaryProject(classified, projectType);
+  const tempDir = writeResult.tempDir;
+  const buildResult = attemptBuild(tempDir, projectType);
+  const testResult = attemptTests(tempDir, projectType);
+  const verified = buildResult.success === true;
+
+  if (verified) {
+    cleanup(tempDir);
+  }
+
+  if (!verified) {
     return {
-      verified: verifyResult.verified,
-      reason: verifyResult.reason,
-      buildResult: verifyResult.buildResult,
-      testResult: verifyResult.testResult,
-      codeBlockCount: verifyResult.codeBlockCount,
-      tempDir: verifyResult.tempDir,
+      verified,
+      buildResult,
+      testResult,
+      codeBlockCount: codeBlocks.length,
+      tempDir,
     };
   }
 
-  // 검증 성공 → 프로젝트에 기록 (lazy import으로 순환 의존성 방지)
+  // 검증 성공 → 사전 분류된 블록을 전달하여 재추출 방지 (lazy import으로 순환 의존성 방지)
   const { materializeCode } = await import('./code-materializer.js');
-  const materializeResult = await materializeCode(taskOutput, projectDir, options);
+  const materializeResult = await materializeCode(taskOutput, projectDir, {
+    ...options,
+    _classifiedBlocks: classified,
+  });
 
   return {
     verified: true,
-    buildResult: verifyResult.buildResult,
-    testResult: verifyResult.testResult,
-    codeBlockCount: verifyResult.codeBlockCount,
+    buildResult,
+    testResult,
+    codeBlockCount: codeBlocks.length,
     materializeResult,
   };
 }
