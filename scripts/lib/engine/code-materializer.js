@@ -36,7 +36,9 @@ export function extractMaterializableBlocks(taskOutput) {
  * @returns {Promise<{totalBlocks: number, materializedCount: number, skippedCount: number, files: Array<{path: string, relativePath: string, written: boolean, backupPath: string|null, language: string, type: string}>}>}
  */
 export async function materializeCode(taskOutput, projectDir, options = {}) {
-  if (!taskOutput || typeof taskOutput !== 'string') {
+  const { overwrite = true, backup = true, dryRun = false, _classifiedBlocks } = options;
+
+  if (!_classifiedBlocks && (!taskOutput || typeof taskOutput !== 'string')) {
     return {
       totalBlocks: 0,
       materializedCount: 0,
@@ -53,11 +55,8 @@ export async function materializeCode(taskOutput, projectDir, options = {}) {
     throw inputError('projectDir must be a non-empty string');
   }
 
-  const { overwrite = true, backup = true, dryRun = false } = options;
-
-  const allBlocks = extractCodeBlocks(taskOutput);
-  const totalBlocks = allBlocks.length;
-  const classified = classifyCodeBlocks(allBlocks);
+  const classified = _classifiedBlocks || classifyCodeBlocks(extractCodeBlocks(taskOutput));
+  const totalBlocks = classified.length;
   const materializableBlocks = classified.filter((block) => block.filename);
   const unmaterializableCount = totalBlocks - materializableBlocks.length;
 
