@@ -82,12 +82,9 @@ describe('discussion handler', () => {
       buildSynthesisPrompt.mockReturnValue(prompt);
 
       await commands['synthesis-prompt']();
-      expect(buildSynthesisPrompt).toHaveBeenCalledWith(
-        { id: 'p1' },
-        ['o1'],
-        2,
-        { ceoFeedback: '아키텍처를 변경하세요' },
-      );
+      expect(buildSynthesisPrompt).toHaveBeenCalledWith({ id: 'p1' }, ['o1'], 2, {
+        ceoFeedback: '아키텍처를 변경하세요',
+      });
       expect(output).toHaveBeenCalledWith({ prompt });
     });
   });

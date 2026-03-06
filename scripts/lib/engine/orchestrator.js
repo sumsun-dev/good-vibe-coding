@@ -151,7 +151,8 @@ export function buildSynthesisPrompt(project, agentOutputs, round, context = {})
     })
     .join('\n\n---\n\n');
 
-  return `다음은 프로젝트 "${project.name}"에 대한 ${agentOutputs.length}명의 팀원 분석 결과입니다.
+  return (
+    `다음은 프로젝트 "${project.name}"에 대한 ${agentOutputs.length}명의 팀원 분석 결과입니다.
 이것은 라운드 ${round}의 종합입니다.
 
 ## 프로젝트 정보
@@ -205,8 +206,8 @@ graph TD
 ### 일정 (마일스톤)
 ### 리스크 및 대응
 ### 미합의 사항 (있는 경우)
-### CEO 결정 필요 사항 (있는 경우)`
-    + (context.ceoFeedback
+### CEO 결정 필요 사항 (있는 경우)` +
+    (context.ceoFeedback
       ? (() => {
           const maxLen = config.llm.maxPromptSectionLength;
           const truncated =
@@ -215,7 +216,8 @@ graph TD
               : context.ceoFeedback;
           return `\n\n## CEO 피드백\n이전 기획서에 대한 CEO의 피드백입니다. 반드시 반영하세요:\n\n${truncated}`;
         })()
-      : '');
+      : '')
+  );
 }
 
 /**
