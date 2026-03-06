@@ -7,6 +7,13 @@ run_phase0() {
 
   # ── git 최신화 ─────────────────────────────────────────
   log_phase "Phase0" "git checkout ${BASE_BRANCH} && git pull..."
+
+  # 이전 실행에서 남은 unstaged changes 정리
+  if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
+    log_phase "Phase0" "이전 실행의 미커밋 변경사항 발견 — git stash"
+    git stash --include-untracked >> "$LOG_FILE" 2>&1 || true
+  fi
+
   git checkout "${BASE_BRANCH}" >> "$LOG_FILE" 2>&1 || {
     log_phase "Phase0" "ERROR: git checkout ${BASE_BRANCH} 실패"
     return "$EXIT_ERROR"
@@ -14,6 +21,7 @@ run_phase0() {
   git pull --rebase origin "${BASE_BRANCH}" >> "$LOG_FILE" 2>&1 || {
     log_phase "Phase0" "ERROR: git pull 실패 — rebase abort 시도"
     git rebase --abort >> "$LOG_FILE" 2>&1 || true
+    git stash drop >> "$LOG_FILE" 2>&1 || true
     return "$EXIT_ERROR"
   }
 

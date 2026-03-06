@@ -53,6 +53,20 @@ assert_not_on_master() {
   fi
 }
 
+# ── timeout 호환 (macOS/Linux) ────────────────────────────
+# macOS에는 GNU timeout이 없음 → gtimeout (brew install coreutils) 또는 perl fallback
+if ! command -v timeout &>/dev/null; then
+  if command -v gtimeout &>/dev/null; then
+    timeout() { gtimeout "$@"; }
+  else
+    # perl fallback: 첫 인자가 숫자면 타임아웃 초, 나머지는 명령
+    timeout() {
+      local secs="$1"; shift
+      perl -e "alarm $secs; exec @ARGV" -- "$@"
+    }
+  fi
+fi
+
 # ── Watchdog (전체 타임아웃) ──────────────────────────────
 # 사용법: start_watchdog $TOTAL_TIMEOUT
 # 반환: watchdog PID (글로벌 WATCHDOG_PID에 저장)
