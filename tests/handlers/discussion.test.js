@@ -67,7 +67,27 @@ describe('discussion handler', () => {
       buildSynthesisPrompt.mockReturnValue(prompt);
 
       await commands['synthesis-prompt']();
-      expect(buildSynthesisPrompt).toHaveBeenCalledWith({ id: 'p1' }, ['o1'], 2);
+      expect(buildSynthesisPrompt).toHaveBeenCalledWith({ id: 'p1' }, ['o1'], 2, {});
+      expect(output).toHaveBeenCalledWith({ prompt });
+    });
+
+    it('ceoFeedback이 있으면 context로 전달해야 한다', async () => {
+      const prompt = 'CEO 피드백 반영 프롬프트';
+      readStdin.mockResolvedValue({
+        project: { id: 'p1' },
+        agentOutputs: ['o1'],
+        round: 2,
+        ceoFeedback: '아키텍처를 변경하세요',
+      });
+      buildSynthesisPrompt.mockReturnValue(prompt);
+
+      await commands['synthesis-prompt']();
+      expect(buildSynthesisPrompt).toHaveBeenCalledWith(
+        { id: 'p1' },
+        ['o1'],
+        2,
+        { ceoFeedback: '아키텍처를 변경하세요' },
+      );
       expect(output).toHaveBeenCalledWith({ prompt });
     });
   });

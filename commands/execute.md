@@ -349,3 +349,54 @@ infraPath가 설정된 프로젝트에서만 실행.
 
 설명을 읽고도 잘 모르겠는 부분이 있으면, 어떤 부분이 헷갈리는지 편하게 질문해 주세요!
 ```
+
+---
+
+## 서브에이전트 모드 (Phase 단위 실행)
+
+`good-vibe:new`에서 Task tool로 Phase별 호출된 경우, 이 섹션의 절차를 따릅니다.
+
+### 실행 절차
+
+1. `next-step --id {ID}`으로 현재 Phase의 action을 확인합니다.
+2. action별로 Step 2.2의 처리를 따릅니다:
+   - `execute-tasks` → 태스크 병렬 실행
+   - `materialize` → 코드 구체화
+   - `review` → 크로스 리뷰
+   - `quality-gate` → 품질 게이트
+   - `fix` → 수정 (실패 시)
+   - `escalate` → 에스컬레이션 (메인 세션에 판단 위임 필요)
+   - `commit` → Phase 커밋
+   - `build-context` → Phase 컨텍스트 생성
+3. 각 action 완료 후 `advance-execution`으로 상태를 전이합니다.
+4. `build-context` 또는 `confirm-next-phase` action이 나오면 Phase 완료로 판단합니다.
+
+### 에스컬레이션 처리
+
+`escalate` action이 나오면 서브에이전트에서 직접 처리하지 않고, **메인 세션에 에스컬레이션이 필요하다는 결과를 반환**합니다:
+
+```
+에스컬레이션 필요:
+- Phase: {N}
+- 실패 카테고리: {categories}
+- critical 이슈: {issues}
+- 시도 횟수: {fixAttempt}/{maxFixAttempts}
+```
+
+메인 세션에서 CEO에게 판단을 요청한 뒤, 새 Task tool로 해당 Phase를 이어서 실행합니다.
+
+### 반환 형식
+
+Phase 완료 시 다음 내용만 반환합니다:
+
+- **Phase 요약** (300자 이내) — 실행한 태스크 수, 주요 결과물
+- **품질게이트 결과** — passed/failed, critical/important 이슈 수
+- **생성 파일 수** (코드 태스크인 경우)
+
+**반환에 포함하지 않을 내용:**
+
+- 태스크별 상세 출력 전문
+- 리뷰 코멘트 전체
+- 중간 fix 시도 상세
+
+> **이유:** 메인 세션의 컨텍스트를 보호하기 위함. 상세 내용은 project.json에 저장되어 있으므로 `good-vibe:status`나 `good-vibe:report`로 조회 가능.

@@ -62,6 +62,7 @@ function buildRoleQuestions(teamMember) {
  * @param {number} [context.round] - 현재 라운드
  * @param {string} [context.previousSynthesis] - 이전 라운드 종합 결과
  * @param {string} [context.feedbackForMe] - 이 역할에 대한 다른 에이전트의 피드백
+ * @param {string} [context.ceoFeedback] - CEO의 피드백 (Ralph Loop)
  * @returns {string} 에이전트 분석 프롬프트
  */
 export function buildAgentAnalysisPrompt(project, teamMember, context = {}) {
@@ -98,6 +99,15 @@ ${buildRoleQuestions(teamMember)}`;
     prompt += `\n\n## 다른 팀원의 피드백\n다음은 다른 팀원들이 당신의 이전 분석에 대해 준 피드백입니다:\n\n${context.feedbackForMe}`;
   }
 
+  if (context.ceoFeedback) {
+    const maxLen = config.llm.maxPromptSectionLength;
+    const truncatedFeedback =
+      context.ceoFeedback.length > maxLen
+        ? context.ceoFeedback.slice(0, maxLen) + '\n...(truncated)'
+        : context.ceoFeedback;
+    prompt += `\n\n## CEO 피드백 (최우선)\nCEO가 다음과 같은 피드백을 주었습니다. 이 피드백을 최우선으로 반영하세요:\n\n${truncatedFeedback}`;
+  }
+
   prompt += `\n\n## 요구사항 명확화 (중요)
 프로젝트 설명에서 불명확하거나 빠진 정보를 반드시 지적하세요:
 - 외부 데이터 소스가 구체적이지 않은 경우
@@ -120,9 +130,11 @@ ${buildRoleQuestions(teamMember)}`;
  * @param {object} project - 프로젝트 정보
  * @param {Array<{roleId: string, role: string, emoji: string, analysis: string}>} agentOutputs - 에이전트 분석 결과 배열
  * @param {number} round - 현재 라운드
+ * @param {object} [context] - 추가 컨텍스트
+ * @param {string} [context.ceoFeedback] - CEO의 피드백 (Ralph Loop)
  * @returns {string} 종합 프롬프트
  */
-export function buildSynthesisPrompt(project, agentOutputs, round) {
+export function buildSynthesisPrompt(project, agentOutputs, round, context = {}) {
   if (!agentOutputs || agentOutputs.length === 0) {
     throw inputError('에이전트 분석 결과가 없습니다');
   }
@@ -169,6 +181,23 @@ ${analysisSection}
 ### 프로젝트 개요
 ### 기술 스택
 ### 아키텍처
+
+#### 아키텍처 다이어그램
+시스템 구성도를 Mermaid 형식으로 작성하세요:
+
+\`\`\`mermaid
+graph TD
+  A[컴포넌트] --> B[컴포넌트]
+\`\`\`
+
+- 주요 컴포넌트/모듈과 그 역할
+- 컴포넌트 간 데이터 흐름 (화살표 + 라벨)
+- 외부 서비스 연동 포인트
+
+#### 화면 구조 (UI 프로젝트인 경우)
+주요 화면 간 네비게이션 흐름을 Mermaid flowchart로 작성하고,
+핵심 화면 1-2개의 레이아웃을 ASCII 와이어프레임으로 표현하세요.
+
 ### 외부 서비스 연동
 - 필요한 외부 API/서비스 목록
 - 각 서비스의 환경변수명과 발급 URL
@@ -176,7 +205,17 @@ ${analysisSection}
 ### 일정 (마일스톤)
 ### 리스크 및 대응
 ### 미합의 사항 (있는 경우)
-### CEO 결정 필요 사항 (있는 경우)`;
+### CEO 결정 필요 사항 (있는 경우)`
+    + (context.ceoFeedback
+      ? (() => {
+          const maxLen = config.llm.maxPromptSectionLength;
+          const truncated =
+            context.ceoFeedback.length > maxLen
+              ? context.ceoFeedback.slice(0, maxLen) + '\n...(truncated)'
+              : context.ceoFeedback;
+          return `\n\n## CEO 피드백\n이전 기획서에 대한 CEO의 피드백입니다. 반드시 반영하세요:\n\n${truncated}`;
+        })()
+      : '');
 }
 
 /**

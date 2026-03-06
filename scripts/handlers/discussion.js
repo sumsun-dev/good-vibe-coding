@@ -61,7 +61,8 @@ export const commands = {
 
   'synthesis-prompt': async () => {
     const data = await readStdin();
-    const prompt = buildSynthesisPrompt(data.project, data.agentOutputs, data.round || 1);
+    const context = data.ceoFeedback ? { ceoFeedback: data.ceoFeedback } : {};
+    const prompt = buildSynthesisPrompt(data.project, data.agentOutputs, data.round || 1, context);
     output({ prompt });
   },
 

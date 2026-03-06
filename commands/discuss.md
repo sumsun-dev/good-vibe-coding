@@ -96,15 +96,77 @@ echo '{"project": {...}, "teamMember": {...}, "context": {"round": 1}}' | node $
 echo '{"project": {...}, "agentOutputs": [...], "round": 1}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js synthesis-prompt
 ```
 
+CEO 피드백이 있는 경우 (Ralph Loop 재분석 시), `context.ceoFeedback`을 함께 전달합니다:
+
+```bash
+echo '{"project": {...}, "agentOutputs": [...], "round": 1, "ceoFeedback": "CEO 피드백 내용"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js synthesis-prompt
+```
+
 생성된 프롬프트를 실행하여 통합 기획서를 작성하세요.
+기획서에는 **Mermaid 아키텍처 다이어그램**과 **화면 구조** (UI 프로젝트인 경우)가 반드시 포함됩니다.
 
-## Step 5.5: CEO 결정 요청 (명확화 필요 시)
+## Step 5.5: CEO 시각적 확인 (Ralph Loop)
 
-종합 기획서에 "CEO 결정 필요 사항" 섹션이 있으면,
-리뷰 전에 AskUserQuestion으로 CEO에게 결정을 요청합니다.
+종합 기획서가 생성되면, CEO에게 핵심 산출물을 시각적으로 보여주고 피드백을 수집합니다.
+CEO가 승인할 때까지 이 단계를 반복합니다.
 
-각 결정 사항에 대해 선택지를 제시하세요.
-CEO 답변을 기획서에 반영한 후 Step 6(리뷰)으로 진행합니다.
+### 표시 내용
+
+기획서에서 다음을 추출하여 CEO에게 보여줍니다:
+
+1. **아키텍처 다이어그램** (Mermaid)
+   - 시스템 구성도, 모듈 간 관계, 데이터 흐름
+   - 기획서의 Mermaid 코드 블록을 그대로 표시
+
+2. **화면 구조** (UI 프로젝트인 경우)
+   - 주요 화면 목록과 네비게이션 흐름 (Mermaid flowchart)
+   - ASCII 와이어프레임 (핵심 화면 1-2개)
+
+3. **기술 스택 요약**
+   - 프레임워크, DB, 외부 서비스
+
+4. **작업 규모**
+   - 예상 Phase 수, 태스크 수
+
+### CEO 확인
+
+```
+AskUserQuestion:
+  질문: "기획서를 확인해주세요. 이대로 진행할까요?"
+  header: "기획 확인"
+  options:
+    - "이대로 진행 (Recommended)" — 리뷰 단계(Step 6)로 넘어갑니다
+    - "수정 요청" — 구체적 피드백을 주시면 반영합니다
+    - "처음부터 다시" — 새로운 방향으로 재분석합니다
+```
+
+#### "이대로 진행" 선택 시
+
+Step 6(리뷰)으로 넘어갑니다.
+
+#### "수정 요청" 선택 시
+
+CEO에게 수정 사항을 자유 입력받습니다.
+
+입력받은 피드백을 `ceoFeedback`으로 저장하고:
+
+1. CEO 피드백을 에이전트 분석 프롬프트에 주입 (`context.ceoFeedback`으로 전달, 기존 `feedbackForMe`와 동일 방식)
+2. Tier별 재분석 실행 (Step 4로 돌아감, CEO 피드백이 관련된 역할에 타겟 주입)
+3. 재종합 (Step 5 Synthesis)
+4. 다시 CEO에게 시각적 확인 표시 (이 Step 5.5로 복귀)
+
+이 루프는 CEO가 "이대로 진행"을 선택할 때까지 반복합니다.
+라운드 수 제한은 없습니다 (CEO 주도 종료).
+
+#### "처음부터 다시" 선택 시
+
+CEO에게 새로운 방향을 입력받고, Step 4 (Tier별 분석)부터 다시 실행합니다.
+이전 기획서와 ceoFeedback은 초기화됩니다.
+
+### 기존 "CEO 결정 필요 사항" 처리
+
+기획서에 "CEO 결정 필요 사항" 섹션이 있으면, 위 CEO 확인 시 함께 표시합니다.
+각 결정 사항에 대한 선택지를 추가로 제시하세요.
 
 ## Step 6: 리뷰 (전체 에이전트 병렬)
 
@@ -212,3 +274,26 @@ echo '{"claudeMdPath":"{infraPath}/CLAUDE.md","sectionName":"architecture-placeh
 → `good-vibe:discuss` — 재토론 (다른 관점에서)
 → `good-vibe:status` — 현재 상태 확인
 ```
+
+---
+
+## 서브에이전트 모드 (good-vibe:new에서 호출 시)
+
+`good-vibe:new`에서 Task tool로 호출된 경우, 위 Step 1-9를 동일하게 실행하되 **최종 반환 형식**을 제한합니다.
+
+### 반환에 포함할 내용
+
+- **기획서 핵심 요약** (500자 이내) — 기술 스택, 주요 컴포넌트, 작업 수
+- **아키텍처 다이어그램** (Mermaid 코드 블록) — CEO 시각적 확인용
+- **화면 구조** (해당 시, Mermaid flowchart + ASCII 와이어프레임)
+- **수렴 상태** — 라운드 수, 승인율
+- **다음 단계 안내** — approved/planning 상태
+
+### 반환에 포함하지 않을 내용
+
+- 개별 에이전트 분석 전문
+- 리뷰 상세 내용 (verdict만 전달)
+- 중간 라운드 기록
+- Tier별 진행률 상세
+
+> **이유:** 메인 세션의 컨텍스트를 보호하기 위함. 상세 내용은 project.json에 저장되어 있으므로 `good-vibe:status`나 `good-vibe:report`로 조회 가능.

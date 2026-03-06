@@ -146,6 +146,19 @@ describe('buildAgentAnalysisPrompt', () => {
     expect(prompt).toContain('기획서 내용');
     expect(prompt).toContain('피드백 내용');
   });
+
+  it('ceoFeedback이 있으면 CEO 피드백 섹션을 포함한다', () => {
+    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {
+      ceoFeedback: '마이크로서비스 대신 모놀리스로 가주세요',
+    });
+    expect(prompt).toContain('CEO 피드백 (최우선)');
+    expect(prompt).toContain('마이크로서비스 대신 모놀리스로 가주세요');
+  });
+
+  it('ceoFeedback이 없으면 CEO 피드백 섹션이 없다', () => {
+    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {});
+    expect(prompt).not.toContain('CEO 피드백');
+  });
 });
 
 // --- buildSynthesisPrompt ---
@@ -191,6 +204,31 @@ describe('buildSynthesisPrompt', () => {
   it('빈 agentOutputs이면 에러를 throw한다', () => {
     expect(() => buildSynthesisPrompt(SAMPLE_PROJECT, [], 1)).toThrow();
     expect(() => buildSynthesisPrompt(SAMPLE_PROJECT, null, 1)).toThrow();
+  });
+
+  it('context.ceoFeedback이 있으면 CEO 피드백 섹션을 포함한다', () => {
+    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1, {
+      ceoFeedback: 'UI를 더 단순하게 해주세요',
+    });
+    expect(prompt).toContain('## CEO 피드백');
+    expect(prompt).toContain('UI를 더 단순하게 해주세요');
+  });
+
+  it('context.ceoFeedback이 없으면 CEO 피드백 섹션이 없다', () => {
+    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1, {});
+    expect(prompt).not.toContain('CEO 피드백');
+  });
+
+  it('context가 생략되면 기존과 동일하게 동작한다', () => {
+    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
+    expect(prompt).toContain('텔레그램 봇');
+    expect(prompt).not.toContain('CEO 피드백');
+  });
+
+  it('Mermaid 아키텍처 다이어그램 지시가 포함된다', () => {
+    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
+    expect(prompt).toContain('아키텍처 다이어그램');
+    expect(prompt).toContain('Mermaid');
   });
 });
 
