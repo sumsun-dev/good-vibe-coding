@@ -41,28 +41,40 @@ options:
 - **세미-오토** — Phase가 많은 프로젝트에서, 3개씩 묶어서 중간 확인하고 싶을 때.
 - **자동** — 기획이 충분히 검토된 상태에서 빠르게 돌리고 싶을 때. 문제가 생길 때만 멈춥니다.
 
-### 1.3 실행 시작
+### 1.3 실행 초기화 (Task tool)
 
-```bash
-echo '{"id":"{ID}","mode":"interactive"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js init-execution
+**Task tool 프롬프트:**
+
+```
+프로젝트 ID: {ID}
+실행 모드: {mode}
+재개 여부: {resume} (이전 실행이 있는 경우)
+
+다음 작업을 수행하고 실행 계획 요약만 반환하세요:
+
+1. init-execution CLI 호출 (resume 플래그 포함)
+2. update-status CLI 호출 (status: executing)
+3. execution-plan-with-reviews CLI 호출
+
+**반환 형식 (300자 이내):**
+- 총 Phase 수
+- 총 태스크 수
+- Phase별 태스크 개수 요약 (예: "Phase 1: 3개, Phase 2: 5개, Phase 3: 2개")
+- 예상 소요 시간 (있는 경우)
+
+환경변수: CLAUDE_PLUGIN_ROOT={CLAUDE_PLUGIN_ROOT}
 ```
 
-이전에 중단된 실행이 있으면 재개 여부를 물어보고:
+**CEO에게 표시:**
 
-```bash
-echo '{"id":"{ID}","mode":"interactive","resume":true}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js init-execution
 ```
+실행 준비 완료!
 
-### 1.4 상태 변경 + 실행 계획 표시
+총 {N}개 Phase, {M}개 태스크
+Phase별: Phase 1: 3개, Phase 2: 5개, ...
+예상 소요: 약 {N}분
 
-```bash
-echo '{"id":"{프로젝트ID}","status":"executing"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js update-status
-```
-
-태스크를 Phase별로 묶고, 리뷰 단계를 포함한 실행 계획을 보여줍니다:
-
-```bash
-echo '{"tasks": [...], "team": [...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js execution-plan-with-reviews
+지금부터 팀이 작업을 시작합니다.
 ```
 
 ---
@@ -71,265 +83,228 @@ echo '{"tasks": [...], "team": [...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.
 
 action이 `complete` 또는 `already-completed`가 될 때까지 아래를 반복합니다.
 
-**진행률 표시:** 각 action 처리 시 progress-formatter의 함수들을 활용하여 진행 상황을 표시합니다.
+### 2.1 Phase 실행 (Task tool)
 
-### 2.1 다음 단계 조회
+**인터랙티브 모드:** Phase 1개씩 Task tool 실행
+**세미-오토 모드:** batchSize(기본 3)개 Phase씩 Task tool 실행
+**자동 모드:** 전체를 하나의 Task tool 실행 (에스컬레이션 시에만 중단)
 
-```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js next-step --id {ID}
-```
-
-### 2.2 action별 처리
-
-#### `execute-tasks` — 태스크 실행
-
-**Phase 시작 시 표시:**
+**Task tool 프롬프트 (각 Phase 또는 Phase 배치):**
 
 ```
-{formatPhaseStart(phase, totalPhases, tasks)}
-{formatProgressBar(phase, totalPhases, 'execute-tasks')}
+프로젝트 ID: {ID}
+실행 모드: {mode}
+시작 Phase: {startPhase}
+종료 Phase: {endPhase} (또는 에스컬레이션 발생까지)
+
+다음 Phase 실행 루프를 수행하고, 각 Phase 완료 시 결과 요약만 반환하세요:
+
+**Phase 실행 루프:**
+
+1. next-step CLI 호출로 현재 action 확인
+2. action별 처리:
+   - execute-tasks: 태스크 병렬 실행 (팀원별 Task tool 호출 또는 Gemini CLI)
+   - materialize: 코드 구체화 (is-code-task → verify-and-materialize)
+   - review: 크로스 리뷰 (select-reviewers → resolve-review-assignments → 병렬 리뷰)
+   - quality-gate: 품질 게이트 (enhanced-quality-gate)
+   - fix: 수정 (revision-prompt → 재실행)
+   - commit: Phase 커밋 (commit-phase)
+   - build-context: Phase 컨텍스트 생성 (save-task-output → build-phase-context)
+   - confirm-next-phase: (메인 세션에 반환)
+   - escalate: (메인 세션에 에스컬레이션 정보 반환)
+3. 각 action 완료 후 advance-execution CLI 호출로 상태 전이
+4. action이 complete, confirm-next-phase, 또는 escalate가 될 때까지 반복
+
+**반환 형식 (Phase별 요약, 각 300자 이내):**
+
+Phase {N} 완료:
+- 실행 태스크: {N}개
+- 주요 결과물: {요약}
+- 품질게이트: {passed/failed}, critical {N}개, important {N}개
+- 생성 파일: {N}개 (코드 태스크인 경우)
+- 수정 시도: {N}회 (있는 경우)
+
+Phase {N+1} 완료:
+...
+
+**에스컬레이션 발생 시:**
+
+에스컬레이션 필요:
+- Phase: {N}
+- 실패 카테고리: {categories}
+- critical 이슈: {issues}
+- 시도 횟수: {fixAttempt}/{maxFixAttempts}
+
+(이후 Phase는 실행하지 않고 즉시 반환)
+
+**confirm-next-phase 발생 시 (인터랙티브 모드):**
+
+Phase {N} 완료, 다음 Phase 대기 중
+
+**제외할 내용:**
+- 태스크별 상세 출력 전문
+- 리뷰 코멘트 전체
+- 중간 fix 시도 상세
+
+환경변수: CLAUDE_PLUGIN_ROOT={CLAUDE_PLUGIN_ROOT}
 ```
 
-ETA가 있으면 (Phase 1 완료 후부터):
+**CEO에게 표시 (Phase 완료 시):**
 
 ```
-⏱️ 약 {N}분 남음
+Phase {N}/{총Phase} 완료
+
+실행 태스크: {N}개
+주요 결과물: {요약}
+품질게이트: 통과 (critical 0개, important 2개)
+생성 파일: 5개
+
+⏱️ 약 {N}분 남음 (있는 경우)
 ```
 
-같은 Phase의 작업을 Task tool로 **병렬** 실행합니다.
+### 2.2 에스컬레이션 처리
 
-1. 팀원 에이전트를 Task 도구로 호출
-2. 작업 내용과 팀원 페르소나 전달
-3. Phase 2 이상이면 이전 Phase의 컨텍스트(phaseContext, planExcerpt)를 함께 전달
-4. 결과 수집
+Task tool이 에스컬레이션 정보를 반환하면, CEO에게 판단을 요청합니다:
 
-**각 Task 완료 시 표시:**
+**CEO에게 표시:**
 
 ```
-{formatTaskProgress(tasks, completedIds)}
+수정을 2번 시도했지만 해결되지 않았습니다.
+
+Phase: {N}
+실패 카테고리: {categories}
+Critical 이슈:
+- {issue 1}
+- {issue 2}
+...
+
+어떻게 하시겠습니까?
 ```
 
-#### `materialize` — 코드 구체화 (코드 태스크만)
-
-```bash
-echo '{"task": {...}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js is-code-task
-```
-
-코드 태스크인 경우, 임시 디렉토리에서 빌드 검증 후 프로젝트에 반영:
-
-```bash
-echo '{"taskOutput": "...", "task": {...}, "projectDir": "/path/to/project"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js verify-and-materialize
-```
-
-- `verified: true` — 빌드 성공, 프로젝트에 기록됨
-- `verified: false` — 빌드 실패, tempDir 보존하고 수정 루프 진행
-- `verified: null` — 빌드 불가(비코드), 건너뜀
-
-#### `review` — 크로스 리뷰
-
-1. 리뷰어 선정 (최소 2명, 도메인 매칭):
-
-```bash
-echo '{"task": {...}, "team": [...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js select-reviewers
-```
-
-2. cross-model 전략 시 프로바이더 배정:
-
-```bash
-echo '{"reviewers": [...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js resolve-review-assignments
-```
-
-3. 프로바이더별 병렬 실행:
-   - **Claude** → Task tool (리뷰 프롬프트 → 에이전트)
-   - **Gemini** → Bash tool로 CLI 호출
-
-#### `quality-gate` — 품질 게이트
-
-```bash
-echo '{"reviews": [...], "executionResult": {...}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js enhanced-quality-gate
-```
-
-- `passed: true` → advance로 통과 보고
-- `passed: false` → advance로 실패 보고 (자동으로 fix 또는 escalate로 전이)
-
-#### `fix` — 수정
-
-**수정 시작 시 표시:**
+**AskUserQuestion:**
 
 ```
-수정 중... (시도 {fixAttempt+1}/{maxFixAttempts})
-이전 실패: {카테고리별 이슈 요약}
-수정 전략: {카테고리 기반 자동 전략}
-담당: {에이전트명}
-```
-
-이전 시도에서 뭘 했고 뭐가 안 됐는지를 포함한 수정 프롬프트를 만들어 담당자에게 보냅니다:
-
-```bash
-echo '{"task":{...},"implementer":{...},"reviews":[...],"failureContext":{...}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js revision-prompt
-```
-
-failureContext에는 현재 시도 차수, 최대 시도 횟수, 이전 시도 이력, 이슈 카테고리 분포, CEO 지침(ceoGuidance)이 들어있습니다.
-
-#### `commit` — Phase 커밋
-
-```bash
-echo '{"projectDir": "/path/to/project", "phase": N, "message": "Phase N: ..."}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js commit-phase
-```
-
-프로젝트에 infraPath가 있고 git이 초기화돼 있을 때만 실행.
-
-#### `build-context` — Phase 컨텍스트 생성
-
-**Phase 완료 시 표시:**
-
-```
-{formatPhaseComplete(phase, totalPhases, phaseResult)}
-{formatProgressBar(nextPhase, totalPhases, 'build-context')}
-```
-
-ETA가 있으면:
-
-```
-⏱️ 약 {N}분 남음
-```
-
-1. 태스크 출력 저장:
-
-```bash
-echo '{"id":"{ID}","taskId":"{태스크ID}","output":"..."}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js save-task-output
-```
-
-2. Phase 컨텍스트 생성:
-
-```bash
-echo '{"completedTasks": [...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js build-phase-context
-```
-
-#### `confirm-next-phase` — 다음 Phase 확인 (인터랙티브만)
-
-다음 Phase로 넘어갈지 물어봅니다. 확인 후 build-context action으로 advance.
-
-#### `escalate` — CEO에게 판단 요청
-
-수정을 2번 시도해도 해결 안 되면, 실패 상세를 보여주고 결정을 받습니다:
-
-```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js get-failure-context --id {ID}
-```
-
-미해결 critical 이슈를 보여준 뒤 세 가지 선택지를 제시합니다:
-
-- **계속 수정** — 핵심 기능이라 반드시 성공해야 할 때. 한 번 더 시도합니다.
-- **건너뛰기** — 부가 기능이라 나중에 추가할 수 있을 때. 이 Phase를 넘어갑니다.
-- **중단** — 기획 자체를 재검토해야 할 때. 실행을 종료합니다.
-
-"계속 수정" 선택 시 수정 방향을 추가로 질문합니다:
-
-```
-AskUserQuestion: "어떤 방향으로 수정하길 원하시나요? (선택 또는 직접 입력)"
+질문: "다음 중 하나를 선택하세요"
 options:
-  - "AI 팀에게 맡기기" — 기존 전략으로 재시도
-  - "직접 지시" — 구체적인 수정 방향 입력
+  - label: "계속 수정"
+    description: "핵심 기능이라 반드시 성공해야 할 때. 한 번 더 시도합니다."
+  - label: "건너뛰기"
+    description: "부가 기능이라 나중에 추가할 수 있을 때. 이 Phase를 넘어갑니다."
+  - label: "중단"
+    description: "기획 자체를 재검토해야 할 때. 실행을 종료합니다."
 ```
 
-"직접 지시" 선택 시 CEO의 피드백을 `ceoGuidance`로 전달합니다:
+**"계속 수정" 선택 시 추가 질문:**
 
-```bash
-echo '{"id":"{ID}","decision":"continue","ceoGuidance":"CEO 지침 내용"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js handle-escalation
+```
+질문: "어떤 방향으로 수정하길 원하시나요?"
+options:
+  - label: "AI 팀에게 맡기기"
+    description: "기존 전략으로 재시도"
+  - label: "직접 지시"
+    description: "구체적인 수정 방향 입력"
 ```
 
-"AI 팀에게 맡기기" 선택 시:
+### 2.3 에스컬레이션 결정 적용 (Task tool)
 
-```bash
-echo '{"id":"{ID}","decision":"continue"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js handle-escalation
+CEO 결정을 받은 후, 새 Task tool로 실행을 이어갑니다.
+
+**Task tool 프롬프트 (에스컬레이션 이후):**
+
+```
+프로젝트 ID: {ID}
+CEO 결정: {decision} (continue/skip/abort)
+CEO 지침: {ceoGuidance} ("직접 지시" 선택 시)
+
+다음 작업을 수행하세요:
+
+1. handle-escalation CLI 호출 (decision + ceoGuidance 전달)
+2. decision이 continue인 경우: Phase 실행 루프 재개 (2.1과 동일)
+3. decision이 skip인 경우: 다음 Phase로 진행
+4. decision이 abort인 경우: 즉시 중단 (프로젝트 상태는 executing 유지)
+
+반환 형식: 2.1과 동일 (Phase별 요약)
+
+환경변수: CLAUDE_PLUGIN_ROOT={CLAUDE_PLUGIN_ROOT}
 ```
 
-### 2.3 상태 전이
+### 2.4 다음 Phase 확인 (인터랙티브 모드)
 
-```bash
-echo '{"id":"{ID}","stepResult":{"completedAction":"...","taskResults":[...]}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js advance-execution
+Task tool이 "Phase {N} 완료, 다음 Phase 대기 중"을 반환하면:
+
+**AskUserQuestion:**
+
+```
+질문: "Phase {N}이 완료되었습니다. 다음 Phase를 진행하시겠습니까?"
+options:
+  - label: "진행"
+    description: "다음 Phase 실행"
+  - label: "상태 확인"
+    description: "good-vibe:status로 현재 상태 확인 후 결정"
+  - label: "중단"
+    description: "여기서 멈추고 나중에 재개"
 ```
 
-**stepResult 예시 (action별):**
+"진행" 선택 시: 다음 Phase로 2.1 Task tool 재실행
+"중단" 선택 시: 실행 종료 (프로젝트 상태는 executing 유지, 다음 good-vibe:execute에서 resume)
 
-```json
-// execute-tasks 완료
-{"completedAction": "execute-tasks", "taskResults": [{"taskId": "task-1", "output": "구현 결과..."}]}
+### 2.5 반복
 
-// materialize 완료
-{"completedAction": "materialize"}
-
-// review 완료
-{"completedAction": "review", "reviews": [{"reviewerId": "qa", "verdict": "approve", "issues": []}]}
-
-// quality-gate 통과
-{"completedAction": "quality-gate", "qualityGateResult": {"passed": true, "criticalCount": 0}}
-
-// quality-gate 실패
-{"completedAction": "quality-gate", "qualityGateResult": {"passed": false, "criticalCount": 1, "issues": [{"severity": "critical", "description": "SQL injection 위험"}]}}
-
-// fix 완료
-{"completedAction": "fix", "taskResults": [{"output": "수정 결과..."}]}
-
-// commit 완료
-{"completedAction": "commit"}
-
-// build-context 완료
-{"completedAction": "build-context"}
-
-// 에스컬레이션 결정
-{"completedAction": "escalation-response", "escalationDecision": "continue"}
-```
-
-### 2.4 반복
-
-Step 2.1로 돌아갑니다. action이 `complete`가 될 때까지.
+action이 `complete`가 될 때까지 2.1-2.4를 반복합니다.
 
 ---
 
 ## Step 3: 완료
 
-action이 `complete`이면:
+action이 `complete`이면 완료 처리를 시작합니다.
 
-```bash
-echo '{"id":"{프로젝트ID}","status":"completed"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js update-status
-```
+### 3.1 완료 처리 (Task tool)
 
-### 3.1 CLAUDE.md 업데이트 (해당되는 경우)
-
-프로젝트에 CLAUDE.md가 있으면, 실행 중 내린 기술 결정을 기록합니다:
-
-```bash
-echo '{"claudeMdPath":"{infraPath}/CLAUDE.md","sectionName":"decisions-placeholder","content":"### 기술 결정\n{실행 중 결정된 사항 요약}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js append-claude-md
-```
-
-infraPath가 설정된 프로젝트에서만 실행.
-
-### 3.2 완료 요약 표시
-
-실행 결과를 사용자에게 요약합니다:
+**Task tool 프롬프트:**
 
 ```
-프로젝트가 완료되었습니다!
+프로젝트 ID: {ID}
 
-생성된 파일: {N}개
-{파일 목록}
+다음 작업을 수행하고 완료 요약만 반환하세요:
 
-필요한 환경변수:
-{환경변수 목록 + 발급 방법}
+1. update-status CLI 호출 (status: completed)
+2. infraPath가 있는 경우: append-claude-md CLI 호출 (실행 중 기술 결정 기록)
+3. 실행 결과 요약 생성:
+   - project.json에서 생성된 파일 목록 추출
+   - 필요한 환경변수 추출 (에이전트 출력의 "결과 보고 규격" 섹션)
+   - 실행 방법 추출
+   - 커스터마이징 포인트 추출
+
+**반환 형식 (500자 이내):**
+
+프로젝트 완료!
+
+생성 파일: {N}개
+- {파일 1}
+- {파일 2}
+...
+
+필요 환경변수:
+- {변수명}: {설명 + 발급 방법}
 
 실행 방법:
-1. .env 파일 생성 후 환경변수 입력
+1. .env 설정
 2. npm install
 3. npm start
-4. {프로젝트 타입별 확인 방법}
+4. {확인 방법}
 
 커스터마이징:
-{커스터마이징 포인트 목록}
+- {포인트 1}
+- {포인트 2}
+
+환경변수: CLAUDE_PLUGIN_ROOT={CLAUDE_PLUGIN_ROOT}
 ```
 
-이 정보는 실행 중 에이전트 출력의 "결과 보고 규격" 섹션에서 추출합니다.
+**CEO에게 표시 (Task tool 결과 그대로):**
+
+```
+{Task tool 반환값 전체}
+```
 
 ---
 
@@ -354,26 +329,41 @@ infraPath가 설정된 프로젝트에서만 실행.
 
 ## 서브에이전트 모드 (Phase 단위 실행)
 
-`good-vibe:new`에서 Task tool로 Phase별 호출된 경우, 이 섹션의 절차를 따릅니다.
+`good-vibe:new`에서 Task tool로 Phase별 호출된 경우, Step 2.1의 Task tool 프롬프트를 그대로 따릅니다.
 
 ### 실행 절차
 
-1. `next-step --id {ID}`으로 현재 Phase의 action을 확인합니다.
-2. action별로 Step 2.2의 처리를 따릅니다:
-   - `execute-tasks` → 태스크 병렬 실행
-   - `materialize` → 코드 구체화
-   - `review` → 크로스 리뷰
-   - `quality-gate` → 품질 게이트
-   - `fix` → 수정 (실패 시)
-   - `escalate` → 에스컬레이션 (메인 세션에 판단 위임 필요)
-   - `commit` → Phase 커밋
-   - `build-context` → Phase 컨텍스트 생성
-3. 각 action 완료 후 `advance-execution`으로 상태를 전이합니다.
-4. `build-context` 또는 `confirm-next-phase` action이 나오면 Phase 완료로 판단합니다.
+Task tool 프롬프트 (Step 2.1 참고):
+
+```
+프로젝트 ID: {ID}
+시작 Phase: {startPhase}
+종료 Phase: {endPhase} (또는 에스컬레이션 발생까지)
+
+Phase 실행 루프:
+1. next-step CLI 호출
+2. action별 처리 (execute-tasks, materialize, review, quality-gate, fix, commit, build-context)
+3. advance-execution CLI 호출
+4. complete, confirm-next-phase, 또는 escalate까지 반복
+
+반환 형식: Phase별 요약 (각 300자 이내)
+- 실행 태스크 수
+- 주요 결과물
+- 품질게이트 결과
+- 생성 파일 수
+- 수정 시도 (있는 경우)
+
+에스컬레이션 발생 시: 즉시 에스컬레이션 정보 반환
+confirm-next-phase 발생 시: 현재 Phase 완료 표시 후 반환
+
+제외: 태스크 상세 출력, 리뷰 코멘트 전체, 중간 fix 시도 상세
+
+환경변수: CLAUDE_PLUGIN_ROOT={CLAUDE_PLUGIN_ROOT}
+```
 
 ### 에스컬레이션 처리
 
-`escalate` action이 나오면 서브에이전트에서 직접 처리하지 않고, **메인 세션에 에스컬레이션이 필요하다는 결과를 반환**합니다:
+`escalate` action이 발생하면 Task tool이 즉시 에스컬레이션 정보를 반환합니다:
 
 ```
 에스컬레이션 필요:
@@ -383,17 +373,22 @@ infraPath가 설정된 프로젝트에서만 실행.
 - 시도 횟수: {fixAttempt}/{maxFixAttempts}
 ```
 
-메인 세션에서 CEO에게 판단을 요청한 뒤, 새 Task tool로 해당 Phase를 이어서 실행합니다.
+메인 세션에서 CEO에게 판단을 요청한 뒤, Step 2.3의 Task tool로 실행을 이어갑니다.
 
 ### 반환 형식
 
-Phase 완료 시 다음 내용만 반환합니다:
+**Phase 완료 시:**
 
-- **Phase 요약** (300자 이내) — 실행한 태스크 수, 주요 결과물
-- **품질게이트 결과** — passed/failed, critical/important 이슈 수
-- **생성 파일 수** (코드 태스크인 경우)
+```
+Phase {N} 완료:
+- 실행 태스크: {N}개
+- 주요 결과물: {요약}
+- 품질게이트: {passed/failed}, critical {N}개, important {N}개
+- 생성 파일: {N}개 (코드 태스크인 경우)
+- 수정 시도: {N}회 (있는 경우)
+```
 
-**반환에 포함하지 않을 내용:**
+**제외할 내용:**
 
 - 태스크별 상세 출력 전문
 - 리뷰 코멘트 전체

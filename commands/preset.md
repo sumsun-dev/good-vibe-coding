@@ -48,7 +48,24 @@ options:
 
 ### Step 3: 변경 사항 미리보기
 
-선택한 프리셋과 현재 설정의 차이점을 보여줍니다:
+**Task tool 실행** (Preset Previewer 서브에이전트):
+
+```javascript
+// Task description: "프리셋 변경 사항 미리보기"
+// Subagent task:
+// 1. Load current settings (CLAUDE.md, rules/*)
+// 2. Load selected preset JSON
+// 3. Compute diff (added/changed/removed items)
+// 4. Return formatted preview with:
+//    - Current role/stack
+//    - Changes summary (# of added rules, etc.)
+//    - File paths to be modified
+//
+// CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
+// Return format: Markdown text (max 500 chars)
+```
+
+Task tool returns formatted preview:
 
 ```
 변경 사항 미리보기:
@@ -67,6 +84,8 @@ options:
   ~/.claude/rules/core.md
 ```
 
+메인 세션은 Task tool 결과를 CEO에게 표시만 함.
+
 ### Step 4: 적용 확인
 
 AskUserQuestion 도구로 확인합니다:
@@ -83,9 +102,23 @@ options:
 
 ### Step 5: 프리셋 적용
 
-확인 후 설정 파일을 직접 재생성합니다 (CLAUDE.md, rules 등).
+**Task tool 실행** (Preset Applier 서브에이전트):
 
-완료 메시지:
+```javascript
+// Task description: "프리셋 적용 실행"
+// Subagent task:
+// 1. Backup current settings (CLAUDE.md, rules/*)
+// 2. Load preset JSON
+// 3. Regenerate files (CLAUDE.md, rules/core.md, etc.)
+// 4. Validate file integrity
+// 5. Return success/failure + list of changed files
+//
+// CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
+// Return format: JSON { success: true, appliedPreset: "...", changedFiles: [...] }
+//                or { success: false, error: "..." }
+```
+
+메인 세션은 Task tool 결과를 받아 완료 메시지 표시:
 
 ```
 프리셋이 적용되었습니다!
@@ -101,5 +134,6 @@ good-vibe:my-config로 현재 설정을 확인할 수 있습니다.
 ## 에러 처리
 
 - **프리셋 없음**: "해당 프리셋을 찾을 수 없습니다. `good-vibe:preset`으로 목록을 확인해주세요."
-- **파일 쓰기 실패**: "프리셋 적용에 실패했습니다. 기존 설정은 백업되어 있습니다."
+- **Task tool 실패 (Preview)**: "프리셋 미리보기를 생성할 수 없습니다. 설정 파일을 확인해주세요."
+- **Task tool 실패 (Apply)**: "프리셋 적용에 실패했습니다. 기존 설정은 백업되어 있습니다."
 - **취소**: "프리셋 적용이 취소되었습니다."

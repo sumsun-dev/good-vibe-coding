@@ -29,7 +29,7 @@ AskUserQuestion 옵션으로 타입 목록을 보여주세요 (displayName + des
 
 ## Step 2: 팀 추천
 
-CLI로 추천 팀을 조회하세요:
+CLI로 추천 팀을 조회하세요 (read-only, 메인 세션에서 OK):
 
 ```bash
 node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js recommend-team --type {선택된타입}
@@ -40,7 +40,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js recommend-team --type {선택된타입
 - "추천 팀을 확인하세요. 수정하시겠습니까?"
 - 옵션: "이대로 진행", "팀원 추가", "팀원 변경"
 
-선택 역할 목록도 함께 보여주세요:
+선택 역할 목록도 함께 보여주세요 (read-only, 메인 세션에서 OK):
 
 ```bash
 node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js role-catalog
@@ -53,26 +53,58 @@ team-personalities.json에서 각 역할의 2개 변형을 보여줍니다:
 
 - 변형 이름 + 성격 + 인사말
 
-## Step 4: 프로젝트 생성
+## Step 4: 프로젝트 생성 (Task tool 필수)
 
-팀을 빌드하고 프로젝트를 생성하세요:
+**중요:** 이 단계는 반드시 Task tool(서브에이전트)로 위임하세요.
+메인 세션에서 직접 CLI를 호출하면 안 됩니다.
 
-```bash
-echo '{"roleIds":["cto","backend","qa"],"personalityChoices":{"cto":"visionary"}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js build-team
+Task tool 프롬프트:
+
+```
+당신은 Good Vibe Coding의 프로젝트 생성 실행자입니다.
+CEO가 선택한 정보를 바탕으로 팀을 빌드하고 프로젝트를 생성합니다.
+
+입력:
+- CLAUDE_PLUGIN_ROOT: ${CLAUDE_PLUGIN_ROOT}
+- roleIds: {선택된 역할 배열}
+- personalityChoices: {역할별 페르소나 선택}
+- projectName: {프로젝트명}
+- projectType: {프로젝트 타입}
+- projectDescription: {프로젝트 설명}
+- projectMode: {plan-only/plan-execute}
+
+작업:
+1. build-team 호출:
+   echo '{"roleIds":[역할들],"personalityChoices":{...}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js build-team
+
+2. create-project 호출:
+   echo '{"name":"...","type":"...","description":"...","mode":"..."}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js create-project
+
+3. 프로젝트 ID 추출 후 set-team 호출:
+   echo '{"teamMembers":[팀원들]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js set-team --id {프로젝트ID}
+
+반환 형식 (JSON):
+{
+  "projectId": "abc123",
+  "teamSummary": "팀원 3명: CTO(Aria), Backend(Leo), QA(Zara)",
+  "greeting": "각 팀원의 인사말 모음 (3문장 이내)"
+}
+
+컨텍스트 보호:
+- 팀원 목록만 간단히 요약 (전체 프로필 제외)
+- 인사말은 각 팀원당 1문장으로 제한
 ```
 
-```bash
-echo '{"name":"프로젝트명","type":"타입","description":"설명","mode":"plan-only"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js create-project
-```
+Task tool 반환값을 CEO에게 표시:
 
-생성 후 팀 소개 메시지를 출력하세요:
-
-- 각 팀원의 이모지 + 이름 + 역할 + 인사말
 - "팀이 준비되었습니다!"
+- projectId, teamSummary, greeting 출력
 
-## Step 5: 프로젝트 스캐폴딩 (선택)
+## Step 5: 프로젝트 스캐폴딩 (Task tool 필수)
 
-프로젝트 타입에 맞는 템플릿이 있는지 확인하세요:
+**중요:** 이 단계도 반드시 Task tool(서브에이전트)로 위임하세요.
+
+먼저 템플릿 목록 조회 (read-only, 메인 세션 OK):
 
 ```bash
 node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js list-templates --type {선택된타입}
@@ -83,11 +115,37 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js list-templates --type {선택된타입
 - "프로젝트 템플릿으로 초기 코드를 생성할까요?"
 - 옵션: 사용 가능한 템플릿 목록 (displayName) + "스킵"
 
-사용자가 템플릿을 선택하면 스캐폴딩을 실행합니다:
+사용자가 템플릿을 선택하면 Task tool로 스캐폴딩 실행:
 
-```bash
-echo '{"template":"next-app","targetDir":"./프로젝트명","variables":{"projectName":"프로젝트명","description":"설명"}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js scaffold
+Task tool 프롬프트:
+
 ```
+당신은 Good Vibe Coding의 프로젝트 스캐폴딩 실행자입니다.
+선택된 템플릿으로 초기 프로젝트 구조를 생성합니다.
+
+입력:
+- CLAUDE_PLUGIN_ROOT: ${CLAUDE_PLUGIN_ROOT}
+- template: {선택된 템플릿 ID}
+- targetDir: {프로젝트 디렉토리}
+- variables: {projectName, description 등}
+
+작업:
+echo '{"template":"...","targetDir":"...","variables":{...}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js scaffold
+
+반환 형식 (JSON):
+{
+  "filesCreated": 생성된 파일 수,
+  "summary": "생성된 주요 파일 3개만 나열 (전체 목록 제외)"
+}
+
+컨텍스트 보호:
+- 파일 목록은 주요 파일 3개만 언급 (나머지는 "외 N개" 형태)
+```
+
+Task tool 반환값을 CEO에게 표시:
+
+- "템플릿이 생성되었습니다!"
+- filesCreated, summary 출력
 
 ## Step 6: 토론 안내
 

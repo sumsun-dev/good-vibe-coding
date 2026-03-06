@@ -53,9 +53,54 @@ options:
     description: "Python 백엔드 API 서버"
 ```
 
-## Step 2: GitHub 연동 여부
+## Step 2: 환경 확인 + GitHub 연동
 
-먼저 gh CLI 상태를 확인합니다:
+먼저 환경을 확인합니다:
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js check-environment
+```
+
+**git 미설치 시:**
+
+다음 안내를 보여줍니다:
+
+```
+git이 설치되어 있지 않습니다.
+git은 코드 버전 관리의 기본 도구로, 프로젝트 관리에 필수입니다.
+
+## git 설치 방법
+
+**Windows:**
+  1. https://git-scm.com/download/win 에서 다운로드
+  2. 설치 중 기본 옵션 유지 → 완료
+  3. 터미널을 닫았다가 다시 열기
+
+**macOS:**
+  터미널에서 실행: xcode-select --install
+  (또는 brew install git)
+
+**Linux (Ubuntu/Debian):**
+  sudo apt install git
+
+설치 후 초기 설정:
+  git config --global user.name "내 이름"
+  git config --global user.email "내이메일@example.com"
+```
+
+```
+질문: "git 설치 후 다시 시작하시겠습니까?"
+header: "Git"
+options:
+  - label: "설치하고 올게요"
+    description: "git 설치 후 good-vibe:hello를 다시 실행합니다"
+  - label: "git 없이 진행"
+    description: "파일만 생성합니다. GitHub 연동/버전 관리 불가"
+```
+
+"git 없이 진행" 선택 시 Step 2의 GitHub 질문을 건너뛰고 Step 2.5로 진행합니다.
+
+**git 설치됨 → gh CLI 상태 확인:**
 
 ```bash
 node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js check-gh-status
@@ -79,50 +124,72 @@ options:
 
 **gh 미설치 시:**
 
-```
-GitHub CLI(gh)가 설치되지 않았습니다.
-GitHub 저장소 연결을 원하시면 아래 가이드를 따라 설치하세요:
-
-설치 방법:
-  macOS:   brew install gh
-  Windows: winget install --id GitHub.cli
-  Linux:   https://github.com/cli/cli/blob/trunk/docs/install_linux.md
-
-설치 후 인증:
-  gh auth login
-
-지금은 로컬에서만 프로젝트를 만들고, 나중에 good-vibe:hello를 다시 실행할 수 있습니다.
-```
+다음 안내를 보여줍니다:
 
 ```
-질문: "GitHub 없이 진행할까요?"
+GitHub을 연결하면 코드 백업, 버전 관리, 팀 협업이 가능합니다.
+지금 설치하면 2분이면 됩니다!
+
+## GitHub CLI 설치 방법
+
+**Windows:**
+  1. 터미널에서: winget install --id GitHub.cli
+  2. 또는 https://cli.github.com 에서 다운로드
+
+**macOS:**
+  brew install gh
+
+**Linux (Ubuntu/Debian):**
+  sudo apt install gh
+  (다른 배포판: https://cli.github.com)
+
+## 설치 후 인증 (1분)
+
+  1. 터미널에서 실행: gh auth login
+  2. "GitHub.com" 선택
+  3. "HTTPS" 선택
+  4. "Login with a web browser" 선택
+  5. 표시되는 코드를 복사 → 브라우저에서 붙여넣기 → 승인
+
+완료되면 good-vibe:hello를 다시 실행하세요!
+```
+
+```
+질문: "어떻게 하시겠습니까?"
 header: "GitHub"
 options:
-  - label: "GitHub 없이 진행 (Recommended)"
-    description: "로컬에서만 프로젝트를 만듭니다. 나중에 GitHub 연결 가능"
-  - label: "설치 후 다시 시작"
-    description: "gh를 설치한 뒤 good-vibe:hello를 다시 실행합니다"
+  - label: "GitHub 없이 진행"
+    description: "로컬에서만 프로젝트를 만듭니다. 나중에 연결할 수 있어요"
+  - label: "설치하고 올게요"
+    description: "위 가이드대로 설치 후 good-vibe:hello를 다시 실행합니다"
 ```
 
 **gh 설치됨 + 미인증 시:**
 
-```
-GitHub CLI(gh)가 설치되어 있지만 로그인되지 않았습니다.
-
-인증 방법:
-  gh auth login
-  → GitHub.com 선택 → HTTPS 선택 → 브라우저로 인증
-
-인증 후 good-vibe:hello를 다시 실행하면 GitHub 저장소를 만들 수 있습니다.
-```
+다음 안내를 보여줍니다:
 
 ```
-질문: "GitHub 없이 진행할까요?"
+GitHub CLI가 설치되어 있지만 아직 로그인이 안 되어 있습니다.
+인증은 1분이면 완료됩니다!
+
+## 인증 방법
+
+  1. 터미널에서 실행: gh auth login
+  2. "GitHub.com" 선택
+  3. "HTTPS" 선택
+  4. "Login with a web browser" 선택
+  5. 표시되는 코드를 복사 → 브라우저에서 붙여넣기 → 승인
+
+완료되면 good-vibe:hello를 다시 실행하세요!
+```
+
+```
+질문: "어떻게 하시겠습니까?"
 header: "GitHub"
 options:
-  - label: "GitHub 없이 진행 (Recommended)"
-    description: "로컬에서만 프로젝트를 만듭니다. 나중에 GitHub 연결 가능"
-  - label: "인증 후 다시 시작"
+  - label: "GitHub 없이 진행"
+    description: "로컬에서만 프로젝트를 만듭니다. 나중에 연결할 수 있어요"
+  - label: "인증하고 올게요"
     description: "gh auth login 실행 후 good-vibe:hello를 다시 실행합니다"
 ```
 
@@ -135,19 +202,66 @@ options:
 node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js check-gemini-status
 ```
 
-**미설치 시 안내:**
+**설치 + 인증 완료 시:**
 
 ```
-Gemini CLI를 설치하면 good-vibe:execute에서 크로스 모델 리뷰를 사용할 수 있습니다.
-   (Claude + Gemini가 각각 리뷰하여 더 높은 품질 보장)
-
-설치 방법:
-  npm install -g @google/gemini-cli
-
-필수는 아닙니다 — Claude만으로도 충분히 리뷰가 진행됩니다.
+Gemini CLI가 연결되어 있습니다!
+good-vibe:execute에서 Claude + Gemini 크로스 모델 리뷰가 자동 활성화됩니다.
 ```
 
-이 단계는 안내만 하고 설치를 강제하지 않습니다. 프로젝트 생성은 그대로 진행합니다.
+이 경우 질문 없이 다음 단계로 진행합니다.
+
+**미설치 시:**
+
+다음 안내를 보여줍니다:
+
+```
+Gemini CLI를 설치하면 코드 리뷰 품질이 크게 향상됩니다!
+Claude와 Gemini가 각각 독립적으로 리뷰하여 더 많은 이슈를 발견합니다.
+
+## 설치 방법 (1분)
+
+  1. 터미널에서 실행: npm install -g @google/gemini-cli
+  2. 인증: gemini (처음 실행 시 브라우저로 Google 로그인)
+
+필수는 아닙니다 — Claude만으로도 리뷰가 잘 진행됩니다.
+```
+
+```
+질문: "Gemini 크로스 모델 리뷰를 사용하시겠습니까?"
+header: "Gemini"
+options:
+  - label: "나중에 설치할게요 (Recommended)"
+    description: "Claude만으로 리뷰합니다. 언제든 설치 후 자동 활성화"
+  - label: "설치하고 올게요"
+    description: "위 가이드대로 설치 후 good-vibe:hello를 다시 실행합니다"
+```
+
+**설치됨 + 미인증 시:**
+
+다음 안내를 보여줍니다:
+
+```
+Gemini CLI가 설치되어 있지만 아직 인증이 안 되어 있습니다.
+
+## 인증 방법
+
+  1. 터미널에서 실행: gemini
+  2. 브라우저가 열리면 Google 계정으로 로그인
+  3. 승인 후 터미널로 돌아옵니다
+
+완료되면 good-vibe:hello를 다시 실행하세요!
+```
+
+```
+질문: "어떻게 하시겠습니까?"
+header: "Gemini"
+options:
+  - label: "나중에 할게요"
+    description: "Claude만으로 리뷰합니다. 언제든 인증 후 자동 활성화"
+  - label: "인증하고 올게요"
+    description: "gemini 실행 후 good-vibe:hello를 다시 실행합니다"
+```
 
 ## Step 3: 프로젝트 인프라 생성
 

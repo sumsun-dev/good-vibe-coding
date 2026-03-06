@@ -48,33 +48,60 @@ AskUserQuestion:
 
 > **되돌리기:** 승인 후에도 실행 전이라면 `good-vibe:discuss --reset`으로 planning 상태로 되돌려 재토론할 수 있습니다.
 
-## Step 3: 승인 처리
+## Step 3: 작업 분배 (Task tool)
 
-승인 시:
+승인 시, **모든 작업을 하나의 Task tool로 위임**합니다:
 
-```bash
-echo '{"id":"{프로젝트ID}","status":"approved"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js update-status
 ```
+Task tool 프롬프트:
+---
+당신은 Good Vibe 프로젝트의 작업 분배 담당자입니다.
 
-## Step 4: 작업 분배
+**컨텍스트:**
+- CLAUDE_PLUGIN_ROOT: ${CLAUDE_PLUGIN_ROOT}
+- 프로젝트 ID: {프로젝트ID}
 
-작업 분배 프롬프트를 생성하고 실행하세요:
+**수행 작업:**
+1. 상태를 approved로 업데이트:
+   echo '{"id":"{프로젝트ID}","status":"approved"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js update-status
 
-```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js task-distribution-prompt --id {프로젝트ID}
-```
+2. 작업 분배 프롬프트 생성:
+   node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js task-distribution-prompt --id {프로젝트ID}
 
-생성된 프롬프트를 실행하여 작업 목록을 만드세요.
-작업 목록을 프로젝트에 저장하세요.
+3. 생성된 프롬프트를 실행하여 작업 목록 생성
 
-## Step 5: 결과 표시
+4. 작업 목록을 프로젝트에 저장:
+   echo '{"id":"{프로젝트ID}","tasks":[...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js save-tasks
 
-작업 분배 결과를 표 형태로 보여주세요:
+**반환 형식 (필수):**
+반드시 다음 형식의 마크다운 테이블로 반환하세요 (최대 2000자):
 
 | 작업 | 담당 | Phase | 의존성 |
 | ---- | ---- | ----- | ------ |
+| ... | ... | ... | ... |
 
-## Step 6: 다음 단계
+테이블 위에 한 줄 요약을 포함하세요:
+"총 N개 작업이 M명의 팀원에게 분배되었습니다."
+
+**목적:**
+CEO가 승인한 기획서를 실행 가능한 작업 단위로 분배하여 프로젝트를 approved 상태로 전환합니다.
+---
+```
+
+Task tool 실행 결과를 CEO에게 그대로 표시합니다.
+
+## Step 4: 수정 요청 / 재토론
+
+사용자가 "수정 요청"을 선택한 경우:
+
+- AskUserQuestion으로 수정 내용을 입력받아 discussion.feedback에 저장
+- `good-vibe:discuss --continue`를 안내 (다음 라운드에서 피드백 반영)
+
+사용자가 "재토론"을 선택한 경우:
+
+- `good-vibe:discuss --reset`을 안내 (discussion 초기화 후 재시작)
+
+## Step 5: 다음 단계
 
 프로젝트 모드에 따라 안내:
 

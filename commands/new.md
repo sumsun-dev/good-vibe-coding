@@ -292,27 +292,42 @@ CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 
 토론/승인 없이 CTO 분석 → 바로 실행 → QA 리뷰.
 
-#### A-1. CTO 아키텍처 분석
+#### A-1. CTO 아키텍처 분석 (Task tool)
 
-CTO 에이전트에게 프로젝트 분석을 요청합니다 (Task tool 1회):
+> **Thin Controller:** CTO 분석 전체(프롬프트 생성 + LLM 실행 + 재분석 루프)를 하나의 Task로 격리합니다.
+> 메인 세션은 결과 표시와 CEO 피드백 수집만 담당합니다.
 
-```bash
-echo '{"project": {...}, "teamMember": {CTO팀원}, "context": {"round": 1}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js agent-analysis-prompt
-```
+**변수 초기화:**
 
-생성된 프롬프트로 Task tool 호출 → CTO의 아키텍처 분석 결과를 받습니다.
+- `ceoFeedback = null`
 
-**CTO 분석 결과를 시각적으로 확인 (Ralph Loop):**
+##### A-1a. CTO 분석 실행 (Task tool)
 
-CTO에게 분석 프롬프트 전달 시, 아키텍처를 **Mermaid 다이어그램**으로 포함하도록 지시합니다.
-Task tool 프롬프트에 다음을 추가:
+Task tool 프롬프트:
 
 ```
-분석 결과에 반드시 Mermaid 아키텍처 다이어그램을 포함하세요.
-UI 프로젝트인 경우 화면 구조(Mermaid flowchart + ASCII 와이어프레임)도 포함하세요.
+프로젝트 ID: {ID}의 CTO 아키텍처 분석을 실행하세요.
+
+1. CTO 분석 프롬프트 생성:
+   echo '{"project": {...}, "teamMember": {CTO팀원}, "context": {"round": 1}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js agent-analysis-prompt
+
+2. {ceoFeedback이 있으면: "context.ceoFeedback에 다음을 추가하세요: {ceoFeedback}"}
+
+3. 생성된 프롬프트를 LLM으로 실행:
+   - 분석 결과에 반드시 Mermaid 아키텍처 다이어그램을 포함
+   - UI 프로젝트인 경우 화면 구조(Mermaid flowchart + ASCII 와이어프레임)도 포함
+
+반환 (JSON):
+- diagram: Mermaid 다이어그램 코드
+- uiStructure: 화면 구조 (있는 경우)
+- summary: 기술 스택 + 주요 컴포넌트 + 예상 작업 수 요약 (300자 이내)
+
+CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
 
-분석 결과에서 다이어그램과 핵심 요약을 추출하여 CEO에게 표시합니다:
+##### A-1b. CEO 시각적 확인 (메인 세션)
+
+서브에이전트가 반환한 결과를 CEO에게 표시:
 
 ```
 CTO가 아키텍처를 분석했습니다:
@@ -331,8 +346,11 @@ AskUserQuestion:
     - "모드 변경" — plan-execute 또는 plan-only 모드로 전환
 ```
 
-"수정 요청" 선택 시 CEO의 피드백을 받아 `context.ceoFeedback`에 포함하고 A-1을 다시 실행합니다.
-"모드 변경" 선택 시 Step 3의 모드 선택으로 돌아갑니다.
+##### A-1c. 재분석 루프
+
+- **"수정 요청"** → CEO 피드백을 `ceoFeedback`에 저장하고 **A-1a로 돌아가** Task tool을 다시 호출합니다 (ceoFeedback 포함).
+- **"모드 변경"** → Step 3의 모드 선택으로 돌아갑니다.
+- **"이대로 진행"** → A-2로 진행합니다.
 
 #### A-2. 작업 분배 + 실행 초기화 (Task tool)
 

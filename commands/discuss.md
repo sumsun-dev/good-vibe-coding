@@ -39,80 +39,87 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js list-projects
 
 프로젝트가 여러 개면 AskUserQuestion으로 선택하게 하세요.
 
-## Step 2: 토론 프롬프트 생성
+## Step 2-5: 토론 라운드 실행 (Task tool)
 
-```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js discussion-prompt --id {프로젝트ID} --round 1
+**Thin Controller 원칙:** 토론 프롬프트 생성, Tier 분류, 에이전트 디스패치, 결과 종합을 하나의 Task tool로 실행합니다.
+
+Task tool에 다음 작업을 위임:
+
+1. 토론 프롬프트 생성 (`discussion-prompt`)
+2. 에이전트 Tier 분류 (`group-agents`)
+3. Tier별 순차 실행:
+   - Tier 1 (priority 1-2): CTO, PO, Researchers — 전략/요구사항
+   - Tier 2 (priority 3-4): Fullstack, UI/UX, Frontend, Backend — 구현
+   - Tier 3 (priority 5-7): QA, Security, DevOps, Data, Researchers — 검증
+   - Tier 4 (priority 8+): Tech Writer — 문서화
+4. 각 Tier 내 에이전트 병렬 디스패치 (`agent-analysis-prompt`)
+5. 결과 종합 (`synthesis-prompt`)
+
+### Task tool 프롬프트 (서브에이전트용)
+
+```markdown
+당신은 Good Vibe Coding의 토론 오케스트레이터입니다.
+
+**환경:**
+
+- CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
+
+**작업:**
+
+1. 프로젝트 {프로젝트ID}의 라운드 {N} 토론을 실행합니다
+2. 에이전트를 Tier별로 분류하고, 순차적으로 디스패치합니다
+3. 각 Tier 결과를 다음 Tier의 context.priorTierOutputs에 전달합니다
+4. 모든 분석 결과를 종합하여 기획서를 생성합니다
+
+**반환 형식:**
+{
+"synthesizedPlan": "...", // 통합 기획서 (Mermaid 다이어그램 포함)
+"agentOutputs": [...], // 전체 에이전트 분석 결과
+"round": N
+}
+
+**반환 크기 제한:** 기획서는 5000자 이내, 에이전트 출력은 각 1000자 이내로 요약
+
+**사용할 CLI:**
+
+- discussion-prompt: 토론 프롬프트 생성
+- group-agents: Tier 분류
+- agent-analysis-prompt: 개별 에이전트 프롬프트 생성
+- synthesis-prompt: 종합 기획서 생성
+
+**진행률 표시:**
+
+- Tier 시작/완료 시: {formatDiscussionProgress(...)}
+- 에이전트 실행 시: {emoji} {이름}이(가) 분석 중...
 ```
 
-## Step 3: 에이전트 tier 분류
+### CEO 피드백 반영 시
 
-팀원을 priority tier별로 그룹화합니다:
+Ralph Loop로 CEO 피드백을 받은 경우, Task tool 프롬프트에 추가:
 
-```bash
-echo '{"team": [프로젝트팀]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js group-agents
+```markdown
+**CEO 피드백:**
+{ceoFeedback}
+
+이 피드백을 관련 역할의 agent-analysis-prompt에 context.ceoFeedback으로 주입하세요.
 ```
 
-- Tier 1 (priority 1-2): CTO, PO, Researchers — 전략/요구사항 먼저
-- Tier 2 (priority 3-4): Fullstack, UI/UX, Frontend, Backend — 구현 관점
-- Tier 3 (priority 5-7): QA, Security, DevOps, Data, Tech/Design Researcher — 검증/리서치
-- Tier 4 (priority 8+): Tech Writer — 부가 분석
+### Task tool 결과 표시
 
-## Step 4: Tier별 병렬 에이전트 디스패치
+메인 세션은 Task tool 반환값에서 다음만 표시:
 
-각 tier를 순서대로, tier 내 에이전트를 **Task tool로 병렬 디스패치**합니다.
+- 기획서 핵심 요약 (500자)
+- Mermaid 아키텍처 다이어그램
+- 화면 구조 (UI 프로젝트)
+- 진행률 요약
 
-각 에이전트에게 전달할 프롬프트:
+## Step 6: CEO 시각적 확인 (Ralph Loop)
 
-```bash
-echo '{"project": {...}, "teamMember": {...}, "context": {"round": 1}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js agent-analysis-prompt
-```
-
-**진행률 표시:** 각 Tier 시작/완료 시 progress-formatter를 활용하여 진행률을 표시합니다.
-
-```
-{formatDiscussionProgress(round, maxRounds, currentTier, totalTiers, tierAgents)}
-```
-
-1. **Tier 1** 에이전트를 각각 Task tool로 병렬 디스패치
-   - `{formatTierProgress('전략/요구사항', completedAgents, totalAgents)}`
-2. Tier 1 결과 수집
-3. **Tier 2** 에이전트 디스패치 (Tier 1 결과를 context.priorTierOutputs에 포함)
-   - `{formatTierProgress('구현', completedAgents, totalAgents)}`
-4. **Tier 3-4** 에이전트 디스패치 (Tier 1+2 결과 포함)
-   - `{formatTierProgress('검증', completedAgents, totalAgents)}`
-
-각 에이전트 호출 시:
-
-```
-{emoji} {이름}이(가) 프로젝트를 분석 중입니다...
-```
-
-## Step 5: 결과 종합 (Synthesis)
-
-모든 에이전트 분석 결과를 종합합니다:
-
-```bash
-echo '{"project": {...}, "agentOutputs": [...], "round": 1}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js synthesis-prompt
-```
-
-CEO 피드백이 있는 경우 (Ralph Loop 재분석 시), `context.ceoFeedback`을 함께 전달합니다:
-
-```bash
-echo '{"project": {...}, "agentOutputs": [...], "round": 1, "ceoFeedback": "CEO 피드백 내용"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js synthesis-prompt
-```
-
-생성된 프롬프트를 실행하여 통합 기획서를 작성하세요.
-기획서에는 **Mermaid 아키텍처 다이어그램**과 **화면 구조** (UI 프로젝트인 경우)가 반드시 포함됩니다.
-
-## Step 5.5: CEO 시각적 확인 (Ralph Loop)
-
-종합 기획서가 생성되면, CEO에게 핵심 산출물을 시각적으로 보여주고 피드백을 수집합니다.
-CEO가 승인할 때까지 이 단계를 반복합니다.
+**메인 세션 역할:** Step 2-5의 Task tool 결과를 CEO에게 표시하고, 피드백을 수집합니다.
 
 ### 표시 내용
 
-기획서에서 다음을 추출하여 CEO에게 보여줍니다:
+Task tool 반환값에서 다음을 추출하여 보여줍니다:
 
 1. **아키텍처 다이어그램** (Mermaid)
    - 시스템 구성도, 모듈 간 관계, 데이터 흐름
@@ -135,82 +142,106 @@ AskUserQuestion:
   질문: "기획서를 확인해주세요. 이대로 진행할까요?"
   header: "기획 확인"
   options:
-    - "이대로 진행 (Recommended)" — 리뷰 단계(Step 6)로 넘어갑니다
+    - "이대로 진행 (Recommended)" — 리뷰 단계(Step 7)로 넘어갑니다
     - "수정 요청" — 구체적 피드백을 주시면 반영합니다
     - "처음부터 다시" — 새로운 방향으로 재분석합니다
 ```
 
 #### "이대로 진행" 선택 시
 
-Step 6(리뷰)으로 넘어갑니다.
+Step 7(리뷰)로 넘어갑니다.
 
 #### "수정 요청" 선택 시
 
 CEO에게 수정 사항을 자유 입력받습니다.
 
-입력받은 피드백을 `ceoFeedback`으로 저장하고:
-
-1. CEO 피드백을 에이전트 분석 프롬프트에 주입 (`context.ceoFeedback`으로 전달, 기존 `feedbackForMe`와 동일 방식)
-2. Tier별 재분석 실행 (Step 4로 돌아감, CEO 피드백이 관련된 역할에 타겟 주입)
-3. 재종합 (Step 5 Synthesis)
-4. 다시 CEO에게 시각적 확인 표시 (이 Step 5.5로 복귀)
+입력받은 피드백을 `ceoFeedback`으로 저장하고, Step 2-5 Task tool을 다시 호출합니다 (피드백 포함).
 
 이 루프는 CEO가 "이대로 진행"을 선택할 때까지 반복합니다.
 라운드 수 제한은 없습니다 (CEO 주도 종료).
 
 #### "처음부터 다시" 선택 시
 
-CEO에게 새로운 방향을 입력받고, Step 4 (Tier별 분석)부터 다시 실행합니다.
-이전 기획서와 ceoFeedback은 초기화됩니다.
+CEO에게 새로운 방향을 입력받고, Step 2-5 Task tool을 다시 호출합니다 (ceoFeedback 초기화).
 
 ### 기존 "CEO 결정 필요 사항" 처리
 
 기획서에 "CEO 결정 필요 사항" 섹션이 있으면, 위 CEO 확인 시 함께 표시합니다.
 각 결정 사항에 대한 선택지를 추가로 제시하세요.
 
-## Step 6: 리뷰 (전체 에이전트 병렬)
+## Step 7-8: 리뷰 + 수렴 확인 (Task tool)
 
-종합 기획서를 전체 에이전트가 리뷰합니다 (Task tool 병렬):
+**Thin Controller 원칙:** 전체 에이전트 리뷰와 수렴 확인을 하나의 Task tool로 실행합니다.
 
-```bash
-echo '{"teamMember": {...}, "synthesizedPlan": "...", "round": 1}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js review-prompt
+Task tool에 다음 작업을 위임:
+
+1. 전체 에이전트 병렬 리뷰 (`review-prompt`)
+2. 수렴 확인 (`check-convergence`)
+3. 이전 라운드 추이 분석 (previousRounds 전달)
+
+### Task tool 프롬프트 (서브에이전트용)
+
+```markdown
+당신은 Good Vibe Coding의 리뷰 + 수렴 체커입니다.
+
+**환경:**
+
+- CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
+
+**작업:**
+
+1. 전체 팀원이 기획서를 리뷰합니다 (병렬)
+2. 리뷰 결과를 분석하여 수렴 여부를 판단합니다
+3. 이전 라운드 정보가 있으면 진화 추이를 계산합니다
+
+**반환 형식:**
+{
+"converged": true/false,
+"approvalRate": 0.85,
+"blockers": [...], // critical 이슈만
+"reviews": [...], // verdict만 포함
+"evolution": { // previousRounds가 있을 때만
+"trend": "improving",
+"resolvedBlockers": [...],
+"newBlockers": [...]
+}
+}
+
+**반환 크기 제한:** 전체 2000자 이내, 리뷰는 각 300자 이내
+
+**사용할 CLI:**
+
+- review-prompt: 개별 리뷰 프롬프트 생성
+- check-convergence: 수렴 판정
 ```
 
-## Step 7: 수렴 확인
+### Task tool 결과 표시
 
-이전 라운드 정보가 있으면 `previousRounds`를 함께 전달하여 진화 추이를 확인합니다:
-
-```bash
-echo '{"reviews": [...], "previousRounds": [{"approvalRate": 0.6, "blockers": ["이슈A"]}]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js check-convergence
-```
-
-`previousRounds`가 없으면 기존처럼 동작합니다:
-
-```bash
-echo '{"reviews": [...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js check-convergence
-```
-
-**진화 추이 표시** (`evolution` 필드가 있을 때):
+메인 세션은 Task tool 반환값을 다음 형식으로 표시:
 
 ```
 📊 라운드 {N} 수렴 상태
 
+승인율: {approvalRate}% {progressBar}
+
+{evolution 있으면:}
 승인율 추이:
   Round 1: 60% ████████░░░░
   Round 2: 75% ██████████░░
   Round 3: 85% ███████████░
 
-개선 속도: +10% ({trend})
+개선 속도: {trend}
 
 블로커 변화:
   ✅ 해결: {resolvedBlockers}
   ⚠️ 신규: {newBlockers}
 ```
 
-- **수렴 (80% 이상 승인)** → Step 8로 진행
-- **미수렴** → Round 2로 (Step 4로 돌아감, 각 에이전트에게 이전 기획서 + 피드백 전달)
-  - 다음 라운드의 `previousRounds`에 현재 라운드 `{ approvalRate, blockers }`를 추가
-- **최대 3라운드**: 3라운드까지 미수렴 시 AskUserQuestion으로 선택지를 제시합니다:
+### 수렴/미수렴 처리
+
+- **수렴 (80% 이상)** → Step 9로 진행
+- **미수렴** → Step 2-5로 돌아가서 다음 라운드 실행 (feedbackForMe 주입)
+- **최대 3라운드 미수렴** → AskUserQuestion:
 
 ```
 3라운드 후에도 미수렴 (승인율 {N}%). 어떻게 할까요?
@@ -225,9 +256,9 @@ AskUserQuestion:
     - "중단" — 토론 종료, 기획서 미확정
 ```
 
-수렴 상태 표시: `{formatConvergenceStatus(approvalRate, threshold, blockers)}`
+## Step 9: 기획서 저장 + CLAUDE.md 업데이트
 
-## Step 8: 기획서 저장
+**메인 세션 역할:** 단순 CLI 호출 (상태 업데이트만)
 
 기획서를 project.json에 저장하세요:
 
@@ -235,9 +266,9 @@ AskUserQuestion:
 echo '{"id":"{프로젝트ID}","status":"planning"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js update-status
 ```
 
-## Step 8.5: CLAUDE.md 업데이트 (프로젝트에 CLAUDE.md가 있는 경우)
+### CLAUDE.md 업데이트 (infraPath가 있는 경우)
 
-프로젝트의 infraPath가 있으면, 기획서의 아키텍처 섹션을 CLAUDE.md에 추가합니다:
+프로젝트에 infraPath가 설정되어 있으면 (`good-vibe:hello`로 생성된 경우), 기획서의 아키텍처 섹션을 CLAUDE.md에 추가합니다:
 
 ```bash
 echo '{"claudeMdPath":"{infraPath}/CLAUDE.md","sectionName":"architecture-placeholder","content":"### 아키텍처\n{기획서에서 추출한 아키텍처 요약}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js append-claude-md
@@ -249,9 +280,9 @@ echo '{"claudeMdPath":"{infraPath}/CLAUDE.md","sectionName":"architecture-placeh
 - 주요 컴포넌트/모듈 구조
 - 데이터 플로우
 
-이 단계는 프로젝트에 infraPath가 설정되어 있을 때만 실행합니다 (`good-vibe:hello`를 통해 생성된 경우).
+## Step 10: 다음 단계 안내
 
-## Step 9: 다음 단계 안내
+**메인 세션 역할:** CEO에게 모드별 안내 표시
 
 프로젝트 모드에 따라 차등 안내합니다:
 
@@ -279,7 +310,7 @@ echo '{"claudeMdPath":"{infraPath}/CLAUDE.md","sectionName":"architecture-placeh
 
 ## 서브에이전트 모드 (good-vibe:new에서 호출 시)
 
-`good-vibe:new`에서 Task tool로 호출된 경우, 위 Step 1-9를 동일하게 실행하되 **최종 반환 형식**을 제한합니다.
+`good-vibe:new`에서 Task tool로 호출된 경우, 위 Step 1-10을 동일하게 실행하되 **최종 반환 형식**을 제한합니다.
 
 ### 반환에 포함할 내용
 
@@ -297,3 +328,38 @@ echo '{"claudeMdPath":"{infraPath}/CLAUDE.md","sectionName":"architecture-placeh
 - Tier별 진행률 상세
 
 > **이유:** 메인 세션의 컨텍스트를 보호하기 위함. 상세 내용은 project.json에 저장되어 있으므로 `good-vibe:status`나 `good-vibe:report`로 조회 가능.
+
+---
+
+## 워크플로우 요약 (Thin Controller 준수)
+
+```
+Step 1: 프로젝트 로드 (메인 세션 — 단순 조회 CLI)
+  ↓
+Step 2-5: 토론 라운드 실행 (Task tool — 프롬프트 생성 + Tier 분류 + 디스패치 + 종합)
+  ↓
+Step 6: CEO 시각적 확인 (메인 세션 — Task 결과 표시 + AskUserQuestion)
+  ↓ (수정 요청 시 Step 2-5로 돌아가서 ceoFeedback 주입)
+  ↓ (이대로 진행 선택 시)
+Step 7-8: 리뷰 + 수렴 확인 (Task tool — 병렬 리뷰 + check-convergence + 진화 추이)
+  ↓
+  ↓ (미수렴 시 Step 2-5로, feedbackForMe 주입)
+  ↓ (수렴 시)
+Step 9: 기획서 저장 (메인 세션 — 단순 상태 업데이트 CLI)
+  ↓
+Step 10: 다음 단계 안내 (메인 세션 — 모드별 안내 표시)
+```
+
+**메인 세션 역할:**
+
+- 프로젝트 조회 (list-projects)
+- Task tool 결과 표시
+- CEO 질문/피드백 수집 (AskUserQuestion)
+- 상태 업데이트 (update-status)
+- 다음 단계 안내
+
+**Task tool 역할:**
+
+- 토론 프롬프트 생성 + Tier 분류 + 에이전트 디스패치 + 종합
+- 전체 리뷰 + 수렴 확인 + 진화 추이 분석
+- 모든 LLM 호출과 멀티-CLI 체인
