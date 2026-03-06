@@ -7,6 +7,16 @@ import { parseJsonObject } from '../core/json-parser.js';
 import { config } from '../core/config.js';
 import { inputError } from '../core/validators.js';
 
+/**
+ * 프롬프트 섹션 텍스트를 maxPromptSectionLength 이내로 잘라낸다.
+ * @param {string} text - 원본 텍스트
+ * @returns {string} 잘려진 텍스트
+ */
+function truncateSection(text) {
+  const maxLen = config.llm.maxPromptSectionLength;
+  return text.length > maxLen ? text.slice(0, maxLen) + '\n...(truncated)' : text;
+}
+
 /** 역할 카테고리별 맞춤 분석 항목 */
 const ROLE_SPECIFIC_QUESTIONS = {
   leadership: [
@@ -87,12 +97,7 @@ ${project.codebaseInfo ? `\n## 코드베이스 정보\n- 기술 스택: ${(proje
 ${buildRoleQuestions(teamMember)}`;
 
   if (context.previousSynthesis) {
-    const maxLen = config.llm.maxPromptSectionLength;
-    const truncated =
-      context.previousSynthesis.length > maxLen
-        ? context.previousSynthesis.slice(0, maxLen) + '\n...(truncated)'
-        : context.previousSynthesis;
-    prompt += `\n\n## 이전 라운드 기획서\n다음은 이전 라운드에서 종합된 기획서입니다. 이를 기반으로 수정/보완 의견을 제시하세요.\n\n${truncated}`;
+    prompt += `\n\n## 이전 라운드 기획서\n다음은 이전 라운드에서 종합된 기획서입니다. 이를 기반으로 수정/보완 의견을 제시하세요.\n\n${truncateSection(context.previousSynthesis)}`;
   }
 
   if (context.feedbackForMe) {
@@ -100,12 +105,7 @@ ${buildRoleQuestions(teamMember)}`;
   }
 
   if (context.ceoFeedback) {
-    const maxLen = config.llm.maxPromptSectionLength;
-    const truncatedFeedback =
-      context.ceoFeedback.length > maxLen
-        ? context.ceoFeedback.slice(0, maxLen) + '\n...(truncated)'
-        : context.ceoFeedback;
-    prompt += `\n\n## CEO 피드백 (최우선)\nCEO가 다음과 같은 피드백을 주었습니다. 이 피드백을 최우선으로 반영하세요:\n\n${truncatedFeedback}`;
+    prompt += `\n\n## CEO 피드백 (최우선)\nCEO가 다음과 같은 피드백을 주었습니다. 이 피드백을 최우선으로 반영하세요:\n\n${truncateSection(context.ceoFeedback)}`;
   }
 
   prompt += `\n\n## 요구사항 명확화 (중요)
@@ -208,14 +208,7 @@ graph TD
 ### 미합의 사항 (있는 경우)
 ### CEO 결정 필요 사항 (있는 경우)` +
     (context.ceoFeedback
-      ? (() => {
-          const maxLen = config.llm.maxPromptSectionLength;
-          const truncated =
-            context.ceoFeedback.length > maxLen
-              ? context.ceoFeedback.slice(0, maxLen) + '\n...(truncated)'
-              : context.ceoFeedback;
-          return `\n\n## CEO 피드백\n이전 기획서에 대한 CEO의 피드백입니다. 반드시 반영하세요:\n\n${truncated}`;
-        })()
+      ? `\n\n## CEO 피드백\n이전 기획서에 대한 CEO의 피드백입니다. 반드시 반영하세요:\n\n${truncateSection(context.ceoFeedback)}`
       : '')
   );
 }
