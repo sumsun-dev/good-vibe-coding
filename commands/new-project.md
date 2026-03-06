@@ -27,24 +27,31 @@ AskUserQuestion 옵션으로 타입 목록을 보여주세요 (displayName + des
    - "기획만 (plan-only)" — 팀이 토론하고 기획서만 생성
    - "기획+실행 (plan-execute)" — 기획 후 실제 코드 작성까지
 
-## Step 2: 팀 추천
+## Step 2: 팀 추천 (Task tool)
 
-CLI로 추천 팀을 조회하세요 (read-only, 메인 세션에서 OK):
+> **Thin Controller:** 팀 추천 + 역할 카탈로그 조회를 하나의 Task tool로 묶습니다.
 
-```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js recommend-team --type {선택된타입}
+Task tool 프롬프트:
+
+```
+프로젝트 타입에 맞는 팀을 추천하고 역할 카탈로그를 조회하세요.
+
+1. node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js recommend-team --type {선택된타입}
+2. node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js role-catalog
+
+반환 (JSON):
+- recommendedTeam: 추천 팀원 요약 (이모지 + displayName + description, 각 1줄)
+- allRoles: 전체 역할 목록 (이모지 + displayName + description, 각 1줄)
+
+CLAUDE_PLUGIN_ROOT: ${CLAUDE_PLUGIN_ROOT}
 ```
 
-추천 팀원을 이모지와 함께 보여주고, AskUserQuestion으로 확인:
+결과를 CEO에게 표시하고 AskUserQuestion으로 확인:
 
 - "추천 팀을 확인하세요. 수정하시겠습니까?"
 - 옵션: "이대로 진행", "팀원 추가", "팀원 변경"
 
-선택 역할 목록도 함께 보여주세요 (read-only, 메인 세션에서 OK):
-
-```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js role-catalog
-```
+"팀원 추가/변경" 선택 시 allRoles에서 선택하게 합니다.
 
 ## Step 3: 팀원 스타일 선택
 
