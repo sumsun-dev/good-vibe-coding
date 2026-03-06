@@ -292,18 +292,29 @@ save_checkpoint() {
   local phase="$2"
   local status="$3"
   local extra="${4:-}"
+  local ts
+  ts="$(date -Iseconds 2>/dev/null || date '+%Y-%m-%dT%H:%M:%S')"
+  local pr
+  pr="$(read_file_or_default "${RUN_DIR}/pr-number" "")"
 
-  jq -nc \
-    --argjson round "$round" \
-    --arg phase "$phase" \
-    --arg status "$status" \
-    --arg timestamp "$(date -Iseconds 2>/dev/null || date '+%Y-%m-%dT%H:%M:%S')" \
-    --arg extra "$extra" \
-    --arg prNumber "$(read_file_or_default "${RUN_DIR}/pr-number" "")" \
-    --arg branchName "${BRANCH_NAME:-}" \
-    '{round: $round, phase: $phase, status: $status, timestamp: $timestamp,
-      extra: $extra, prNumber: $prNumber, branchName: $branchName}' \
-    > "$CHECKPOINT_FILE"
+  if command -v jq &>/dev/null; then
+    jq -nc \
+      --argjson round "$round" \
+      --arg phase "$phase" \
+      --arg status "$status" \
+      --arg timestamp "$ts" \
+      --arg extra "$extra" \
+      --arg prNumber "$pr" \
+      --arg branchName "${BRANCH_NAME:-}" \
+      '{round: $round, phase: $phase, status: $status, timestamp: $timestamp,
+        extra: $extra, prNumber: $prNumber, branchName: $branchName}' \
+      > "$CHECKPOINT_FILE"
+  else
+    # jq 미설치 시 printf fallback
+    printf '{"round":%d,"phase":"%s","status":"%s","timestamp":"%s","extra":"%s","prNumber":"%s","branchName":"%s"}\n' \
+      "$round" "$phase" "$status" "$ts" "$extra" "$pr" "${BRANCH_NAME:-}" \
+      > "$CHECKPOINT_FILE"
+  fi
 }
 
 read_checkpoint() {
