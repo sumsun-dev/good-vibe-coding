@@ -6,3 +6,4 @@ node_modules/
 *.pem
 *.key
 logs/
+config.local.env

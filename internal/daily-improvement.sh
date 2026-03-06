@@ -38,6 +38,8 @@ export SCRIPT_DIR PROJECT_ROOT IMPROVEMENT_DIR LOG_DIR LOG_FILE
 
 # ── 설정 로드 ──────────────────────────────────────────────
 source "$IMPROVEMENT_DIR/config.env"
+# 로컬 설정 (TELEGRAM 토큰 등 — gitignore 대상)
+[[ -f "$IMPROVEMENT_DIR/config.local.env" ]] && source "$IMPROVEMENT_DIR/config.local.env"
 
 # ── 라이브러리 로드 ────────────────────────────────────────
 source "$IMPROVEMENT_DIR/lib/common.sh"

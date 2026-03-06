@@ -176,6 +176,33 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 "./lib/output/*": "./scripts/lib/output/*.js"  // 보고/환경
 ```
 
+## 메인 세션 원칙 (Thin Controller)
+
+메인 세션은 **CEO의 UI**입니다. 다음만 수행합니다:
+
+**허용:**
+
+- AskUserQuestion으로 CEO 질문/선택지 제시
+- Task tool 반환값을 CEO에게 표시 (진행률, 요약, 다이어그램)
+- 단순 조회 CLI 1회 호출 (check-version, list-projects — "변수 읽기" 수준)
+- 조건 판정 후 분기 (모드 선택, 수렴 여부 등)
+
+**금지:**
+
+- Good Vibe CLI를 통한 LLM 호출 (clarity-check→LLM→parse 등은 반드시 Task tool 내부에서)
+- 다단계 CLI 체인 (2개 이상 CLI 연쇄 호출)
+- 데이터 가공/분석 로직
+
+> **참고:** CEO에게 설명/가이드/질문 응답하는 것은 메인 세션의 본래 역할이므로 제한 대상이 아닙니다.
+
+**원칙:** 두 CEO 터치포인트 사이의 모든 작업은 하나의 Task tool로 묶는다.
+
+각 커맨드의 서브에이전트 Task 프롬프트에는 반드시 포함:
+
+- `CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}`
+- 반환 형식 제한 (글자 수, 포함/제외 항목)
+- 컨텍스트 보호 목적 명시
+
 ## 코어 모듈 (`scripts/lib/`)
 
 **`core/`** — 기반 유틸리티 (12개)
