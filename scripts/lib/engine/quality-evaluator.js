@@ -27,8 +27,12 @@ export function calculatePhaseQuality(phaseResult, fixAttempts = 0) {
   const reviews = phaseResult.reviews || [];
   const allIssues = reviews.flatMap((r) => r.issues || []);
 
-  const criticalCount = allIssues.filter((i) => i.severity === 'critical').length;
-  const importantCount = allIssues.filter((i) => i.severity === 'important').length;
+  let criticalCount = 0;
+  let importantCount = 0;
+  for (const issue of allIssues) {
+    if (issue.severity === 'critical') criticalCount++;
+    else if (issue.severity === 'important') importantCount++;
+  }
   const buildFailed = phaseResult.qualityGate ? !phaseResult.qualityGate.passed : false;
 
   const { criticalPenalty, importantPenalty, fixAttemptPenalty, buildFailurePenalty } =

@@ -197,16 +197,16 @@ export function detectTechStack(files, manifests) {
       dependencies[dep] = version;
     }
 
-    const depNames = Object.keys(allDeps);
-    if (depNames.some((d) => d === 'react' || d === 'react-dom')) techStack.add('react');
-    if (depNames.some((d) => d === 'vue')) techStack.add('vue');
-    if (depNames.some((d) => d === 'angular' || d === '@angular/core')) techStack.add('angular');
-    if (depNames.some((d) => d === 'svelte')) techStack.add('svelte');
-    if (depNames.some((d) => d === 'next')) techStack.add('nextjs');
-    if (depNames.some((d) => d === 'express')) techStack.add('express');
-    if (depNames.some((d) => d === '@nestjs/core')) techStack.add('nestjs');
-    if (depNames.some((d) => d === 'koa')) techStack.add('koa');
-    if (depNames.includes('typescript') || depNames.includes('ts-node')) {
+    const depSet = new Set(Object.keys(allDeps));
+    if (depSet.has('react') || depSet.has('react-dom')) techStack.add('react');
+    if (depSet.has('vue')) techStack.add('vue');
+    if (depSet.has('angular') || depSet.has('@angular/core')) techStack.add('angular');
+    if (depSet.has('svelte')) techStack.add('svelte');
+    if (depSet.has('next')) techStack.add('nextjs');
+    if (depSet.has('express')) techStack.add('express');
+    if (depSet.has('@nestjs/core')) techStack.add('nestjs');
+    if (depSet.has('koa')) techStack.add('koa');
+    if (depSet.has('typescript') || depSet.has('ts-node')) {
       techStack.add('typescript');
     }
   }

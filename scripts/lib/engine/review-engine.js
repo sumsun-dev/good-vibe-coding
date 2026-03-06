@@ -154,8 +154,12 @@ export function checkQualityGate(reviews) {
   }
 
   const allIssues = reviews.flatMap((r) => r.issues || []);
-  const criticalCount = allIssues.filter((i) => i.severity === 'critical').length;
-  const importantCount = allIssues.filter((i) => i.severity === 'important').length;
+  let criticalCount = 0;
+  let importantCount = 0;
+  for (const issue of allIssues) {
+    if (issue.severity === 'critical') criticalCount++;
+    else if (issue.severity === 'important') importantCount++;
+  }
   const passed = criticalCount === 0;
 
   const maxImportant = config.review.maxImportantIssues ?? 10;
