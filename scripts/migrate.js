@@ -123,16 +123,16 @@ const isDirectRun = process.argv[1] && resolve(process.argv[1]) === resolve(__fi
 if (isDirectRun) {
   migrate()
     .then((result) => {
-      console.log(result.message);
+      console.log(result.message); // eslint-disable-line no-console
       if (result.steps) {
-        result.steps.forEach((s) => console.log(`  - ${s}`));
+        result.steps.forEach((s) => console.log(`  - ${s}`)); // eslint-disable-line no-console
       }
     })
     .catch((err) => {
-      console.error(`마이그레이션 실패: ${err.message}`);
-      console.error('\n수동 마이그레이션:');
-      console.error('  1. /plugin uninstall good-vibe-coding');
-      console.error('  2. /plugin marketplace update good-vibe');
-      console.error('  3. /plugin install good-vibe@good-vibe');
+      console.error(`마이그레이션 실패: ${err.message}`); // eslint-disable-line no-console
+      console.error('\n수동 마이그레이션:'); // eslint-disable-line no-console
+      console.error('  1. /plugin uninstall good-vibe-coding'); // eslint-disable-line no-console
+      console.error('  2. /plugin marketplace update good-vibe'); // eslint-disable-line no-console
+      console.error('  3. /plugin install good-vibe@good-vibe'); // eslint-disable-line no-console
     });
 }
