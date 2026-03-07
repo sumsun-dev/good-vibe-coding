@@ -26,8 +26,32 @@ export const commands = {
   'create-project': async () => {
     const data = await readStdin();
     requireFields(data, ['name', 'type']);
+
+    if (data.infraPath !== undefined && data.infraPath !== null) {
+      if (typeof data.infraPath !== 'string') {
+        throw inputError('infraPath는 문자열이어야 합니다');
+      }
+      const { resolve } = await import('path');
+      const resolved = resolve(data.infraPath);
+      if (resolved !== data.infraPath && data.infraPath.includes('..')) {
+        throw inputError('infraPath에 경로 순회(..)를 사용할 수 없습니다');
+      }
+    }
+
+    if (data.githubUrl !== undefined && data.githubUrl !== null) {
+      if (
+        typeof data.githubUrl !== 'string' ||
+        !/^https:\/\/github\.com\/[\w.-]+\/[\w.-]+/.test(data.githubUrl)
+      ) {
+        throw inputError('githubUrl은 https://github.com/{owner}/{repo} 형식이어야 합니다');
+      }
+    }
+
     const project = await createProject(data.name, data.type, data.description, {
       mode: data.mode,
+      prd: data.prd,
+      infraPath: data.infraPath,
+      githubUrl: data.githubUrl,
     });
     output(project);
   },

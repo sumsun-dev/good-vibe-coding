@@ -95,6 +95,54 @@ describe('handlers/project', () => {
     expect(result.stderr).toContain('NOT_FOUND');
   });
 
+  it('create-project에 prd, infraPath, githubUrl을 전달한다', () => {
+    const testInfraPath = resolve(TMP_BASE, 'infra-test');
+    const project = cliExec('create-project', {
+      name: 'infra-test',
+      type: 'web-app',
+      description: 'infra test project',
+      mode: 'plan-only',
+      prd: '## PRD\n기능 목록...',
+      infraPath: testInfraPath,
+      githubUrl: 'https://github.com/test/repo',
+    });
+    createdIds.push(project.id);
+
+    expect(project.prd).toBe('## PRD\n기능 목록...');
+    expect(project.infraPath).toBe(testInfraPath);
+    expect(project.githubUrl).toBe('https://github.com/test/repo');
+  });
+
+  it('create-project에 잘못된 infraPath 전달 시 INPUT_ERROR', () => {
+    const result = cliExecRaw('create-project', {
+      name: 'bad-path',
+      type: 'web-app',
+      infraPath: 123,
+    });
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('INPUT_ERROR');
+  });
+
+  it('create-project에 잘못된 githubUrl 전달 시 INPUT_ERROR', () => {
+    const result = cliExecRaw('create-project', {
+      name: 'bad-url',
+      type: 'web-app',
+      githubUrl: 'not-a-url',
+    });
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('INPUT_ERROR');
+  });
+
+  it('create-project에 path traversal infraPath 전달 시 INPUT_ERROR', () => {
+    const result = cliExecRaw('create-project', {
+      name: 'traversal-test',
+      type: 'web-app',
+      infraPath: '/../../../etc/passwd',
+    });
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('INPUT_ERROR');
+  });
+
   it('update-status 상태 변경', () => {
     const project = cliExec('create-project', {
       name: 'status-test',
