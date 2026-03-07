@@ -90,6 +90,8 @@ options:
 설치 후 초기 설정:
   git config --global user.name "내 이름"
   git config --global user.email "내이메일@example.com"
+
+잘 모르겠으면 질문해주세요!
 ```
 
 **gh CLI 미설치 가이드:**
@@ -102,6 +104,8 @@ options:
 **Linux:** sudo apt install gh
 
 설치 후 인증: gh auth login -> GitHub.com -> HTTPS -> Login with a web browser
+
+잘 모르겠으면 질문해주세요!
 ```
 
 **gh 미인증 가이드:**
@@ -110,6 +114,8 @@ options:
 ## GitHub CLI 인증
 
 gh auth login -> GitHub.com -> HTTPS -> Login with a web browser
+
+잘 모르겠으면 질문해주세요!
 ```
 
 **Gemini CLI 미설치/미인증 가이드:**
@@ -121,10 +127,59 @@ gh auth login -> GitHub.com -> HTTPS -> Login with a web browser
 인증: gemini (처음 실행 시 브라우저 로그인)
 
 필수는 아닙니다 - Claude만으로도 리뷰가 잘 진행됩니다.
+
+잘 모르겠으면 질문해주세요!
 ```
 
 가이드 표시 후: "설치 완료되면 `good-vibe:hello`를 다시 실행하세요!"
 가이드를 보여준 뒤에는 여기서 종료합니다 (Step 3으로 진행하지 않음).
+
+## Step 2.5: Claude Code 자동승인 설정
+
+Good Vibe Coding은 AI 팀이 파일 편집과 CLI 실행을 빈번하게 수행합니다.
+자동승인 모드를 설정하면 매번 승인하지 않아도 됩니다.
+
+AskUserQuestion:
+
+```
+질문: "Claude Code 자동승인 모드를 설정할까요?"
+header: "자동승인"
+options:
+  - label: "자동승인 켜기 (Recommended)"
+    description: "Good Vibe 실행 시 파일 편집과 CLI 명령을 자동 승인합니다"
+  - label: "매번 확인"
+    description: "모든 작업에 수동 승인이 필요합니다 (안전하지만 느림)"
+  - label: "건너뛰기"
+    description: "나중에 직접 설정합니다"
+```
+
+**"자동승인 켜기"** 선택 시:
+
+현재 자동승인 모드를 확인합니다. Shift+Tab을 눌러 모드를 확인합니다.
+현재 모드가 "Auto-accept edits" 또는 "yolo"이면 이미 설정되어 있으므로 "이미 자동승인 모드입니다!" 표시 후 Step 3으로 진행합니다.
+
+설정이 필요한 경우 안내합니다:
+
+```
+자동승인 설정 방법:
+
+  Shift+Tab을 반복해서 "Auto-accept edits" 모드로 전환하세요.
+  또는 claude --dangerously-skip-permissions 로 시작하면 전체 자동승인됩니다.
+
+모드 설명:
+  Normal            — 매번 확인 (기본)
+  Auto-accept edits — 파일 편집 자동승인, Bash는 확인 (추천)
+  YOLO              — 전체 자동승인 (숙련자용, 주의 필요)
+
+설정 완료 후 다시 good-vibe:hello를 실행하거나,
+이대로 good-vibe:new를 시작해도 됩니다.
+
+잘 모르겠으면 질문해주세요!
+```
+
+**"매번 확인"** 선택 시 -> "현재 설정을 유지합니다." 표시 후 Step 3으로 진행합니다.
+
+**"건너뛰기"** 선택 시 -> Step 3으로 진행합니다.
 
 ## Step 3: 개인 설정 (onboarding 통합)
 
@@ -351,7 +406,7 @@ Task tool로 분석합니다:
   "missingAreas": ["..."]
 }
 
-200자 이내로 요약하세요.
+반환은 최대 1000자. 상세는 필드에 구조화하세요.
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
 
@@ -401,6 +456,7 @@ options:
 환경 설정이 완료되었습니다!
 
 도구: {git 상태} {gh 상태} {gemini 상태}
+자동승인: {자동승인 모드 상태 — "Auto-accept edits" / "Normal" / "건너뜀"}
 설정: {역할} / {워크플로우} (3.A 경로)
       또는 CLAUDE.md {생성됨/개선됨/유지됨} (3.B 경로)
 

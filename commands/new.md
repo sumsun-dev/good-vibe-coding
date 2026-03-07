@@ -7,10 +7,8 @@ description: '통합 프로젝트 시작 — 복잡도 분석 + 팀 구성 + 자
 프로젝트 아이디어를 받아 복잡도를 분석하고, 적합한 모드로 자동 진행합니다.
 
 > **`good-vibe:hello` 없이도 `good-vibe:new`로 바로 시작할 수 있습니다.**
-> `good-vibe:hello`는 GitHub 저장소와 프로젝트 인프라(폴더, CLAUDE.md)를 먼저 셋업할 때 사용합니다.
->
-> - 코드를 직접 생성/관리하고 싶다면 → `good-vibe:hello` → `good-vibe:new`
-> - 기획서와 보고서만 필요하다면 → `good-vibe:new`로 바로 시작
+> `good-vibe:hello`는 환경 설정(도구 확인)과 개인 설정(CLAUDE.md)에 사용합니다. 처음이면 hello 먼저.
+> `good-vibe:new` 안에서 프로젝트 폴더와 GitHub 저장소를 선택적으로 생성할 수 있습니다.
 
 ## 초보자 안내 (처음 실행 시 표시)
 
@@ -150,7 +148,7 @@ CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 
 결과 처리: `currentDescription = enrichedDescription`, 1.5.B로 돌아감 (clarity >= 0.8까지 반복)
 
-## Step 2: PRD 생성 + CEO 확인 (Ralph Loop)
+## Step 2: PRD 생성 + CEO 확인 (CEO 피드백 루프)
 
 > **Thin Controller:** PRD 생성은 Task tool로 위임. 메인 세션은 결과 표시 + CEO 피드백만.
 
@@ -201,7 +199,7 @@ options:
 
 - **"이대로 진행"** → `prd` 저장 → Step 3로
 - **"수정 요청"** → CEO 피드백을 `prdFeedback`에 저장 → 2.A로 (prdFeedback 주입)
-- **"처음부터 다시"** → Step 1로 돌아감
+- **"처음부터 다시"** → `infraPath = null`, `githubUrl = null` 리셋 → Step 1로 돌아감
 
 ## Step 3: 복잡도 분석 + 모드 선택
 
@@ -282,6 +280,68 @@ AskUserQuestion으로 모드를 선택하게 하세요.
   - complex 프로젝트에 권장 (대규모 시스템, 멀티서비스, 플랫폼)
   - 5-8명 팀이 최대 3라운드 토론 + CEO 승인 후 실행
 
+## Step 3.5: 프로젝트 인프라 생성 (선택)
+
+**변수 초기화:**
+
+- `infraPath = null`
+- `githubUrl = null`
+
+프로젝트 폴더(CLAUDE.md, README, .gitignore)를 생성할지 CEO에게 묻습니다.
+
+AskUserQuestion:
+
+```
+질문: "프로젝트 폴더를 생성할까요?"
+header: "인프라"
+options:
+  - label: "폴더 생성 (Recommended)"
+    description: "프로젝트 폴더 + CLAUDE.md + README.md + .gitignore 생성"
+  - label: "폴더 + GitHub 저장소"
+    description: "프로젝트 폴더 생성 + GitHub 저장소 자동 생성 (gh CLI 필요)"
+  - label: "건너뛰기"
+    description: "폴더 없이 기획/보고서만 진행"
+```
+
+**"건너뛰기"** → infraPath = null, Step 4로 진행
+
+**"폴더 생성" 또는 "폴더 + GitHub 저장소"** → Task tool:
+
+Task tool 프롬프트:
+
+```
+프로젝트 인프라를 생성하세요.
+
+1. 프로젝트 폴더 생성:
+   echo '{"name": "{name}", "targetDir": "{targetDir}", "description": "{description}", "techStack": "{techStack}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js setup-project-infra
+
+{GitHub 선택 시에만:}
+2. GitHub 저장소 생성:
+   echo '{"repoName": "{slug}", "description": "{description}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js create-github-repo
+
+3. Git 초기화 + push:
+   echo '{"projectDir": "{projectDir}", "remoteUrl": "{remoteUrl}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js git-init-push
+
+반환:
+- projectDir: 생성된 프로젝트 디렉토리 경로
+- githubUrl: GitHub URL (해당 시) 또는 null
+- files: 생성된 파일 목록
+
+CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
+```
+
+targetDir 기본값: ~/projects/{slug} (setupProjectInfra가 자동 결정)
+
+CEO에게 결과 표시:
+
+```
+프로젝트 폴더 생성 완료: {projectDir}
+생성된 파일: CLAUDE.md, README.md, .gitignore, .good-vibe/
+{GitHub URL (해당 시)}
+```
+
+infraPath와 githubUrl을 Step 4에 전달합니다.
+
 ## Step 4: 프로젝트 셋업 (Thin Controller)
 
 > **원칙:** 프로젝트 생성 + 팀 구성 + 추천을 하나의 Task tool로 묶어 메인 세션의 CLI 체인을 제거합니다.
@@ -301,8 +361,8 @@ Task tool 프롬프트:
 2. 팀 추천:
    node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js recommend-team --type {type}
 
-3. 프로젝트 생성 (PRD 포함):
-   echo '{"name": "{name}", "type": "{type}", "description": "{description}", "mode": "{mode}", "prd": {prd}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js create-project
+3. 프로젝트 생성 (PRD + 인프라 포함):
+   echo '{"name": "{name}", "type": "{type}", "description": "{description}", "mode": "{mode}", "prd": {prd}, "infraPath": "{infraPath 또는 null}", "githubUrl": "{githubUrl 또는 null}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js create-project
 
 4. 팀 빌드 + 저장:
    echo '{"roleIds": [...], "complexity": "{level}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js build-team
@@ -388,7 +448,7 @@ Task tool 프롬프트:
 반환 (JSON):
 - diagram: Mermaid 다이어그램 코드
 - uiStructure: 화면 구조 (있는 경우)
-- summary: 기술 스택 + 주요 컴포넌트 + 예상 작업 수 요약 (300자 이내)
+- summary: 기술 스택 + 주요 컴포넌트 + 예상 작업 수 요약
 
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
@@ -467,7 +527,11 @@ CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 1. `next-step --id {ID}`으로 현재 action을 확인합니다.
 2. commands/execute.md의 "서브에이전트 모드" 섹션을 따릅니다.
 3. action이 build-context 또는 confirm-next-phase가 될 때까지 action을 순서대로 처리합니다.
-4. 완료 후 **Phase 요약(300자 이내)**과 **품질게이트 결과**만 반환하세요.
+4. 완료 후 반환 (최대 1000자):
+   - phaseSummary: 완료된 작업 목록 (한 줄씩)
+   - qualityGate: { passed, critical, important }
+   - errors: 실패 시 원인 (있을 때만)
+   상세 리뷰 결과와 빌드 로그는 project.json에 저장하세요.
 
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
@@ -511,7 +575,12 @@ Task tool 프롬프트:
 2. {ceoFeedback이 있으면: "CEO 피드백을 context.ceoFeedback으로 전달하세요: {ceoFeedback}"}
 3. 에이전트 분석/종합 시 context.prd = {prd}를 전달하세요.
 4. 기획서에 Mermaid 아키텍처 다이어그램과 화면 구조를 반드시 포함하세요.
-5. 반환: 기획서 핵심 요약(500자 이내) + Mermaid 다이어그램 + 기술 스택/작업 규모 요약 + 수렴 상태
+5. 반환 (최대 1000자):
+   - planSummary: 기획서 핵심 요약
+   - diagram: Mermaid 아키텍처 다이어그램
+   - techStack: 기술 스택 + 작업 규모 요약
+   - convergence: 수렴 상태
+   상세 기획서는 project.json에 저장하세요.
 
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
@@ -605,7 +674,11 @@ CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 1. `next-step --id {ID}`으로 현재 action을 확인합니다.
 2. commands/execute.md의 "서브에이전트 모드" 섹션을 따릅니다.
 3. action이 build-context 또는 confirm-next-phase가 될 때까지 action을 순서대로 처리합니다.
-4. 완료 후 **Phase 요약(300자 이내)**과 **품질게이트 결과**만 반환하세요.
+4. 완료 후 반환 (최대 1000자):
+   - phaseSummary: 완료된 작업 목록 (한 줄씩)
+   - qualityGate: { passed, critical, important }
+   - errors: 실패 시 원인 (있을 때만)
+   상세 리뷰 결과와 빌드 로그는 project.json에 저장하세요.
 
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
@@ -649,7 +722,12 @@ Task tool 프롬프트:
 3. {roundNumber > 1이면: "이전 라운드 기획서를 context.previousSynthesis로 전달하세요"}
 4. 에이전트 분석/종합 시 context.prd = {prd}를 전달하세요.
 5. 기획서에 Mermaid 아키텍처 다이어그램과 화면 구조를 반드시 포함하세요.
-6. 반환: 기획서 핵심 요약(500자 이내) + Mermaid 다이어그램 + 기술 스택/작업 규모 요약 + 수렴 상태
+6. 반환 (최대 1000자):
+   - planSummary: 기획서 핵심 요약
+   - diagram: Mermaid 아키텍처 다이어그램
+   - techStack: 기술 스택 + 작업 규모 요약
+   - convergence: 수렴 상태
+   상세 기획서는 project.json에 저장하세요.
 
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
@@ -772,7 +850,11 @@ CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 1. `next-step --id {ID}`으로 현재 action을 확인합니다.
 2. commands/execute.md의 "서브에이전트 모드" 섹션을 따릅니다.
 3. action이 build-context 또는 confirm-next-phase가 될 때까지 action을 순서대로 처리합니다.
-4. 완료 후 **Phase 요약(300자 이내)**과 **품질게이트 결과**만 반환하세요.
+4. 완료 후 반환 (최대 1000자):
+   - phaseSummary: 완료된 작업 목록 (한 줄씩)
+   - qualityGate: { passed, critical, important }
+   - errors: 실패 시 원인 (있을 때만)
+   상세 리뷰 결과와 빌드 로그는 project.json에 저장하세요.
 
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
@@ -792,12 +874,77 @@ Phase {N}/{total} 완료 — {Phase 요약}
 echo '{"id":"{프로젝트ID}","status":"completed"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js update-status
 ```
 
-## Step 6: 완료 안내
+## Step 6: 완료 + 실행 가이드
+
+### 6.A: 프로젝트 완료 표시
 
 ```
 프로젝트가 완료되었습니다!
 
-good-vibe:report — 프로젝트 전체 과정을 정리한 보고서를 생성합니다
-good-vibe:feedback — 팀원별 성과를 분석하고, 다음 프로젝트를 위한 개선점을 제안합니다
-good-vibe:status — 프로젝트 상태와 작업 진행률을 확인합니다
+{생성된 파일/폴더 구조}
+```
+
+### 6.B: 사전 설정 가이드 (외부 서비스 감지)
+
+생성된 코드에서 외부 서비스 의존성을 감지합니다:
+
+- `.env.example` 파일이 있으면 → 환경변수별 설정 가이드 생성
+- `package.json`의 dependencies에서 외부 서비스 라이브러리 감지
+- 코드에서 API 키/토큰/시크릿 패턴 감지
+
+**외부 서비스 의존성이 없으면** 6.B를 건너뛰고 6.C로 진행합니다.
+
+**외부 서비스 의존성이 있으면** 단계별 설정 가이드를 표시합니다.
+각 단계 끝에 "잘 모르겠으면 질문해주세요"를 붙여서 초보자가 막히지 않게 합니다.
+
+예시 (텔레그램 봇):
+
+```
+실행 전 설정이 필요합니다:
+
+1단계: 텔레그램 봇 생성
+  → 텔레그램에서 @BotFather 검색 → 대화 시작
+  → /newbot 입력 → 봇 이름 입력 → 봇 username 입력
+  → 발급된 토큰(숫자:영문 형태)을 복사하세요
+  잘 모르겠으면 질문해주세요!
+
+2단계: Chat ID 확인
+  → 텔레그램에서 @userinfobot 검색 → 아무 메시지 전송
+  → 표시되는 숫자(Id 항목)를 복사하세요
+  잘 모르겠으면 질문해주세요!
+
+3단계: .env 파일 설정
+  cp .env.example .env
+  파일을 열고 아래 값을 입력하세요:
+    BOT_TOKEN=1단계에서_복사한_토큰
+    CHAT_ID=2단계에서_복사한_숫자
+  잘 모르겠으면 질문해주세요!
+
+4단계: 실행
+  npm install
+  npm start
+  잘 모르겠으면 질문해주세요!
+```
+
+위는 텔레그램 봇 예시입니다. 실제로는 프로젝트에서 감지된 외부 서비스에 맞춰 가이드를 생성하세요.
+
+**흔한 외부 서비스 가이드 패턴:**
+
+| 서비스       | 감지 기준                            | 안내 포인트                        |
+| ------------ | ------------------------------------ | ---------------------------------- |
+| Telegram Bot | `node-telegram-bot-api`, `telegraf`  | BotFather 토큰 발급 + Chat ID      |
+| Discord Bot  | `discord.js`                         | Developer Portal 앱 생성 + 봇 토큰 |
+| OpenAI API   | `openai`                             | API 키 발급 + 결제 설정            |
+| Supabase     | `@supabase/supabase-js`              | 프로젝트 생성 + URL/Key            |
+| Firebase     | `firebase`, `firebase-admin`         | 프로젝트 생성 + 서비스 계정        |
+| Slack Bot    | `@slack/bolt`                        | Slack App 생성 + Bot Token         |
+| RSS/크롤링   | `rss-parser`, `cheerio`, `puppeteer` | 특별 설정 없음 (안내 생략 가능)    |
+
+### 6.C: 다음 단계
+
+```
+다음 단계:
+  good-vibe:report    → 프로젝트 보고서 생성
+  good-vibe:feedback  → 팀원 성과 분석 + 개선점
+  good-vibe:status    → 프로젝트 상태 확인
 ```
