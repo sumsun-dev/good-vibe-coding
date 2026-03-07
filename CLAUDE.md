@@ -117,7 +117,7 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 
 1. **필수 6개** — `good-vibe:hello` → `good-vibe:new` → `good-vibe:discuss` → `good-vibe:approve` → `good-vibe:execute` → `good-vibe:report`
 2. **관리 4개** — `good-vibe:status`, `good-vibe:feedback`, `good-vibe:my-team`, `good-vibe:learn`
-3. **고급 10개** — `good-vibe:new-project`, `good-vibe:projects`, `good-vibe:onboarding`, `good-vibe:my-config`, `good-vibe:add-skill`, `good-vibe:add-agent`, `good-vibe:scaffold`, `good-vibe:preset`, `good-vibe:reset`, `good-vibe:eval`
+3. **고급 10개** — `good-vibe:new-project`, `good-vibe:projects`, `good-vibe:onboarding` (deprecated), `good-vibe:my-config`, `good-vibe:add-skill`, `good-vibe:add-agent`, `good-vibe:scaffold`, `good-vibe:preset`, `good-vibe:reset`, `good-vibe:eval`
 
 퀵스타트 가이드: `guides/common/00-quick-start.md`
 
@@ -126,9 +126,9 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 | 비교                                                        | 차이                                                                                                 |
 | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `good-vibe:new` vs `good-vibe:new-project`                  | 자동(복잡도 분석 → 추천) vs 수동(직접 선택)                                                          |
-| `good-vibe:hello` vs `good-vibe:onboarding`                 | 프로젝트별 세팅 vs 사용자 환경 설정(1회)                                                             |
+| `good-vibe:hello` vs `good-vibe:onboarding`                 | onboarding이 hello에 통합됨. hello만 사용                                                            |
 | `good-vibe:status` vs `good-vibe:projects`                  | 현재 프로젝트만 vs 전체 목록                                                                         |
-| `good-vibe:hello` → `good-vibe:new` vs `good-vibe:new` 단독 | 코드 생성/관리 필요 시 hello 먼저, 기획서/보고서만 필요 시 new만                                     |
+| `good-vibe:hello` → `good-vibe:new` vs `good-vibe:new` 단독 | hello는 환경+개인설정(1회), new는 프로젝트 시작. 처음이면 hello 먼저, 이후는 new만                   |
 | `project.mode` vs `executionState.mode`                     | 프로젝트 워크플로우(plan-only/plan-execute/quick-build) vs 실행 인터랙션(interactive/semi-auto/auto) |
 | plan-only vs plan-execute                                   | 둘 다 실행까지 감. plan-only는 good-vibe:approve 후 수동 good-vibe:execute, plan-execute는 자동 연결 |
 | approve 되돌리기                                            | 실행 시작 전이라면 `good-vibe:discuss --reset`으로 approved → planning 복귀 가능                     |
