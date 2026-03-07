@@ -288,6 +288,16 @@ describe('buildExecutionPrompt with context', () => {
     expect(prompt).not.toContain('## 기획 결정사항');
     expect(prompt).toContain('도윤');
   });
+
+  it('phaseGuidance를 CEO 지침 섹션으로 포함한다', () => {
+    const task = { id: 'task-1', title: 'API 구현', description: '설명', assignee: 'backend' };
+    const prompt = buildExecutionPrompt(task, SAMPLE_TEAM_MEMBER, {
+      phaseGuidance: 'TypeScript를 사용하세요',
+    });
+    expect(prompt).toContain('## CEO 지침 (이번 Phase)');
+    expect(prompt).toContain('TypeScript를 사용하세요');
+    expect(prompt).toContain('최우선으로 반영');
+  });
 });
 
 describe('buildTddExecutionPrompt with context', () => {
@@ -300,6 +310,16 @@ describe('buildTddExecutionPrompt with context', () => {
     expect(prompt).toContain('## 이전 Phase 결과');
     expect(prompt).toContain('## 기획 결정사항');
     expect(prompt).toContain('TDD 실행 지침');
+  });
+
+  it('phaseGuidance를 CEO 지침 섹션으로 포함한다', () => {
+    const task = { id: 'task-3', title: 'API', description: '설명', assignee: 'backend' };
+    const prompt = buildTddExecutionPrompt(task, SAMPLE_TEAM_MEMBER, {
+      phaseGuidance: 'RESTful 설계를 준수하세요',
+    });
+    expect(prompt).toContain('## CEO 지침 (이번 Phase)');
+    expect(prompt).toContain('RESTful 설계를 준수하세요');
+    expect(prompt).toContain('최우선으로 반영');
   });
 });
 

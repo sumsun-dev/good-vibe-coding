@@ -4,7 +4,7 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 
 ## 설계: CLI-as-API + SDK
 
-- `cli.js`는 경량 라우터. 114개 커맨드를 14개 핸들러 모듈(`scripts/handlers/*.js`)로 lazy-load 디스패치
+- `cli.js`는 경량 라우터. 123개 커맨드를 14개 핸들러 모듈(`scripts/handlers/*.js`)로 lazy-load 디스패치
 - 사용자는 `good-vibe:hello`, `good-vibe:new`, `good-vibe:discuss` 같은 슬래시 커맨드만 씀
 - 흐름: 슬래시 커맨드 → 에이전트 디스패치 → cli.js → 핸들러 → 코어 라이브러리
 - 에이전트 .md 파일이 `node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js <command>` 형태로 호출
@@ -217,7 +217,7 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 - `domain-parsers.js` — 도메인별 파서 + 스키마 검증 (리뷰, 복잡도, 태스크, 제안)
 - `cache.js` — 지연 로딩 캐시
 - `preset-loader.js` — 프리셋 JSON 로딩
-- `prompt-builder.js` — 프롬프트 조합 유틸리티 (순수 마크다운 포맷팅)
+- `prompt-builder.js` — 프롬프트 조합 유틸리티 (순수 마크다운 포맷팅, 인젝션 방어: sanitizeForPrompt/wrapUserInput/DATA_BOUNDARY_INSTRUCTION)
 - `nl-router.js` — 자연어 → 커맨드 매핑 (규칙 기반, LLM 호출 없음)
 
 **`project/`** — 프로젝트 관리 (12개)
@@ -292,7 +292,7 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 
 **CLI 레이어**
 
-- `cli.js` — 라우터 (114개 커맨드, 14개 핸들러로 디스패치)
+- `cli.js` — 라우터 (123개 커맨드, 14개 핸들러로 디스패치)
 - `cli-utils.js` — readStdin, output, outputOk, parseArgs
 - `handlers/*.js` — 14개 핸들러: project, team, discussion, execution, review, build, eval, auth, feedback, infra, metrics, template, task, recommendation
 
@@ -306,6 +306,7 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 | 실행       | `execution.maxAgentCalls`          | 500       | 세션당 에이전트 호출 상한 (무한 루프 방지)  |
 | 실행       | `execution.maxEscalationAttempts`  | 3         | 에스컬레이션 최대 횟수                      |
 | 실행       | `execution.maxOutputLines`         | 200       | 에이전트 출력 최대 라인                     |
+| 실행       | `execution.reviewIntervention`     | false     | 리뷰 후 CEO 개입 (interactive 모드에서만)   |
 | 리뷰       | `review.minReviewers`              | 2         | 최소 리뷰어 수                              |
 | 리뷰       | `review.maxReviewers`              | 3         | 최대 리뷰어 수                              |
 | 리뷰       | `review.maxRevisionRounds`         | 2         | 리비전 최대 라운드                          |
@@ -384,6 +385,9 @@ Phase N:
 ```
 
 - **실행 모드**: `interactive` (Phase 간 CEO 확인) / `auto` (자동 진행)
+- **CEO Interrupt**: `confirm-phase`(phaseGuidance 포함 가능), `handle-review-intervention`(proceed/revise) — interactive 모드에서 CEO가 Phase 간 지침 전달 및 리뷰 후 개입 가능
+- **phaseGuidance**: build-context에서 저장, execute-tasks에서 소멸 (1회성). 태스크 프롬프트에 "CEO 지침" 섹션으로 주입
+- **reviewIntervention**: `config.execution.reviewIntervention = true` 시 interactive 모드에서 quality-gate 전에 CEO 개입 가능
 - **부실 감지**: 마지막 저널 엔트리 또는 startedAt 기준 시간 초과 감지
 - **시맨틱 상태 검증**: 6가지 규칙 (fixAttempt 상한, completedAt 필수, escalation 플래그, 중복 Phase 방지 등)
 - **리뷰어 선정**: 도메인 오버랩 점수 + 유니버셜 리뷰어(qa/security/cto) +1 보너스
@@ -588,7 +592,7 @@ logs/daily-improvement/
 
 ## 프롬프트 버전 관리
 
-- `PROMPT_VERSION` 상수 (`prompt-builder.js`) — 현재 `1.1.0`
+- `PROMPT_VERSION` 상수 (`prompt-builder.js`) — 현재 `1.2.0`
 - `buildSectioned` 출력에 `<!-- prompt-version: X.X.X -->` 주석 자동 삽입
 - 프롬프트 구조 변경 시 버전 업데이트하여 추적 가능
 

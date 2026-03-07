@@ -112,6 +112,10 @@ export function buildExecutionPrompt(task, teamMember, context = {}) {
     prompt += `\n\n## 이전 Phase 결과\n${context.phaseContext}`;
   }
 
+  if (context.phaseGuidance) {
+    prompt += `\n\n## CEO 지침 (이번 Phase)\n\n${context.phaseGuidance}\n\n**위 지침을 최우선으로 반영하세요.**`;
+  }
+
   return prompt;
 }
 
@@ -286,6 +290,10 @@ export function buildTddExecutionPrompt(task, teamMember, context = {}) {
 
   if (context.phaseContext) {
     prompt += `\n\n## 이전 Phase 결과\n${context.phaseContext}`;
+  }
+
+  if (context.phaseGuidance) {
+    prompt += `\n\n## CEO 지침 (이번 Phase)\n\n${context.phaseGuidance}\n\n**위 지침을 최우선으로 반영하세요.**`;
   }
 
   return prompt;

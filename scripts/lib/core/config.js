@@ -11,6 +11,7 @@ export const config = Object.freeze({
     maxEscalationAttempts: 3,
     maxOutputLines: 200,
     maxAgentCalls: 500,
+    reviewIntervention: false,
   }),
   build: Object.freeze({ defaultTimeout: 30_000, goTimeout: 45_000, javaTimeout: 60_000 }),
   llm: Object.freeze({

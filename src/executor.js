@@ -124,10 +124,26 @@ export class Executor {
         return { completedAction: 'build-context' };
 
       case 'confirm-next-phase': {
-        const proceed = await (this.hooks.onConfirmPhase?.(step) ?? true);
-        return proceed
-          ? { completedAction: 'build-context' }
-          : { completedAction: 'escalation-response', escalationDecision: 'abort' };
+        const confirmResult = await (this.hooks.onConfirmPhase?.(step) ?? true);
+        if (confirmResult === false) {
+          return { completedAction: 'escalation-response', escalationDecision: 'abort' };
+        }
+        // confirmResult가 객체이면 phaseGuidance를 포함할 수 있음
+        const phaseGuidance =
+          typeof confirmResult === 'object' ? confirmResult.phaseGuidance : undefined;
+        return { completedAction: 'build-context', phaseGuidance };
+      }
+
+      case 'review-intervention': {
+        const intervention = await (this.hooks.onReviewIntervention?.(step) ?? {
+          decision: 'proceed',
+        });
+        return {
+          completedAction: 'review-intervention',
+          ...(intervention.decision === 'revise'
+            ? { revisionGuidance: intervention.revisionGuidance }
+            : {}),
+        };
       }
 
       default:

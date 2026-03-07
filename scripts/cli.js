@@ -68,6 +68,8 @@ const COMMAND_MAP = {
   'execution-plan-with-reviews': 'execution',
   'get-failure-context': 'execution',
   'handle-escalation': 'execution',
+  'confirm-phase': 'execution',
+  'handle-review-intervention': 'execution',
   // review
   'select-reviewers': 'review',
   'task-review-prompt': 'review',

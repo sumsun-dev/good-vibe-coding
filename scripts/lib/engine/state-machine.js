@@ -37,6 +37,7 @@ const VALID_PHASE_STEPS = [
   'materialize',
   'review',
   'quality-gate',
+  'review-intervention',
   'fix',
   'commit',
   'build-context',
@@ -51,7 +52,8 @@ export const PHASE_TRANSITIONS = {
   'execute-tasks': ['materialize'],
   materialize: ['review'],
   review: ['quality-gate'],
-  'quality-gate': ['commit', 'fix', 'escalated'], // passed → commit, failed → fix/escalated
+  'quality-gate': ['commit', 'fix', 'escalated', 'review-intervention'], // passed → commit, failed → fix/escalated, intervention → review-intervention
+  'review-intervention': ['fix', 'quality-gate'], // revise → fix, proceed → quality-gate (기존 흐름 복귀)
   fix: ['materialize'], // 수정 후 materialize로 재진입
   commit: ['build-context'],
   'build-context': ['execute-tasks', 'completed'], // 다음 phase 또는 완료
@@ -140,11 +142,20 @@ const STEP_HANDLERS = {
     tasks: phaseTasks,
     description: `Phase ${phase}: 크로스 리뷰`,
   }),
-  'quality-gate': (phase) => ({
-    action: 'quality-gate',
-    phase,
-    description: `Phase ${phase}: 품질 게이트 체크`,
-  }),
+  'quality-gate': (phase, _phaseTasks, state) => {
+    if (state.reviewIntervention && state.mode === 'interactive') {
+      return {
+        action: 'review-intervention',
+        phase,
+        description: `Phase ${phase}: 리뷰 결과 확인 (CEO 개입)`,
+      };
+    }
+    return {
+      action: 'quality-gate',
+      phase,
+      description: `Phase ${phase}: 품질 게이트 체크`,
+    };
+  },
   fix: (phase, phaseTasks, state) => ({
     action: 'fix',
     phase,
@@ -291,6 +302,7 @@ export function computeStateTransition(project, stepResult) {
       if (stepResult.taskResults) phaseResult.taskResults = stepResult.taskResults;
       state.phaseStep = 'materialize';
       state.lastCompletedStep = 'execute-tasks';
+      state.phaseGuidance = null; // 사용 후 소멸 (1회성)
       break;
 
     case 'materialize':
@@ -359,6 +371,7 @@ export function computeStateTransition(project, stepResult) {
     case 'build-context': {
       state.completedPhases = [...state.completedPhases, phase];
       state.lastCompletedStep = 'build-context';
+      state.phaseGuidance = stepResult.phaseGuidance || null;
 
       if (phase >= totalPhases) {
         state.status = 'completed';
@@ -369,6 +382,20 @@ export function computeStateTransition(project, stepResult) {
         state.fixAttempt = 0;
         state.status = 'executing';
       }
+      break;
+    }
+
+    case 'review-intervention': {
+      if (stepResult.revisionGuidance) {
+        state.phaseStep = 'fix';
+        state.status = 'fixing';
+        state.failureContext = {
+          issues: [],
+          ceoGuidance: stepResult.revisionGuidance,
+          source: 'review-intervention',
+        };
+      }
+      state.lastCompletedStep = 'review-intervention';
       break;
     }
 

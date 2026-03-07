@@ -99,6 +99,33 @@ export const commands = {
     const result = await advanceExecution(data.id, {
       completedAction: 'escalation-response',
       escalationDecision: data.decision,
+      ceoGuidance: data.ceoGuidance || undefined,
+    });
+    output(result);
+  },
+
+  'confirm-phase': async () => {
+    const data = await readStdin();
+    requireFields(data, ['id']);
+    const result = await advanceExecution(data.id, {
+      completedAction: 'build-context',
+      phaseGuidance: data.phaseGuidance || undefined,
+    });
+    output(result);
+  },
+
+  'handle-review-intervention': async () => {
+    const data = await readStdin();
+    requireFields(data, ['id', 'decision']);
+    const validDecisions = ['proceed', 'revise'];
+    if (!validDecisions.includes(data.decision)) {
+      throw inputError(
+        `유효하지 않은 결정: ${data.decision}. 가능한 값: ${validDecisions.join(', ')}`,
+      );
+    }
+    const result = await advanceExecution(data.id, {
+      completedAction: 'review-intervention',
+      ...(data.decision === 'revise' ? { revisionGuidance: data.revisionGuidance } : {}),
     });
     output(result);
   },

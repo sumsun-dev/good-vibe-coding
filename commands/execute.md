@@ -235,22 +235,66 @@ Task tool이 "Phase {N} 완료, 다음 Phase 대기 중"을 반환하면:
 **AskUserQuestion:**
 
 ```
-질문: "Phase {N}이 완료되었습니다. 다음 Phase를 진행하시겠습니까?"
+질문: "Phase {N}이 완료되었습니다. 다음 Phase를 어떻게 진행할까요?"
 options:
   - label: "진행"
     description: "다음 Phase 실행"
+  - label: "지침 추가 후 진행"
+    description: "다음 Phase에 대한 방향을 지시한 후 진행"
   - label: "상태 확인"
     description: "good-vibe:status로 현재 상태 확인 후 결정"
   - label: "중단"
     description: "여기서 멈추고 나중에 재개"
 ```
 
-"진행" 선택 시: 다음 Phase로 2.1 Task tool 재실행
+"진행" 선택 시:
+
+```bash
+echo '{"id": "{ID}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js confirm-phase
+```
+
+"지침 추가 후 진행" 선택 시: CEO에게 지침을 입력받은 후:
+
+```bash
+echo '{"id": "{ID}", "phaseGuidance": "{CEO 지침}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js confirm-phase
+```
+
+phaseGuidance는 다음 Phase의 execute-tasks 프롬프트에 "CEO 지침" 섹션으로 주입되며, 사용 후 자동 소멸합니다.
+
 "중단" 선택 시: 실행 종료 (프로젝트 상태는 executing 유지, 다음 good-vibe:execute에서 resume)
 
-### 2.5 반복
+### 2.5 리뷰 후 CEO 개입 (인터랙티브 모드, opt-in)
 
-action이 `complete`가 될 때까지 2.1-2.4를 반복합니다.
+`config.execution.reviewIntervention = true` 설정 시, interactive 모드에서 review 완료 후 quality-gate 전에 CEO가 개입할 수 있습니다.
+
+Task tool이 `review-intervention` action을 반환하면:
+
+**CEO에게 리뷰 결과 요약을 표시한 후 AskUserQuestion:**
+
+```
+질문: "리뷰가 완료되었습니다. 어떻게 하시겠습니까?"
+options:
+  - label: "진행"
+    description: "품질 게이트로 넘어갑니다"
+  - label: "수정 지시"
+    description: "리뷰 결과를 보고 추가 수정 방향을 지시합니다"
+```
+
+"진행" 선택 시:
+
+```bash
+echo '{"id": "{ID}", "decision": "proceed"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js handle-review-intervention
+```
+
+"수정 지시" 선택 시: CEO에게 지침을 입력받은 후:
+
+```bash
+echo '{"id": "{ID}", "decision": "revise", "revisionGuidance": "{수정 지침}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js handle-review-intervention
+```
+
+### 2.6 반복
+
+action이 `complete`가 될 때까지 2.1-2.5를 반복합니다.
 
 ---
 

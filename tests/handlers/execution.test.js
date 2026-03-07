@@ -106,4 +106,31 @@ describe('handlers/execution', () => {
     expect(result.exitCode).toBe(2);
     expect(result.stderr).toContain('INPUT_ERROR');
   });
+
+  it('confirm-phase → 프로젝트 없으면 NOT_FOUND', () => {
+    const result = cliExecRaw('confirm-phase', { id: 'nonexistent-xyz' });
+    expect(result.exitCode).toBe(3);
+    expect(result.stderr).toContain('NOT_FOUND');
+  });
+
+  it('confirm-phase → 필수 필드 누락 시 INPUT_ERROR', () => {
+    const result = cliExecRaw('confirm-phase', {});
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('INPUT_ERROR');
+  });
+
+  it('handle-review-intervention → 필수 필드 누락 시 INPUT_ERROR', () => {
+    const result = cliExecRaw('handle-review-intervention', { id: 'test' });
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('INPUT_ERROR');
+  });
+
+  it('handle-review-intervention → 유효하지 않은 decision', () => {
+    const result = cliExecRaw('handle-review-intervention', {
+      id: 'test',
+      decision: 'invalid',
+    });
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('INPUT_ERROR');
+  });
 });
