@@ -9,14 +9,17 @@ import { execFileSync } from 'child_process';
 import { checkGhStatus } from '../project/github-manager.js';
 import { isGeminiCliInstalled } from '../llm/gemini-bridge.js';
 
+/** 커맨드 실행 기본 타임아웃 (ms) */
+const COMMAND_TIMEOUT_MS = 5000;
+
 /**
  * CLI 커맨드의 설치 여부와 버전을 확인한다.
  * @param {string} cmd - 실행할 커맨드
  * @param {string[]} [args=['--version']] - 버전 확인 인자
- * @param {number} [timeout=5000] - 타임아웃(ms)
+ * @param {number} [timeout=COMMAND_TIMEOUT_MS] - 타임아웃(ms)
  * @returns {{ installed: boolean, version: string|null }}
  */
-export function checkCommand(cmd, args = ['--version'], timeout = 5000) {
+export function checkCommand(cmd, args = ['--version'], timeout = COMMAND_TIMEOUT_MS) {
   try {
     const output = execFileSync(cmd, args, {
       stdio: 'pipe',
@@ -81,7 +84,7 @@ export function checkEnvironment() {
         '-e',
         "import('handlebars/package.json',{with:{type:'json'}}).then(m=>process.stdout.write(m.default.version))",
       ],
-      { stdio: 'pipe', encoding: 'utf-8', timeout: 5000 },
+      { stdio: 'pipe', encoding: 'utf-8', timeout: COMMAND_TIMEOUT_MS },
     ).trim();
   } catch {
     // not installed or import failed — fallback to require
@@ -89,7 +92,7 @@ export function checkEnvironment() {
       handlebarsVersion = execFileSync(
         'node',
         ['-e', "process.stdout.write(require('handlebars/package.json').version)"],
-        { stdio: 'pipe', encoding: 'utf-8', timeout: 5000 },
+        { stdio: 'pipe', encoding: 'utf-8', timeout: COMMAND_TIMEOUT_MS },
       ).trim();
     } catch {
       // not installed

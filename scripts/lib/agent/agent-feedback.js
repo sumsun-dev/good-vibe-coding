@@ -32,17 +32,22 @@ export function extractAgentPerformance(project) {
   const team = project.team || [];
   const tasks = project.tasks || [];
 
+  const tasksByAssignee = new Map();
+  for (const t of tasks) {
+    if (!t.assignee) continue;
+    if (!tasksByAssignee.has(t.assignee)) tasksByAssignee.set(t.assignee, []);
+    tasksByAssignee.get(t.assignee).push(t);
+  }
+
   return team.map((member) => {
     const roleId = member.roleId;
 
-    const memberTasks = tasks
-      .filter((t) => t.assignee === roleId)
-      .map((t) => ({
-        id: t.id,
-        title: t.title,
-        status: t.status,
-        reviewResults: t.reviews || [],
-      }));
+    const memberTasks = (tasksByAssignee.get(roleId) || []).map((t) => ({
+      id: t.id,
+      title: t.title,
+      status: t.status,
+      reviewResults: t.reviews || [],
+    }));
 
     const reviews = memberTasks.flatMap((t) => t.reviewResults);
 

@@ -10,16 +10,16 @@ import { config } from '../core/config.js';
 
 const MAX_FIX_ATTEMPTS = config.execution.maxFixAttempts;
 
-/** 실패 카테고리 — 이슈 분류용 키워드 매핑 */
-const FAILURE_CATEGORY_KEYWORDS = {
-  security: ['security', 'xss', 'injection', 'csrf', 'auth', 'owasp', '보안', '취약점', '인증'],
-  build: ['build', 'compile', 'syntax', 'import', 'module', '빌드', '컴파일'],
-  test: ['test', 'coverage', 'assertion', 'expect', 'tdd', '테스트', '커버리지'],
-  performance: ['performance', 'memory', 'latency', 'timeout', 'slow', '성능', '메모리'],
-  type: ['type', 'typescript', 'typing', 'interface', '타입'],
-  architecture: ['architecture', 'design', 'pattern', 'coupling', 'dependency', '아키텍처', '설계'],
-  logic: ['logic', 'bug', 'error', 'null', 'undefined', 'race', '로직', '버그'],
-};
+/** 실패 카테고리 — 사전 컴파일 정규식 매핑 (O(1) 매칭) */
+const FAILURE_CATEGORY_PATTERNS = [
+  ['security', /security|xss|injection|csrf|auth|owasp|보안|취약점|인증/],
+  ['build', /build|compile|syntax|import|module|빌드|컴파일/],
+  ['test', /test|coverage|assertion|expect|tdd|테스트|커버리지/],
+  ['performance', /performance|memory|latency|timeout|slow|성능|메모리/],
+  ['type', /type|typescript|typing|interface|타입/],
+  ['architecture', /architecture|design|pattern|coupling|dependency|아키텍처|설계/],
+  ['logic', /logic|bug|error|null|undefined|race|로직|버그/],
+];
 
 /**
  * 이슈를 7개 카테고리 중 하나로 분류한다 (pure).
@@ -28,8 +28,8 @@ const FAILURE_CATEGORY_KEYWORDS = {
  */
 export function categorizeFailure(issue) {
   const text = `${issue.description || ''} ${issue.suggestion || ''}`.toLowerCase();
-  for (const [category, keywords] of Object.entries(FAILURE_CATEGORY_KEYWORDS)) {
-    if (keywords.some((kw) => text.includes(kw))) return category;
+  for (const [category, regex] of FAILURE_CATEGORY_PATTERNS) {
+    if (regex.test(text)) return category;
   }
   return 'logic';
 }

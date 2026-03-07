@@ -114,9 +114,12 @@ export function trackRoleContribution(roleId, reviews) {
     criticalsCaught += issues.filter((i) => i.severity === 'critical').length;
   }
 
-  // contributionScore: critical 이슈는 3점, 일반 이슈는 1점, empty 리뷰는 -0.5점
   const totalReviews = reviews.length;
-  const rawScore = criticalsCaught * 3 + (uniqueIssues - criticalsCaught) + emptyReviews * -0.5;
+  const { criticalWeight, emptyReviewPenalty } = config.similarity;
+  const rawScore =
+    criticalsCaught * criticalWeight +
+    (uniqueIssues - criticalsCaught) +
+    emptyReviews * emptyReviewPenalty;
   const contributionScore = totalReviews > 0 ? Math.max(0, rawScore / totalReviews) : 0;
 
   return {
@@ -145,16 +148,18 @@ export function recommendOptimalTeam(agentOutputs, roleContributions, teamSize) 
     (roleContributions || []).map((c) => [c.roleId, c.contributionScore]),
   );
   const redundancies = detectRedundantAgents(agentOutputs);
-  const redundantSet = new Set(redundancies.map((r) => r.roleId));
+  const redundancyMap = new Map(redundancies.map((r) => [r.roleId, r]));
 
   const keep = [];
   const remove = [];
   const reasoning = [];
 
+  const universalSet = new Set(UNIVERSAL_REVIEWERS);
+
   // 범용 리뷰어는 항상 유지 (단, 기여도가 낮으면 경고)
   for (const roleId of allRoleIds) {
-    const isUniversal = UNIVERSAL_REVIEWERS.includes(roleId);
-    const isRedundant = redundantSet.has(roleId);
+    const isUniversal = universalSet.has(roleId);
+    const isRedundant = redundancyMap.has(roleId);
     const contribution = contributionMap.get(roleId) ?? 0;
 
     if (isUniversal) {
@@ -165,7 +170,7 @@ export function recommendOptimalTeam(agentOutputs, roleContributions, teamSize) 
         );
       }
     } else if (isRedundant) {
-      const pair = redundancies.find((r) => r.roleId === roleId);
+      const pair = redundancyMap.get(roleId);
       if (contribution < config.similarity.contributionThreshold) {
         remove.push(roleId);
         reasoning.push(
@@ -185,7 +190,7 @@ export function recommendOptimalTeam(agentOutputs, roleContributions, teamSize) 
   // teamSize 제약 적용
   if (teamSize && keep.length > teamSize) {
     const nonUniversal = keep
-      .filter((id) => !UNIVERSAL_REVIEWERS.includes(id))
+      .filter((id) => !universalSet.has(id))
       .sort((a, b) => (contributionMap.get(a) ?? 0) - (contributionMap.get(b) ?? 0));
 
     while (keep.length > teamSize && nonUniversal.length > 0) {

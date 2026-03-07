@@ -175,10 +175,13 @@ export class Executor {
     const tasks = step.tasks || [];
     const phaseResults = project.executionState?.phaseResults?.[step.phase] || {};
     const allReviews = [];
+    const taskOutputMap = new Map(
+      (phaseResults.taskResults || []).map((r) => [r.taskId, r.output]),
+    );
 
     for (const task of tasks) {
       const reviewers = selectReviewers(task, team);
-      const taskOutput = phaseResults.taskResults?.find((r) => r.taskId === task.id)?.output || '';
+      const taskOutput = taskOutputMap.get(task.id) || '';
 
       const reviews = await Promise.all(
         reviewers.map(async (r) => {
@@ -220,9 +223,10 @@ export class Executor {
     const reviews = phaseResults.reviews || [];
     const failureContext = state.failureContext;
 
+    const teamMap = new Map((project.team || []).map((m) => [m.roleId, m]));
     const taskResults = await Promise.all(
       tasks.map(async (task) => {
-        const implementer = (project.team || []).find((m) => m.roleId === task.assignee) || {};
+        const implementer = teamMap.get(task.assignee) || {};
         const prompt = buildRevisionPrompt(task, implementer, reviews, failureContext);
         if (!prompt) return { taskId: task.id, output: '' };
         const response = await callLLM(this.provider, prompt, { model: this.model });
