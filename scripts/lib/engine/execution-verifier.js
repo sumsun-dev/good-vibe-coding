@@ -7,7 +7,7 @@
 import { execFileSync } from 'child_process';
 import { mkdtempSync, writeFileSync, mkdirSync, rmSync, existsSync, readdirSync } from 'fs';
 import { tmpdir } from 'os';
-import { join, dirname, resolve } from 'path';
+import { join, dirname, resolve, extname } from 'path';
 import { config } from '../core/config.js';
 import { assertWithinRoot, AppError } from '../core/validators.js';
 
@@ -558,11 +558,8 @@ function findFilesByExtensions(dir, extensions) {
       if (entry.isDirectory() && entry.name !== 'node_modules') {
         results.push(...findFilesByExtensions(fullPath, extensions));
       } else if (entry.isFile()) {
-        for (const ext of extSet) {
-          if (entry.name.endsWith(ext)) {
-            results.push(fullPath);
-            break;
-          }
+        if (extSet.has(extname(entry.name))) {
+          results.push(fullPath);
         }
       }
     }
@@ -580,14 +577,11 @@ function findFilesByExtensions(dir, extensions) {
  * @param {string} dir - 검색 디렉토리
  * @returns {string[]} 테스트 파일 경로 배열
  */
-function findTestFiles(dir) {
-  const testPatterns = ['.test.', '.spec.', '__tests__'];
-  const allFiles = findFilesByExtensions(dir, ['.js', '.ts', '.py', '.go', '.java']);
+const TEST_FILE_REGEX = /\.test\.|\.spec\.|__tests__|_test\.go$|Test\.java$/;
 
-  return allFiles.filter(
-    (f) =>
-      testPatterns.some((p) => f.includes(p)) || f.endsWith('_test.go') || f.endsWith('Test.java'),
-  );
+function findTestFiles(dir) {
+  const allFiles = findFilesByExtensions(dir, ['.js', '.ts', '.py', '.go', '.java']);
+  return allFiles.filter((f) => TEST_FILE_REGEX.test(f));
 }
 
 /**

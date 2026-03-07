@@ -22,15 +22,11 @@ export function resolveCommitType(tasks, phase, totalPhases) {
   if (!tasks || tasks.length === 0) return 'feat';
 
   const titles = tasks.map((t) => (t.title || '').toLowerCase()).join(' ');
-  const roles = tasks.map((t) => (t.assignedTo || '').toLowerCase());
+  const allTestRoles = tasks.every((t) => TEST_ROLES.includes((t.assignedTo || '').toLowerCase()));
 
   if (FIX_KEYWORDS.some((kw) => titles.includes(kw))) return 'fix';
-  if (
-    roles.every((r) => TEST_ROLES.includes(r)) ||
-    TEST_KEYWORDS.some((kw) => titles.includes(kw) && !titles.includes('구현'))
-  ) {
-    if (roles.every((r) => TEST_ROLES.includes(r))) return 'test';
-  }
+  if (allTestRoles) return 'test';
+  if (TEST_KEYWORDS.some((kw) => titles.includes(kw) && !titles.includes('구현'))) return 'test';
   if (REFACTOR_KEYWORDS.some((kw) => titles.includes(kw))) return 'refactor';
   if (phase === totalPhases && totalPhases > 1) return 'chore';
 
