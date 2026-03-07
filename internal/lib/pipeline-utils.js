@@ -2,7 +2,7 @@
 // Shell에서 호출: node pipeline-utils.js <command> [args...]
 
 import { existsSync, unlinkSync } from 'fs';
-import { execSync } from 'child_process';
+import { execSync, spawnSync } from 'child_process';
 
 const NETWORK_ERROR_PATTERNS = [
   /ETIMEDOUT/i,
@@ -51,8 +51,8 @@ export function retryCommand(command, { maxRetries = 3, baseDelay = 2000, timeou
       }
 
       const delay = baseDelay * Math.pow(2, attempt - 1);
-      // 동기 sleep (CLI 용도)
-      execSync(`sleep ${delay / 1000}`, { stdio: 'ignore' });
+      // 동기 sleep (CLI 용도) — spawnSync로 shell injection 방지
+      spawnSync('sleep', [String(delay / 1000)], { stdio: 'ignore' });
     }
   }
 
@@ -93,7 +93,12 @@ if (
 
   switch (command) {
     case 'retry-gh': {
-      const ghCommand = args.join(' ');
+      const SHELL_META = /[;&|`$(){}!<>]/;
+      if (args.some((a) => SHELL_META.test(a))) {
+        console.error('shell metacharacter detected in args');
+        process.exit(1);
+      }
+      const ghCommand = `gh ${args.join(' ')}`;
       try {
         const result = retryCommand(ghCommand);
         console.log(result);
