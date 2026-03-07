@@ -37,6 +37,34 @@ const CONFIG_LANGUAGES = ['json', 'yaml', 'yml', 'toml', 'ini', 'env'];
 /** 마크업 언어 목록 */
 const MARKUP_LANGUAGES = ['html', 'css', 'md', 'markdown', 'xml', 'svg'];
 
+/** 언어 → 확장자 매핑 (모듈 레벨 상수) */
+const LANG_EXT_MAP = {
+  javascript: '.js',
+  js: '.js',
+  typescript: '.ts',
+  ts: '.ts',
+  python: '.py',
+  py: '.py',
+  sh: '.sh',
+  bash: '.sh',
+  shell: '.sh',
+  json: '.json',
+  yaml: '.yml',
+  yml: '.yml',
+  toml: '.toml',
+  html: '.html',
+  css: '.css',
+  md: '.md',
+  markdown: '.md',
+  go: '.go',
+  golang: '.go',
+  java: '.java',
+  kotlin: '.kt',
+  kt: '.kt',
+  rust: '.rs',
+  rs: '.rs',
+};
+
 /** 프로젝트 타입 → 빌드 전략 명시적 매핑 */
 const PROJECT_TYPE_STRATEGY_MAP = {
   'web-app': 'node',
@@ -89,7 +117,7 @@ export const BUILD_STRATEGIES = {
         };
       }
       // package.json 없으면 JS 파일 syntax check
-      const jsFiles = findFilesByExtension(tempDir, '.js');
+      const jsFiles = findFilesByExtensions(tempDir, ['.js']);
       if (jsFiles.length === 0) {
         return { success: false, output: 'no .js files found', exitCode: 1 };
       }
@@ -123,7 +151,7 @@ export const BUILD_STRATEGIES = {
     detect: (files) =>
       files.some((f) => ['requirements.txt', 'pyproject.toml', 'setup.py'].includes(f)),
     build: (tempDir) => {
-      const pyFiles = findFilesByExtension(tempDir, '.py');
+      const pyFiles = findFilesByExtensions(tempDir, ['.py']);
       if (pyFiles.length === 0) {
         return { success: false, output: 'no .py files found', exitCode: 1 };
       }
@@ -317,36 +345,8 @@ export function writeTemporaryProject(codeBlocks, _projectType) {
   const tempDir = mkdtempSync(join(tmpdir(), 'gvc-verify-'));
   const files = [];
 
-  /** 언어 → 확장자 매핑 */
-  const langExtMap = {
-    javascript: '.js',
-    js: '.js',
-    typescript: '.ts',
-    ts: '.ts',
-    python: '.py',
-    py: '.py',
-    sh: '.sh',
-    bash: '.sh',
-    shell: '.sh',
-    json: '.json',
-    yaml: '.yml',
-    yml: '.yml',
-    toml: '.toml',
-    html: '.html',
-    css: '.css',
-    md: '.md',
-    markdown: '.md',
-    go: '.go',
-    golang: '.go',
-    java: '.java',
-    kotlin: '.kt',
-    kt: '.kt',
-    rust: '.rs',
-    rs: '.rs',
-  };
-
   codeBlocks.forEach((block, idx) => {
-    const filename = block.filename || `file-${idx}${langExtMap[block.language] || '.txt'}`;
+    const filename = block.filename || `file-${idx}${LANG_EXT_MAP[block.language] || '.txt'}`;
     const fullPath = resolve(join(tempDir, filename));
     assertWithinRoot(fullPath, tempDir, 'filename');
     const dir = dirname(fullPath);
@@ -360,6 +360,30 @@ export function writeTemporaryProject(codeBlocks, _projectType) {
   });
 
   return { tempDir, files };
+}
+
+/**
+ * 전략 함수 실행 시 공통 에러 처리를 수행한다.
+ * ENOENT(런타임 미설치)와 일반 오류를 통합 처리한다.
+ *
+ * @param {Function} strategyFn - 실행할 전략 함수
+ * @param {string} fallbackMessage - 일반 오류 시 기본 메시지
+ * @returns {{ success: boolean, output: string, exitCode: number }}
+ */
+function runStrategyWithErrorHandling(strategyFn, fallbackMessage) {
+  try {
+    return strategyFn();
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      const cmd = err.path || 'runtime';
+      return { success: false, output: `${cmd} not found`, exitCode: 1 };
+    }
+    return {
+      success: false,
+      output: err.stderr || err.stdout || err.message || fallbackMessage,
+      exitCode: err.status ?? 1,
+    };
+  }
 }
 
 /**
@@ -378,19 +402,7 @@ export function attemptBuild(tempDir, projectType) {
     return { success: false, output: `unsupported project type: ${projectType}`, exitCode: 1 };
   }
 
-  try {
-    return detected.strategy.build(tempDir);
-  } catch (err) {
-    if (err.code === 'ENOENT') {
-      const cmd = err.path || 'runtime';
-      return { success: false, output: `${cmd} not found`, exitCode: 1 };
-    }
-    return {
-      success: false,
-      output: err.stderr || err.stdout || err.message || 'build failed',
-      exitCode: err.status ?? 1,
-    };
-  }
+  return runStrategyWithErrorHandling(() => detected.strategy.build(tempDir), 'build failed');
 }
 
 /**
@@ -415,19 +427,7 @@ export function attemptTests(tempDir, projectType) {
     return { success: null, output: 'no test strategy found', exitCode: null };
   }
 
-  try {
-    return detected.strategy.test(tempDir);
-  } catch (err) {
-    if (err.code === 'ENOENT') {
-      const cmd = err.path || 'runtime';
-      return { success: false, output: `${cmd} not found`, exitCode: 1 };
-    }
-    return {
-      success: false,
-      output: err.stderr || err.stdout || err.message || 'tests failed',
-      exitCode: err.status ?? 1,
-    };
-  }
+  return runStrategyWithErrorHandling(() => detected.strategy.test(tempDir), 'tests failed');
 }
 
 /**
@@ -542,36 +542,7 @@ export function cleanup(tempDir) {
 }
 
 /**
- * 디렉토리에서 특정 확장자의 파일을 재귀적으로 찾는다.
- * @param {string} dir - 검색 디렉토리
- * @param {string} ext - 확장자 (예: '.js')
- * @returns {string[]} 파일 경로 배열
- */
-function findFilesByExtension(dir, ext) {
-  const results = [];
-
-  try {
-    const entries = readdirSync(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      if (entry.isSymbolicLink()) continue; // symlink 순환 방지
-      const fullPath = join(dir, entry.name);
-      if (entry.isDirectory() && entry.name !== 'node_modules') {
-        results.push(...findFilesByExtension(fullPath, ext));
-      } else if (entry.isFile() && entry.name.endsWith(ext)) {
-        results.push(fullPath);
-      }
-    }
-  } catch (err) {
-    if (err.code !== 'ENOENT') {
-      throw new AppError(`파일 검색 오류 (${dir}): ${err.message}`, 'SYSTEM_ERROR');
-    }
-  }
-
-  return results;
-}
-
-/**
- * 디렉토리에서 여러 확장자의 파일을 한 번의 순회로 찾는다.
+ * 디렉토리에서 여러 확장자의 파일을 한 번의 순회로 재귀적으로 찾는다.
  * @param {string} dir - 검색 디렉토리
  * @param {string[]} extensions - 확장자 목록 (예: ['.js', '.ts'])
  * @returns {string[]} 파일 경로 배열
