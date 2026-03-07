@@ -138,6 +138,12 @@ describe('buildClarityCheckPrompt', () => {
     const prompt = buildClarityCheckPrompt(longDesc);
     expect(prompt.length).toBeLessThan(longDesc.length + 2000);
   });
+
+  it('user-input 태그로 description을 감싼다', () => {
+    const prompt = buildClarityCheckPrompt('채팅 앱 만들어줘');
+    expect(prompt).toContain('<user-input label="description">');
+    expect(prompt).toContain('</user-input>');
+  });
 });
 
 // --- parseClarityResult ---

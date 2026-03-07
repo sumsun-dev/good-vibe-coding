@@ -9,6 +9,11 @@
 
 import { parseJsonObject } from '../core/json-parser.js';
 import { config } from '../core/config.js';
+import {
+  sanitizeForPrompt,
+  wrapUserInput,
+  DATA_BOUNDARY_INSTRUCTION,
+} from '../core/prompt-builder.js';
 
 /** 프로젝트 타입별 가중치 프로파일 */
 const WEIGHT_PROFILES = {
@@ -182,13 +187,15 @@ export function buildClarityCheckPrompt(description, projectType, codebaseInfo) 
   if (!description || description.trim() === '') return '';
 
   const maxLen = config.clarity?.maxDescriptionLength ?? 3000;
-  const trimmedDesc = description.trim().slice(0, maxLen);
+  const { value: safeDescription } = sanitizeForPrompt(description, maxLen);
 
-  return `프로젝트 설명의 명확도를 5개 차원에서 평가하세요.
+  return `${DATA_BOUNDARY_INSTRUCTION}
+
+프로젝트 설명의 명확도를 5개 차원에서 평가하세요.
 각 차원을 0.0~1.0으로 점수 매기세요.
 
 ## 프로젝트 설명
-${trimmedDesc}
+${wrapUserInput(safeDescription, 'description')}
 ${buildContextSections(projectType, codebaseInfo)}
 ${buildDimensionSection()}
 
@@ -354,10 +361,14 @@ const CLARITY_QUESTIONS_V1 = {
 export function buildClarityCheckPromptV1(description) {
   if (!description || description.trim() === '') return '';
 
-  return `다음 프로젝트 설명의 명확성을 분석하세요.
+  const { value: safeDescription } = sanitizeForPrompt(description, 3000);
+
+  return `${DATA_BOUNDARY_INSTRUCTION}
+
+다음 프로젝트 설명의 명확성을 분석하세요.
 
 ## 프로젝트 설명
-${description}
+${wrapUserInput(safeDescription, 'description')}
 
 ## 명확성 평가 차원
 

@@ -5,6 +5,11 @@
 
 import { parseJsonObject } from '../core/json-parser.js';
 import { config } from '../core/config.js';
+import {
+  sanitizeForPrompt,
+  wrapUserInput,
+  DATA_BOUNDARY_INSTRUCTION,
+} from '../core/prompt-builder.js';
 
 /** 복잡도 평가 5차원 */
 export const COMPLEXITY_DIMENSIONS = [
@@ -73,6 +78,8 @@ export function buildComplexityAnalysisPrompt(description, codebaseInfo = null, 
     return '';
   }
 
+  const { value: safeDescription } = sanitizeForPrompt(description, 3000);
+
   const MAX_FILE_STRUCTURE_LENGTH = 1000;
 
   let codebaseSection = '';
@@ -108,10 +115,12 @@ export function buildComplexityAnalysisPrompt(description, codebaseInfo = null, 
 위 PRD를 참고하여 복잡도를 더 정확하게 평가하세요.`;
   }
 
-  return `다음 프로젝트 설명을 분석하여 복잡도를 판단하세요.
+  return `${DATA_BOUNDARY_INSTRUCTION}
+
+다음 프로젝트 설명을 분석하여 복잡도를 판단하세요.
 
 ## 프로젝트 설명
-${description}${codebaseSection}${prdSection}
+${wrapUserInput(safeDescription, 'description')}${codebaseSection}${prdSection}
 
 ## 복잡도 판단 기준 (5차원 평가)
 

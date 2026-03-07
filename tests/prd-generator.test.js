@@ -46,6 +46,13 @@ describe('buildPrdPrompt', () => {
     expect(prompt).toContain('앱 만들기');
     expect(prompt).toContain('PRD 작성 지침');
   });
+
+  it('user-input 태그로 description을 감싼다', () => {
+    const prompt = buildPrdPrompt('채팅 앱', { scope: { score: 0.8 } });
+    expect(prompt).toContain('<user-input label="description">');
+    expect(prompt).toContain('</user-input>');
+    expect(prompt).toContain('user-input');
+  });
 });
 
 // --- parsePrdResult ---

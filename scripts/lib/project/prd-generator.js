@@ -4,6 +4,11 @@
  */
 
 import { parseJsonObject } from '../core/json-parser.js';
+import {
+  sanitizeForPrompt,
+  wrapUserInput,
+  DATA_BOUNDARY_INSTRUCTION,
+} from '../core/prompt-builder.js';
 
 const EMPTY_PRD = {
   overview: '',
@@ -28,6 +33,8 @@ export function buildPrdPrompt(description, clarityDimensions, codebaseInfo = nu
     return '';
   }
 
+  const { value: safeDescription } = sanitizeForPrompt(description, 3000);
+
   let claritySection = '';
   if (clarityDimensions && typeof clarityDimensions === 'object') {
     const dims = Object.entries(clarityDimensions)
@@ -49,10 +56,12 @@ export function buildPrdPrompt(description, clarityDimensions, codebaseInfo = nu
     codebaseSection = `\n\n## 코드베이스 정보\n- 기술 스택: ${techStack}\n- 파일 구조: ${fileStructure}`;
   }
 
-  return `프로젝트 설명을 기반으로 경량 PRD를 작성하세요.
+  return `${DATA_BOUNDARY_INSTRUCTION}
+
+프로젝트 설명을 기반으로 경량 PRD를 작성하세요.
 
 ## 프로젝트 설명
-${description}${claritySection}${codebaseSection}
+${wrapUserInput(safeDescription, 'description')}${claritySection}${codebaseSection}
 
 ## PRD 작성 지침
 1. 프로젝트 개요 (1-2문장)
