@@ -11,8 +11,8 @@ import { join, dirname, resolve, extname } from 'path';
 import { config } from '../core/config.js';
 import { assertWithinRoot, AppError } from '../core/validators.js';
 
-/** 실행 가능 언어 목록 */
-const EXECUTABLE_LANGUAGES = [
+/** 실행 가능 언어 Set */
+const EXECUTABLE_LANGUAGES = new Set([
   'js',
   'javascript',
   'ts',
@@ -29,13 +29,13 @@ const EXECUTABLE_LANGUAGES = [
   'kt',
   'rust',
   'rs',
-];
+]);
 
-/** 설정 파일 언어 목록 */
-const CONFIG_LANGUAGES = ['json', 'yaml', 'yml', 'toml', 'ini', 'env'];
+/** 설정 파일 언어 Set */
+const CONFIG_LANGUAGES = new Set(['json', 'yaml', 'yml', 'toml', 'ini', 'env']);
 
-/** 마크업 언어 목록 */
-const MARKUP_LANGUAGES = ['html', 'css', 'md', 'markdown', 'xml', 'svg'];
+/** 마크업 언어 Set */
+const MARKUP_LANGUAGES = new Set(['html', 'css', 'md', 'markdown', 'xml', 'svg']);
 
 /** 언어 → 확장자 매핑 (모듈 레벨 상수) */
 const LANG_EXT_MAP = {
@@ -314,11 +314,11 @@ export function classifyCodeBlocks(codeBlocks) {
     const lang = block.language.toLowerCase();
     let type;
 
-    if (EXECUTABLE_LANGUAGES.includes(lang)) {
+    if (EXECUTABLE_LANGUAGES.has(lang)) {
       type = 'executable';
-    } else if (CONFIG_LANGUAGES.includes(lang)) {
+    } else if (CONFIG_LANGUAGES.has(lang)) {
       type = 'config';
-    } else if (MARKUP_LANGUAGES.includes(lang)) {
+    } else if (MARKUP_LANGUAGES.has(lang)) {
       type = 'markup';
     } else {
       type = 'unknown';

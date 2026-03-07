@@ -114,9 +114,12 @@ export function trackRoleContribution(roleId, reviews) {
     criticalsCaught += issues.filter((i) => i.severity === 'critical').length;
   }
 
-  // contributionScore: critical 이슈는 3점, 일반 이슈는 1점, empty 리뷰는 -0.5점
   const totalReviews = reviews.length;
-  const rawScore = criticalsCaught * 3 + (uniqueIssues - criticalsCaught) + emptyReviews * -0.5;
+  const { criticalWeight, emptyReviewPenalty } = config.similarity;
+  const rawScore =
+    criticalsCaught * criticalWeight +
+    (uniqueIssues - criticalsCaught) +
+    emptyReviews * emptyReviewPenalty;
   const contributionScore = totalReviews > 0 ? Math.max(0, rawScore / totalReviews) : 0;
 
   return {

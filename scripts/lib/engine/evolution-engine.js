@@ -81,6 +81,20 @@ export function buildEvolutionFeedback(project, qualityScore) {
     roleIssues[member.roleId] = [];
   }
 
+  // 사전 인덱싱: review → assignee 매핑 (O(N) 1회)
+  const reviewToAssignee = new Map();
+  const tasksByRole = new Map();
+  for (const task of tasks) {
+    if (task.reviews) {
+      for (const r of task.reviews) {
+        reviewToAssignee.set(r, task.assignee);
+      }
+    }
+    const roleId = task.assignee;
+    if (!tasksByRole.has(roleId)) tasksByRole.set(roleId, []);
+    tasksByRole.get(roleId).push(task);
+  }
+
   // Phase별 리뷰에서 이슈 추출
   for (const [, phaseResult] of Object.entries(state.phaseResults)) {
     const reviews = phaseResult.reviews || [];
@@ -90,26 +104,20 @@ export function buildEvolutionFeedback(project, qualityScore) {
       );
       if (issues.length === 0) continue;
 
-      // 이슈를 관련 역할에 매핑
-      for (const task of tasks) {
-        if (task.reviews && task.reviews.some((r) => r === review)) {
-          const roleId = task.assignee;
-          if (roleIssues[roleId]) {
-            roleIssues[roleId].push(...issues);
-          }
-        }
+      // 이슈를 관련 역할에 매핑 (O(1) 룩업)
+      const assignee = reviewToAssignee.get(review);
+      if (assignee && roleIssues[assignee]) {
+        roleIssues[assignee].push(...issues);
       }
 
       // Phase 리뷰의 이슈를 각 리뷰어에 연결하지 못하면 전체 팀에 배분
-      if (issues.length > 0) {
-        for (const member of team) {
-          const memberTasks = tasks.filter((t) => t.assignee === member.roleId);
-          const memberHasIssues = memberTasks.some(
-            (t) => t.reviews && t.reviews.some((r) => (r.issues || []).length > 0),
-          );
-          if (memberHasIssues && roleIssues[member.roleId].length === 0) {
-            roleIssues[member.roleId].push(...issues);
-          }
+      for (const member of team) {
+        const memberTasks = tasksByRole.get(member.roleId) || [];
+        const memberHasIssues = memberTasks.some(
+          (t) => t.reviews && t.reviews.some((r) => (r.issues || []).length > 0),
+        );
+        if (memberHasIssues && roleIssues[member.roleId].length === 0) {
+          roleIssues[member.roleId].push(...issues);
         }
       }
     }

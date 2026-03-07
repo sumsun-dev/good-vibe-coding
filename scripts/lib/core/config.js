@@ -5,7 +5,12 @@
 
 export const config = Object.freeze({
   convergence: Object.freeze({ threshold: 0.8, maxRounds: 3 }),
-  similarity: Object.freeze({ redundancyThreshold: 0.7, contributionThreshold: 0.5 }),
+  similarity: Object.freeze({
+    redundancyThreshold: 0.7,
+    contributionThreshold: 0.5,
+    criticalWeight: 3,
+    emptyReviewPenalty: -0.5,
+  }),
   execution: Object.freeze({
     maxFixAttempts: 2,
     maxEscalationAttempts: 3,
@@ -27,6 +32,7 @@ export const config = Object.freeze({
     maxReviewers: 3,
     maxRevisionRounds: 2,
     maxImportantIssues: 10,
+    fatiguePenalty: 0.5,
   }),
   quality: Object.freeze({
     criticalPenalty: 20,

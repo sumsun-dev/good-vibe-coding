@@ -45,7 +45,7 @@ export function selectReviewers(task, team, previousReviewerIds = []) {
     const reviewDomains = new Set(m.reviewDomains || m.skills || []);
     const overlap = assigneeDomains.filter((d) => reviewDomains.has(d)).length;
     const bonus = UNIVERSAL_REVIEWER_ROLES.includes(m.roleId) ? 1 : 0;
-    const fatiguePenalty = prevSet.has(m.roleId) ? 0.5 : 0;
+    const fatiguePenalty = prevSet.has(m.roleId) ? config.review.fatiguePenalty : 0;
     return { member: m, score: overlap + bonus - fatiguePenalty };
   });
 
