@@ -47,7 +47,6 @@ good-vibe:hello  →  good-vibe:new  →  good-vibe:discuss  →  good-vibe:appr
 | ----------------------- | ---------------------------------- | -------------------------------------------- |
 | `good-vibe:new-project` | 수동 프로젝트 생성                 | `good-vibe:new`와 달리 타입/모드를 직접 고름 |
 | `good-vibe:projects`    | 전체 프로젝트 목록                 | `good-vibe:status`는 현재 프로젝트만         |
-| `good-vibe:onboarding`  | 사용자 환경 설정                   | 한 번만 하면 됨. `good-vibe:hello`와 다름    |
 | `good-vibe:my-config`   | 현재 설정 확인                     |                                              |
 | `good-vibe:scaffold`    | 프로젝트 템플릿으로 초기 코드 생성 | 5개 내장 템플릿                              |
 | `good-vibe:add-skill`   | 스킬 추가                          |                                              |
@@ -106,11 +105,10 @@ good-vibe:hello  →  good-vibe:new  →  good-vibe:discuss  →  good-vibe:appr
 
 ## 헷갈리기 쉬운 것들
 
-| 이거랑             | 저거는                  | 이렇게 다릅니다                                                                         |
-| ------------------ | ----------------------- | --------------------------------------------------------------------------------------- |
-| `good-vibe:new`    | `good-vibe:new-project` | `good-vibe:new`는 복잡도를 보고 알아서 추천, `good-vibe:new-project`는 직접 고름        |
-| `good-vibe:hello`  | `good-vibe:onboarding`  | `good-vibe:hello`는 프로젝트마다 하는 세팅, `good-vibe:onboarding`은 최초 1회 환경 설정 |
-| `good-vibe:status` | `good-vibe:projects`    | `good-vibe:status`는 현재 프로젝트만, `good-vibe:projects`는 전체 목록                  |
+| 이거랑             | 저거는                  | 이렇게 다릅니다                                                                  |
+| ------------------ | ----------------------- | -------------------------------------------------------------------------------- |
+| `good-vibe:new`    | `good-vibe:new-project` | `good-vibe:new`는 복잡도를 보고 알아서 추천, `good-vibe:new-project`는 직접 고름 |
+| `good-vibe:status` | `good-vibe:projects`    | `good-vibe:status`는 현재 프로젝트만, `good-vibe:projects`는 전체 목록           |
 
 ---
 

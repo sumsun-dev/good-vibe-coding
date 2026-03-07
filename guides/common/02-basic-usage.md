@@ -45,7 +45,7 @@ package.json에서 사용하는 의존성을 설명해줘
 슬래시(/)로 시작하는 커맨드로 빠르게 작업할 수 있습니다:
 
 ```
-good-vibe:onboarding    → 초기 설정 마법사
+good-vibe:hello          → 환경 + 개인 설정
 good-vibe:learn         → 학습 가이드
 good-vibe:my-config     → 현재 설정 확인
 /help                   → 도움말

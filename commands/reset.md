@@ -58,7 +58,7 @@ AskUserQuestion으로 사용자에게 묻습니다:
   - agents/code-reviewer-kr.md (백업됨)
   - agents/tdd-coach-kr.md (백업됨)
 
-새로운 설정을 시작하려면 `good-vibe:onboarding`을 실행하세요.
+새로운 설정을 시작하려면 `good-vibe:hello`를 실행하세요.
 이전 설정을 복원하려면 .backup 파일을 사용하세요.
 ```
 
