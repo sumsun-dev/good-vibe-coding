@@ -8,20 +8,22 @@ import { resolve, extname, relative, dirname } from 'path';
 import { AppError } from '../core/validators.js';
 import { config } from '../core/config.js';
 
-const IGNORED_DIRS = config.codebase?.ignoredDirs || [
-  'node_modules',
-  '.git',
-  '.svn',
-  'dist',
-  'build',
-  'coverage',
-  '__pycache__',
-  '.next',
-  '.nuxt',
-  'vendor',
-  'target',
-  '.gradle',
-];
+const IGNORED_DIRS = new Set(
+  config.codebase?.ignoredDirs || [
+    'node_modules',
+    '.git',
+    '.svn',
+    'dist',
+    'build',
+    'coverage',
+    '__pycache__',
+    '.next',
+    '.nuxt',
+    'vendor',
+    'target',
+    '.gradle',
+  ],
+);
 
 const MANIFEST_FILES = [
   'package.json',
@@ -131,7 +133,7 @@ async function collectFiles(dir, root, depth = 0) {
   const files = [];
 
   for (const entry of entries) {
-    if (IGNORED_DIRS.includes(entry.name)) continue;
+    if (IGNORED_DIRS.has(entry.name)) continue;
     if (entry.name.startsWith('.') && entry.name !== '.env.example') continue;
 
     const fullPath = resolve(dir, entry.name);

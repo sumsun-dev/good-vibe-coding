@@ -92,8 +92,7 @@ const PROJECT_TYPE_STRATEGY_MAP = {
 export const BUILD_STRATEGIES = {
   node: {
     detect: (files) =>
-      files.some((f) => f === 'package.json') ||
-      files.some((f) => f.endsWith('.js') || f.endsWith('.ts')),
+      files.some((f) => f === 'package.json' || f.endsWith('.js') || f.endsWith('.ts')),
     build: (tempDir) => {
       if (existsSync(join(tempDir, 'package.json'))) {
         const installOut = execFileSync('npm', ['install', '--ignore-scripts'], {
@@ -149,7 +148,7 @@ export const BUILD_STRATEGIES = {
   },
   python: {
     detect: (files) =>
-      files.some((f) => ['requirements.txt', 'pyproject.toml', 'setup.py'].includes(f)),
+      files.some((f) => f === 'requirements.txt' || f === 'pyproject.toml' || f === 'setup.py'),
     build: (tempDir) => {
       const pyFiles = findFilesByExtensions(tempDir, ['.py']);
       if (pyFiles.length === 0) {
