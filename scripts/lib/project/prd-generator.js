@@ -19,6 +19,7 @@ const EMPTY_PRD = {
   estimatedScope: { complexity: 'unknown', reasoning: '' },
   architectureDiagram: '',
   screenFlow: '',
+  wireframes: '',
 };
 
 /**
@@ -79,6 +80,10 @@ ${wrapUserInput(safeDescription, 'description')}${claritySection}${codebaseSecti
    - 주요 화면 간 네비게이션 흐름
    - 사용자 액션과 화면 전환
    - UI가 없는 프로젝트(CLI, API 서버, 봇 등)는 빈 문자열
+9. **와이어프레임** (UI가 있는 프로젝트만, ASCII art):
+   - 핵심 화면 1-2개의 레이아웃을 ASCII art로 표현
+   - 헤더, 사이드바, 콘텐츠 영역, 주요 버튼/폼의 배치
+   - UI가 없는 프로젝트(CLI, API 서버, 봇 등)는 빈 문자열
 
 ## 출력 형식 (반드시 아래 JSON 형식으로 출력)
 
@@ -98,12 +103,14 @@ ${wrapUserInput(safeDescription, 'description')}${claritySection}${codebaseSecti
     "reasoning": "근거"
   },
   "architectureDiagram": "graph TD\\n  A[React SPA] -->|REST API| B[Express Server]\\n  B --> C[(PostgreSQL)]",
-  "screenFlow": "flowchart LR\\n  A[로그인] --> B[대시보드]\\n  B --> C[상세]"
+  "screenFlow": "flowchart LR\\n  A[로그인] --> B[대시보드]\\n  B --> C[상세]",
+  "wireframes": "┌──────────────────┐\\n│  Header          │\\n├────┬─────────────┤\\n│Nav │  Content    │\\n│    │             │\\n└────┴─────────────┘"
 }
 \`\`\`
 
 **architectureDiagram**: 반드시 유효한 Mermaid graph TD 문법으로 작성하세요.
-**screenFlow**: UI 프로젝트만 작성. CLI/API/봇 등은 빈 문자열("")로 출력하세요.`;
+**screenFlow**: UI 프로젝트만 작성. CLI/API/봇 등은 빈 문자열("")로 출력하세요.
+**wireframes**: UI 프로젝트만 작성. CLI/API/봇 등은 빈 문자열("")로 출력하세요.`;
 }
 
 /**
@@ -139,6 +146,7 @@ export function parsePrdResult(rawOutput) {
     },
     architectureDiagram: parsed.architectureDiagram || parsed.diagram || '',
     screenFlow: parsed.screenFlow || '',
+    wireframes: parsed.wireframes || '',
   };
 
   return prd;
@@ -190,6 +198,10 @@ export function formatPrdForDisplay(prd) {
 
   if (p.screenFlow) {
     sections.push(`## 화면 흐름\n\`\`\`mermaid\n${p.screenFlow}\n\`\`\``);
+  }
+
+  if (p.wireframes) {
+    sections.push(`## 화면 레이아웃\n\`\`\`\n${p.wireframes}\n\`\`\``);
   }
 
   const scope = p.estimatedScope || {};

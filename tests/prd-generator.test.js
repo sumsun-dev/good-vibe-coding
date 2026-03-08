@@ -53,6 +53,13 @@ describe('buildPrdPrompt', () => {
     expect(prompt).toContain('</user-input>');
     expect(prompt).toContain('user-input');
   });
+
+  it('프롬프트에 와이어프레임 지시사항을 포함한다', () => {
+    const prompt = buildPrdPrompt('웹 대시보드', { scope: { score: 0.9 } });
+    expect(prompt).toContain('와이어프레임');
+    expect(prompt).toContain('wireframes');
+    expect(prompt).toContain('ASCII art');
+  });
 });
 
 // --- parsePrdResult ---
@@ -101,6 +108,7 @@ describe('parsePrdResult', () => {
     expect(result.estimatedScope).toEqual({ complexity: 'unknown', reasoning: '' });
     expect(result.architectureDiagram).toBe('');
     expect(result.screenFlow).toBe('');
+    expect(result.wireframes).toBe('');
   });
 
   it('빈 입력이면 빈 PRD를 반환한다', () => {
@@ -123,6 +131,20 @@ describe('parsePrdResult', () => {
     const result = parsePrdResult(JSON.stringify(withDiagrams));
     expect(result.architectureDiagram).toBe('graph TD\n  A[SPA] --> B[API]');
     expect(result.screenFlow).toBe('flowchart LR\n  A[로그인] --> B[대시보드]');
+  });
+
+  it('wireframes를 파싱한다', () => {
+    const withWireframes = {
+      ...validPrd,
+      wireframes: '┌──────────┐\n│  Header  │\n└──────────┘',
+    };
+    const result = parsePrdResult(JSON.stringify(withWireframes));
+    expect(result.wireframes).toBe('┌──────────┐\n│  Header  │\n└──────────┘');
+  });
+
+  it('wireframes가 없으면 빈 문자열을 반환한다', () => {
+    const result = parsePrdResult(JSON.stringify(validPrd));
+    expect(result.wireframes).toBe('');
   });
 
   it('레거시 diagram 필드를 architectureDiagram으로 매핑한다', () => {
@@ -199,6 +221,38 @@ describe('formatPrdForDisplay', () => {
     expect(md).toContain('## 화면 흐름');
     expect(md).toContain('flowchart LR');
     expect(md).toContain('A[로그인] --> B[대시보드]');
+  });
+
+  it('와이어프레임이 있으면 화면 레이아웃 섹션을 표시한다', () => {
+    const prd = {
+      overview: '웹앱',
+      coreFeatures: [],
+      userScenarios: [],
+      technicalRequirements: { stack: [], integrations: [], constraints: [] },
+      successCriteria: [],
+      estimatedScope: { complexity: 'medium', reasoning: '' },
+      wireframes: '┌──────────┐\n│  Header  │\n└──────────┘',
+    };
+
+    const md = formatPrdForDisplay(prd);
+    expect(md).toContain('## 화면 레이아웃');
+    expect(md).toContain('┌──────────┐');
+    expect(md).not.toContain('```mermaid\n┌');
+  });
+
+  it('와이어프레임이 없으면 화면 레이아웃 섹션을 생략한다', () => {
+    const prd = {
+      overview: 'API 서버',
+      coreFeatures: [],
+      userScenarios: [],
+      technicalRequirements: { stack: [], integrations: [], constraints: [] },
+      successCriteria: [],
+      estimatedScope: { complexity: 'simple', reasoning: '' },
+      wireframes: '',
+    };
+
+    const md = formatPrdForDisplay(prd);
+    expect(md).not.toContain('## 화면 레이아웃');
   });
 
   it('다이어그램이 없으면 해당 섹션을 생략한다', () => {
