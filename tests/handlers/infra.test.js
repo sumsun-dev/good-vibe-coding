@@ -28,7 +28,7 @@ vi.mock('../../scripts/lib/output/update-checker.js', () => ({
   getVersionInfo: vi.fn(),
 }));
 
-import { output } from '../../scripts/cli-utils.js';
+import { readStdin, output } from '../../scripts/cli-utils.js';
 import { isGeminiCliInstalled } from '../../scripts/lib/llm/gemini-bridge.js';
 import { checkEnvironment } from '../../scripts/lib/output/env-checker.js';
 import { checkGhStatus } from '../../scripts/lib/project/github-manager.js';
@@ -117,6 +117,25 @@ describe('infra handler', () => {
 
       await commands['check-version']();
       expect(output).toHaveBeenCalledWith(expect.objectContaining({ updateAvailable: true }));
+    });
+  });
+
+  describe('build-pr-body', () => {
+    it('project 누락 시 에러', async () => {
+      readStdin.mockResolvedValue({});
+      await expect(commands['build-pr-body']()).rejects.toThrow('project');
+    });
+  });
+
+  describe('build-merge-report', () => {
+    it('project 누락 시 에러', async () => {
+      readStdin.mockResolvedValue({ executionState: {} });
+      await expect(commands['build-merge-report']()).rejects.toThrow('project');
+    });
+
+    it('executionState 누락 시 에러', async () => {
+      readStdin.mockResolvedValue({ project: { name: 'test' } });
+      await expect(commands['build-merge-report']()).rejects.toThrow('executionState');
     });
   });
 });

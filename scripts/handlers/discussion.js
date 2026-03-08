@@ -45,12 +45,14 @@ export const commands = {
 
   'plan-document': async () => {
     const data = await readStdin();
+    requireFields(data, ['project']);
     const doc = buildPlanDocument(data.project, data.discussions || []);
     output({ planDocument: doc });
   },
 
   'single-agent-discussion-prompt': async () => {
     const data = await readStdin();
+    requireFields(data, ['project', 'teamMember']);
     const prompt = buildSingleAgentDiscussionPrompt(
       data.project,
       data.teamMember,
@@ -61,12 +63,14 @@ export const commands = {
 
   'agent-analysis-prompt': async () => {
     const data = await readStdin();
+    requireFields(data, ['project', 'teamMember']);
     const prompt = buildAgentAnalysisPrompt(data.project, data.teamMember, data.context || {});
     output({ prompt });
   },
 
   'synthesis-prompt': async () => {
     const data = await readStdin();
+    requireFields(data, ['project', 'agentOutputs']);
     const context = data.ceoFeedback ? { ceoFeedback: data.ceoFeedback } : {};
     const prompt = buildSynthesisPrompt(data.project, data.agentOutputs, data.round || 1, context);
     output({ prompt });
@@ -74,12 +78,14 @@ export const commands = {
 
   'review-prompt': async () => {
     const data = await readStdin();
+    requireFields(data, ['teamMember', 'synthesizedPlan']);
     const prompt = buildReviewPrompt(data.teamMember, data.synthesizedPlan, data.round || 1);
     output({ prompt });
   },
 
   'check-convergence': async () => {
     const data = await readStdin();
+    requireFields(data, ['reviews']);
     const result = checkConvergence(data.reviews);
     if (Array.isArray(data.previousRounds) && data.previousRounds.length > 0) {
       output(trackConvergenceEvolution(result, data.previousRounds));
@@ -90,6 +96,7 @@ export const commands = {
 
   'group-agents': async () => {
     const data = await readStdin();
+    requireFields(data, ['team']);
     const tiers = groupAgentsForParallelDispatch(data.team);
     output({ tiers });
   },

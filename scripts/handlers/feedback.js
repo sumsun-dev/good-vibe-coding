@@ -60,6 +60,7 @@ export const commands = {
 
   'merge-agent-override': async () => {
     const data = await readStdin();
+    requireFields(data, ['baseMd', 'overrideMd']);
     const merged = mergeAgentWithOverride(data.baseMd, data.overrideMd);
     output({ merged });
   },

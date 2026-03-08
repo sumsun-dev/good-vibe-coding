@@ -70,6 +70,11 @@ describe('discussion handler', () => {
   });
 
   describe('plan-document', () => {
+    it('필수 필드 누락 시 에러', async () => {
+      readStdin.mockResolvedValue({});
+      await expect(commands['plan-document']()).rejects.toThrow('project');
+    });
+
     it('기획서를 생성하고 출력해야 한다', async () => {
       const doc = '# Plan\n기획서 내용';
       readStdin.mockResolvedValue({ project: { id: 'p1' }, discussions: [{ round: 1 }] });
@@ -82,6 +87,11 @@ describe('discussion handler', () => {
   });
 
   describe('synthesis-prompt', () => {
+    it('필수 필드 누락 시 에러', async () => {
+      readStdin.mockResolvedValue({ project: { id: 'p1' } });
+      await expect(commands['synthesis-prompt']()).rejects.toThrow('agentOutputs');
+    });
+
     it('종합 프롬프트를 생성해야 한다', async () => {
       const prompt = '종합 프롬프트';
       readStdin.mockResolvedValue({ project: { id: 'p1' }, agentOutputs: ['o1'], round: 2 });
@@ -111,6 +121,11 @@ describe('discussion handler', () => {
   });
 
   describe('check-convergence', () => {
+    it('필수 필드 누락 시 에러', async () => {
+      readStdin.mockResolvedValue({});
+      await expect(commands['check-convergence']()).rejects.toThrow('reviews');
+    });
+
     it('수렴 결과를 출력해야 한다', async () => {
       const result = { converged: true, approvalRate: 0.9 };
       readStdin.mockResolvedValue({ reviews: [{ approved: true }] });
@@ -176,6 +191,11 @@ describe('discussion handler', () => {
   });
 
   describe('group-agents', () => {
+    it('필수 필드 누락 시 에러', async () => {
+      readStdin.mockResolvedValue({});
+      await expect(commands['group-agents']()).rejects.toThrow('team');
+    });
+
     it('팀을 tier별로 그룹화해야 한다', async () => {
       const tiers = [[{ roleId: 'cto' }], [{ roleId: 'frontend' }]];
       readStdin.mockResolvedValue({ team: [{ roleId: 'cto' }, { roleId: 'frontend' }] });

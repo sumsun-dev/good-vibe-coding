@@ -22,6 +22,7 @@ const [, , , ...args] = process.argv;
 export const commands = {
   'init-execution': async () => {
     const data = await readStdin();
+    requireFields(data, ['id']);
     const result = await initExecution(data.id, { mode: data.mode, resume: data.resume });
     output(result);
   },
@@ -33,6 +34,7 @@ export const commands = {
 
   'advance-execution': async () => {
     const data = await readStdin();
+    requireFields(data, ['id', 'stepResult']);
     const result = await advanceExecution(data.id, data.stepResult);
     output(result);
   },
@@ -52,18 +54,21 @@ export const commands = {
 
   'execution-prompt': async () => {
     const data = await readStdin();
+    requireFields(data, ['task', 'teamMember']);
     const prompt = buildExecutionPrompt(data.task, data.teamMember, data.context || {});
     output({ prompt });
   },
 
   'execution-plan': async () => {
     const data = await readStdin();
+    requireFields(data, ['tasks', 'team']);
     const plan = buildExecutionPlan(data.tasks, data.team);
     output(plan);
   },
 
   'execution-plan-with-reviews': async () => {
     const data = await readStdin();
+    requireFields(data, ['tasks', 'team']);
     const plan = buildExecutionPlanWithReviews(data.tasks, data.team);
     output(plan);
   },

@@ -2,6 +2,7 @@
  * handlers/template — 템플릿 스캐폴딩 커맨드
  */
 import { readStdin, output, parseArgs } from '../cli-utils.js';
+import { requireFields } from '../lib/core/validators.js';
 import {
   listTemplates,
   loadTemplate,
@@ -37,6 +38,7 @@ export const commands = {
 
   scaffold: async () => {
     const data = await readStdin();
+    requireFields(data, ['template', 'targetDir']);
     const result = await scaffold(data.template, data.targetDir, data.variables || {}, {
       overwrite: data.overwrite || false,
       backup: data.backup !== false,

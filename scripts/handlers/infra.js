@@ -126,6 +126,7 @@ export const commands = {
 
   'build-pr-body': async () => {
     const data = await readStdin();
+    requireFields(data, ['project']);
     const title = buildPRTitle(data.project, data.options);
     const body = buildPRBody(data.project, data.executionState);
     const labels = buildPRLabels(data.project);
@@ -145,6 +146,7 @@ export const commands = {
 
   'build-merge-report': async () => {
     const data = await readStdin();
+    requireFields(data, ['project', 'executionState']);
     const report = buildMergeReport(data.project, data.executionState);
     output({ report });
   },

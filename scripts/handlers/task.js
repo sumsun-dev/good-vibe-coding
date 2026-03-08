@@ -60,6 +60,7 @@ export const commands = {
 
   'build-phase-context': async () => {
     const data = await readStdin();
+    requireFields(data, ['completedTasks']);
     const context = buildPhaseContext(data.completedTasks, {
       maxLinesPerTask: data.maxLinesPerTask,
     });
@@ -68,12 +69,14 @@ export const commands = {
 
   'tdd-execution-prompt': async () => {
     const data = await readStdin();
+    requireFields(data, ['task', 'teamMember']);
     const prompt = buildTddExecutionPrompt(data.task, data.teamMember, data.context || {});
     output({ prompt });
   },
 
   'is-code-task': async () => {
     const data = await readStdin();
+    requireFields(data, ['task']);
     const result = isCodeTask(data.task);
     output({ isCodeTask: result });
   },

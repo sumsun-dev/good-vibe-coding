@@ -23,6 +23,14 @@ vi.mock('../../scripts/lib/agent/agent-optimizer.js', () => ({
   buildOptimizationReport: vi.fn(),
 }));
 
+vi.mock('../../scripts/lib/core/validators.js', () => ({
+  requireFields: vi.fn((data, fields) => {
+    for (const f of fields) {
+      if (!(f in data)) throw new Error(`필수 필드 누락: ${f}`);
+    }
+  }),
+}));
+
 vi.mock('../../scripts/lib/project/project-manager.js', () => ({
   getProject: vi.fn(),
 }));
@@ -46,6 +54,11 @@ describe('review handler', () => {
   });
 
   describe('select-reviewers', () => {
+    it('필수 필드 누락 시 에러', async () => {
+      readStdin.mockResolvedValue({});
+      await expect(commands['select-reviewers']()).rejects.toThrow('task');
+    });
+
     it('리뷰어를 선정하고 출력해야 한다', async () => {
       const reviewers = [{ roleId: 'qa' }, { roleId: 'security' }];
       readStdin.mockResolvedValue({
@@ -60,6 +73,11 @@ describe('review handler', () => {
   });
 
   describe('check-quality-gate', () => {
+    it('필수 필드 누락 시 에러', async () => {
+      readStdin.mockResolvedValue({});
+      await expect(commands['check-quality-gate']()).rejects.toThrow('reviews');
+    });
+
     it('품질 게이트 결과를 출력해야 한다', async () => {
       const result = { passed: true, criticalCount: 0 };
       readStdin.mockResolvedValue({ reviews: [{ approved: true }] });
@@ -71,6 +89,11 @@ describe('review handler', () => {
   });
 
   describe('enhanced-quality-gate', () => {
+    it('필수 필드 누락 시 에러', async () => {
+      readStdin.mockResolvedValue({});
+      await expect(commands['enhanced-quality-gate']()).rejects.toThrow('reviews');
+    });
+
     it('강화 품질 게이트 결과를 출력해야 한다', async () => {
       const result = { passed: true, reviewPassed: true, buildPassed: true };
       readStdin.mockResolvedValue({ reviews: [], executionResult: { success: true } });

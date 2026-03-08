@@ -2,7 +2,7 @@
  * handlers/auth — 멀티 모델 프로바이더 인증 + 크로스 모델 리뷰 커맨드
  */
 import { readStdin, output, outputOk } from '../cli-utils.js';
-import { inputError } from '../lib/core/validators.js';
+import { inputError, requireFields } from '../lib/core/validators.js';
 import {
   connectWithApiKey,
   connectGeminiCli,
@@ -65,6 +65,7 @@ export const commands = {
 
   'set-review-strategy': async () => {
     const data = await readStdin();
+    requireFields(data, ['strategy']);
     await setReviewStrategy(data.strategy);
     outputOk({ strategy: data.strategy });
   },
@@ -78,8 +79,9 @@ export const commands = {
 
   'cross-model-review': async () => {
     const data = await readStdin();
-    const config = data.providerConfig || (await loadProvidersConfig());
-    const assignments = await resolveReviewAssignments(data.reviewers, config);
+    requireFields(data, ['reviewers', 'task', 'taskOutput']);
+    const providerConfig = data.providerConfig || (await loadProvidersConfig());
+    const assignments = await resolveReviewAssignments(data.reviewers, providerConfig);
     const results = await executeCrossModelReviews(assignments, data.task, data.taskOutput);
     const summary = summarizeCrossModelResults(results);
     output({ results, summary });
@@ -94,6 +96,7 @@ export const commands = {
 
   'gemini-review': async () => {
     const data = await readStdin();
+    requireFields(data, ['reviewer', 'task', 'taskOutput']);
     const { buildTaskReviewPrompt, parseTaskReview } =
       await import('../lib/engine/review-engine.js');
     const { callGeminiCli } = await import('../lib/llm/gemini-bridge.js');
