@@ -32,6 +32,13 @@ export function notFoundError(message) {
 }
 
 /**
+ * 시스템 에러를 생성한다.
+ */
+export function systemError(message) {
+  return new AppError(message, 'SYSTEM_ERROR');
+}
+
+/**
  * 비어있지 않은 문자열인지 검증한다.
  * @param {*} value - 검증 대상
  * @param {string} fieldName - 필드명 (에러 메시지용)

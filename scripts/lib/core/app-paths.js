@@ -5,6 +5,7 @@
 
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { systemError } from './validators.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -33,7 +34,7 @@ export function pluginRoot() {
 
 function homeDir() {
   const home = process.env.HOME || process.env.USERPROFILE;
-  if (!home) throw new Error('HOME 또는 USERPROFILE 환경변수가 설정되지 않았습니다');
+  if (!home) throw systemError('HOME 또는 USERPROFILE 환경변수가 설정되지 않았습니다');
   return home;
 }
 
