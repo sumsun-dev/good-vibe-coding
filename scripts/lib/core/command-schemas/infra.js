@@ -1,0 +1,132 @@
+/**
+ * infra 핸들러 스키마 (14개)
+ */
+import { obj, str, bool, arr, objField, strEnum } from './schema-builders.js';
+
+export default {
+  'setup-project-infra': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({ name: str(true), description: str(), techStack: str(), targetDir: str() }),
+    output: obj({ projectDir: str(), created: arr() }),
+    description: '프로젝트 인프라를 세팅한다',
+  },
+  'check-gh-status': {
+    handler: 'infra',
+    inputMethod: 'none',
+    input: obj({}),
+    output: obj({ ghInstalled: bool(), authenticated: bool() }),
+    description: 'GitHub CLI 상태를 확인한다',
+  },
+  'check-gemini-status': {
+    handler: 'infra',
+    inputMethod: 'none',
+    input: obj({}),
+    output: obj({ installed: bool(), authType: str(), model: str() }),
+    description: 'Gemini CLI 설치 상태를 확인한다',
+  },
+  'create-github-repo': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({ repoName: str(true), description: str(), visibility: str() }),
+    output: obj({ repoUrl: str() }),
+    description: 'GitHub 저장소를 생성한다',
+  },
+  'git-init-push': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({ projectDir: str(true), remoteUrl: str(true) }),
+    output: obj({ pushed: bool() }),
+    description: 'git init + push를 실행한다',
+  },
+  'append-claude-md': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({ claudeMdPath: str(true), sectionName: str(true), content: str(true) }),
+    output: obj({ success: bool() }),
+    description: 'CLAUDE.md에 섹션을 추가한다',
+  },
+  'check-environment': {
+    handler: 'infra',
+    inputMethod: 'none',
+    input: obj({}),
+    output: obj({
+      node: objField(),
+      npm: objField(),
+      git: objField(),
+      gh: objField(),
+      gemini: objField(),
+      handlebars: objField(),
+      healthy: bool(),
+    }),
+    description: '개발 환경의 필수/선택 도구 설치 상태를 확인한다',
+  },
+  'check-version': {
+    handler: 'infra',
+    inputMethod: 'none',
+    input: obj({}),
+    output: obj({ version: str(), updateAvailable: bool(), instructions: str() }),
+    description: '현재 버전과 업데이트 가능 여부를 확인한다',
+  },
+  'create-branch': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({
+      projectDir: str(true),
+      projectSlug: str(true),
+      baseBranch: str(),
+      strategy: strEnum(['timestamp', 'phase', 'custom']),
+      context: objField(),
+    }),
+    output: obj({ success: bool(), branchName: str(), error: str() }),
+    description: 'feature branch를 생성한다',
+  },
+  'push-branch': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({ projectDir: str(true), branchName: str(true) }),
+    output: obj({ success: bool(), skipped: bool(), reason: str(), error: str() }),
+    description: 'branch를 remote에 push한다',
+  },
+  'current-branch': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({ projectDir: str(true) }),
+    output: obj({ branch: str() }),
+    description: '현재 branch를 조회한다',
+  },
+  'create-pr': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({
+      projectDir: str(true),
+      branchName: str(true),
+      baseBranch: str(),
+      title: str(true),
+      body: str(true),
+      labels: arr(),
+      draft: bool(),
+    }),
+    output: obj({ success: bool(), url: str(), skipped: bool(), reason: str(), error: str() }),
+    description: 'Pull Request를 생성한다',
+  },
+  'build-pr-body': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({ project: objField(true), executionState: objField(), options: objField() }),
+    output: obj({ title: str(), body: str(), labels: arr() }),
+    description: 'PR 제목/본문/라벨을 생성한다',
+  },
+  'generate-ci': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({
+      projectDir: str(true),
+      techStack: arr(),
+      codebaseInfo: objField(),
+      packageJson: objField(),
+    }),
+    output: obj({ success: bool(), filePath: str(), strategy: objField(), commands: objField() }),
+    description: 'GitHub Actions CI 워크플로우를 생성한다',
+  },
+};
