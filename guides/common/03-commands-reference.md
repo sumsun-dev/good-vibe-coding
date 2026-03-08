@@ -1,6 +1,6 @@
 # 커맨드 레퍼런스
 
-Good Vibe Coding에는 20개의 슬래시 커맨드가 있습니다.
+Good Vibe Coding에는 19개의 슬래시 커맨드가 있습니다.
 처음에는 6개만 알면 충분하고, 나머지는 필요할 때 찾아 쓰면 됩니다.
 
 ---
@@ -39,7 +39,7 @@ good-vibe:hello  →  good-vibe:new  →  good-vibe:discuss  →  good-vibe:appr
 
 ---
 
-## 고급 커맨드 (10개)
+## 고급 커맨드 (9개)
 
 세부 설정이 필요하거나, 여러 프로젝트를 관리할 때 씁니다.
 
@@ -114,7 +114,7 @@ good-vibe:hello  →  good-vibe:new  →  good-vibe:discuss  →  good-vibe:appr
 
 ## 에이전트용 내부 API
 
-에이전트가 내부적으로 사용하는 CLI 커맨드가 94개 있습니다.
+에이전트가 내부적으로 사용하는 CLI 커맨드가 114개 있습니다.
 일반 사용자는 쓸 일이 없지만, 커스텀 에이전트를 만들 때 참고할 수 있습니다.
 
 ```bash

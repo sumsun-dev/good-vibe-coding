@@ -61,7 +61,46 @@ options:
 업데이트 후 good-vibe:new를 다시 실행해주세요.
 ```
 
-이 경우 여기서 커맨드를 종료합니다. "이대로 진행" 선택 시 Step 1로 넘어갑니다.
+이 경우 여기서 커맨드를 종료합니다. "이대로 진행" 선택 시 Step 0.5로 넘어갑니다.
+
+---
+
+## Step 0.5: 기존 프로젝트 확인
+
+기존 프로젝트가 있는지 확인합니다:
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js list-projects
+```
+
+프로젝트가 **없으면** → Step 1로 바로 진행.
+
+프로젝트가 **있으면** → 전체 목록을 보여주고 AskUserQuestion:
+
+```
+질문: "기존 프로젝트를 이어서 할까요, 새로 시작할까요?"
+header: "프로젝트 선택"
+options:
+  - label: "{프로젝트1명} ({status})"
+    description: "{mode} · 팀 {team.length}명"
+  - label: "{프로젝트2명} ({status})"  (여러 개면 추가, 최대 3개 + Other)
+    description: "{mode} · 팀 {team.length}명"
+  - label: "새 프로젝트 시작"
+    description: "새로운 아이디어로 프로젝트를 시작합니다"
+```
+
+### 기존 프로젝트 선택 시 — 상태별 다음 단계 안내
+
+| 상태                  | 안내                                                               |
+| --------------------- | ------------------------------------------------------------------ |
+| created               | → `good-vibe:discuss`로 토론 시작                                  |
+| planning              | → `good-vibe:discuss`로 토론 계속, 또는 `good-vibe:approve`로 승인 |
+| approved              | → `good-vibe:execute`로 실행 시작                                  |
+| executing / reviewing | → `good-vibe:execute`로 중단된 작업 재개                           |
+| completed             | → `good-vibe:modify`로 수정, 또는 `good-vibe:report`로 보고서 확인 |
+
+기존 프로젝트를 선택한 경우 상태별 다음 커맨드를 안내하고 여기서 종료합니다.
+"새 프로젝트 시작" 선택 시 → Step 1로 진행.
 
 ---
 
@@ -76,7 +115,7 @@ options:
 
 ## Step 1.5: 프로젝트 분석 (Thin Controller)
 
-> **원칙:** 메인 세션은 CEO UI만 담당. 모든 CLI+LLM 작업은 Task tool로 위임합니다.
+> **Thin Controller 원칙:** 메인 세션은 CEO UI만 담당. 모든 CLI+LLM 작업은 Task tool로 위임합니다.
 
 **변수 초기화:**
 
@@ -344,7 +383,7 @@ infraPath와 githubUrl을 Step 4에 전달합니다.
 
 ## Step 4: 프로젝트 셋업 (Thin Controller)
 
-> **원칙:** 프로젝트 생성 + 팀 구성 + 추천을 하나의 Task tool로 묶어 메인 세션의 CLI 체인을 제거합니다.
+> **Thin Controller 원칙:** 프로젝트 생성 + 팀 구성 + 추천을 하나의 Task tool로 묶어 메인 세션의 CLI 체인을 제거합니다.
 
 프로젝트 설명에서 타입을 추론하세요 (web-app, api-server, telegram-bot, cli-tool 등).
 
@@ -802,6 +841,8 @@ options:
   - label: "자동 실행"
     description: "에스컬레이션이 필요한 경우에만 중단합니다"
 ```
+
+> **자동승인 필수:** "자동 실행" 선택 시, Claude Code가 자동승인 모드(Auto-accept edits 이상)가 아니면 매 작업마다 수동 승인이 필요해 자동 실행의 의미가 없습니다. 자동승인이 아닌 경우 `commands/execute.md` Step 1.2의 안내를 따릅니다.
 
 #### C-3. 승인 + 작업 분배 + 실행 초기화 (Task tool)
 

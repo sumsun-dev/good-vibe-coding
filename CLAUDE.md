@@ -4,7 +4,7 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 
 ## 설계: CLI-as-API + SDK
 
-- `cli.js`는 경량 라우터. 123개 커맨드를 14개 핸들러 모듈(`scripts/handlers/*.js`)로 lazy-load 디스패치
+- `cli.js`는 경량 라우터. 114개 커맨드를 14개 핸들러 모듈(`scripts/handlers/*.js`)로 lazy-load 디스패치
 - 사용자는 `good-vibe:hello`, `good-vibe:new`, `good-vibe:discuss` 같은 슬래시 커맨드만 씀
 - 흐름: 슬래시 커맨드 → 에이전트 디스패치 → cli.js → 핸들러 → 코어 라이브러리
 - 에이전트 .md 파일이 `node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js <command>` 형태로 호출
@@ -39,20 +39,29 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 
 ```
 created → planning → approved → executing → reviewing → completed
-                  ↗                                ↗
-           (재토론)                          (fix 후 재실행)
+                  ↗                                ↗        │
+           (재토론)                          (fix 후 재실행)  │
+                                                            ↓
+                                                     (good-vibe:modify)
+                                                     approved → executing → completed
 ```
 
-| 상태        | 가능한 커맨드                            | 설명                          |
-| ----------- | ---------------------------------------- | ----------------------------- |
-| `created`   | `good-vibe:new`, `good-vibe:discuss`     | 프로젝트 생성됨, 팀 구성 완료 |
-| `planning`  | `good-vibe:discuss`, `good-vibe:approve` | 토론 중 또는 기획서 작성됨    |
-| `approved`  | `good-vibe:execute`, `good-vibe:report`  | CEO 승인 완료, 작업 분배됨    |
-| `executing` | `good-vibe:status`, (자동 진행)          | 실행 중                       |
-| `reviewing` | `good-vibe:status`, (자동 진행)          | 리뷰 중                       |
-| `completed` | `good-vibe:report`, `good-vibe:feedback` | 전체 완료                     |
+| 상태        | 가능한 커맨드                                                | 설명                          |
+| ----------- | ------------------------------------------------------------ | ----------------------------- |
+| `created`   | `good-vibe:new`, `good-vibe:discuss`                         | 프로젝트 생성됨, 팀 구성 완료 |
+| `planning`  | `good-vibe:discuss`, `good-vibe:approve`                     | 토론 중 또는 기획서 작성됨    |
+| `approved`  | `good-vibe:execute`, `good-vibe:report`                      | CEO 승인 완료, 작업 분배됨    |
+| `executing` | `good-vibe:status`, (자동 진행)                              | 실행 중                       |
+| `reviewing` | `good-vibe:status`, (자동 진행)                              | 리뷰 중                       |
+| `completed` | `good-vibe:report`, `good-vibe:feedback`, `good-vibe:modify` | 전체 완료                     |
 
 ## 기존 프로젝트 이어서 작업
+
+**`good-vibe:new`에서 자동 감지:**
+
+- `good-vibe:new` 실행 시 기존 프로젝트가 있으면 전체 목록 표시
+- CEO가 기존 프로젝트를 선택하면, 상태에 따라 적절한 다음 커맨드를 안내
+- NL 라우터: "이어서", "계속하자", "재개", "resume" 등을 `new`로 매핑
 
 **중단된 실행 재개:**
 
@@ -113,9 +122,9 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 
 ## 커맨드 우선순위
 
-초보자에게는 **필수 6개만** 안내:
+초보자에게는 **필수 7개만** 안내:
 
-1. **필수 6개** — `good-vibe:hello` → `good-vibe:new` → `good-vibe:discuss` → `good-vibe:approve` → `good-vibe:execute` → `good-vibe:report`
+1. **필수 7개** — `good-vibe:hello` → `good-vibe:new` → `good-vibe:discuss` → `good-vibe:approve` → `good-vibe:execute` → `good-vibe:report` → `good-vibe:modify`
 2. **관리 4개** — `good-vibe:status`, `good-vibe:feedback`, `good-vibe:my-team`, `good-vibe:learn`
 3. **고급 9개** — `good-vibe:new-project`, `good-vibe:projects`, `good-vibe:my-config`, `good-vibe:add-skill`, `good-vibe:add-agent`, `good-vibe:scaffold`, `good-vibe:preset`, `good-vibe:reset`, `good-vibe:eval`
 
@@ -123,14 +132,16 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 
 ## 혼동 방지
 
-| 비교                                                        | 차이                                                                                                 |
-| ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `good-vibe:new` vs `good-vibe:new-project`                  | 자동(복잡도 분석 → 추천) vs 수동(직접 선택)                                                          |
-| `good-vibe:status` vs `good-vibe:projects`                  | 현재 프로젝트만 vs 전체 목록                                                                         |
-| `good-vibe:hello` → `good-vibe:new` vs `good-vibe:new` 단독 | hello는 환경+개인설정(1회), new는 프로젝트 시작. 처음이면 hello 먼저, 이후는 new만                   |
-| `project.mode` vs `executionState.mode`                     | 프로젝트 워크플로우(plan-only/plan-execute/quick-build) vs 실행 인터랙션(interactive/semi-auto/auto) |
-| plan-only vs plan-execute                                   | 둘 다 실행까지 감. plan-only는 good-vibe:approve 후 수동 good-vibe:execute, plan-execute는 자동 연결 |
-| approve 되돌리기                                            | 실행 시작 전이라면 `good-vibe:discuss --reset`으로 approved → planning 복귀 가능                     |
+| 비교                                                        | 차이                                                                                                                 |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `good-vibe:new` vs `good-vibe:new-project`                  | 자동(복잡도 분석 → 추천) vs 수동(직접 선택)                                                                          |
+| `good-vibe:status` vs `good-vibe:projects`                  | 현재 프로젝트만 vs 전체 목록                                                                                         |
+| `good-vibe:hello` → `good-vibe:new` vs `good-vibe:new` 단독 | hello는 환경+개인설정(1회), new는 프로젝트 시작. 처음이면 hello 먼저, 이후는 new만                                   |
+| `project.mode` vs `executionState.mode`                     | 프로젝트 워크플로우(plan-only/plan-execute/quick-build) vs 실행 인터랙션(interactive/semi-auto/auto)                 |
+| plan-only vs plan-execute                                   | 둘 다 실행까지 감. plan-only는 good-vibe:approve 후 수동 good-vibe:execute, plan-execute는 자동 연결                 |
+| approve 되돌리기                                            | 실행 시작 전이라면 `good-vibe:discuss --reset`으로 approved → planning 복귀 가능                                     |
+| `good-vibe:new` vs `good-vibe:modify`                       | `new`는 새 프로젝트 (아이디어 → 팀 구성 → 토론 → 실행), `modify`는 완료된 프로젝트의 기능 추가/수정 (기존 맥락 유지) |
+| `good-vibe:new`에서 "이어서"                                | 기존 프로젝트 전체 목록 → 선택 → 상태별 다음 커맨드 안내. 직접 실행은 안 함 (detect → offer → route)                 |
 
 ## 기술 스택
 
@@ -201,6 +212,20 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 - `CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}`
 - 반환 형식 제한 (글자 수, 포함/제외 항목)
 - 컨텍스트 보호 목적 명시
+
+### 사용자가 메인 세션에서 직접 작업 요청 시
+
+사용자가 Good Vibe 커맨드 없이 "코드 작성해줘", "이 파일 고쳐줘" 등을 요청하면:
+
+1. **Good Vibe 워크플로우로 안내** — `good-vibe:new` 또는 `good-vibe:status` 추천
+2. **혼합 불가 명시** — Good Vibe 커맨드와 직접 코딩의 혼용은 지원하지 않음
+3. **사용자 선택 존중** — Good Vibe 없이 직접 작업하겠다면 일반 Claude Code로 진행
+
+**금지 패턴:**
+
+- Good Vibe 커맨드 없이 메인 세션에서 `node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js ...` 직접 호출
+- Good Vibe CLI를 Task tool로 감싸서 우회 실행
+- 프로젝트 생성/팀 구성/토론/실행 흐름을 직접 진행
 
 ## 코어 모듈 (`scripts/lib/`)
 
@@ -291,7 +316,7 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 
 **CLI 레이어**
 
-- `cli.js` — 라우터 (123개 커맨드, 14개 핸들러로 디스패치)
+- `cli.js` — 라우터 (114개 커맨드, 14개 핸들러로 디스패치)
 - `cli-utils.js` — readStdin, output, outputOk, parseArgs
 - `handlers/*.js` — 14개 핸들러: project, team, discussion, execution, review, build, eval, auth, feedback, infra, metrics, template, task, recommendation
 

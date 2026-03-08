@@ -7,7 +7,7 @@
 | 1    | [Claude Code란?](common/01-what-is-claude-code.md) | Claude Code의 핵심 개념 5가지       |
 | 2    | [기본 사용법](common/02-basic-usage.md)            | 대화, 요청 패턴, 역할별 활용        |
 | 3    | [퀵스타트](common/00-quick-start.md)               | 6단계로 프로젝트 끝내기             |
-| 4    | [커맨드와 스킬](common/03-commands-and-skills.md)  | 20개 커맨드 + 4개 스킬              |
+| 4    | [커맨드와 스킬](common/03-commands-and-skills.md)  | 19개 커맨드 + 4개 스킬              |
 | 5    | [커맨드 레퍼런스](common/03-commands-reference.md) | 모드 비교, 실행 모드, 에스컬레이션  |
 | 6    | [에이전트](common/04-agents.md)                    | 8개 서포트 에이전트, 모델 선택 기준 |
 

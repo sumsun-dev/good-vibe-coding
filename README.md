@@ -220,18 +220,21 @@ GitHub 협업 모드를 활성화하면:
 프로젝트가 중간에 끊겼거나, 다음 날 이어서 하고 싶을 때:
 
 ```
+good-vibe:new                # 기존 프로젝트가 있으면 목록 표시 → 선택 → 상태별 다음 단계 안내
 good-vibe:status             # 현재 프로젝트가 어디까지 진행됐는지 확인
 good-vibe:execute            # 중단된 실행이 있으면 자동으로 재개 여부를 물어봄
 good-vibe:projects           # 여러 프로젝트 중 하나를 선택해서 작업
 ```
 
+- `good-vibe:new` 실행 시 기존 프로젝트가 있으면 자동으로 감지하여 목록을 보여줍니다
+- "이어서 해줘", "계속하자", "resume" 등의 자연어도 `good-vibe:new`로 라우팅됩니다
 - 실행 상태(Phase, 수정 이력, 작업 결과)는 자동 저장됩니다
 - `good-vibe:execute` 재실행 시 이전 Phase부터 이어서 진행할 수 있습니다
 - 완료된 프로젝트에 `good-vibe:feedback`으로 팀원 성과를 분석하면, 다음 프로젝트에 자동 반영됩니다
 
 ## 전체 커맨드
 
-20개 슬래시 커맨드를 제공합니다. 처음에는 위의 6개만 알면 충분합니다.
+19개 슬래시 커맨드를 제공합니다. 처음에는 위의 6개만 알면 충분합니다.
 
 ### 프로젝트 진행
 
@@ -405,7 +408,7 @@ good-vibe/
 ├── src/             SDK (GoodVibe, Discusser, Executor, Storage)
 ├── plugin/          Claude Code 어댑터
 ├── agents/          23개 에이전트 (팀 15 + 서포트 8)
-├── commands/        20개 슬래시 커맨드 정의
+├── commands/        19개 슬래시 커맨드 정의
 ├── scripts/
 │   ├── cli.js       내부 API 라우터 (114개 커맨드)
 │   ├── handlers/    14개 핸들러 모듈

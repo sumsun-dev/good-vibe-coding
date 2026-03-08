@@ -56,6 +56,28 @@ describe('resolveNaturalLanguage', () => {
     expect(resolveNaturalLanguage('결과 보고해줘')).toBe('report');
   });
 
+  // --- modify 매칭 ---
+
+  it('"수정해줘" → modify', () => {
+    expect(resolveNaturalLanguage('수정해줘')).toBe('modify');
+  });
+
+  it('"기능 추가해줘" → modify', () => {
+    expect(resolveNaturalLanguage('기능 추가해줘')).toBe('modify');
+  });
+
+  it('"UI 변경해줘" → modify', () => {
+    expect(resolveNaturalLanguage('UI 변경해줘')).toBe('modify');
+  });
+
+  it('"고쳐줘" → modify', () => {
+    expect(resolveNaturalLanguage('고쳐줘')).toBe('modify');
+  });
+
+  it('"modify project" → modify', () => {
+    expect(resolveNaturalLanguage('modify project')).toBe('modify');
+  });
+
   // --- 영어 매칭 ---
 
   it('"create a team" → new', () => {
@@ -88,6 +110,46 @@ describe('resolveNaturalLanguage', () => {
 
   it('"report" → report', () => {
     expect(resolveNaturalLanguage('report')).toBe('report');
+  });
+
+  // --- 재개 매칭 (new로 라우팅) ---
+
+  it('"이어서 해줘" → new', () => {
+    expect(resolveNaturalLanguage('이어서 해줘')).toBe('new');
+  });
+
+  it('"계속하자" → new', () => {
+    expect(resolveNaturalLanguage('계속하자')).toBe('new');
+  });
+
+  it('"작업 재개" → new', () => {
+    expect(resolveNaturalLanguage('작업 재개')).toBe('new');
+  });
+
+  it('"이전 프로젝트 이어서" → new', () => {
+    expect(resolveNaturalLanguage('이전 프로젝트 이어서')).toBe('new');
+  });
+
+  it('"하던 프로젝트 계속해줘" → new', () => {
+    expect(resolveNaturalLanguage('하던 프로젝트 계속해줘')).toBe('new');
+  });
+
+  it('"resume" → new', () => {
+    expect(resolveNaturalLanguage('resume')).toBe('new');
+  });
+
+  it('"continue project" → new', () => {
+    expect(resolveNaturalLanguage('continue project')).toBe('new');
+  });
+
+  // --- 재개 vs 다른 커맨드 충돌 확인 ---
+
+  it('"계속 만들어줘" → execute (재개가 아닌 생성 의도)', () => {
+    expect(resolveNaturalLanguage('계속 만들어줘')).toBe('execute');
+  });
+
+  it('"RESUME" (대문자) → new', () => {
+    expect(resolveNaturalLanguage('RESUME')).toBe('new');
   });
 
   // --- 매칭 실패 ---
