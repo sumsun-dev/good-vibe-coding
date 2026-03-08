@@ -2,8 +2,8 @@
  * handlers/feedback — 에이전트 피드백 + 오버라이드 커맨드
  */
 import { readStdin, output, outputOk, parseArgs } from '../cli-utils.js';
-import { getProject } from '../lib/project/project-manager.js';
-import { inputError, notFoundError, requireFields } from '../lib/core/validators.js';
+import { inputError, requireFields } from '../lib/core/validators.js';
+import { withProject } from '../lib/project/handler-helpers.js';
 import {
   extractAgentPerformance,
   buildImprovementPrompt,
@@ -23,10 +23,7 @@ const [, , , ...args] = process.argv;
 export const commands = {
   'extract-performance': async () => {
     const opts = parseArgs(args);
-    const project = await getProject(opts.id);
-    if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
-    const performances = extractAgentPerformance(project);
-    output(performances);
+    await withProject(opts.id, (project) => output(extractAgentPerformance(project)));
   },
 
   'improvement-prompt': async () => {

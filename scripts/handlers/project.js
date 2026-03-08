@@ -4,7 +4,6 @@
 import { readStdin, output, parseArgs } from '../cli-utils.js';
 import {
   createProject,
-  getProject,
   listProjects,
   updateProjectStatus,
   setProjectTeam,
@@ -18,6 +17,7 @@ import {
   notFoundError,
   assertWithinRoot,
 } from '../lib/core/validators.js';
+import { withProject } from '../lib/project/handler-helpers.js';
 import { getCommandSchema, listCommandSchemas } from '../lib/core/command-schemas.js';
 
 const [, , , ...args] = process.argv;
@@ -58,9 +58,7 @@ export const commands = {
 
   'get-project': async () => {
     const opts = parseArgs(args);
-    const project = await getProject(opts.id);
-    if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
-    output(project);
+    await withProject(opts.id, (project) => output(project));
   },
 
   'list-projects': async () => {
@@ -84,18 +82,12 @@ export const commands = {
 
   'execution-progress': async () => {
     const opts = parseArgs(args);
-    const project = await getProject(opts.id);
-    if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
-    const progress = getExecutionProgress(project);
-    output(progress);
+    await withProject(opts.id, (project) => output(getExecutionProgress(project)));
   },
 
   report: async () => {
     const opts = parseArgs(args);
-    const project = await getProject(opts.id);
-    if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${opts.id}`);
-    const report = generateReport(project);
-    output({ report });
+    await withProject(opts.id, (project) => output({ report: generateReport(project) }));
   },
 
   'scan-codebase': async () => {
