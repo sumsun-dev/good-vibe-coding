@@ -373,6 +373,8 @@ options:
 
 #### 3.A-5: 설정 생성
 
+> **Thin Controller 원칙:** 설정 파일 생성 + CLAUDE.md 분석은 Task tool이 담당합니다.
+
 Task tool로 설정 파일을 생성합니다:
 
 ```

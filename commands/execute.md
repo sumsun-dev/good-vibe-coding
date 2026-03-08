@@ -43,6 +43,39 @@ options:
 
 잘 모르겠으면 질문해주세요!
 
+**"자동 실행" 또는 "세미-오토" 선택 시 자동승인 모드 확인:**
+
+현재 Claude Code의 승인 모드를 확인합니다. 자동/세미-오토 모드에서는 파일 편집과 CLI 실행이 빈번하게 발생하므로, 매번 수동 승인하면 자동 실행의 의미가 없어집니다.
+
+자동승인 모드가 아닌 경우 안내합니다:
+
+```
+자동 실행 모드에서는 자동승인이 필요합니다.
+
+현재 승인 모드가 Normal이면 매 작업마다 수동 승인이 필요해서
+자동 실행의 효과가 떨어집니다.
+
+권장 설정:
+  Shift+Tab → "Auto-accept edits" 이상으로 전환
+  또는 claude --dangerously-skip-permissions 로 시작
+
+지금 전환하시겠습니까? 아니면 인터랙티브 모드로 변경할 수도 있습니다.
+```
+
+AskUserQuestion:
+
+```
+질문: "자동승인 모드가 아닙니다. 어떻게 하시겠습니까?"
+header: "승인 모드"
+options:
+  - label: "이대로 진행"
+    description: "수동 승인하면서 자동 모드로 실행합니다 (승인 요청이 많을 수 있음)"
+  - label: "인터랙티브로 변경 (Recommended)"
+    description: "Phase마다 확인하는 모드로 전환합니다"
+  - label: "설정 방법 보기"
+    description: "자동승인 설정 방법을 안내받고 다시 시작합니다"
+```
+
 ### 1.3 실행 초기화 (Task tool)
 
 **Task tool 프롬프트:**
@@ -84,6 +117,8 @@ Phase별: Phase 1: 3개, Phase 2: 5개, ...
 ---
 
 ## Step 2: 실행 루프
+
+> **Thin Controller 원칙:** Phase 실행의 모든 복잡성(next-step, action 처리, advance-execution)은 Task tool 내부에 격리됩니다. 메인 세션은 결과만 받아서 CEO에게 표시합니다.
 
 action이 `complete` 또는 `already-completed`가 될 때까지 아래를 반복합니다.
 
@@ -308,6 +343,8 @@ action이 `complete`가 될 때까지 2.1-2.5를 반복합니다.
 
 ## Step 3: 완료
 
+> **Thin Controller 원칙:** 완료 처리(상태 업데이트 + 파일 목록 + 환경변수 추출)를 하나의 Task tool로 묶습니다.
+
 action이 `complete`이면 완료 처리를 시작합니다.
 
 ### 3.1 완료 처리 (Task tool)
@@ -383,6 +420,8 @@ action이 `complete`이면 완료 처리를 시작합니다.
 
 ## 서브에이전트 모드 (Phase 단위 실행)
 
+> **Thin Controller 원칙:** `good-vibe:new`에서 호출 시에도 동일한 격리 원칙이 적용됩니다.
+
 `good-vibe:new`에서 Task tool로 Phase별 호출된 경우, Step 2.1의 Task tool 프롬프트를 그대로 따릅니다.
 
 ### 실행 절차
@@ -449,3 +488,40 @@ Phase {N} 완료:
 - 중간 fix 시도 상세
 
 > **이유:** 메인 세션의 컨텍스트를 보호하기 위함. 상세 내용은 project.json에 저장되어 있으므로 `good-vibe:status`나 `good-vibe:report`로 조회 가능.
+
+---
+
+## 워크플로우 요약 (Thin Controller 준수)
+
+```
+Step 1: 프로젝트 로드 + 모드 선택 (메인 세션 — 조회 CLI + AskUserQuestion)
+  ↓
+Step 1.3: 실행 초기화 (Task tool — init-execution + update-status + execution-plan)
+  ↓
+Step 2: 실행 루프 (Task tool — Phase 실행 + 리뷰 + 품질게이트 + 수정)
+  ↓ (에스컬레이션 발생 시)
+Step 2.2: CEO 판단 (메인 세션 — AskUserQuestion)
+  ↓
+Step 2.3: 에스컬레이션 적용 (Task tool — handle-escalation + Phase 재개)
+  ↓ (complete 반환)
+Step 3: 완료 처리 (Task tool — update-status + 파일 목록 + 환경변수 추출)
+  ↓
+Step 4: 다음 단계 안내 (메인 세션 — 결과 표시)
+```
+
+**메인 세션 역할:**
+
+- 프로젝트 조회 (list-projects)
+- 실행 모드 선택 (AskUserQuestion)
+- Task tool 결과 표시 (Phase 요약, 진행률)
+- 에스컬레이션 판단 (AskUserQuestion)
+- 다음 Phase 확인 (인터랙티브 모드)
+- 완료 안내
+
+**Task tool 역할:**
+
+- 실행 초기화 (init-execution + update-status + execution-plan)
+- Phase 루프 전체 (next-step → action별 처리 → advance-execution)
+- 에스컬레이션 결정 적용 (handle-escalation + 재개)
+- 완료 처리 (update-status + 결과 추출)
+- 모든 LLM 호출과 멀티-CLI 체인
