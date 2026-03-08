@@ -264,6 +264,152 @@ export function getNextExecutionStep(project) {
   };
 }
 
+// === Private transition handlers ===
+
+function handleExecuteTasks(state, phaseResult, stepResult) {
+  if (stepResult.taskResults) phaseResult.taskResults = stepResult.taskResults;
+  state.phaseStep = 'materialize';
+  state.lastCompletedStep = 'execute-tasks';
+  state.phaseGuidance = null;
+}
+
+function handleMaterialize(state, phaseResult, stepResult) {
+  if (stepResult.materializeResult) {
+    phaseResult.materializeResult = stepResult.materializeResult;
+  }
+  state.phaseStep = 'review';
+  state.lastCompletedStep = 'materialize';
+  state.status = 'reviewing';
+}
+
+function handleReview(state, phaseResult, stepResult) {
+  if (stepResult.reviews) phaseResult.reviews = stepResult.reviews;
+  state.phaseStep = 'quality-gate';
+  state.lastCompletedStep = 'review';
+}
+
+function handleQualityGate(state, phaseResult, stepResult, phase) {
+  if (stepResult.qualityGateResult) {
+    phaseResult.qualityGate = stepResult.qualityGateResult;
+  }
+  if (stepResult.qualityGateResult && stepResult.qualityGateResult.passed) {
+    state.phaseStep = 'commit';
+    state.status = 'committing';
+    state.failureContext = null;
+  } else if (state.fixAttempt < MAX_FIX_ATTEMPTS) {
+    state.phaseStep = 'fix';
+    state.status = 'fixing';
+    state.failureContext = buildFailureContext(state, stepResult);
+  } else {
+    state.failureContext = buildFailureContext(state, stepResult);
+    state.status = 'escalated';
+    state.pendingEscalation = {
+      reason: `Phase ${phase}: 품질 게이트 ${MAX_FIX_ATTEMPTS}회 수정 후에도 실패`,
+      unresolvedIssues: stepResult.qualityGateResult ? stepResult.qualityGateResult.issues : [],
+      failureHistory: state.failureHistory || [],
+    };
+  }
+  state.lastCompletedStep = 'quality-gate';
+}
+
+function handleFix(state, _phaseResult, _stepResult) {
+  state.failureHistory = [...(state.failureHistory || [])];
+  if (state.failureContext) {
+    state.failureHistory.push({
+      attempt: state.fixAttempt + 1,
+      issues: state.failureContext.issues,
+      timestamp: new Date().toISOString(),
+    });
+  }
+  state.fixAttempt += 1;
+  state.phaseStep = 'materialize';
+  state.status = 'executing';
+  state.lastCompletedStep = 'fix';
+}
+
+function handleCommit(state, phaseResult) {
+  phaseResult.committed = true;
+  state.phaseStep = 'build-context';
+  state.status = 'executing';
+  state.lastCompletedStep = 'commit';
+}
+
+function handleBuildContext(state, _phaseResult, stepResult, phase, totalPhases) {
+  state.completedPhases = [...state.completedPhases, phase];
+  state.lastCompletedStep = 'build-context';
+  state.phaseGuidance = stepResult.phaseGuidance || null;
+
+  if (phase >= totalPhases) {
+    state.status = 'completed';
+    state.completedAt = new Date().toISOString();
+  } else {
+    state.currentPhase = phase + 1;
+    state.phaseStep = 'execute-tasks';
+    state.fixAttempt = 0;
+    state.status = 'executing';
+  }
+}
+
+function handleReviewIntervention(state, _phaseResult, stepResult) {
+  if (stepResult.revisionGuidance) {
+    state.phaseStep = 'fix';
+    state.status = 'fixing';
+    state.failureContext = {
+      issues: [],
+      ceoGuidance: stepResult.revisionGuidance,
+      source: 'review-intervention',
+    };
+  }
+  state.lastCompletedStep = 'review-intervention';
+}
+
+function handleEscalationResponse(state, _phaseResult, stepResult) {
+  switch (stepResult.escalationDecision) {
+    case 'continue':
+      state.escalationCount = (state.escalationCount || 0) + 1;
+      if (state.escalationCount > config.execution.maxEscalationAttempts) {
+        throw inputError(
+          `에스컬레이션 최대 횟수(${config.execution.maxEscalationAttempts}회)를 초과했습니다. skip 또는 abort를 선택하세요.`,
+        );
+      }
+      state.fixAttempt = 0;
+      state.phaseStep = 'fix';
+      state.status = 'fixing';
+      state.pendingEscalation = null;
+      if (stepResult.ceoGuidance) {
+        state.failureContext = {
+          ...(state.failureContext || {}),
+          ceoGuidance: stepResult.ceoGuidance,
+        };
+      }
+      break;
+    case 'skip':
+      state.phaseStep = 'commit';
+      state.status = 'committing';
+      state.pendingEscalation = null;
+      break;
+    case 'abort':
+      state.status = 'paused';
+      break;
+    default:
+      throw inputError(`알 수 없는 에스컬레이션 결정: ${stepResult.escalationDecision}`);
+  }
+  state.lastCompletedStep = 'escalation-response';
+}
+
+/** completedAction → 핸들러 매핑 */
+const TRANSITION_HANDLERS = {
+  'execute-tasks': handleExecuteTasks,
+  materialize: handleMaterialize,
+  review: handleReview,
+  'quality-gate': handleQualityGate,
+  fix: handleFix,
+  commit: handleCommit,
+  'build-context': handleBuildContext,
+  'review-intervention': handleReviewIntervention,
+  'escalation-response': handleEscalationResponse,
+};
+
 /**
  * 순수 상태 전이 함수. I/O 없이 프로젝트 상태를 전이한다.
  * SDK에서 스토리지에 독립적으로 상태 전이를 계산할 때 사용.
@@ -297,146 +443,12 @@ export function computeStateTransition(project, stepResult) {
   }
   const phaseResult = state.phaseResults[phase];
 
-  switch (stepResult.completedAction) {
-    case 'execute-tasks':
-      if (stepResult.taskResults) phaseResult.taskResults = stepResult.taskResults;
-      state.phaseStep = 'materialize';
-      state.lastCompletedStep = 'execute-tasks';
-      state.phaseGuidance = null; // 사용 후 소멸 (1회성)
-      break;
-
-    case 'materialize':
-      if (stepResult.materializeResult) {
-        phaseResult.materializeResult = stepResult.materializeResult;
-      }
-      state.phaseStep = 'review';
-      state.lastCompletedStep = 'materialize';
-      state.status = 'reviewing';
-      break;
-
-    case 'review':
-      if (stepResult.reviews) phaseResult.reviews = stepResult.reviews;
-      state.phaseStep = 'quality-gate';
-      state.lastCompletedStep = 'review';
-      break;
-
-    case 'quality-gate':
-      if (stepResult.qualityGateResult) {
-        phaseResult.qualityGate = stepResult.qualityGateResult;
-      }
-      if (stepResult.qualityGateResult && stepResult.qualityGateResult.passed) {
-        state.phaseStep = 'commit';
-        state.status = 'committing';
-        state.failureContext = null;
-      } else if (state.fixAttempt < MAX_FIX_ATTEMPTS) {
-        state.phaseStep = 'fix';
-        state.status = 'fixing';
-        state.failureContext = buildFailureContext(state, stepResult);
-      } else {
-        state.failureContext = buildFailureContext(state, stepResult);
-        state.status = 'escalated';
-        state.pendingEscalation = {
-          reason: `Phase ${phase}: 품질 게이트 ${MAX_FIX_ATTEMPTS}회 수정 후에도 실패`,
-          unresolvedIssues: stepResult.qualityGateResult ? stepResult.qualityGateResult.issues : [],
-          failureHistory: state.failureHistory || [],
-        };
-      }
-      state.lastCompletedStep = 'quality-gate';
-      break;
-
-    case 'fix': {
-      // 현재 실패 컨텍스트를 이력에 누적
-      state.failureHistory = [...(state.failureHistory || [])];
-      if (state.failureContext) {
-        state.failureHistory.push({
-          attempt: state.fixAttempt + 1,
-          issues: state.failureContext.issues,
-          timestamp: new Date().toISOString(),
-        });
-      }
-      state.fixAttempt += 1;
-      state.phaseStep = 'materialize';
-      state.status = 'executing';
-      state.lastCompletedStep = 'fix';
-      break;
-    }
-
-    case 'commit':
-      phaseResult.committed = true;
-      state.phaseStep = 'build-context';
-      state.status = 'executing';
-      state.lastCompletedStep = 'commit';
-      break;
-
-    case 'build-context': {
-      state.completedPhases = [...state.completedPhases, phase];
-      state.lastCompletedStep = 'build-context';
-      state.phaseGuidance = stepResult.phaseGuidance || null;
-
-      if (phase >= totalPhases) {
-        state.status = 'completed';
-        state.completedAt = new Date().toISOString();
-      } else {
-        state.currentPhase = phase + 1;
-        state.phaseStep = 'execute-tasks';
-        state.fixAttempt = 0;
-        state.status = 'executing';
-      }
-      break;
-    }
-
-    case 'review-intervention': {
-      if (stepResult.revisionGuidance) {
-        state.phaseStep = 'fix';
-        state.status = 'fixing';
-        state.failureContext = {
-          issues: [],
-          ceoGuidance: stepResult.revisionGuidance,
-          source: 'review-intervention',
-        };
-      }
-      state.lastCompletedStep = 'review-intervention';
-      break;
-    }
-
-    case 'escalation-response':
-      switch (stepResult.escalationDecision) {
-        case 'continue':
-          state.escalationCount = (state.escalationCount || 0) + 1;
-          if (state.escalationCount > config.execution.maxEscalationAttempts) {
-            throw inputError(
-              `에스컬레이션 최대 횟수(${config.execution.maxEscalationAttempts}회)를 초과했습니다. skip 또는 abort를 선택하세요.`,
-            );
-          }
-          state.fixAttempt = 0;
-          state.phaseStep = 'fix';
-          state.status = 'fixing';
-          state.pendingEscalation = null;
-          // CEO 피드백을 failureContext에 주입
-          if (stepResult.ceoGuidance) {
-            state.failureContext = {
-              ...(state.failureContext || {}),
-              ceoGuidance: stepResult.ceoGuidance,
-            };
-          }
-          break;
-        case 'skip':
-          state.phaseStep = 'commit';
-          state.status = 'committing';
-          state.pendingEscalation = null;
-          break;
-        case 'abort':
-          state.status = 'paused';
-          break;
-        default:
-          throw inputError(`알 수 없는 에스컬레이션 결정: ${stepResult.escalationDecision}`);
-      }
-      state.lastCompletedStep = 'escalation-response';
-      break;
-
-    default:
-      throw inputError(`알 수 없는 completedAction: ${stepResult.completedAction}`);
+  // 핸들러 디스패치
+  const handler = TRANSITION_HANDLERS[stepResult.completedAction];
+  if (!handler) {
+    throw inputError(`알 수 없는 completedAction: ${stepResult.completedAction}`);
   }
+  handler(state, phaseResult, stepResult, phase, totalPhases);
 
   // 전이 유효성 검증
   const fromStep = project.executionState.phaseStep;
