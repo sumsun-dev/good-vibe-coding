@@ -72,6 +72,13 @@ describe('handlers/team', () => {
     expect(Object.keys(result.types).length).toBeGreaterThan(0);
   });
 
+  it('team-summary → roleIds 필수', () => {
+    const result = cliExecRaw('team-summary', {});
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('INPUT_ERROR');
+    expect(result.stderr).toContain('roleIds');
+  });
+
   it('team-summary → 팀 요약 + 팀원 정보', () => {
     const result = cliExec('team-summary', { roleIds: ['cto', 'backend', 'qa'] });
     expect(result.summary).toBeDefined();

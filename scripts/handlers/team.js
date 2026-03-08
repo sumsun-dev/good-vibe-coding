@@ -76,6 +76,7 @@ export const commands = {
 
   'team-summary': async () => {
     const data = await readStdin();
+    requireFields(data, ['roleIds']);
     const team = await buildTeam(data.roleIds, data.personalityChoices);
     output({ summary: getTeamSummary(team), team });
   },
