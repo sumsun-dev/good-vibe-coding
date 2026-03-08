@@ -7,6 +7,7 @@
 
 import { mkdir, writeFile } from 'fs/promises';
 import { resolve, dirname } from 'path';
+import { config } from '../core/config.js';
 
 const PYTHON_STACKS = ['python', 'fastapi', 'django', 'flask', 'pytorch', 'tensorflow', 'pandas'];
 const GO_STACKS = ['go', 'gin', 'echo', 'fiber'];
@@ -25,16 +26,16 @@ export function resolveCIStrategy(options = {}) {
   );
 
   if (stacks.some((s) => PYTHON_STACKS.includes(s))) {
-    return { type: 'python', pythonVersions: ['3.10', '3.11', '3.12'] };
+    return { type: 'python', pythonVersions: [...config.ciVersions.python] };
   }
   if (stacks.some((s) => GO_STACKS.includes(s))) {
-    return { type: 'go', goVersion: '1.21' };
+    return { type: 'go', goVersion: config.ciVersions.go };
   }
   if (stacks.some((s) => JAVA_STACKS.includes(s))) {
-    return { type: 'java', javaVersion: '17' };
+    return { type: 'java', javaVersion: config.ciVersions.java };
   }
 
-  return { type: 'node', nodeVersions: ['18', '20', '22'] };
+  return { type: 'node', nodeVersions: [...config.ciVersions.node] };
 }
 
 /**

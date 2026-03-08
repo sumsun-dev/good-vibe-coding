@@ -14,6 +14,13 @@ describe('config', () => {
     expect(Object.isFrozen(config.team.simple)).toBe(true);
     expect(Object.isFrozen(config.recommendation)).toBe(true);
     expect(Object.isFrozen(config.recommendation.weights)).toBe(true);
+    expect(Object.isFrozen(config.pr)).toBe(true);
+    expect(Object.isFrozen(config.commit)).toBe(true);
+    expect(Object.isFrozen(config.http)).toBe(true);
+    expect(Object.isFrozen(config.http.retryableCodes)).toBe(true);
+    expect(Object.isFrozen(config.ciVersions)).toBe(true);
+    expect(Object.isFrozen(config.ciVersions.python)).toBe(true);
+    expect(Object.isFrozen(config.ciVersions.node)).toBe(true);
   });
 
   it('모든 설정값에 접근할 수 있다', () => {
@@ -43,6 +50,17 @@ describe('config', () => {
       keyword: 1,
       roleAffinity: 2,
     });
+    expect(config.pr.maxTitleLength).toBe(70);
+    expect(config.commit.maxSubjectLength).toBe(72);
+    expect(config.http.retryableCodes).toEqual([429, 500, 502, 503, 504]);
+    expect(config.http.errorTruncateLength).toBe(200);
+    expect(config.http.maxRetryDelay).toBe(8000);
+    expect(config.http.retryJitter).toBe(200);
+    expect(config.ciVersions.python).toEqual(['3.10', '3.11', '3.12']);
+    expect(config.ciVersions.node).toEqual(['18', '20', '22']);
+    expect(config.ciVersions.go).toBe('1.21');
+    expect(config.ciVersions.java).toBe('17');
+    expect(config.codebase.maxDepth).toBe(10);
   });
 
   it('값을 변경할 수 없다', () => {

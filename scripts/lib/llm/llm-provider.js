@@ -10,9 +10,10 @@ import { loadAuth } from './auth-manager.js';
 import { callGeminiCli } from './gemini-bridge.js';
 import { config } from '../core/config.js';
 import { AppError, inputError, notFoundError } from '../core/validators.js';
+import { truncateText } from '../core/text-utils.js';
 
 /** 재시도 가능한 HTTP 상태 코드 */
-const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
+const RETRYABLE_STATUS_CODES = new Set(config.http.retryableCodes);
 
 /** 재시도 가능한 네트워크 에러 코드 */
 const RETRYABLE_ERROR_CODES = new Set([
@@ -79,7 +80,7 @@ export async function callLLM(providerId, prompt, options = {}) {
 
       if (!response.ok) {
         const errorText = await response.text();
-        const truncated = errorText.length > 200 ? errorText.slice(0, 200) + '...' : errorText;
+        const truncated = truncateText(errorText, config.http.errorTruncateLength);
         const err = new AppError(
           `${providerId} API 호출 실패 (${response.status}): ${truncated}`,
           'SYSTEM_ERROR',
@@ -118,7 +119,9 @@ export async function callLLM(providerId, prompt, options = {}) {
 
     // 마지막 시도면 재시도 안 함
     if (attempt < maxRetries) {
-      const delay = Math.min(Math.pow(2, attempt) * 1000, 8000) + Math.random() * 200;
+      const delay =
+        Math.min(Math.pow(2, attempt) * 1000, config.http.maxRetryDelay) +
+        Math.random() * config.http.retryJitter;
       await new Promise((r) => setTimeout(r, delay));
     }
   }

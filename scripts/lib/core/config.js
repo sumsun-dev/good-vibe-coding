@@ -119,7 +119,22 @@ export const config = Object.freeze({
     ]),
   }),
   cli: Object.freeze({ suggestionThreshold: 3, maxInputLength: 50 }),
+  pr: Object.freeze({ maxTitleLength: 70 }),
+  commit: Object.freeze({ maxSubjectLength: 72 }),
+  http: Object.freeze({
+    retryableCodes: Object.freeze([429, 500, 502, 503, 504]),
+    errorTruncateLength: 200,
+    maxRetryDelay: 8000,
+    retryJitter: 200,
+  }),
+  ciVersions: Object.freeze({
+    python: Object.freeze(['3.10', '3.11', '3.12']),
+    node: Object.freeze(['18', '20', '22']),
+    go: '1.21',
+    java: '17',
+  }),
   codebase: Object.freeze({
+    maxDepth: 10,
     ignoredDirs: Object.freeze([
       'node_modules',
       '.git',

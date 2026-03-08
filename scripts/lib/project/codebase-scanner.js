@@ -124,7 +124,7 @@ export async function scanCodebase(projectPath) {
  * @param {string} root - 루트 디렉토리
  * @returns {Promise<string[]>} 상대 경로 배열
  */
-const MAX_DEPTH = 10;
+const MAX_DEPTH = config.codebase.maxDepth;
 
 async function collectFiles(dir, root, depth = 0) {
   if (depth > MAX_DEPTH) return [];
