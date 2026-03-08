@@ -6,6 +6,14 @@ vi.mock('../../scripts/cli-utils.js', () => ({
   parseArgs: vi.fn(),
 }));
 
+vi.mock('../../scripts/lib/core/validators.js', () => ({
+  requireFields: vi.fn((data, fields) => {
+    for (const f of fields) {
+      if (!(f in data)) throw new Error(`필수 필드 누락: ${f}`);
+    }
+  }),
+}));
+
 vi.mock('../../scripts/lib/project/template-scaffolder.js', () => ({
   listTemplates: vi.fn(),
   loadTemplate: vi.fn(),
@@ -79,6 +87,11 @@ describe('template handler', () => {
   });
 
   describe('scaffold', () => {
+    it('필수 필드 누락 시 에러', async () => {
+      readStdin.mockResolvedValue({});
+      await expect(commands['scaffold']()).rejects.toThrow('template');
+    });
+
     it('템플릿으로 프로젝트를 생성해야 한다', async () => {
       const result = { created: true, files: ['index.js', 'package.json'] };
       readStdin.mockResolvedValue({

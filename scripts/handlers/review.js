@@ -2,6 +2,7 @@
  * handlers/review — 크로스 리뷰 + 품질 게이트 커맨드
  */
 import { readStdin, output } from '../cli-utils.js';
+import { requireFields } from '../lib/core/validators.js';
 import {
   selectReviewers,
   buildTaskReviewPrompt,
@@ -20,30 +21,35 @@ import { getProject } from '../lib/project/project-manager.js';
 export const commands = {
   'select-reviewers': async () => {
     const data = await readStdin();
+    requireFields(data, ['task', 'team']);
     const reviewers = selectReviewers(data.task, data.team);
     output({ reviewers });
   },
 
   'task-review-prompt': async () => {
     const data = await readStdin();
+    requireFields(data, ['reviewer', 'task', 'taskOutput']);
     const prompt = buildTaskReviewPrompt(data.reviewer, data.task, data.taskOutput);
     output({ prompt });
   },
 
   'check-quality-gate': async () => {
     const data = await readStdin();
+    requireFields(data, ['reviews']);
     const result = checkQualityGate(data.reviews);
     output(result);
   },
 
   'enhanced-quality-gate': async () => {
     const data = await readStdin();
+    requireFields(data, ['reviews', 'executionResult']);
     const result = checkEnhancedQualityGate(data.reviews, data.executionResult);
     output(result);
   },
 
   'revision-prompt': async () => {
     const data = await readStdin();
+    requireFields(data, ['task', 'implementer', 'reviews']);
     const prompt = buildRevisionPrompt(
       data.task,
       data.implementer,
@@ -55,6 +61,7 @@ export const commands = {
 
   'verify-execution': async () => {
     const data = await readStdin();
+    requireFields(data, ['taskOutput', 'task']);
     const result = await verifyExecution(data.taskOutput, data.task);
     output(result);
   },
