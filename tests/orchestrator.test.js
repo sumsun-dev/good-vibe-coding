@@ -577,8 +577,10 @@ describe('buildSynthesisPrompt 프롬프트 크기 제한', () => {
     const agentOutputs = [{ roleId: 'cto', role: 'CTO', emoji: '', analysis: longAnalysis }];
     const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
     expect(prompt).not.toContain('A'.repeat(5000));
-    expect(prompt).toContain('A'.repeat(3000));
+    expect(prompt).not.toContain('A'.repeat(3000));
     expect(prompt).toContain('...(이하 생략)');
+    // truncateText는 suffix 포함하여 maxLen을 보장하므로 3000 - suffix.length 만큼 포함
+    expect(prompt).toContain('A'.repeat(2989));
   });
 
   it('3000자 이하 analysis는 절단하지 않는다', () => {

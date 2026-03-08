@@ -7,8 +7,10 @@
 
 import { execFileSync } from 'child_process';
 import { pushBranch } from './branch-manager.js';
+import { config } from '../core/config.js';
+import { truncateText } from '../core/text-utils.js';
 
-const MAX_TITLE_LENGTH = 70;
+const MAX_TITLE_LENGTH = config.pr.maxTitleLength;
 
 /**
  * PR 제목을 생성한다 (pure).
@@ -23,10 +25,7 @@ export function buildPRTitle(project, options = {}) {
   const name = project.name || 'Untitled';
   const title = `[GoodVibe] ${name}`;
 
-  if (title.length > MAX_TITLE_LENGTH) {
-    return title.slice(0, MAX_TITLE_LENGTH - 3) + '...';
-  }
-  return title;
+  return truncateText(title, MAX_TITLE_LENGTH);
 }
 
 /**

@@ -5,11 +5,14 @@
  * 모든 함수는 pure function (I/O 없음).
  */
 
+import { config } from '../core/config.js';
+import { truncateText } from '../core/text-utils.js';
+
 const FIX_KEYWORDS = ['fix', 'bug', '수정', '버그', 'hotfix', 'patch'];
 const TEST_KEYWORDS = ['test', '테스트', 'spec', 'coverage'];
 const REFACTOR_KEYWORDS = ['refactor', '리팩토링', 'cleanup', '정리'];
 const TEST_ROLES = ['qa'];
-const MAX_SUBJECT_LENGTH = 72;
+const MAX_SUBJECT_LENGTH = config.commit.maxSubjectLength;
 
 /**
  * 태스크와 Phase 정보로 커밋 타입을 결정한다 (pure).
@@ -94,8 +97,7 @@ export function buildCommitMessage(options) {
 
   const prefix = `${type}(${scope}): `;
   const maxSummaryLen = MAX_SUBJECT_LENGTH - prefix.length;
-  const truncatedSummary =
-    summary.length > maxSummaryLen ? summary.slice(0, maxSummaryLen - 3) + '...' : summary;
+  const truncatedSummary = truncateText(summary, maxSummaryLen);
 
   const parts = [`${prefix}${truncatedSummary}`];
 

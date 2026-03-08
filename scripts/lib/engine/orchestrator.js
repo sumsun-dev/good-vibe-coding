@@ -6,15 +6,10 @@
 import { parseJsonObject } from '../core/json-parser.js';
 import { config } from '../core/config.js';
 import { inputError } from '../core/validators.js';
+import { truncateText } from '../core/text-utils.js';
 
-/**
- * 프롬프트 섹션 텍스트를 maxPromptSectionLength 이내로 잘라낸다.
- * @param {string} text - 원본 텍스트
- * @returns {string} 잘려진 텍스트
- */
 function truncateSection(text) {
-  const maxLen = config.llm.maxPromptSectionLength;
-  return text.length > maxLen ? text.slice(0, maxLen) + '\n...(truncated)' : text;
+  return truncateText(text, config.llm.maxPromptSectionLength, '\n...(truncated)');
 }
 
 /** 역할 카테고리별 맞춤 분석 항목 */
@@ -143,10 +138,7 @@ export function buildSynthesisPrompt(project, agentOutputs, round, context = {})
 
   const analysisSection = agentOutputs
     .map((o) => {
-      const analysis =
-        o.analysis && o.analysis.length > MAX_ANALYSIS_LENGTH
-          ? o.analysis.slice(0, MAX_ANALYSIS_LENGTH) + '\n...(이하 생략)'
-          : o.analysis;
+      const analysis = truncateText(o.analysis || '', MAX_ANALYSIS_LENGTH, '\n...(이하 생략)');
       return `### ${o.role} (${o.roleId})\n${analysis}`;
     })
     .join('\n\n---\n\n');

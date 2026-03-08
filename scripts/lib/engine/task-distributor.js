@@ -4,6 +4,7 @@
 
 import { parseJsonArray } from '../core/json-parser.js';
 import { config } from '../core/config.js';
+import { truncateLines } from '../core/text-utils.js';
 
 /** 영어 키워드 regex 사전 컴파일 캐시 (lazy init) */
 const COMPILED_KEYWORD_REGEXPS = new Map();
@@ -315,11 +316,8 @@ export function buildPhaseContext(completedTasks, options = {}) {
     .filter((t) => t.taskOutput && t.taskOutput.trim())
     .map((t) => {
       const lines = t.taskOutput.split('\n').filter((l) => l.trim());
-      const truncated =
-        lines.length > maxLines
-          ? lines.slice(0, maxLines).join('\n') + '\n...(truncated)'
-          : lines.join('\n');
-      return `### ${t.id}: ${t.title} (${t.assignee})\n${truncated}`;
+      const joined = lines.join('\n');
+      return `### ${t.id}: ${t.title} (${t.assignee})\n${truncateLines(joined, maxLines)}`;
     })
     .join('\n\n');
 }

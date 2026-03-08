@@ -10,6 +10,7 @@ import {
 } from './project-metrics.js';
 import { projectsDir } from '../core/app-paths.js';
 import { config } from '../core/config.js';
+import { truncateLines } from '../core/text-utils.js';
 
 const DEFAULT_BASE_DIR = projectsDir();
 
@@ -355,10 +356,7 @@ export async function saveTaskOutput(projectId, taskId, taskOutput, options = {}
   return updateTaskField(projectId, taskId, (t) => {
     const output = taskOutput || '';
     const maxLines = options.maxLines || config.execution.maxOutputLines;
-    const lines = output.split('\n');
-    const truncatedOutput =
-      lines.length > maxLines ? lines.slice(0, maxLines).join('\n') + '\n...(truncated)' : output;
-    return { ...t, taskOutput: truncatedOutput };
+    return { ...t, taskOutput: truncateLines(output, maxLines) };
   });
 }
 
