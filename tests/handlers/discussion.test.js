@@ -43,6 +43,7 @@ vi.mock('../../scripts/lib/project/prd-generator.js', () => ({
   buildPrdPrompt: vi.fn(),
   parsePrdResult: vi.fn(),
   formatPrdForDisplay: vi.fn(),
+  assessPrdQuality: vi.fn(),
 }));
 
 vi.mock('../../scripts/lib/engine/acceptance-criteria.js', () => ({
@@ -61,6 +62,7 @@ import {
   buildPrdPrompt,
   parsePrdResult,
   formatPrdForDisplay,
+  assessPrdQuality,
 } from '../../scripts/lib/project/prd-generator.js';
 import { commands } from '../../scripts/handlers/discussion.js';
 
@@ -145,7 +147,7 @@ describe('discussion handler', () => {
       buildPrdPrompt.mockReturnValue('PRD 프롬프트');
 
       await commands['generate-prd-prompt']();
-      expect(buildPrdPrompt).toHaveBeenCalledWith('채팅 앱', { scope: { score: 0.9 } }, null);
+      expect(buildPrdPrompt).toHaveBeenCalledWith('채팅 앱', { scope: { score: 0.9 } }, null, null);
       expect(output).toHaveBeenCalledWith({ prompt: 'PRD 프롬프트' });
     });
 
@@ -159,7 +161,19 @@ describe('discussion handler', () => {
       buildPrdPrompt.mockReturnValue('prompt');
 
       await commands['generate-prd-prompt']();
-      expect(buildPrdPrompt).toHaveBeenCalledWith('앱', {}, codebaseInfo);
+      expect(buildPrdPrompt).toHaveBeenCalledWith('앱', {}, codebaseInfo, null);
+    });
+
+    it('prdFeedback이 있으면 전달해야 한다', async () => {
+      readStdin.mockResolvedValue({
+        description: '앱',
+        clarityDimensions: {},
+        prdFeedback: '기능 추가',
+      });
+      buildPrdPrompt.mockReturnValue('prompt');
+
+      await commands['generate-prd-prompt']();
+      expect(buildPrdPrompt).toHaveBeenCalledWith('앱', {}, null, '기능 추가');
     });
 
     it('필수 필드 누락 시 에러', async () => {
@@ -169,18 +183,22 @@ describe('discussion handler', () => {
   });
 
   describe('parse-prd', () => {
-    it('PRD를 파싱하고 formatted를 반환해야 한다', async () => {
+    it('PRD를 파싱하고 formatted + quality를 반환해야 한다', async () => {
       const prd = { overview: '채팅 앱', coreFeatures: [] };
+      const quality = { score: 17, warnings: ['overview 부족'], adequate: false };
       readStdin.mockResolvedValue({ rawOutput: '{"overview":"채팅 앱"}' });
       parsePrdResult.mockReturnValue(prd);
       formatPrdForDisplay.mockReturnValue('## 프로젝트 개요\n채팅 앱');
+      assessPrdQuality.mockReturnValue(quality);
 
       await commands['parse-prd']();
       expect(parsePrdResult).toHaveBeenCalledWith('{"overview":"채팅 앱"}');
       expect(formatPrdForDisplay).toHaveBeenCalledWith(prd);
+      expect(assessPrdQuality).toHaveBeenCalledWith(prd);
       expect(output).toHaveBeenCalledWith({
         prd,
         formatted: '## 프로젝트 개요\n채팅 앱',
+        quality,
       });
     });
 

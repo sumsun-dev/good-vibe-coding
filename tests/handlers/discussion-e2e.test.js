@@ -14,6 +14,7 @@ function cliExec(command, input) {
       input: JSON.stringify(input),
       encoding: 'utf-8',
       timeout: 10_000,
+      stdio: ['pipe', 'pipe', 'pipe'],
     }),
   );
 }
@@ -24,6 +25,7 @@ function cliExecRaw(command, input) {
       input: input ? JSON.stringify(input) : '',
       encoding: 'utf-8',
       timeout: 10_000,
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
     return { exitCode: 0, stdout, stderr: '' };
   } catch (err) {
@@ -51,6 +53,16 @@ describe('generate-prd-prompt E2E', () => {
     expect(result.prompt).toContain('코드베이스 정보');
   });
 
+  it('prdFeedback 포함 시 CEO 피드백 섹션이 프롬프트에 반영된다', () => {
+    const result = cliExec('generate-prd-prompt', {
+      description: '채팅 앱',
+      clarityDimensions: { scope: { score: 0.8 } },
+      prdFeedback: '음성 통화 기능을 추가해주세요',
+    });
+    expect(result.prompt).toContain('CEO 피드백');
+    expect(result.prompt).toContain('음성 통화 기능을 추가해주세요');
+  });
+
   it('빈 description → 빈 prompt 반환', () => {
     const result = cliExec('generate-prd-prompt', {
       description: '',
@@ -67,7 +79,7 @@ describe('generate-prd-prompt E2E', () => {
 });
 
 describe('parse-prd E2E', () => {
-  it('rawOutput → prd + formatted 반환', () => {
+  it('rawOutput → prd + formatted + quality 반환', () => {
     const rawOutput = JSON.stringify({
       overview: '채팅앱',
       coreFeatures: ['실시간 메시지'],
@@ -81,6 +93,28 @@ describe('parse-prd E2E', () => {
     expect(result.prd.coreFeatures).toContain('실시간 메시지');
     expect(result.formatted).toContain('프로젝트 개요');
     expect(result.formatted).toContain('채팅앱');
+    expect(result.quality).toBeDefined();
+    expect(typeof result.quality.score).toBe('number');
+    expect(typeof result.quality.adequate).toBe('boolean');
+    expect(Array.isArray(result.quality.warnings)).toBe(true);
+  });
+
+  it('충분한 PRD → quality.adequate: true', () => {
+    const rawOutput = JSON.stringify({
+      overview: '원격팀용 실시간 채팅 앱으로 채널 기반 소통으로 협업을 개선합니다',
+      coreFeatures: [
+        '실시간 채팅 — 텍스트/이미지 전송, 읽음 확인',
+        '채널 관리 — 팀별 채널 생성/삭제/초대',
+        '파일 공유 — 드래그앤드롭 파일 업로드',
+      ],
+      userScenarios: ['김과장이 팀 채널에 접속하여 스레드를 생성하고 팀원을 멘션한다'],
+      technicalRequirements: { stack: ['React', 'Node.js'], integrations: [], constraints: [] },
+      successCriteria: ['메시지 500ms 이내', '동시접속 100명', '파일 10MB'],
+      estimatedScope: { complexity: 'medium', reasoning: '채팅 중심' },
+      architectureDiagram: 'graph TD\n  A[SPA] --> B[API]\n  B --> C[(DB)]',
+    });
+    const result = cliExec('parse-prd', { rawOutput });
+    expect(result.quality.adequate).toBe(true);
   });
 
   it('잘못된 JSON rawOutput → 빈 PRD 반환', () => {

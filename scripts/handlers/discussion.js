@@ -14,6 +14,7 @@ import {
   buildPrdPrompt,
   parsePrdResult,
   formatPrdForDisplay,
+  assessPrdQuality,
 } from '../lib/project/prd-generator.js';
 import {
   buildAcceptanceCriteriaPrompt,
@@ -134,6 +135,7 @@ export const commands = {
       data.description,
       data.clarityDimensions,
       data.codebaseInfo || null,
+      data.prdFeedback || null,
     );
     output({ prompt });
   },
@@ -143,7 +145,8 @@ export const commands = {
     requireFields(data, ['rawOutput']);
     const prd = parsePrdResult(data.rawOutput);
     const formatted = formatPrdForDisplay(prd);
-    output({ prd, formatted });
+    const quality = assessPrdQuality(prd);
+    output({ prd, formatted, quality });
   },
 
   'execution-dispatch-plan': async () => {

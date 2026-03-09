@@ -3,6 +3,7 @@ import {
   buildPrdPrompt,
   parsePrdResult,
   formatPrdForDisplay,
+  assessPrdQuality,
 } from '../scripts/lib/project/prd-generator.js';
 
 // --- buildPrdPrompt ---
@@ -59,6 +60,39 @@ describe('buildPrdPrompt', () => {
     expect(prompt).toContain('와이어프레임');
     expect(prompt).toContain('wireframes');
     expect(prompt).toContain('ASCII art');
+  });
+
+  it('prdFeedback이 있으면 CEO 피드백 섹션을 포함한다', () => {
+    const prompt = buildPrdPrompt(
+      '채팅 앱',
+      { scope: { score: 0.8 } },
+      null,
+      '핵심 기능에 음성 통화를 추가해주세요',
+    );
+    expect(prompt).toContain('CEO 피드백');
+    expect(prompt).toContain('핵심 기능에 음성 통화를 추가해주세요');
+    expect(prompt).toContain('ceo-feedback');
+  });
+
+  it('prdFeedback이 null이면 CEO 피드백 섹션을 생략한다', () => {
+    const prompt = buildPrdPrompt('채팅 앱', { scope: { score: 0.8 } }, null, null);
+    expect(prompt).not.toContain('CEO 피드백');
+  });
+
+  it('prdFeedback이 빈 문자열이면 CEO 피드백 섹션을 생략한다', () => {
+    const prompt = buildPrdPrompt('채팅 앱', { scope: { score: 0.8 } }, null, '');
+    expect(prompt).not.toContain('CEO 피드백');
+  });
+
+  it('프롬프트에 품질 기대치(BAD/GOOD 예시)를 포함한다', () => {
+    const prompt = buildPrdPrompt('채팅 앱', { scope: { score: 0.8 } });
+    expect(prompt).toContain('BAD');
+    expect(prompt).toContain('GOOD');
+  });
+
+  it('프롬프트에 자가 검증 체크리스트를 포함한다', () => {
+    const prompt = buildPrdPrompt('채팅 앱', { scope: { score: 0.8 } });
+    expect(prompt).toContain('품질 체크리스트');
   });
 });
 
@@ -288,5 +322,115 @@ describe('formatPrdForDisplay', () => {
   it('null 입력도 동작한다', () => {
     const md = formatPrdForDisplay(null);
     expect(md).toContain('## 프로젝트 개요');
+  });
+});
+
+// --- assessPrdQuality ---
+
+describe('assessPrdQuality', () => {
+  it('충분한 PRD에 adequate: true를 반환한다', () => {
+    const prd = {
+      overview: '원격팀용 실시간 채팅 앱으로 채널 기반 소통으로 협업을 개선합니다',
+      coreFeatures: [
+        '실시간 채팅 — 텍스트/이미지 전송, 읽음 확인',
+        '채널 관리 — 팀별 채널 생성/삭제/초대',
+        '파일 공유 — 드래그앤드롭 파일 업로드 및 미리보기',
+      ],
+      userScenarios: ['김과장이 팀 채널에 접속하여 스레드를 생성하고 팀원을 멘션한다'],
+      technicalRequirements: {
+        stack: ['React', 'Node.js', 'WebSocket'],
+        integrations: [],
+        constraints: [],
+      },
+      successCriteria: [
+        '메시지 전송 시 500ms 이내 표시',
+        '동시접속 100명 지원',
+        '파일 업로드 10MB',
+      ],
+      architectureDiagram: 'graph TD\n  A[React SPA] --> B[Express API]\n  B --> C[(PostgreSQL)]',
+    };
+    const result = assessPrdQuality(prd);
+    expect(result.adequate).toBe(true);
+    expect(result.score).toBeGreaterThanOrEqual(50);
+    expect(result.warnings).toHaveLength(0);
+  });
+
+  it('부족한 PRD에 adequate: false + warnings를 반환한다', () => {
+    const prd = {
+      overview: '채팅 앱',
+      coreFeatures: ['채팅'],
+      userScenarios: [],
+      technicalRequirements: { stack: [], integrations: [], constraints: [] },
+      successCriteria: ['동작한다'],
+      architectureDiagram: '',
+    };
+    const result = assessPrdQuality(prd);
+    expect(result.adequate).toBe(false);
+    expect(result.score).toBeLessThan(50);
+    expect(result.warnings.length).toBeGreaterThan(0);
+  });
+
+  it('빈 PRD에 score 0 + adequate: false를 반환한다', () => {
+    const prd = {
+      overview: '',
+      coreFeatures: [],
+      userScenarios: [],
+      technicalRequirements: { stack: [], integrations: [], constraints: [] },
+      successCriteria: [],
+      architectureDiagram: '',
+    };
+    const result = assessPrdQuality(prd);
+    expect(result.score).toBe(0);
+    expect(result.adequate).toBe(false);
+    expect(result.warnings.length).toBe(6);
+  });
+
+  it('null/undefined 입력에도 안전하게 동작한다', () => {
+    expect(assessPrdQuality(null).adequate).toBe(false);
+    expect(assessPrdQuality(undefined).adequate).toBe(false);
+    expect(assessPrdQuality({}).adequate).toBe(false);
+  });
+
+  it('overview가 30자 미만이면 warning을 포함한다', () => {
+    const prd = {
+      overview: '채팅 앱',
+      coreFeatures: ['a'.repeat(20), 'b'.repeat(20), 'c'.repeat(20)],
+      userScenarios: ['a'.repeat(30)],
+      technicalRequirements: { stack: ['Node.js'], integrations: [], constraints: [] },
+      successCriteria: ['기준1', '기준2', '기준3'],
+      architectureDiagram: 'a'.repeat(20),
+    };
+    const result = assessPrdQuality(prd);
+    expect(result.warnings).toEqual(expect.arrayContaining([expect.stringContaining('overview')]));
+  });
+
+  it('coreFeatures가 3개 미만이면 warning을 포함한다', () => {
+    const prd = {
+      overview: 'a'.repeat(30),
+      coreFeatures: ['기능1', '기능2'],
+      userScenarios: ['a'.repeat(30)],
+      technicalRequirements: { stack: ['Node.js'], integrations: [], constraints: [] },
+      successCriteria: ['기준1', '기준2', '기준3'],
+      architectureDiagram: 'a'.repeat(20),
+    };
+    const result = assessPrdQuality(prd);
+    expect(result.warnings).toEqual(
+      expect.arrayContaining([expect.stringContaining('coreFeatures')]),
+    );
+  });
+
+  it('coreFeatures 항목이 20자 미만이면 warning을 포함한다', () => {
+    const prd = {
+      overview: 'a'.repeat(30),
+      coreFeatures: ['짧은기능', '짧은기능2', '짧은기능3'],
+      userScenarios: ['a'.repeat(30)],
+      technicalRequirements: { stack: ['Node.js'], integrations: [], constraints: [] },
+      successCriteria: ['기준1', '기준2', '기준3'],
+      architectureDiagram: 'a'.repeat(20),
+    };
+    const result = assessPrdQuality(prd);
+    expect(result.warnings).toEqual(
+      expect.arrayContaining([expect.stringContaining('coreFeatures')]),
+    );
   });
 });
