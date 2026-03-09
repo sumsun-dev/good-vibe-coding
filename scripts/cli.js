@@ -18,6 +18,7 @@ const HANDLERS = {
   template: () => import('./handlers/template.js'),
   task: () => import('./handlers/task.js'),
   recommendation: () => import('./handlers/recommendation.js'),
+  learn: () => import('./handlers/learn.js'),
 };
 
 /** 커맨드 → 핸들러 모듈 O(1) 매핑 테이블 */
@@ -108,6 +109,7 @@ const COMMAND_MAP = {
   'verify-provider': 'auth',
   'cross-model-review': 'auth',
   'resolve-review-assignments': 'auth',
+  'update-provider-meta': 'auth',
   'gemini-review': 'auth',
   // feedback
   'extract-performance': 'feedback',
@@ -168,6 +170,9 @@ const COMMAND_MAP = {
   'install-setup': 'recommendation',
   'list-installed': 'recommendation',
   'recommendation-catalog': 'recommendation',
+  // learn
+  'list-guides': 'learn',
+  'get-guide': 'learn',
 };
 
 async function resolveCommand(name) {

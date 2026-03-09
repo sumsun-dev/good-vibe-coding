@@ -190,6 +190,75 @@ describe('handlers/project', () => {
     expect(result.stderr).toContain('INPUT_ERROR');
   });
 
+  it('add-modify-history — invalid complexity 거부', () => {
+    const project = cliExec('create-project', {
+      name: 'complexity-validate',
+      type: 'web-app',
+    });
+    createdIds.push(project.id);
+
+    const result = cliExecRaw('add-modify-history', {
+      id: project.id,
+      modifiedPrd: '수정 PRD',
+      complexity: 'extreme',
+    });
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('simple/medium/complex');
+  });
+
+  it('add-modify-history — modifiedPrd가 숫자일 때 거부', () => {
+    const project = cliExec('create-project', {
+      name: 'prd-type-validate',
+      type: 'web-app',
+    });
+    createdIds.push(project.id);
+
+    const result = cliExecRaw('add-modify-history', {
+      id: project.id,
+      modifiedPrd: 12345,
+      complexity: 'simple',
+    });
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('문자열');
+  });
+
+  it('add-modify-history — affectedAreas가 문자열일 때 거부', () => {
+    const project = cliExec('create-project', {
+      name: 'areas-type-validate',
+      type: 'web-app',
+    });
+    createdIds.push(project.id);
+
+    const result = cliExecRaw('add-modify-history', {
+      id: project.id,
+      modifiedPrd: '수정 PRD',
+      complexity: 'medium',
+      affectedAreas: 'not-an-array',
+    });
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('배열');
+  });
+
+  it('create-project — clarityAnalysis가 배열일 때 거부', () => {
+    const result = cliExecRaw('create-project', {
+      name: 'clarity-validate',
+      type: 'web-app',
+      clarityAnalysis: [1, 2, 3],
+    });
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('객체');
+  });
+
+  it('create-project — complexityAnalysis가 문자열일 때 거부', () => {
+    const result = cliExecRaw('create-project', {
+      name: 'complexity-obj-validate',
+      type: 'web-app',
+      complexityAnalysis: 'not-an-object',
+    });
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('객체');
+  });
+
   it('update-status 상태 변경', () => {
     const project = cliExec('create-project', {
       name: 'status-test',

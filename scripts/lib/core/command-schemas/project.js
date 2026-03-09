@@ -1,5 +1,5 @@
 /**
- * project 핸들러 스키마 (9개)
+ * project 핸들러 스키마 (10개)
  */
 import { obj, str, arr, objField, strEnum, num, idArgsInput } from './schema-builders.js';
 
@@ -12,6 +12,8 @@ export default {
       type: str(true),
       description: str(),
       mode: strEnum(['plan-only', 'plan-execute', 'quick-build']),
+      clarityAnalysis: objField(),
+      complexityAnalysis: objField(),
     }),
     output: obj({ id: str(), name: str(), type: str(), status: str() }),
     description: '새 프로젝트를 생성한다',
@@ -80,6 +82,20 @@ export default {
       scannedAt: str(),
     }),
     description: '프로젝트 폴더를 스캔하여 기술 스택과 구조를 파악한다',
+  },
+  'add-modify-history': {
+    handler: 'project',
+    inputMethod: 'stdin',
+    input: obj({
+      id: str(true),
+      modifiedPrd: str(true),
+      complexity: strEnum(['simple', 'medium', 'complex'], true),
+      codebaseInsights: objField(),
+      affectedAreas: arr(),
+      migrationRisks: arr(),
+    }),
+    output: obj({ id: str(), modifyHistory: arr() }),
+    description: '프로젝트에 수정 이력을 추가한다',
   },
   'describe-command': {
     handler: 'project',

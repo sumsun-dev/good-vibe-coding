@@ -48,6 +48,17 @@ export const commands = {
       }
     }
 
+    if (data.clarityAnalysis !== undefined && data.clarityAnalysis !== null) {
+      if (typeof data.clarityAnalysis !== 'object' || Array.isArray(data.clarityAnalysis)) {
+        throw inputError('clarityAnalysis는 객체여야 합니다');
+      }
+    }
+    if (data.complexityAnalysis !== undefined && data.complexityAnalysis !== null) {
+      if (typeof data.complexityAnalysis !== 'object' || Array.isArray(data.complexityAnalysis)) {
+        throw inputError('complexityAnalysis는 객체여야 합니다');
+      }
+    }
+
     const project = await createProject(data.name, data.type, data.description, {
       mode: data.mode,
       prd: data.prd,
@@ -106,6 +117,21 @@ export const commands = {
   'add-modify-history': async () => {
     const data = await readStdin();
     requireFields(data, ['id', 'modifiedPrd', 'complexity']);
+
+    if (typeof data.modifiedPrd !== 'string') {
+      throw inputError('modifiedPrd는 문자열이어야 합니다');
+    }
+    const validComplexity = ['simple', 'medium', 'complex'];
+    if (!validComplexity.includes(data.complexity)) {
+      throw inputError(`complexity는 ${validComplexity.join('/')} 중 하나여야 합니다`);
+    }
+    if (data.affectedAreas !== undefined && !Array.isArray(data.affectedAreas)) {
+      throw inputError('affectedAreas는 배열이어야 합니다');
+    }
+    if (data.migrationRisks !== undefined && !Array.isArray(data.migrationRisks)) {
+      throw inputError('migrationRisks는 배열이어야 합니다');
+    }
+
     const project = await addModifyEntry(data.id, {
       modifiedPrd: data.modifiedPrd,
       codebaseInsights: data.codebaseInsights || null,
