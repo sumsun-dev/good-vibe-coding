@@ -257,17 +257,145 @@ try {
 } catch (err) {
   if (err.code === 'INPUT_ERROR') {
     console.error('입력 오류:', err.message);
+  } else if (err.code === 'NOT_FOUND') {
+    console.error('찾을 수 없음:', err.message);
   } else if (err.code === 'SYSTEM_ERROR') {
     console.error('시스템 오류:', err.message);
   }
 }
 ```
 
+### 에러 코드 요약
+
 | 에러 코드      | 발생 조건                       | 대처 방법                        |
 | -------------- | ------------------------------- | -------------------------------- |
 | `INPUT_ERROR`  | 필수 파라미터 누락, 잘못된 타입 | 입력값 확인                      |
 | `NOT_FOUND`    | 프로젝트를 찾을 수 없음         | ID 확인, `storage.list()` 실행   |
 | `SYSTEM_ERROR` | 내부 오류, LLM 호출 실패        | 재시도 또는 프로바이더 설정 확인 |
+
+### 메서드별 에러 시나리오
+
+| 메서드           | 에러 코드      | 발생 상황                                    | 복구 방법                              |
+| ---------------- | -------------- | -------------------------------------------- | -------------------------------------- |
+| `buildTeam()`    | `INPUT_ERROR`  | `idea`가 빈 문자열 또는 미전달               | 프로젝트 설명 문자열 전달              |
+| `discuss()`      | `SYSTEM_ERROR` | LLM 호출 타임아웃, 네트워크 오류             | 재시도 — 중간 결과는 storage에 보존됨  |
+| `discuss()`      | `INPUT_ERROR`  | team 객체 형식 오류 (agents 누락 등)         | `buildTeam()` 반환값을 그대로 전달     |
+| `execute()`      | `SYSTEM_ERROR` | LLM 호출 실패, Phase 실행 오류               | 재시도 — 중단된 Phase부터 자동 재개    |
+| `execute()`      | `INPUT_ERROR`  | plan 객체 형식 오류 (document/tasks 누락 등) | `discuss()` 반환값을 그대로 전달       |
+| `executeSteps()` | `SYSTEM_ERROR` | 개별 스텝 실행 실패                          | `step.proceed()` 재호출 또는 다음 스텝 |
+| `report()`       | `INPUT_ERROR`  | result 객체가 null/undefined                 | `execute()` 반환값을 그대로 전달       |
+
+### Hook 에러 처리
+
+Hook 함수에서 에러가 발생하면 실행이 중단됩니다. 안전한 패턴:
+
+```javascript
+const result = await gv.execute(plan, {
+  onEscalation: async (context) => {
+    try {
+      // 외부 시스템 알림 등
+      await notifyTeam(context);
+      return 'continue';
+    } catch {
+      // Hook 실패 시 안전한 기본값 반환
+      return 'skip';
+    }
+  },
+  onPhaseComplete: (phase) => {
+    // 로깅 실패가 실행을 중단하지 않도록
+    try {
+      logger.info(`Phase ${phase} 완료`);
+    } catch {
+      /* 무시 */
+    }
+  },
+});
+```
+
+### 에스컬레이션 결정 가이드
+
+`onEscalation` Hook에서 반환할 값을 선택하는 기준:
+
+| 결정       | 의미                        | 적합한 상황                              |
+| ---------- | --------------------------- | ---------------------------------------- |
+| `continue` | 수정 재시도 (CEO 지침 가능) | 핵심 기능이라 반드시 성공해야 할 때      |
+| `skip`     | 해당 Phase를 건너뛰고 계속  | 부가 기능이라 나중에 수동 추가 가능할 때 |
+| `abort`    | 실행 전체 중단              | 기획 자체를 재검토해야 할 때             |
+
+```javascript
+onEscalation: async (context) => {
+  const { phase, failureContext } = context;
+  const { attempt, issues } = failureContext;
+
+  // 보안 이슈는 중단
+  if (issues.some(i => i.category === 'security')) return 'abort';
+
+  // 빌드 실패는 재시도
+  if (issues.some(i => i.category === 'build')) return 'continue';
+
+  // 2회째 실패면 건너뛰기
+  if (attempt >= 2) return 'skip';
+
+  return 'continue';
+},
+```
+
+### 실행 실패 복구 패턴
+
+LLM 호출 실패 시 재시도하는 패턴:
+
+```javascript
+async function executeWithRetry(gv, plan, maxRetries = 2) {
+  for (let i = 0; i <= maxRetries; i++) {
+    try {
+      return await gv.execute(plan, hooks);
+    } catch (err) {
+      if (err.code !== 'SYSTEM_ERROR' || i === maxRetries) throw err;
+      console.log(`실행 실패, ${i + 1}/${maxRetries} 재시도...`);
+      // FileStorage 사용 시 중단 지점부터 자동 재개됨
+    }
+  }
+}
+```
+
+`executeSteps()`로 스텝별 복구:
+
+```javascript
+for await (const step of gv.executeSteps(plan)) {
+  try {
+    if (step.action === 'escalate') {
+      await step.decide('skip');
+    } else {
+      await step.proceed();
+    }
+  } catch (err) {
+    console.error(`스텝 실패: ${step.action} (Phase ${step.phase})`);
+    // 다음 스텝으로 계속 진행 가능
+  }
+}
+```
+
+### AppError 타입 확인
+
+`AppError`는 내부 모듈에서 import할 수 있습니다:
+
+```javascript
+import { AppError } from 'good-vibe/lib/core/validators.js';
+
+try {
+  await gv.execute(plan);
+} catch (err) {
+  if (err instanceof AppError) {
+    // code: 'INPUT_ERROR' | 'NOT_FOUND' | 'SYSTEM_ERROR'
+    handleAppError(err.code, err.message);
+  } else {
+    // 예상치 못한 에러
+    throw err;
+  }
+}
+```
+
+> `err.code` 필드 확인만으로도 충분합니다. `instanceof` 체크는 선택사항입니다.
 
 ---
 
