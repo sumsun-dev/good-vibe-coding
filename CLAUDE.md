@@ -581,6 +581,100 @@ logs/daily-improvement/
 
 **중단 기준**: SLA 달성, 개선 정체, 시간 제한, 세션/주간 한도 소진, 빈 결과 3회 연속
 
+## UX Improvement 자율 파이프라인
+
+> **내부 개발 도구** — Daily Improvement와 별도로, 사용자 경험(UX) 관점에서 코드베이스를 자동 개선하는 파이프라인.
+> VPS에서 3시간마다 실행. 코드는 `internal/ux-improvement/` 디렉토리에 위치.
+
+```
+ux-improvement.sh (오케스트레이터)
+  │
+  ├─ Phase 0: 사전 준비 + 관점 결정 (rotation)
+  │
+  ├─── Round Loop (UX SLA 달성까지, 최대 2라운드) ─────┐
+  │ ├─ Phase 1: UX Improver (관점 기반 분석 + 수정 + PR) │
+  │ ├─ Phase 1.5: 이슈 검증                              │
+  │ ├─ Phase 2: UX Reviewer (리뷰)                       │
+  │ ├─ Phase 3: 수정 루프 (최대 3사이클)                 │
+  │ └─ Phase Eval: UX SLA 평가 → 달성/정체 → break      │
+  └──────────────────────────────────────────────────────┘
+  │
+  └─ Phase 4: 보고서 + 자동 머지 (조건 충족 시) + 텔레그램
+```
+
+### 8가지 관점 순환 (Perspective Rotation)
+
+3시간마다 실행되므로 하루 8회. 각 실행마다 다른 관점으로 분석 (`rotation_index = execution_count % 8`):
+
+| #   | 관점 ID              | 이름           | 분석 대상                               |
+| --- | -------------------- | -------------- | --------------------------------------- |
+| 0   | `first-time-user`    | 첫 사용자      | hello → new 흐름, 진입 장벽             |
+| 1   | `command-flow`       | 커맨드 플로우  | 상태 전이, 다음 단계 안내               |
+| 2   | `error-recovery`     | 에러 복구      | 에러 메시지 품질, 복구 가이드           |
+| 3   | `guide-coverage`     | 가이드 완성도  | guides/ vs 실제 기능 매칭               |
+| 4   | `sdk-dx`             | SDK DX         | import 패턴, API 일관성                 |
+| 5   | `mode-confusion`     | 모드 혼동 방지 | quick-build/plan-execute/plan-only 구분 |
+| 6   | `onboarding-quality` | 온보딩 품질    | 프리셋, 템플릿, CLAUDE.md 생성 품질     |
+| 7   | `intermediate-user`  | 중급 사용자    | 고급 커맨드, 커스터마이징               |
+
+### 5영역 UX SLA
+
+| 영역                 | 설명                 |
+| -------------------- | -------------------- |
+| `flowClarity`        | 커맨드 플로우 명확성 |
+| `errorQuality`       | 에러 메시지 품질     |
+| `guideCompleteness`  | 가이드/문서 완성도   |
+| `onboardingFriction` | 온보딩 마찰도        |
+| `sdkUsability`       | SDK 사용성           |
+
+SLA 목표: 7.0/10 (환경변수 `UX_SLA_TARGET`으로 조정)
+
+### 자동 머지 정책
+
+다음 조건 **모두** 충족 시 자동 squash merge:
+
+1. `npm test` 전체 통과
+2. PR 리뷰 APPROVED
+3. 변경 파일이 안전 경로만 포함 (commands/, guides/, templates/, presets/, agents/, skills/)
+4. 코어 로직 파일 변경 없음
+
+### 파일 구조
+
+```
+internal/
+  ux-improvement.sh                    # 오케스트레이터
+  ux-improvement/
+    config.env                         # UX 전용 설정
+    phase0-prepare.sh                  # 준비 + 관점 결정
+    phase1-improve.sh                  # UX Improver
+    phase2-review.sh                   # UX Reviewer
+    phase3-fix-loop.sh                 # 수정 루프
+    phase-eval.sh                      # UX SLA 평가
+    phase4-report.sh                   # 보고서 + 자동 머지
+    lib/
+      prompts.sh                       # UX 프롬프트 Shell 래퍼
+  lib/
+    ux-prompt-builder.js               # UX 프롬프트 생성
+    ux-sla-evaluator.js                # UX SLA 평가
+    perspective-manager.js             # 관점 순환 관리
+logs/
+  ux-improvement/
+    history.jsonl                      # UX 히스토리
+```
+
+### Daily Improvement와의 차이
+
+| 항목      | Daily Improvement                | UX Improvement                |
+| --------- | -------------------------------- | ----------------------------- |
+| 주기      | 매일 1회                         | 3시간마다                     |
+| 관점      | 코드 품질/보안/성능              | 사용자 경험 (8관점 순환)      |
+| SLA       | 7영역                            | 5영역 (UX)                    |
+| 자동 머지 | 수동                             | 안전 경로만 자동              |
+| lock 파일 | `/tmp/gv-daily-improvement.lock` | `/tmp/gv-ux-improvement.lock` |
+| 정지 파일 | `/tmp/gv-daily-improvement.stop` | `/tmp/gv-ux-improvement.stop` |
+| 브랜치    | `improve/`                       | `ux-improve/`                 |
+| 라벨      | `improvement`                    | `ux-improvement`              |
+
 ## 코드 구체화 파이프라인
 
 ```
