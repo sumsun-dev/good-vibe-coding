@@ -5,6 +5,7 @@ import {
   readSettings,
   writeSettings,
   addPermission,
+  addPermissions,
 } from '../scripts/lib/core/settings-manager.js';
 
 const TMP_DIR = resolve('.tmp-test-settings-manager');
@@ -122,6 +123,69 @@ describe('settings-manager', () => {
       const content = JSON.parse(await readFile(settingsPath, 'utf-8'));
       expect(content.permissions.allow).toEqual(['Bash(git *)', 'Bash(node * cli.js *)']);
       expect(content.theme).toBe('dark');
+    });
+  });
+
+  describe('addPermissions', () => {
+    it('복수 패턴을 일괄 추가한다', async () => {
+      const settingsPath = resolve(TMP_DIR, 'settings.json');
+      await writeFile(settingsPath, '{}', 'utf-8');
+
+      const result = await addPermissions(['Read', 'Write', 'Edit'], settingsPath);
+
+      expect(result.added).toEqual(['Read', 'Write', 'Edit']);
+      expect(result.skipped).toEqual([]);
+
+      const content = JSON.parse(await readFile(settingsPath, 'utf-8'));
+      expect(content.permissions.allow).toEqual(['Read', 'Write', 'Edit']);
+    });
+
+    it('중복 패턴은 스킵한다', async () => {
+      const settingsPath = resolve(TMP_DIR, 'settings.json');
+      await writeFile(
+        settingsPath,
+        JSON.stringify({ permissions: { allow: ['Read', 'Glob'] } }),
+        'utf-8',
+      );
+
+      const result = await addPermissions(['Read', 'Write', 'Glob', 'Grep'], settingsPath);
+
+      expect(result.added).toEqual(['Write', 'Grep']);
+      expect(result.skipped).toEqual(['Read', 'Glob']);
+
+      const content = JSON.parse(await readFile(settingsPath, 'utf-8'));
+      expect(content.permissions.allow).toEqual(['Read', 'Glob', 'Write', 'Grep']);
+    });
+
+    it('모두 중복이면 파일을 쓰지 않는다', async () => {
+      const settingsPath = resolve(TMP_DIR, 'settings.json');
+      await writeFile(settingsPath, JSON.stringify({ permissions: { allow: ['Read'] } }), 'utf-8');
+
+      const result = await addPermissions(['Read'], settingsPath);
+
+      expect(result.added).toEqual([]);
+      expect(result.skipped).toEqual(['Read']);
+    });
+
+    it('파일이 없으면 새로 생성한다', async () => {
+      const settingsPath = resolve(TMP_DIR, 'new-perms.json');
+
+      const result = await addPermissions(['Read', 'Write'], settingsPath);
+
+      expect(result.added).toEqual(['Read', 'Write']);
+
+      const content = JSON.parse(await readFile(settingsPath, 'utf-8'));
+      expect(content.permissions.allow).toEqual(['Read', 'Write']);
+    });
+
+    it('빈 배열이면 아무것도 추가하지 않는다', async () => {
+      const settingsPath = resolve(TMP_DIR, 'settings.json');
+      await writeFile(settingsPath, '{}', 'utf-8');
+
+      const result = await addPermissions([], settingsPath);
+
+      expect(result.added).toEqual([]);
+      expect(result.skipped).toEqual([]);
     });
   });
 });

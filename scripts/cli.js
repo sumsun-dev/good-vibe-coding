@@ -139,8 +139,11 @@ const COMMAND_MAP = {
   'generate-ci': 'infra',
   'read-settings': 'infra',
   'add-permission': 'infra',
+  'add-permissions': 'infra',
   'generate-onboarding': 'infra',
+  'generate-global-onboarding': 'infra',
   'write-onboarding': 'infra',
+  'write-global-onboarding': 'infra',
   // metrics
   'record-metrics': 'metrics',
   'project-metrics': 'metrics',

@@ -1,0 +1,66 @@
+# Claude Code Configuration
+
+## Language
+- Always respond in **Korean** (keep code/technical terms in English)
+
+## Model Selection
+- Haiku: lightweight agents, fast responses
+- Sonnet: main development work
+- Opus: architecture decisions, deep reasoning
+
+## Working Mode
+
+### Plan Mode
+- Before implementation, design in Plan Mode, then proceed after user approval
+- Exceptions: simple fixes (typos, 1-2 line changes)
+
+### Sub-Agent (Task tool)
+- Delegate heavy work to Task tool (exploration, analysis, review)
+- Run independent tasks in parallel
+- Keep main session lightweight (questions/decisions/approvals only)
+
+{{#if autoApprove}}
+### Auto-Approve Tools
+{{#each autoApproveTools}}
+- {{this}}
+{{/each}}
+{{/if}}
+
+## Memory
+- Actively use `~/.claude/projects/*/memory/MEMORY.md`
+- Record per-project patterns, mistakes, solutions
+- Check existing memory at session start, record new findings during work
+- Only record verified information, no speculation or temporary data
+
+## Security (CRITICAL)
+- No hardcoded API keys, secrets, tokens
+- Never commit .env files
+- Parameterized queries, validate inputs at boundaries
+
+## Code Style
+- Immutability, max 50 lines/function, max 800 lines/file
+- camelCase, PascalCase, SCREAMING_SNAKE_CASE, kebab-case
+- Remove console.log before commit
+
+## Git
+- Conventional commits: feat|fix|refactor|docs|test|chore(scope): subject
+- Branches: main, develop, feature/xxx, fix/xxx
+
+## Documentation
+- Reflect code changes in README.md
+- Record major changes in CHANGELOG
+- Maintain .env.example for environment variable documentation
+
+## Error Handling
+- Record cause + solution in ERROR_LOG.md on errors
+- Use structured error patterns, avoid direct throw new Error
+
+## Testing
+- TDD: RED -> GREEN -> REFACTOR
+- Coverage 80%+, core logic 100%
+- AAA pattern, no test interdependencies, mock external APIs
+
+## Extensibility
+- Define contracts with interfaces/types before implementation
+- Extract config to constants/env vars (no magic numbers)
+- SRP, DI, abstract when repeated 3+ times

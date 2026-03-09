@@ -393,7 +393,7 @@ const result = await executor.run(plan, {
 │  AI 팀원             15개 역할               │
 │  Tier별 병렬 분석 + 크로스 리뷰              │
 ├─────────────────────────────────────────────┤
-│  내부 API            CLI-as-API (114개)      │
+│  내부 API            CLI-as-API (125개)      │
 │  에이전트가 호출하는 인터페이스               │
 ├─────────────────────────────────────────────┤
 │  코어 라이브러리      55개 모듈 + 14개 핸들러  │
@@ -412,7 +412,7 @@ good-vibe/
 ├── agents/          23개 에이전트 (팀 15 + 서포트 8)
 ├── commands/        20개 슬래시 커맨드 정의
 ├── scripts/
-│   ├── cli.js       내부 API 라우터 (114개 커맨드)
+│   ├── cli.js       내부 API 라우터 (125개 커맨드)
 │   ├── handlers/    14개 핸들러 모듈
 │   └── lib/         55개 코어 라이브러리
 │       ├── core/        기반 유틸 (validators, config, cache 등)
@@ -426,7 +426,7 @@ good-vibe/
 ├── templates/       Handlebars 템플릿
 ├── skills/          4개 내장 스킬
 ├── internal/        Daily Improvement 자율 파이프라인 (내부 개발 도구)
-└── tests/           1,950+ 테스트 (Vitest)
+└── tests/           2,100+ 테스트 (Vitest)
 ```
 
 ## 개발
@@ -442,7 +442,7 @@ npm run test:coverage # 커버리지 리포트
 
 - Node.js 18+ (ESM)
 - Handlebars 템플릿 엔진
-- Vitest 테스트 (1,950+개)
+- Vitest 테스트 (2,100+개)
 - GitHub Actions CI (Node 18/20/22)
 
 ## 지원 범위

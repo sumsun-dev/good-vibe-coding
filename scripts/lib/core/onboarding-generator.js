@@ -8,6 +8,23 @@ import { renderTemplate } from '../project/template-engine.js';
 /** 공통 coreRules 키 (역할 고유가 아닌 항목) */
 const COMMON_RULE_KEYS = ['security', 'codeStyle', 'extensibility', 'git', 'testing'];
 
+/** 자동승인 모드별 도구 목록 */
+const AUTO_APPROVE_TOOLS = {
+  auto: [
+    'Read',
+    'Write',
+    'Edit',
+    'Glob',
+    'Grep',
+    'WebFetch',
+    'WebSearch',
+    'NotebookEdit',
+    'Bash(node * cli.js *)',
+  ],
+  selective: ['Read', 'Glob', 'Grep', 'Bash(node * cli.js *)'],
+  manual: ['Bash(node * cli.js *)'],
+};
+
 /**
  * coreRules에서 역할 고유 규칙을 customRules 배열로 변환한다.
  * security/codeStyle/extensibility/git/testing은 공통, 나머지는 역할 고유.
@@ -66,4 +83,26 @@ export async function renderOnboardingFiles(data) {
     renderTemplate('rules/core.md.hbs', data),
   ]);
   return { claudeMd, coreRules };
+}
+
+/**
+ * 글로벌 CLAUDE.md 렌더링용 데이터를 생성한다.
+ * @param {object} [options] - { autoApproveMode }
+ * @returns {object} 렌더링용 데이터
+ */
+export function buildGlobalClaudeMdData(options = {}) {
+  const { autoApproveMode = 'manual' } = options;
+  return {
+    autoApprove: autoApproveMode !== 'none',
+    autoApproveTools: AUTO_APPROVE_TOOLS[autoApproveMode] || AUTO_APPROVE_TOOLS.manual,
+  };
+}
+
+/**
+ * 글로벌 CLAUDE.md를 렌더링한다. (파일 쓰기는 하지 않음)
+ * @param {object} data - buildGlobalClaudeMdData() 결과
+ * @returns {Promise<string>} 렌더링된 CLAUDE.md 문자열
+ */
+export async function renderGlobalClaudeMd(data) {
+  return renderTemplate('global-claude-md.hbs', data);
 }

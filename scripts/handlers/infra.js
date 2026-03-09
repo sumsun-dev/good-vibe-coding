@@ -26,8 +26,13 @@ import {
 import { isGeminiCliInstalled } from '../lib/llm/gemini-bridge.js';
 import { checkEnvironment } from '../lib/output/env-checker.js';
 import { getVersionInfo } from '../lib/output/update-checker.js';
-import { readSettings, addPermission } from '../lib/core/settings-manager.js';
-import { buildOnboardingData, renderOnboardingFiles } from '../lib/core/onboarding-generator.js';
+import { readSettings, addPermission, addPermissions } from '../lib/core/settings-manager.js';
+import {
+  buildOnboardingData,
+  renderOnboardingFiles,
+  buildGlobalClaudeMdData,
+  renderGlobalClaudeMd,
+} from '../lib/core/onboarding-generator.js';
 import { loadPreset, mergePresets } from '../lib/core/preset-loader.js';
 import { safeWriteFile, ensureDir } from '../lib/core/file-writer.js';
 import { claudeDir } from '../lib/core/app-paths.js';
@@ -178,6 +183,30 @@ export const commands = {
     const data = await readStdin();
     requireFields(data, ['pattern']);
     const result = await addPermission(data.pattern);
+    output(result);
+  },
+
+  'generate-global-onboarding': async () => {
+    const data = await readStdin();
+    const autoApproveMode = data?.autoApproveMode || 'manual';
+    const templateData = buildGlobalClaudeMdData({ autoApproveMode });
+    const claudeMd = await renderGlobalClaudeMd(templateData);
+    output({ claudeMd });
+  },
+
+  'write-global-onboarding': async () => {
+    const data = await readStdin();
+    requireFields(data, ['claudeMd']);
+    const claudeBase = claudeDir();
+    const claudeMdPath = resolve(claudeBase, 'CLAUDE.md');
+    await safeWriteFile(claudeMdPath, data.claudeMd, { overwrite: true });
+    output({ written: [claudeMdPath] });
+  },
+
+  'add-permissions': async () => {
+    const data = await readStdin();
+    requireFields(data, ['patterns']);
+    const result = await addPermissions(data.patterns);
     output(result);
   },
 

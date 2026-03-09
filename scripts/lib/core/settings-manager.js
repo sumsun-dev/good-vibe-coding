@@ -76,3 +76,39 @@ export async function addPermission(pattern, settingsPath) {
   await writeSettings(settings, filePath);
   return { added: true, alreadyExists: false };
 }
+
+/**
+ * permissions.allow에 복수 패턴을 일괄 추가한다. 중복은 스킵한다.
+ * @param {string[]} patterns - 추가할 패턴 배열
+ * @param {string} [settingsPath] - 경로 (기본: ~/.claude/settings.json)
+ * @returns {Promise<{ added: string[], skipped: string[] }>}
+ */
+export async function addPermissions(patterns, settingsPath) {
+  const filePath = settingsPath || defaultSettingsPath();
+  const settings = await readSettings(filePath);
+
+  if (!settings.permissions) {
+    settings.permissions = {};
+  }
+  if (!Array.isArray(settings.permissions.allow)) {
+    settings.permissions.allow = [];
+  }
+
+  const added = [];
+  const skipped = [];
+
+  for (const pattern of patterns) {
+    if (settings.permissions.allow.includes(pattern)) {
+      skipped.push(pattern);
+    } else {
+      settings.permissions.allow.push(pattern);
+      added.push(pattern);
+    }
+  }
+
+  if (added.length > 0) {
+    await writeSettings(settings, filePath);
+  }
+
+  return { added, skipped };
+}

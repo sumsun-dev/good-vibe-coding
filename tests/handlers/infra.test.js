@@ -31,11 +31,14 @@ vi.mock('../../scripts/lib/output/update-checker.js', () => ({
 vi.mock('../../scripts/lib/core/settings-manager.js', () => ({
   readSettings: vi.fn(),
   addPermission: vi.fn(),
+  addPermissions: vi.fn(),
 }));
 
 vi.mock('../../scripts/lib/core/onboarding-generator.js', () => ({
   buildOnboardingData: vi.fn(),
   renderOnboardingFiles: vi.fn(),
+  buildGlobalClaudeMdData: vi.fn(),
+  renderGlobalClaudeMd: vi.fn(),
 }));
 
 vi.mock('../../scripts/lib/core/preset-loader.js', () => ({
@@ -53,10 +56,16 @@ import { isGeminiCliInstalled } from '../../scripts/lib/llm/gemini-bridge.js';
 import { checkEnvironment } from '../../scripts/lib/output/env-checker.js';
 import { checkGhStatus } from '../../scripts/lib/project/github-manager.js';
 import { getVersionInfo } from '../../scripts/lib/output/update-checker.js';
-import { readSettings, addPermission } from '../../scripts/lib/core/settings-manager.js';
+import {
+  readSettings,
+  addPermission,
+  addPermissions,
+} from '../../scripts/lib/core/settings-manager.js';
 import {
   buildOnboardingData,
   renderOnboardingFiles,
+  buildGlobalClaudeMdData,
+  renderGlobalClaudeMd,
 } from '../../scripts/lib/core/onboarding-generator.js';
 import { loadPreset, mergePresets } from '../../scripts/lib/core/preset-loader.js';
 import { safeWriteFile } from '../../scripts/lib/core/file-writer.js';
@@ -167,6 +176,74 @@ describe('infra handler', () => {
 
       expect(addPermission).toHaveBeenCalledWith('Bash(node * cli.js *)');
       expect(output).toHaveBeenCalledWith({ added: true, alreadyExists: false });
+    });
+  });
+
+  describe('generate-global-onboarding', () => {
+    it('autoApproveMode로 글로벌 CLAUDE.md를 생성한다', async () => {
+      readStdin.mockResolvedValue({ autoApproveMode: 'auto' });
+      buildGlobalClaudeMdData.mockReturnValue({ autoApprove: true, autoApproveTools: ['Read'] });
+      renderGlobalClaudeMd.mockResolvedValue('# Claude Code Configuration\n...');
+
+      await commands['generate-global-onboarding']();
+
+      expect(buildGlobalClaudeMdData).toHaveBeenCalledWith({ autoApproveMode: 'auto' });
+      expect(renderGlobalClaudeMd).toHaveBeenCalledWith({
+        autoApprove: true,
+        autoApproveTools: ['Read'],
+      });
+      expect(output).toHaveBeenCalledWith({ claudeMd: '# Claude Code Configuration\n...' });
+    });
+
+    it('autoApproveMode 미지정 시 manual 기본값', async () => {
+      readStdin.mockResolvedValue({});
+      buildGlobalClaudeMdData.mockReturnValue({ autoApprove: true, autoApproveTools: [] });
+      renderGlobalClaudeMd.mockResolvedValue('# MD');
+
+      await commands['generate-global-onboarding']();
+
+      expect(buildGlobalClaudeMdData).toHaveBeenCalledWith({ autoApproveMode: 'manual' });
+    });
+  });
+
+  describe('write-global-onboarding', () => {
+    it('CLAUDE.md만 쓴다 (core.md 없음)', async () => {
+      readStdin.mockResolvedValue({ claudeMd: '# Global Config' });
+      safeWriteFile.mockResolvedValue({ written: true });
+
+      await commands['write-global-onboarding']();
+
+      expect(safeWriteFile).toHaveBeenCalledTimes(1);
+      expect(safeWriteFile).toHaveBeenCalledWith(
+        expect.stringContaining('CLAUDE.md'),
+        '# Global Config',
+        { overwrite: true },
+      );
+      expect(output).toHaveBeenCalledWith({
+        written: expect.arrayContaining([expect.stringContaining('CLAUDE.md')]),
+      });
+    });
+
+    it('claudeMd 필드 누락 시 에러', async () => {
+      readStdin.mockResolvedValue({});
+      await expect(commands['write-global-onboarding']()).rejects.toThrow();
+    });
+  });
+
+  describe('add-permissions', () => {
+    it('복수 패턴을 추가하고 결과를 출력한다', async () => {
+      readStdin.mockResolvedValue({ patterns: ['Read', 'Write', 'Edit'] });
+      addPermissions.mockResolvedValue({ added: ['Read', 'Write', 'Edit'], skipped: [] });
+
+      await commands['add-permissions']();
+
+      expect(addPermissions).toHaveBeenCalledWith(['Read', 'Write', 'Edit']);
+      expect(output).toHaveBeenCalledWith({ added: ['Read', 'Write', 'Edit'], skipped: [] });
+    });
+
+    it('patterns 필드 누락 시 에러', async () => {
+      readStdin.mockResolvedValue({});
+      await expect(commands['add-permissions']()).rejects.toThrow();
     });
   });
 

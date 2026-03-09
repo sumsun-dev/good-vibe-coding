@@ -3,6 +3,8 @@ import {
   buildOnboardingData,
   extractCustomRules,
   renderOnboardingFiles,
+  buildGlobalClaudeMdData,
+  renderGlobalClaudeMd,
 } from '../scripts/lib/core/onboarding-generator.js';
 
 describe('onboarding-generator', () => {
@@ -214,6 +216,120 @@ describe('onboarding-generator', () => {
 
       expect(result.claudeMd).not.toContain('## Skills');
       expect(result.claudeMd).not.toContain('## Commands');
+    });
+  });
+
+  describe('buildGlobalClaudeMdData', () => {
+    it('auto 모드에서 전체 도구 목록을 반환한다', () => {
+      const data = buildGlobalClaudeMdData({ autoApproveMode: 'auto' });
+
+      expect(data.autoApprove).toBe(true);
+      expect(data.autoApproveTools).toContain('Read');
+      expect(data.autoApproveTools).toContain('Write');
+      expect(data.autoApproveTools).toContain('Edit');
+      expect(data.autoApproveTools).toContain('Bash(node * cli.js *)');
+      expect(data.autoApproveTools).toHaveLength(9);
+    });
+
+    it('selective 모드에서 읽기/검색/CLI만 반환한다', () => {
+      const data = buildGlobalClaudeMdData({ autoApproveMode: 'selective' });
+
+      expect(data.autoApprove).toBe(true);
+      expect(data.autoApproveTools).toContain('Read');
+      expect(data.autoApproveTools).toContain('Glob');
+      expect(data.autoApproveTools).toContain('Grep');
+      expect(data.autoApproveTools).toContain('Bash(node * cli.js *)');
+      expect(data.autoApproveTools).not.toContain('Write');
+      expect(data.autoApproveTools).toHaveLength(4);
+    });
+
+    it('manual 모드에서 CLI만 반환한다', () => {
+      const data = buildGlobalClaudeMdData({ autoApproveMode: 'manual' });
+
+      expect(data.autoApprove).toBe(true);
+      expect(data.autoApproveTools).toEqual(['Bash(node * cli.js *)']);
+    });
+
+    it('none 모드에서 autoApprove가 false이다', () => {
+      const data = buildGlobalClaudeMdData({ autoApproveMode: 'none' });
+
+      expect(data.autoApprove).toBe(false);
+    });
+
+    it('기본값은 manual 모드이다', () => {
+      const data = buildGlobalClaudeMdData();
+
+      expect(data.autoApprove).toBe(true);
+      expect(data.autoApproveTools).toEqual(['Bash(node * cli.js *)']);
+    });
+
+    it('알 수 없는 모드는 manual로 fallback한다', () => {
+      const data = buildGlobalClaudeMdData({ autoApproveMode: 'unknown' });
+
+      expect(data.autoApprove).toBe(true);
+      expect(data.autoApproveTools).toEqual(['Bash(node * cli.js *)']);
+    });
+  });
+
+  describe('renderGlobalClaudeMd', () => {
+    it('글로벌 CLAUDE.md 문자열을 반환한다', async () => {
+      const data = buildGlobalClaudeMdData({ autoApproveMode: 'auto' });
+      const result = await renderGlobalClaudeMd(data);
+
+      expect(result).toContain('# Claude Code Configuration');
+      expect(result).toContain('## Language');
+      expect(result).toContain('## Model Selection');
+      expect(result).toContain('## Working Mode');
+      expect(result).toContain('## Memory');
+      expect(result).toContain('## Security (CRITICAL)');
+      expect(result).toContain('## Code Style');
+      expect(result).toContain('## Git');
+      expect(result).toContain('## Testing');
+      expect(result).toContain('## Extensibility');
+    });
+
+    it('역할/팀/스택 섹션이 포함되지 않는다', async () => {
+      const data = buildGlobalClaudeMdData({ autoApproveMode: 'auto' });
+      const result = await renderGlobalClaudeMd(data);
+
+      expect(result).not.toContain('## 역할');
+      expect(result).not.toContain('## Your Team');
+      expect(result).not.toContain('## Stack:');
+      expect(result).not.toContain('## Stack Rules');
+    });
+
+    it('auto 모드에서 Auto-Approve 섹션에 전체 도구를 렌더링한다', async () => {
+      const data = buildGlobalClaudeMdData({ autoApproveMode: 'auto' });
+      const result = await renderGlobalClaudeMd(data);
+
+      expect(result).toContain('### Auto-Approve Tools');
+      expect(result).toContain('- Read');
+      expect(result).toContain('- Write');
+      expect(result).toContain('- Edit');
+      expect(result).toContain('- Bash(node * cli.js *)');
+    });
+
+    it('none 모드에서 Auto-Approve 섹션이 생략된다', async () => {
+      const data = buildGlobalClaudeMdData({ autoApproveMode: 'none' });
+      const result = await renderGlobalClaudeMd(data);
+
+      expect(result).not.toContain('### Auto-Approve Tools');
+    });
+
+    it('Documentation 섹션이 포함된다', async () => {
+      const data = buildGlobalClaudeMdData({ autoApproveMode: 'manual' });
+      const result = await renderGlobalClaudeMd(data);
+
+      expect(result).toContain('## Documentation');
+      expect(result).toContain('README.md');
+    });
+
+    it('Error Handling 섹션이 포함된다', async () => {
+      const data = buildGlobalClaudeMdData({ autoApproveMode: 'manual' });
+      const result = await renderGlobalClaudeMd(data);
+
+      expect(result).toContain('## Error Handling');
+      expect(result).toContain('ERROR_LOG.md');
     });
   });
 });
