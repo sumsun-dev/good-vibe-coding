@@ -50,13 +50,16 @@ options:
 "활성화" 선택 시:
 
 ```
-다음 CLI를 순서대로 호출하세요:
+다음 CLI를 순서대로 호출하세요 (1번 실패 시 즉시 중단, 2번 실행 안 함):
 1. echo '{"provider":"gemini","authType":"cli"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js connect
-2. echo '{"provider":"gemini"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js verify-provider
+   → 실패 시: CEO에게 에러 메시지 표시 후 기본 리뷰로 진행. 2번 실행하지 않음.
+2. echo '{"provider":"gemini"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js verify-provider (1번 성공 시에만)
 
 반환: { connected: true/false, model, error }
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
+
+> **참고:** connect 커맨드가 내부적으로 `verifyConnection`을 호출하여 인증을 검증합니다. 인증 실패 시 자동으로 롤백(`removeAuth` + `setProviderEnabled(false)`)하고 에러를 반환하므로, connect 성공 = 인증 검증 완료입니다. verify-provider는 추가 확인용입니다.
 
 #### 4단계: 검증 결과 처리
 

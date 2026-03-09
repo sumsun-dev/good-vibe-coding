@@ -735,6 +735,20 @@ logs/
 - onboarding-guide, mentor-kr, code-reviewer-kr, tdd-coach-kr
 - doc-reviewer-kr, content-editor-kr, data-analyst-kr, accessibility-checker
 
+## 스킬 구성 (5개)
+
+`skills/*/SKILL.md` — 재사용 가능한 워크플로우 스킬
+
+| 스킬                | 설명                           | 트리거                         |
+| ------------------- | ------------------------------ | ------------------------------ |
+| `beginner-guide`    | 초보자 가이드                  | 사용자 요청                    |
+| `korean-workflow`   | 한국어 워크플로우 안내         | 사용자 요청                    |
+| `onboarding-wizard` | 대화형 초기 설정               | `good-vibe:hello`              |
+| `project-setup`     | 프로젝트 인프라 셋업           | `good-vibe:new`                |
+| `multi-review`      | 멀티 AI 리뷰 설정 및 결과 검증 | `good-vibe:execute` Step 1.2.5 |
+
+- `multi-review`: Gemini CLI 인증 검증(connect → verify → rollback) + cross-model 리뷰 활성화 + Phase별 프로바이더 결과 표시
+
 ## 프로젝트 규칙
 
 - import에 `.js` 확장자 필수 (Windows ESM 호환)
