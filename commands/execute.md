@@ -43,38 +43,34 @@ options:
 
 잘 모르겠으면 질문해주세요!
 
-**"자동 실행" 또는 "세미-오토" 선택 시 자동승인 모드 확인:**
+**"자동 실행" 또는 "세미-오토" 선택 시 자동승인 확인:**
 
-현재 Claude Code의 승인 모드를 확인합니다. 자동/세미-오토 모드에서는 파일 편집과 CLI 실행이 빈번하게 발생하므로, 매번 수동 승인하면 자동 실행의 의미가 없어집니다.
+`~/.claude/settings.json`의 `permissions.allow`에 `"Bash(node * cli.js *)"` 패턴이 있는지 확인합니다.
 
-자동승인 모드가 아닌 경우 안내합니다:
+**설정이 있으면** -> 그대로 진행합니다.
+
+**설정이 없으면** -> 간략히 안내합니다:
 
 ```
-자동 실행 모드에서는 자동승인이 필요합니다.
-
-현재 승인 모드가 Normal이면 매 작업마다 수동 승인이 필요해서
-자동 실행의 효과가 떨어집니다.
-
-권장 설정:
-  Shift+Tab → "Auto-accept edits" 이상으로 전환
-  또는 claude --dangerously-skip-permissions 로 시작
-
-지금 전환하시겠습니까? 아니면 인터랙티브 모드로 변경할 수도 있습니다.
+Good Vibe CLI 자동승인이 미설정입니다.
+자동/세미-오토 모드에서는 승인 요청이 많을 수 있습니다.
 ```
 
 AskUserQuestion:
 
 ```
-질문: "자동승인 모드가 아닙니다. 어떻게 하시겠습니까?"
+질문: "자동승인을 설정하시겠습니까?"
 header: "승인 모드"
 options:
+  - label: "자동승인 설정 (Recommended)"
+    description: "settings.json에 Good Vibe CLI 자동승인 규칙을 추가합니다"
   - label: "이대로 진행"
-    description: "수동 승인하면서 자동 모드로 실행합니다 (승인 요청이 많을 수 있음)"
-  - label: "인터랙티브로 변경 (Recommended)"
+    description: "수동 승인하면서 실행합니다 (승인 요청이 많을 수 있음)"
+  - label: "인터랙티브로 변경"
     description: "Phase마다 확인하는 모드로 전환합니다"
-  - label: "설정 방법 보기"
-    description: "자동승인 설정 방법을 안내받고 다시 시작합니다"
 ```
+
+**"자동승인 설정"** 선택 시 -> hello.md Step 2.5와 동일하게 `~/.claude/settings.json`에 규칙 추가 후 진행합니다.
 
 ### 1.3 실행 초기화 (Task tool)
 

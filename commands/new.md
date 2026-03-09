@@ -207,29 +207,38 @@ Task tool 프롬프트:
 PRD를 생성하세요.
 
 1. PRD 프롬프트 생성:
-   echo '{"description":"{currentDescription}","clarityDimensions":{dimensions}{codebaseInfo가 있으면: ,"codebaseInfo":{codebaseInfo}}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js generate-prd-prompt
+   echo '{"description":"{currentDescription}","clarityDimensions":{dimensions}{codebaseInfo가 있으면: ,"codebaseInfo":{codebaseInfo}}{prdFeedback이 있으면: ,"prdFeedback":"{prdFeedback}"}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js generate-prd-prompt
 
 2. 생성된 프롬프트를 LLM으로 실행
 
 3. PRD 파싱:
    echo '{"rawOutput":"LLM 응답"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js parse-prd
 
-{prdFeedback이 있으면: "LLM 실행 시 다음 CEO 피드백을 프롬프트에 추가하세요: {prdFeedback}"}
-
-반환: { prd, formatted }
+반환: { prd, formatted, quality }
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
 
 ### 2.B: CEO 확인 (메인 세션)
 
-PRD 마크다운(`formatted`)을 CEO에게 표시한 후 AskUserQuestion:
+PRD 마크다운(`formatted`)을 CEO에게 표시합니다.
+
+**`quality.adequate === false`이면** 품질 경고를 표시합니다:
+
+```
+⚠️ PRD 품질 경고 (점수: {quality.score}/100):
+{quality.warnings를 줄바꿈으로 표시}
+```
+
+AskUserQuestion:
 
 ```
 질문: "이 방향으로 진행할까요?"
 header: "PRD 확인"
 options:
-  - label: "이대로 진행 (Recommended)"
+  - label: "이대로 진행 (Recommended)"  (quality.adequate가 true일 때만 Recommended)
     description: "이 PRD를 기반으로 복잡도 분석 + 팀 구성을 진행합니다"
+  - label: "자동 보강"  (quality.adequate가 false일 때만 표시, Recommended 표시)
+    description: "부족한 부분을 자동으로 보강하여 PRD를 다시 생성합니다"
   - label: "수정 요청"
     description: "구체적 피드백을 입력하면 PRD를 다시 생성합니다"
   - label: "처음부터 다시"
@@ -237,6 +246,7 @@ options:
 ```
 
 - **"이대로 진행"** → `prd` 저장 → Step 3로
+- **"자동 보강"** → `prdFeedback = quality.warnings.join("\n")` → 2.A로
 - **"수정 요청"** → CEO 피드백을 `prdFeedback`에 저장 → 2.A로 (prdFeedback 주입)
 - **"처음부터 다시"** → `infraPath = null`, `githubUrl = null` 리셋 → Step 1로 돌아감
 

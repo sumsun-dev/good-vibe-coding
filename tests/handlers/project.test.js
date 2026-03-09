@@ -20,6 +20,7 @@ function cliExec(command, input) {
       encoding: 'utf-8',
       timeout: 10_000,
       env: childEnv,
+      stdio: ['pipe', 'pipe', 'pipe'],
     }),
   );
 }
@@ -31,6 +32,7 @@ function cliExecRaw(command, input) {
       encoding: 'utf-8',
       timeout: 10_000,
       env: childEnv,
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
     return { exitCode: 0, stdout, stderr: '' };
   } catch (err) {

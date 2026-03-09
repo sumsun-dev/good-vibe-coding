@@ -15,6 +15,9 @@ describe('preset-loader', () => {
       expect(preset.category).toBe('role');
       expect(preset.agents).toBeInstanceOf(Array);
       expect(preset.skills).toBeInstanceOf(Array);
+      expect(preset.coreRules).toBeDefined();
+      expect(preset.coreRules.security).toBeInstanceOf(Array);
+      expect(preset.coreRules.security.length).toBeGreaterThan(0);
     });
 
     it('pm 프리셋을 로딩한다', async () => {
@@ -146,6 +149,67 @@ describe('preset-loader', () => {
       expect(result.agents).toEqual([]);
       expect(result.skills).toEqual([]);
       expect(result.stackRules).toEqual([]);
+    });
+
+    it('coreRules를 병합한다', () => {
+      const a = {
+        coreRules: {
+          security: ['No hardcoded API keys'],
+          codeStyle: ['Functions: max 50 lines'],
+        },
+      };
+      const b = {
+        coreRules: {
+          security: ['Never commit .env files'],
+          docWriting: ['명확하고 간결한 문장'],
+        },
+      };
+
+      const result = mergePresets(a, b);
+
+      expect(result.coreRules.security).toEqual([
+        'No hardcoded API keys',
+        'Never commit .env files',
+      ]);
+      expect(result.coreRules.codeStyle).toEqual(['Functions: max 50 lines']);
+      expect(result.coreRules.docWriting).toEqual(['명확하고 간결한 문장']);
+    });
+
+    it('coreRules 중복을 제거한다', () => {
+      const a = {
+        coreRules: {
+          security: ['No hardcoded API keys', 'Never commit .env files'],
+        },
+      };
+      const b = {
+        coreRules: {
+          security: ['No hardcoded API keys', 'Use parameterized queries'],
+        },
+      };
+
+      const result = mergePresets(a, b);
+
+      expect(result.coreRules.security).toEqual([
+        'No hardcoded API keys',
+        'Never commit .env files',
+        'Use parameterized queries',
+      ]);
+    });
+
+    it('coreRules가 없는 프리셋과 있는 프리셋을 병합한다', () => {
+      const a = { skills: ['tdd'] };
+      const b = {
+        coreRules: { testing: ['TDD: RED → GREEN → REFACTOR'] },
+      };
+
+      const result = mergePresets(a, b);
+
+      expect(result.coreRules).toEqual({ testing: ['TDD: RED → GREEN → REFACTOR'] });
+    });
+
+    it('coreRules가 없는 프리셋끼리 병합하면 coreRules가 없다', () => {
+      const result = mergePresets({ skills: ['a'] }, { skills: ['b'] });
+      expect(result.coreRules).toBeUndefined();
     });
   });
 

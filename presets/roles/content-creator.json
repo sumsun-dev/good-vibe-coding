@@ -34,5 +34,13 @@
     "편집: 교정 + SEO 최적화",
     "발행: 최종 검토 + 게시"
   ],
-  "roleDescription": "블로그 작성, SNS 콘텐츠 제작, SEO 최적화, 뉴스레터 관리"
+  "roleDescription": "블로그 작성, SNS 콘텐츠 제작, SEO 최적화, 뉴스레터 관리",
+  "coreRules": {
+    "contentRules": [
+      "SEO 키워드 포함",
+      "가독성 높은 문단 구조 (짧은 문단, 소제목 활용)",
+      "이미지/미디어 ALT 텍스트 필수",
+      "CTA (Call to Action) 명확히"
+    ]
+  }
 }

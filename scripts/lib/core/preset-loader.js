@@ -96,6 +96,12 @@ export function mergePresets(...presets) {
     if (preset.description) {
       result.description = preset.description;
     }
+    if (preset.coreRules) {
+      if (!result.coreRules) result.coreRules = {};
+      for (const [key, rules] of Object.entries(preset.coreRules)) {
+        result.coreRules[key] = [...new Set([...(result.coreRules[key] || []), ...rules])];
+      }
+    }
   }
 
   return result;

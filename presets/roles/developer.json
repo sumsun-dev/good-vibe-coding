@@ -45,5 +45,36 @@
     "검증: build, lint, typecheck, test all pass",
     "Code Review: code-reviewer로 리뷰"
   ],
-  "roleDescription": "소프트웨어 개발 (풀스택, 프론트엔드, 백엔드, 데이터 엔지니어링)"
+  "roleDescription": "소프트웨어 개발 (풀스택, 프론트엔드, 백엔드, 데이터 엔지니어링)",
+  "coreRules": {
+    "security": [
+      "No hardcoded API keys, secrets, tokens",
+      "Never commit .env files",
+      "Never use user input directly in SQL, HTML, or commands",
+      "Use parameterized queries, validate inputs at boundaries"
+    ],
+    "codeStyle": [
+      "Immutability: spread operator for updates, no mutation",
+      "Functions: max 50 lines, early return over deep nesting (max 4 levels)",
+      "Files: max 800 lines, split if exceeded",
+      "Naming: camelCase (vars/funcs), PascalCase (classes/types), SCREAMING_SNAKE_CASE (constants), kebab-case (files)",
+      "Remove console.log before commit"
+    ],
+    "extensibility": [
+      "Define contracts with interfaces/types before implementation",
+      "Extract config to constants/env vars (no magic numbers)",
+      "Single Responsibility Principle: one role per function/class",
+      "Dependency injection for testability"
+    ],
+    "git": [
+      "Conventional commits: feat|fix|refactor|docs|test|chore(scope): subject",
+      "Branches: main, develop, feature/xxx, fix/xxx"
+    ],
+    "testing": [
+      "TDD: RED → GREEN → REFACTOR",
+      "Coverage target: 80%+, core logic: 100%",
+      "AAA pattern: Arrange, Act, Assert",
+      "No test interdependencies, no real API calls (use mocks)"
+    ]
+  }
 }

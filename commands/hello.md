@@ -139,14 +139,23 @@ gh auth login -> GitHub.com -> HTTPS -> Login with a web browser
 Good Vibe Coding은 AI 팀이 파일 편집과 CLI 실행을 빈번하게 수행합니다.
 자동승인 모드를 설정하면 매번 승인하지 않아도 됩니다.
 
-AskUserQuestion:
+먼저 CLI로 현재 설정을 확인합니다:
+
+```bash
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js read-settings
+```
+
+반환된 JSON에서 `permissions.allow` 배열에 `"Bash(node * cli.js *)"` 패턴이 있는지 확인합니다.
+이미 있으면 "Good Vibe CLI 자동승인이 이미 설정되어 있습니다!" 표시 후 Step 3으로 진행합니다.
+
+설정이 없는 경우 AskUserQuestion:
 
 ```
-질문: "Claude Code 자동승인 모드를 설정할까요?"
+질문: "Good Vibe CLI 자동승인을 설정할까요?"
 header: "자동승인"
 options:
   - label: "자동승인 켜기 (Recommended)"
-    description: "Good Vibe 실행 시 파일 편집과 CLI 명령을 자동 승인합니다"
+    description: "Good Vibe CLI 명령을 자동 승인합니다 (settings.json에 추가)"
   - label: "매번 확인"
     description: "모든 작업에 수동 승인이 필요합니다 (안전하지만 느림)"
   - label: "건너뛰기"
@@ -155,26 +164,17 @@ options:
 
 **"자동승인 켜기"** 선택 시:
 
-현재 자동승인 모드를 확인합니다. Shift+Tab을 눌러 모드를 확인합니다.
-현재 모드가 "Auto-accept edits" 또는 "yolo"이면 이미 설정되어 있으므로 "이미 자동승인 모드입니다!" 표시 후 Step 3으로 진행합니다.
+CLI로 규칙을 추가합니다:
 
-설정이 필요한 경우 안내합니다:
+```bash
+echo '{"pattern":"Bash(node * cli.js *)"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js add-permission
+```
 
 ```
-자동승인 설정 방법:
+Good Vibe CLI 자동승인이 설정되었습니다!
+  추가된 규칙: Bash(node * cli.js *)
 
-  Shift+Tab을 반복해서 "Auto-accept edits" 모드로 전환하세요.
-  또는 claude --dangerously-skip-permissions 로 시작하면 전체 자동승인됩니다.
-
-모드 설명:
-  Normal            — 매번 확인 (기본)
-  Auto-accept edits — 파일 편집 자동승인, Bash는 확인 (추천)
-  YOLO              — 전체 자동승인 (숙련자용, 주의 필요)
-
-설정 완료 후 다시 good-vibe:hello를 실행하거나,
-이대로 good-vibe:new를 시작해도 됩니다.
-
-잘 모르겠으면 질문해주세요!
+이제 Good Vibe 실행 시 CLI 명령이 자동 승인됩니다.
 ```
 
 **"매번 확인"** 선택 시 -> "현재 설정을 유지합니다." 표시 후 Step 3으로 진행합니다.
@@ -187,13 +187,14 @@ options:
 
 ### 3.A: CLAUDE.md 미존재 -> 풀 온보딩
 
-#### 3.A-1: 역할 선택
+#### 3.A-1: 역할 선택 (복수 선택 가능)
 
 AskUserQuestion으로 역할을 묻습니다:
 
 ```
-질문: "어떤 일을 주로 하시나요?"
+질문: "어떤 일을 주로 하시나요? (여러 개 선택 가능)"
 header: "역할"
+multiSelect: true
 options:
   - label: "개발"
     description: "풀스택 / 프론트엔드 / 백엔드 / 데이터"
@@ -212,11 +213,13 @@ options:
 - 디자인 -> `designer`
 - 학습/기타 -> `student`
 
+복수 선택 시 roles 배열에 모두 포함합니다 (예: ["developer", "pm"]).
+
 #### 3.A-2: 세부 선택
 
 역할에 따라 추가 질문을 합니다:
 
-**개발 선택 시:**
+**개발 선택 시 (roles에 "developer" 포함):**
 
 ```
 질문: "주로 사용하는 기술 스택은?"
@@ -228,7 +231,16 @@ options:
     description: "프론트엔드 + 백엔드 분리 구조"
   - label: "Python + FastAPI"
     description: "Python 백엔드 API 서버"
+  - label: "아직 정하지 않았어요"
+    description: "나중에 프로젝트 시작 시 선택합니다"
 ```
+
+스택 -> 프리셋 매핑:
+
+- Next.js + Supabase -> `nextjs-supabase`
+- React + Node.js -> `react-node`
+- Python + FastAPI -> `python-fastapi`
+- 아직 정하지 않았어요 -> stack 없음 (CLAUDE.md에 Stack 섹션 미생성)
 
 **기획/관리 선택 시:**
 
@@ -373,16 +385,35 @@ options:
 
 #### 3.A-5: 설정 생성
 
-> **Thin Controller 원칙:** 설정 파일 생성 + CLAUDE.md 분석은 Task tool이 담당합니다.
+> **CLI 기반 생성:** 온보딩 데이터 생성 + 파일 쓰기를 CLI 커맨드로 수행합니다.
 
-Task tool로 설정 파일을 생성합니다:
+**Step 1: 온보딩 데이터 생성**
 
+```bash
+echo '{"roles":["developer"],"stack":"nextjs-supabase","personalities":{}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js generate-onboarding
 ```
-수집한 설정으로 ~/.claude/CLAUDE.md와 rules 파일을 생성하세요.
-역할: {role}, 세부: {detail}, 워크플로우: {workflow}, 팀 스타일: {personalities}
 
-CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
+복수 역할 예시:
+
+```bash
+echo '{"roles":["developer","pm"],"stack":"nextjs-supabase"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js generate-onboarding
 ```
+
+스택 미정 시 stack 필드를 생략합니다:
+
+```bash
+echo '{"roles":["developer"]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js generate-onboarding
+```
+
+반환: `{ "claudeMd": "...", "coreRules": "..." }`
+
+**Step 2: 파일 쓰기**
+
+```bash
+echo '{"claudeMd":"...","coreRules":"..."}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js write-onboarding
+```
+
+반환: `{ "written": ["~/.claude/CLAUDE.md", "~/.claude/rules/core.md"] }`
 
 ### 3.B: CLAUDE.md 존재 -> 분석 + 개선 제안
 

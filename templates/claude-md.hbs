@@ -1,91 +1,107 @@
-# Claude Code Configuration ## Language - Always respond in **Korean** (keep code/technical terms in
-English) ## 역할:
-{{roleName}}
+# Claude Code Configuration
+
+## Language
+- Always respond in **Korean** (keep code/technical terms in English)
+
+## 역할: {{roleName}}
 {{roleDescription}}
 
 ## Workflow (MANDATORY)
 {{#each workflow}}
-  {{@index}}. **{{this}}**
+{{add @index 1}}. **{{this}}**
 {{/each}}
 
-{{#if skills}}
-  ## Skills
-  {{#each skills}}
-    - `{{this}}`
-  {{/each}}
+{{#if coreRules.security}}
+## Security (CRITICAL)
+{{#each coreRules.security}}
+- {{this}}
+{{/each}}
+{{/if}}
+
+{{#if coreRules.codeStyle}}
+## Code Style
+{{#each coreRules.codeStyle}}
+- {{this}}
+{{/each}}
+{{/if}}
+
+{{#if coreRules.extensibility}}
+## Extensibility
+{{#each coreRules.extensibility}}
+- {{this}}
+{{/each}}
+{{/if}}
+
+{{#if coreRules.git}}
+## Git
+{{#each coreRules.git}}
+- {{this}}
+{{/each}}
+{{/if}}
+
+{{#if coreRules.testing}}
+## Testing
+{{#each coreRules.testing}}
+- {{this}}
+{{/each}}
+{{/if}}
+
+{{#each customRules}}
+## {{title}}
+{{#each rules}}
+- {{this}}
+{{/each}}
+
+{{/each}}
+{{#if skills.length}}
+## Skills
+{{#each skills}}
+- `{{this}}`
+{{/each}}
 {{/if}}
 
 {{#if team}}
-  ## Your Team
-
-  {{#each team}}
-    ###
-    {{role}}
-    -
-    {{displayName}}
-    {{emoji}}
-    **성격**:
-    {{personality}}
-    —
-    {{description}}
-    **모델**:
-    {{model}}
-
-    > "{{greeting}}" **행동 지침**:
-    {{speakingStyle}}
-
-  {{/each}}
+## Your Team
+{{#each team}}
+### {{role}} - {{displayName}} {{emoji}}
+**성격**: {{personality}} — {{description}}
+**모델**: {{model}}
+> "{{greeting}}"
+**행동 지침**: {{speakingStyle}}
+{{/each}}
 {{else}}
-  {{#if agents}}
-    ## Agents
-    {{#each agents}}
-      - **{{name}}** ({{model}})
-    {{/each}}
-  {{/if}}
+{{#if agents.length}}
+## Agents
+{{#each agents}}
+- **{{template}}** ({{config.model}})
+{{/each}}
+{{/if}}
 {{/if}}
 
 {{#if orchestration.enabled}}
-  ## Team Orchestration 작업 시 팀원에게 자동으로 위임합니다: | 단계 | 담당 | 트리거 | 호출 |
-  |------|------|--------|------|
-  {{#each orchestration.steps}}
-    |
-    {{phase}}
-    |
-    {{agentDisplayName}}
-    ({{agentRole}})
-    {{agentEmoji}}
-    |
-    {{trigger}}
-    | Task: subagent_type="{{agent}}" |
-  {{/each}}
-
-  ### 자동 위임 워크플로우
-  {{#each orchestration.steps}}
-    {{add @index 1}}. **{{phase}}**:
-    {{trigger}}
-    → `{{agent}}`에게 위임 —
-    {{description}}
-  {{/each}}
+## Team Orchestration
+{{#each orchestration.steps}}
+{{add @index 1}}. **{{phase}}**: {{trigger}} → `{{agent}}`에게 위임 — {{description}}
+{{/each}}
 {{/if}}
 
-{{#if commands}}
-  ## Commands
-  {{#each commands}}
-    - `/{{this}}`
-  {{/each}}
+{{#if commands.length}}
+## Commands
+{{#each commands}}
+- `/{{this}}`
+{{/each}}
 {{/if}}
 
 {{#if stackName}}
-  ## Stack:
-  {{stackName}}
+## Stack: {{stackName}}
 {{/if}}
 
 {{#if stackRules.length}}
-  ## Stack Rules
-  {{#each stackRules}}
-    -
-    {{this}}
-  {{/each}}
+## Stack Rules
+{{#each stackRules}}
+- {{this}}
+{{/each}}
 {{/if}}
 
-## Rules - See `~/.claude/rules/core.md`
+## Rules
+- See `~/.claude/rules/core.md`

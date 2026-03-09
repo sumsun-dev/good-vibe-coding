@@ -13,6 +13,7 @@ function cliExec(command, input) {
       input: JSON.stringify(input),
       encoding: 'utf-8',
       timeout: 10_000,
+      stdio: ['pipe', 'pipe', 'pipe'],
     }),
   );
 }
@@ -23,6 +24,7 @@ function cliExecRaw(command, input) {
       input: input ? JSON.stringify(input) : '',
       encoding: 'utf-8',
       timeout: 10_000,
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
     return { exitCode: 0, stdout, stderr: '' };
   } catch (err) {
