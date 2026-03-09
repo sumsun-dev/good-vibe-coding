@@ -4,7 +4,7 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 
 ## 설계: CLI-as-API + SDK
 
-- `cli.js`는 경량 라우터. 127개 커맨드를 14개 핸들러 모듈(`scripts/handlers/*.js`)로 lazy-load 디스패치
+- `cli.js`는 경량 라우터. 152개 커맨드를 15개 핸들러 모듈(`scripts/handlers/*.js`)로 lazy-load 디스패치
 - 사용자는 `good-vibe:hello`, `good-vibe:new`, `good-vibe:discuss` 같은 슬래시 커맨드만 씀
 - 흐름: 슬래시 커맨드 → 에이전트 디스패치 → cli.js → 핸들러 → 코어 라이브러리
 - 에이전트 .md 파일이 `node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js <command>` 형태로 호출
@@ -164,10 +164,10 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 │  AI 팀원             15개 역할               │
 │  Tier별 병렬 분석 + 크로스 리뷰              │
 ├─────────────────────────────────────────────┤
-│  내부 API            CLI-as-API (127개)      │
+│  내부 API            CLI-as-API (152개)      │
 │  에이전트가 호출하는 인터페이스               │
 ├─────────────────────────────────────────────┤
-│  코어 라이브러리      55개 모듈 + 14개 핸들러  │
+│  코어 라이브러리      59개 모듈 + 15개 핸들러  │
 │  프로젝트 관리, 오케스트레이션, 리뷰 엔진 등  │
 └─────────────────────────────────────────────┘
 ```
@@ -229,7 +229,7 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 
 ## 코어 모듈 (`scripts/lib/`)
 
-**`core/`** — 기반 유틸리티 (12개)
+**`core/`** — 기반 유틸리티 (15개)
 
 - `validators.js` — 입력 검증 + AppError (inputError/notFoundError/systemError)
 - `config.js` — 중앙 설정 (Object.freeze, 전체 정책 상수)
@@ -243,8 +243,11 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 - `preset-loader.js` — 프리셋 JSON 로딩
 - `prompt-builder.js` — 프롬프트 조합 유틸리티 (순수 마크다운 포맷팅, 인젝션 방어: sanitizeForPrompt/wrapUserInput/DATA_BOUNDARY_INSTRUCTION)
 - `nl-router.js` — 자연어 → 커맨드 매핑 (규칙 기반, LLM 호출 없음)
+- `onboarding-generator.js` — 온보딩 CLAUDE.md/rules 생성
+- `settings-manager.js` — 사용자 설정 관리
+- `text-utils.js` — 텍스트 유틸리티
 
-**`project/`** — 프로젝트 관리 (12개)
+**`project/`** — 프로젝트 관리 (13개)
 
 - `project-manager.js` — CRUD + 상태 관리 (원자적 잠금, AppError, 기여도 기록, 수정 이력)
 - `project-scaffolder.js` — 프로젝트 인프라 생성 (폴더, CLAUDE.md, README.md, 에이전트)
@@ -260,7 +263,7 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 - `ci-generator.js` — GitHub Actions CI 워크플로우 자동 생성 (Node/Python/Go/Java)
 - `prd-generator.js` — PRD 프롬프트 생성/파싱/포맷 (명확도 → 복잡도 사이 CEO 확인용)
 
-**`engine/`** — 실행 엔진 (13개)
+**`engine/`** — 실행 엔진 (15개)
 
 - `orchestrator.js` — 멀티에이전트 오케스트레이션 (4-tier 병렬 디스패치, 수렴 확인, 역할별 피드백 주입)
 - `discussion-engine.js` — 토론 프롬프트 생성
@@ -275,6 +278,8 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 - `dispatch-plan-generator.js` — JSON 디스패치 계획 생성 (토론/실행 모두, 플레이스홀더 템플릿 계약)
 - `eval-engine.js` — A/B 평가 프레임워크
 - `acceptance-criteria.js` — 수락 기준 생성/파싱/검증 (기획서 기반 AC)
+- `evolution-engine.js` — 진화형 프롬프트 개선 엔진
+- `quality-evaluator.js` — 품질 평가 프레임워크
 
 **`llm/`** — LLM/외부 연동 (3개)
 
@@ -316,9 +321,9 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 
 **CLI 레이어**
 
-- `cli.js` — 라우터 (127개 커맨드, 14개 핸들러로 디스패치)
+- `cli.js` — 라우터 (152개 커맨드, 15개 핸들러로 디스패치)
 - `cli-utils.js` — readStdin, output, outputOk, parseArgs
-- `handlers/*.js` — 14개 핸들러: project, team, discussion, execution, review, build, eval, auth, feedback, infra, metrics, template, task, recommendation
+- `handlers/*.js` — 15개 핸들러: project, team, discussion, execution, review, build, eval, auth, feedback, infra, metrics, template, task, recommendation, learn
 
 ## 정책 상수 (`config.js`)
 

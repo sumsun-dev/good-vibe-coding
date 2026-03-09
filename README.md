@@ -393,10 +393,10 @@ const result = await executor.run(plan, {
 │  AI 팀원             15개 역할               │
 │  Tier별 병렬 분석 + 크로스 리뷰              │
 ├─────────────────────────────────────────────┤
-│  내부 API            CLI-as-API (127개)      │
+│  내부 API            CLI-as-API (152개)      │
 │  에이전트가 호출하는 인터페이스               │
 ├─────────────────────────────────────────────┤
-│  코어 라이브러리      55개 모듈 + 14개 핸들러  │
+│  코어 라이브러리      59개 모듈 + 15개 핸들러  │
 │  프로젝트 관리, 오케스트레이션, 리뷰 엔진 등  │
 └─────────────────────────────────────────────┘
 ```
@@ -412,9 +412,9 @@ good-vibe/
 ├── agents/          23개 에이전트 (팀 15 + 서포트 8)
 ├── commands/        20개 슬래시 커맨드 정의
 ├── scripts/
-│   ├── cli.js       내부 API 라우터 (127개 커맨드)
-│   ├── handlers/    14개 핸들러 모듈
-│   └── lib/         55개 코어 라이브러리
+│   ├── cli.js       내부 API 라우터 (152개 커맨드)
+│   ├── handlers/    15개 핸들러 모듈
+│   └── lib/         59개 코어 라이브러리
 │       ├── core/        기반 유틸 (validators, config, cache 등)
 │       ├── project/     프로젝트 관리 (project-manager, scaffolder, branch, PR, CI 등)
 │       ├── engine/      실행 엔진 (orchestrator, execution-loop, review 등)
@@ -424,9 +424,9 @@ good-vibe/
 ├── presets/         역할, 프로젝트 타입, 템플릿, CI 템플릿
 ├── guides/          사용자 가이드
 ├── templates/       Handlebars 템플릿
-├── skills/          4개 내장 스킬
+├── skills/          5개 내장 스킬
 ├── internal/        Daily Improvement 자율 파이프라인 (내부 개발 도구)
-└── tests/           2,100+ 테스트 (Vitest)
+└── tests/           2,150+ 테스트 (Vitest)
 ```
 
 ## 개발
@@ -442,7 +442,7 @@ npm run test:coverage # 커버리지 리포트
 
 - Node.js 18+ (ESM)
 - Handlebars 템플릿 엔진
-- Vitest 테스트 (2,100+개)
+- Vitest 테스트 (2,150+개)
 - GitHub Actions CI (Node 18/20/22)
 
 ## 지원 범위
