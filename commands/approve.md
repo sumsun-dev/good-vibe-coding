@@ -95,7 +95,7 @@ Task tool 실행 결과를 CEO에게 그대로 표시합니다.
 사용자가 "수정 요청"을 선택한 경우:
 
 - AskUserQuestion으로 수정 내용을 입력받아 discussion.feedback에 저장
-- `good-vibe:discuss --continue`를 안내 (다음 라운드에서 피드백 반영)
+- `good-vibe:discuss`를 안내 (다음 라운드에서 피드백 반영)
 
 사용자가 "재토론"을 선택한 경우:
 
