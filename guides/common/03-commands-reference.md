@@ -79,7 +79,7 @@ good-vibe:hello  →  good-vibe:new  →  good-vibe:discuss  →  good-vibe:appr
 | Semi-auto   | 3 Phase마다 확인 (배치)          | Phase가 많을 때 |
 | Auto        | 에스컬레이션만 멈춤              | 익숙해진 후     |
 
-> `project.mode` (프로젝트 워크플로우: quick-build/plan-execute/plan-only)와 `executionState.mode` (실행 인터랙션: interactive/semi-auto/auto)는 다른 개념입니다.
+> `project.mode` (프로젝트 워크플로우: quick-build/plan-execute/plan-only)와 `executionState.mode` (실행 인터랙션: interactive/semi-auto/auto)는 다른 개념입니다. 자세한 설명은 [실행 모드 가이드](10-execution-modes.md)를 참고하세요.
 
 ---
 
