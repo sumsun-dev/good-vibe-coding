@@ -6,6 +6,8 @@ import {
   detectTechStack,
   mapTechStackToRoles,
   summarizeFileStructure,
+  extractExports,
+  extractImports,
 } from '../scripts/lib/project/codebase-scanner.js';
 
 const TMP_DIR = resolve('.tmp-test-codebase-scanner');
@@ -205,5 +207,145 @@ describe('summarizeFileStructure', () => {
 
   it('빈 배열이면 빈 문자열', () => {
     expect(summarizeFileStructure([])).toBe('');
+  });
+});
+
+// --- extractExports ---
+
+describe('extractExports', () => {
+  it('export class를 추출한다', () => {
+    const code = 'export class MyService {}';
+    expect(extractExports(code)).toContain('MyService');
+  });
+
+  it('export function을 추출한다', () => {
+    const code = 'export function helper() { return 1; }';
+    expect(extractExports(code)).toContain('helper');
+  });
+
+  it('export const/let/var를 추출한다', () => {
+    const code = `
+      export const MAX = 10;
+      export let counter = 0;
+      export var legacy = true;
+    `;
+    const result = extractExports(code);
+    expect(result).toContain('MAX');
+    expect(result).toContain('counter');
+    expect(result).toContain('legacy');
+  });
+
+  it('export { a, b } 형태를 추출한다', () => {
+    const code = `
+      function a() {}
+      function b() {}
+      export { a, b }
+    `;
+    const result = extractExports(code);
+    expect(result).toContain('a');
+    expect(result).toContain('b');
+  });
+
+  it('export { a as b } 형태에서 원본 이름을 추출한다', () => {
+    const code = 'export { internal as publicName }';
+    expect(extractExports(code)).toContain('internal');
+  });
+
+  it('export default class를 추출한다', () => {
+    const code = 'export default class App {}';
+    expect(extractExports(code)).toContain('App');
+  });
+
+  it('빈 코드에서 빈 배열을 반환한다', () => {
+    expect(extractExports('')).toEqual([]);
+  });
+
+  it('중복을 제거한다', () => {
+    const code = `
+      export function helper() {}
+      export { helper }
+    `;
+    const result = extractExports(code);
+    const helperCount = result.filter((n) => n === 'helper').length;
+    expect(helperCount).toBe(1);
+  });
+});
+
+// --- extractImports ---
+
+describe('extractImports', () => {
+  it('named import를 추출한다', () => {
+    const code = "import { helper } from './utils.js';";
+    expect(extractImports(code)).toContain('./utils.js');
+  });
+
+  it('default import를 추출한다', () => {
+    const code = "import express from 'express';";
+    expect(extractImports(code)).toContain('express');
+  });
+
+  it('상대 경로와 패키지 경로를 모두 추출한다', () => {
+    const code = `
+      import { readFile } from 'fs/promises';
+      import { helper } from './lib/utils.js';
+    `;
+    const result = extractImports(code);
+    expect(result).toContain('fs/promises');
+    expect(result).toContain('./lib/utils.js');
+  });
+
+  it('빈 코드에서 빈 배열을 반환한다', () => {
+    expect(extractImports('')).toEqual([]);
+  });
+
+  it('default + named 혼합 import를 추출한다', () => {
+    const code = "import React, { useState } from 'react';";
+    expect(extractImports(code)).toContain('react');
+  });
+});
+
+// --- scanCodebase modules 통합 ---
+
+describe('scanCodebase modules 분석', () => {
+  it('JS 파일의 export/import를 분석한다', async () => {
+    await writeFile(resolve(TMP_DIR, 'package.json'), JSON.stringify({ dependencies: {} }));
+    await mkdir(resolve(TMP_DIR, 'src'), { recursive: true });
+    await writeFile(
+      resolve(TMP_DIR, 'src', 'app.js'),
+      `import { helper } from './utils.js';\nexport class App {}`,
+    );
+    await writeFile(
+      resolve(TMP_DIR, 'src', 'utils.js'),
+      `export function helper() {}\nexport const VERSION = '1.0';`,
+    );
+
+    const result = await scanCodebase(TMP_DIR);
+
+    expect(result.modules).toBeDefined();
+    expect(result.modules.length).toBeGreaterThan(0);
+
+    const appModule = result.modules.find((m) => m.file === 'src/app.js');
+    expect(appModule).toBeDefined();
+    expect(appModule.exports).toContain('App');
+    expect(appModule.imports).toContain('./utils.js');
+
+    const utilsModule = result.modules.find((m) => m.file === 'src/utils.js');
+    expect(utilsModule).toBeDefined();
+    expect(utilsModule.exports).toContain('helper');
+    expect(utilsModule.exports).toContain('VERSION');
+  });
+
+  it('export/import 없는 파일은 결과에 포함하지 않는다', async () => {
+    await writeFile(resolve(TMP_DIR, 'empty.js'), '// just a comment');
+
+    const result = await scanCodebase(TMP_DIR);
+
+    const emptyModule = (result.modules || []).find((m) => m.file === 'empty.js');
+    expect(emptyModule).toBeUndefined();
+  });
+
+  it('빈 디렉토리에서 modules는 빈 배열이다', async () => {
+    const result = await scanCodebase(TMP_DIR);
+    expect(result.modules).toEqual([]);
   });
 });

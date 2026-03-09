@@ -107,6 +107,7 @@ export async function scanCodebase(projectPath) {
   const languages = countLanguages(files);
   const fileStructure = summarizeFileStructure(files);
   const suggestedRoles = mapTechStackToRoles(techStack);
+  const modules = await analyzeModules(projectPath, files);
 
   return {
     techStack,
@@ -114,6 +115,7 @@ export async function scanCodebase(projectPath) {
     dependencies,
     fileStructure,
     suggestedRoles,
+    modules,
     scannedAt: new Date().toISOString(),
   };
 }
@@ -321,4 +323,73 @@ export function summarizeFileStructure(files) {
     .sort((a, b) => b[1] - a[1])
     .map(([dir, count]) => `${dir} (${count})`)
     .join(', ');
+}
+
+/**
+ * JS/TS 파일의 export 심볼을 정규식으로 추출한다.
+ * 제한사항: `export * from`, 동적 export (`export { ...rest }`)는 미지원.
+ * @param {string} code - 소스 코드
+ * @returns {string[]} export 이름 배열
+ */
+export function extractExports(code) {
+  const exports = new Set();
+  for (const m of code.matchAll(
+    /export\s+(?:default\s+)?(?:class|function|const|let|var)\s+(\w+)/g,
+  )) {
+    exports.add(m[1]);
+  }
+  for (const m of code.matchAll(/export\s+\{([^}]+)\}/g)) {
+    m[1].split(',').forEach((s) => {
+      const name = s
+        .trim()
+        .split(/\s+as\s+/)[0]
+        .trim();
+      if (name) exports.add(name);
+    });
+  }
+  return [...exports];
+}
+
+/**
+ * JS/TS 파일의 import 경로를 정규식으로 추출한다.
+ * @param {string} code - 소스 코드
+ * @returns {string[]} import 경로 배열
+ */
+export function extractImports(code) {
+  const imports = [];
+  for (const m of code.matchAll(
+    /import\s+(?:\{[^}]*\}|[\w*]+(?:\s*,\s*\{[^}]*\})?)\s+from\s+['"]([^'"]+)['"]/g,
+  )) {
+    imports.push(m[1]);
+  }
+  return imports;
+}
+
+const MAX_MODULE_FILES = 50;
+const JS_TS_PATTERN = /\.(js|mjs|ts|tsx|jsx)$/;
+
+/**
+ * 프로젝트의 JS/TS 파일들에서 모듈 구조를 분석한다.
+ * @param {string} projectPath
+ * @param {string[]} files - collectFiles 결과
+ * @returns {Promise<Array<{file: string, exports: string[], imports: string[]}>>}
+ */
+async function analyzeModules(projectPath, files) {
+  const jsFiles = files.filter((f) => JS_TS_PATTERN.test(f));
+  const sampled = jsFiles.slice(0, MAX_MODULE_FILES);
+  const results = [];
+
+  for (const file of sampled) {
+    try {
+      const code = await readFile(resolve(projectPath, file), 'utf-8');
+      const exp = extractExports(code);
+      const imp = extractImports(code);
+      if (exp.length > 0 || imp.length > 0) {
+        results.push({ file, exports: exp, imports: imp });
+      }
+    } catch {
+      /* 읽기 실패 무시 */
+    }
+  }
+  return results;
 }

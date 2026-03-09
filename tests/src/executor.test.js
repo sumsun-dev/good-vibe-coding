@@ -236,6 +236,19 @@ describe('Executor._handleStep', () => {
     expect(onPhaseComplete).toHaveBeenCalledWith(1, {});
   });
 
+  it('confirm-next-phase: 훅이 phaseGuidance 포함 객체를 반환하면 결과에 전달된다', async () => {
+    executor.hooks = {
+      onConfirmPhase: vi
+        .fn()
+        .mockResolvedValue({ proceed: true, phaseGuidance: 'UI를 먼저 구현하세요' }),
+    };
+    const result = await executor._handleStep({ action: 'confirm-next-phase' }, {});
+    expect(result).toEqual({
+      completedAction: 'build-context',
+      phaseGuidance: 'UI를 먼저 구현하세요',
+    });
+  });
+
   it('confirm-next-phase: 훅 없으면 진행한다', async () => {
     const result = await executor._handleStep({ action: 'confirm-next-phase' }, {});
     expect(result).toEqual({ completedAction: 'build-context' });
