@@ -9,6 +9,23 @@ import { claudeDir } from './app-paths.js';
 import { systemError } from './validators.js';
 
 const MAX_SETTINGS_SIZE = 1024 * 1024; // 1MB
+const MAX_JSON_DEPTH = 20;
+
+/**
+ * JSON 객체의 최대 깊이를 계산한다.
+ * @param {*} obj - 측정 대상
+ * @param {number} [depth=0] - 현재 깊이
+ * @returns {number}
+ */
+function getJsonDepth(obj, depth = 0) {
+  if (obj === null || typeof obj !== 'object') return depth;
+  if (depth > MAX_JSON_DEPTH) return depth;
+  let max = depth;
+  for (const val of Object.values(obj)) {
+    max = Math.max(max, getJsonDepth(val, depth + 1));
+  }
+  return max;
+}
 
 /**
  * 기본 settings.json 경로를 반환한다.
@@ -31,7 +48,11 @@ export async function readSettings(settingsPath) {
       throw systemError('settings.json 파일이 너무 큽니다 (최대 1MB)');
     }
     const content = await readFile(filePath, 'utf-8');
-    return JSON.parse(content);
+    const parsed = JSON.parse(content);
+    if (getJsonDepth(parsed) > MAX_JSON_DEPTH) {
+      throw systemError('settings.json 구조가 너무 깊습니다 (최대 20단계)');
+    }
+    return parsed;
   } catch (err) {
     if (err.code === 'ENOENT') return {};
     if (err.code === 'SYSTEM_ERROR') throw err;
@@ -96,12 +117,14 @@ export async function addPermissions(patterns, settingsPath) {
 
   const added = [];
   const skipped = [];
+  const existingSet = new Set(settings.permissions.allow);
 
   for (const pattern of patterns) {
-    if (settings.permissions.allow.includes(pattern)) {
+    if (existingSet.has(pattern)) {
       skipped.push(pattern);
     } else {
       settings.permissions.allow.push(pattern);
+      existingSet.add(pattern);
       added.push(pattern);
     }
   }

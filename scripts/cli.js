@@ -144,6 +144,7 @@ const COMMAND_MAP = {
   'generate-global-onboarding': 'infra',
   'write-onboarding': 'infra',
   'write-global-onboarding': 'infra',
+  'write-project-onboarding': 'infra',
   // metrics
   'record-metrics': 'metrics',
   'project-metrics': 'metrics',

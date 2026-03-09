@@ -23,6 +23,7 @@ const AUTO_APPROVE_TOOLS = {
   ],
   selective: ['Read', 'Glob', 'Grep', 'Bash(node * cli.js *)'],
   manual: ['Bash(node * cli.js *)'],
+  none: [],
 };
 
 /**
@@ -45,7 +46,7 @@ export function extractCustomRules(coreRules) {
  * @returns {object} 렌더링용 데이터
  */
 export function buildOnboardingData(mergedPreset, options = {}) {
-  const { roleNames, stackName, personalities } = options;
+  const { roleNames, stackName, personalities, team } = options;
   const coreRules = mergedPreset.coreRules || {};
 
   const roleName =
@@ -65,7 +66,7 @@ export function buildOnboardingData(mergedPreset, options = {}) {
     commands: mergedPreset.commands || [],
     agents: mergedPreset.agents || [],
     orchestration: mergedPreset.orchestration || {},
-    team: mergedPreset.team || null,
+    team: team || mergedPreset.team || null,
     stackName,
     stackRules: mergedPreset.stackRules || [],
     personalities,
@@ -105,4 +106,12 @@ export function buildGlobalClaudeMdData(options = {}) {
  */
 export async function renderGlobalClaudeMd(data) {
   return renderTemplate('global-claude-md.hbs', data);
+}
+
+/**
+ * 글로벌 rules/core.md를 렌더링한다. (파일 쓰기는 하지 않음)
+ * @returns {Promise<string>} 렌더링된 core.md 문자열
+ */
+export async function renderGlobalCoreRules() {
+  return renderTemplate('global-rules-core.md.hbs', {});
 }

@@ -1,0 +1,42 @@
+# Core Rules
+
+## Language
+- Always respond in **Korean** (keep code/technical terms in English)
+
+## Security (CRITICAL)
+- No hardcoded API keys, secrets, tokens
+- Never commit .env files
+- Never use user input directly in SQL, HTML, or commands
+- Use parameterized queries, validate inputs at boundaries
+
+## Code Style
+- Immutability: spread operator for updates, no mutation
+- Functions: max 50 lines, early return over deep nesting (max 4 levels)
+- Files: max 800 lines, split if exceeded
+- Naming: camelCase (vars/funcs), PascalCase (classes/types), SCREAMING_SNAKE_CASE (constants), kebab-case (files)
+- Remove console.log before commit
+
+## Git
+- Conventional commits: `feat|fix|refactor|docs|test|chore(scope): subject`
+- Branches: main, develop, feature/xxx, fix/xxx
+
+## Documentation
+- Reflect code changes in README.md
+- Record major changes in CHANGELOG
+- Maintain .env.example for environment variable documentation
+
+## Error Handling
+- Record cause + solution in ERROR_LOG.md on errors
+- Use structured error patterns, avoid direct throw new Error
+
+## Testing
+- TDD: RED -> GREEN -> REFACTOR
+- Coverage 80%+, core logic 100%
+- AAA pattern, no test interdependencies, mock external APIs
+
+## Extensibility
+- Define contracts with interfaces/types before implementation
+- Extract config to constants/env vars (no magic numbers)
+- Single Responsibility Principle: one role per function/class
+- Dependency injection for testability
+- Abstract when repeated 3+ times

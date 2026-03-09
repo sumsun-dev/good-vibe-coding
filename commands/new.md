@@ -419,7 +419,11 @@ Task tool 프롬프트:
 
    **중요:** build-team → set-team을 반드시 실행. 건너뛰면 displayName, trait, speakingStyle이 undefined.
 
-5. 스킬/에이전트 추천:
+5. 프로젝트 CLAUDE.md 생성 (infraPath가 있을 때만):
+   a. echo '{"roles": [...roleIds], "team": [...builtTeam]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js generate-onboarding
+   b. echo '{"claudeMd": "...", "coreRules": "...", "projectDir": "{infraPath}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js write-project-onboarding
+
+6. 스킬/에이전트 추천 (선택):
    echo '{"projectType": "{type}", "complexity": "{level}", "description": "...", "teamRoles": [...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js recommend-setup
 
 반환:

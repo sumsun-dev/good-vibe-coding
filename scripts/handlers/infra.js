@@ -2,7 +2,7 @@
  * handlers/infra — 프로젝트 인프라 셋업 + GitHub + 온보딩 + 설정 커맨드
  */
 import { readStdin, output } from '../cli-utils.js';
-import { requireFields } from '../lib/core/validators.js';
+import { requireFields, requireArray, requireOneOf } from '../lib/core/validators.js';
 import { setupProjectInfra, appendToClaudeMd } from '../lib/project/project-scaffolder.js';
 import { checkGhStatus, createGithubRepo, gitInitAndPush } from '../lib/project/github-manager.js';
 import {
@@ -32,6 +32,7 @@ import {
   renderOnboardingFiles,
   buildGlobalClaudeMdData,
   renderGlobalClaudeMd,
+  renderGlobalCoreRules,
 } from '../lib/core/onboarding-generator.js';
 import { loadPreset, mergePresets } from '../lib/core/preset-loader.js';
 import { safeWriteFile, ensureDir } from '../lib/core/file-writer.js';
@@ -189,23 +190,34 @@ export const commands = {
   'generate-global-onboarding': async () => {
     const data = await readStdin();
     const autoApproveMode = data?.autoApproveMode || 'manual';
+    requireOneOf(autoApproveMode, ['auto', 'selective', 'manual', 'none'], 'autoApproveMode');
     const templateData = buildGlobalClaudeMdData({ autoApproveMode });
-    const claudeMd = await renderGlobalClaudeMd(templateData);
-    output({ claudeMd });
+    const [claudeMd, coreRules] = await Promise.all([
+      renderGlobalClaudeMd(templateData),
+      renderGlobalCoreRules(),
+    ]);
+    output({ claudeMd, coreRules });
   },
 
   'write-global-onboarding': async () => {
     const data = await readStdin();
-    requireFields(data, ['claudeMd']);
+    requireFields(data, ['claudeMd', 'coreRules']);
     const claudeBase = claudeDir();
     const claudeMdPath = resolve(claudeBase, 'CLAUDE.md');
-    await safeWriteFile(claudeMdPath, data.claudeMd, { overwrite: true });
-    output({ written: [claudeMdPath] });
+    const rulesDir = resolve(claudeBase, 'rules');
+    const coreRulesPath = resolve(rulesDir, 'core.md');
+    await ensureDir(rulesDir);
+    await Promise.all([
+      safeWriteFile(claudeMdPath, data.claudeMd, { overwrite: true }),
+      safeWriteFile(coreRulesPath, data.coreRules, { overwrite: true }),
+    ]);
+    output({ written: [claudeMdPath, coreRulesPath] });
   },
 
   'add-permissions': async () => {
     const data = await readStdin();
     requireFields(data, ['patterns']);
+    requireArray(data.patterns, 'patterns');
     const result = await addPermissions(data.patterns);
     output(result);
   },
@@ -226,9 +238,25 @@ export const commands = {
       roleNames,
       stackName: stackPreset?.displayName,
       personalities: data.personalities,
+      team: data.team,
     });
     const result = await renderOnboardingFiles(onboardingData);
     output(result);
+  },
+
+  'write-project-onboarding': async () => {
+    const data = await readStdin();
+    requireFields(data, ['claudeMd', 'coreRules', 'projectDir']);
+    const resolvedDir = resolve(data.projectDir);
+    const claudeMdPath = resolve(resolvedDir, 'CLAUDE.md');
+    const rulesDir = resolve(resolvedDir, '.claude', 'rules');
+    const coreRulesPath = resolve(rulesDir, 'core.md');
+    await ensureDir(rulesDir);
+    await Promise.all([
+      safeWriteFile(claudeMdPath, data.claudeMd, { overwrite: true }),
+      safeWriteFile(coreRulesPath, data.coreRules, { overwrite: true }),
+    ]);
+    output({ written: [claudeMdPath, coreRulesPath] });
   },
 
   'write-onboarding': async () => {

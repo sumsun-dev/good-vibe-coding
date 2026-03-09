@@ -46,6 +46,23 @@ describe('settings-manager', () => {
       await writeFile(settingsPath, '{invalid json', 'utf-8');
       await expect(readSettings(settingsPath)).rejects.toThrow();
     });
+
+    it('JSON 깊이가 20을 초과하면 에러를 던진다', async () => {
+      const settingsPath = resolve(TMP_DIR, 'settings.json');
+      let deep = { value: 'leaf' };
+      for (let i = 0; i < 25; i++) {
+        deep = { nested: deep };
+      }
+      await writeFile(settingsPath, JSON.stringify(deep), 'utf-8');
+      await expect(readSettings(settingsPath)).rejects.toThrow('너무 깊습니다');
+    });
+
+    it('1MB 초과 파일이면 에러를 던진다', async () => {
+      const settingsPath = resolve(TMP_DIR, 'settings.json');
+      const bigContent = '{"data":"' + 'x'.repeat(1024 * 1024 + 100) + '"}';
+      await writeFile(settingsPath, bigContent, 'utf-8');
+      await expect(readSettings(settingsPath)).rejects.toThrow('너무 큽니다');
+    });
   });
 
   describe('writeSettings', () => {

@@ -39,6 +39,7 @@ vi.mock('../../scripts/lib/core/onboarding-generator.js', () => ({
   renderOnboardingFiles: vi.fn(),
   buildGlobalClaudeMdData: vi.fn(),
   renderGlobalClaudeMd: vi.fn(),
+  renderGlobalCoreRules: vi.fn(),
 }));
 
 vi.mock('../../scripts/lib/core/preset-loader.js', () => ({
@@ -66,9 +67,10 @@ import {
   renderOnboardingFiles,
   buildGlobalClaudeMdData,
   renderGlobalClaudeMd,
+  renderGlobalCoreRules,
 } from '../../scripts/lib/core/onboarding-generator.js';
 import { loadPreset, mergePresets } from '../../scripts/lib/core/preset-loader.js';
-import { safeWriteFile } from '../../scripts/lib/core/file-writer.js';
+import { safeWriteFile, ensureDir } from '../../scripts/lib/core/file-writer.js';
 import { commands } from '../../scripts/handlers/infra.js';
 
 describe('infra handler', () => {
@@ -180,10 +182,11 @@ describe('infra handler', () => {
   });
 
   describe('generate-global-onboarding', () => {
-    it('autoApproveMode로 글로벌 CLAUDE.md를 생성한다', async () => {
+    it('autoApproveMode로 글로벌 CLAUDE.md + coreRules를 생성한다', async () => {
       readStdin.mockResolvedValue({ autoApproveMode: 'auto' });
       buildGlobalClaudeMdData.mockReturnValue({ autoApprove: true, autoApproveTools: ['Read'] });
       renderGlobalClaudeMd.mockResolvedValue('# Claude Code Configuration\n...');
+      renderGlobalCoreRules.mockResolvedValue('# Core Rules\n...');
 
       await commands['generate-global-onboarding']();
 
@@ -192,40 +195,65 @@ describe('infra handler', () => {
         autoApprove: true,
         autoApproveTools: ['Read'],
       });
-      expect(output).toHaveBeenCalledWith({ claudeMd: '# Claude Code Configuration\n...' });
+      expect(renderGlobalCoreRules).toHaveBeenCalled();
+      expect(output).toHaveBeenCalledWith({
+        claudeMd: '# Claude Code Configuration\n...',
+        coreRules: '# Core Rules\n...',
+      });
     });
 
     it('autoApproveMode 미지정 시 manual 기본값', async () => {
       readStdin.mockResolvedValue({});
       buildGlobalClaudeMdData.mockReturnValue({ autoApprove: true, autoApproveTools: [] });
       renderGlobalClaudeMd.mockResolvedValue('# MD');
+      renderGlobalCoreRules.mockResolvedValue('# Core Rules');
 
       await commands['generate-global-onboarding']();
 
       expect(buildGlobalClaudeMdData).toHaveBeenCalledWith({ autoApproveMode: 'manual' });
     });
+
+    it('유효하지 않은 autoApproveMode이면 에러', async () => {
+      readStdin.mockResolvedValue({ autoApproveMode: 'invalid' });
+      await expect(commands['generate-global-onboarding']()).rejects.toThrow('다음 중 하나');
+    });
   });
 
   describe('write-global-onboarding', () => {
-    it('CLAUDE.md만 쓴다 (core.md 없음)', async () => {
-      readStdin.mockResolvedValue({ claudeMd: '# Global Config' });
+    it('CLAUDE.md와 rules/core.md를 모두 쓴다', async () => {
+      readStdin.mockResolvedValue({ claudeMd: '# Global Config', coreRules: '# Core Rules' });
       safeWriteFile.mockResolvedValue({ written: true });
+      ensureDir.mockResolvedValue();
 
       await commands['write-global-onboarding']();
 
-      expect(safeWriteFile).toHaveBeenCalledTimes(1);
+      expect(ensureDir).toHaveBeenCalledWith(expect.stringContaining('rules'));
+      expect(safeWriteFile).toHaveBeenCalledTimes(2);
       expect(safeWriteFile).toHaveBeenCalledWith(
         expect.stringContaining('CLAUDE.md'),
         '# Global Config',
         { overwrite: true },
       );
+      expect(safeWriteFile).toHaveBeenCalledWith(
+        expect.stringContaining('core.md'),
+        '# Core Rules',
+        { overwrite: true },
+      );
       expect(output).toHaveBeenCalledWith({
-        written: expect.arrayContaining([expect.stringContaining('CLAUDE.md')]),
+        written: expect.arrayContaining([
+          expect.stringContaining('CLAUDE.md'),
+          expect.stringContaining('core.md'),
+        ]),
       });
     });
 
     it('claudeMd 필드 누락 시 에러', async () => {
-      readStdin.mockResolvedValue({});
+      readStdin.mockResolvedValue({ coreRules: '# Rules' });
+      await expect(commands['write-global-onboarding']()).rejects.toThrow();
+    });
+
+    it('coreRules 필드 누락 시 에러', async () => {
+      readStdin.mockResolvedValue({ claudeMd: '# Config' });
       await expect(commands['write-global-onboarding']()).rejects.toThrow();
     });
   });
@@ -244,6 +272,11 @@ describe('infra handler', () => {
     it('patterns 필드 누락 시 에러', async () => {
       readStdin.mockResolvedValue({});
       await expect(commands['add-permissions']()).rejects.toThrow();
+    });
+
+    it('patterns가 배열이 아니면 에러', async () => {
+      readStdin.mockResolvedValue({ patterns: 'not-array' });
+      await expect(commands['add-permissions']()).rejects.toThrow('배열');
     });
   });
 
@@ -269,6 +302,26 @@ describe('infra handler', () => {
         claudeMd: '# Claude Code',
         coreRules: '# Core Rules',
       });
+    });
+
+    it('team 옵션을 buildOnboardingData에 전달한다', async () => {
+      const mockPreset = { name: 'developer', displayName: '개발자' };
+      const mockTeam = [{ roleId: 'cto', displayName: 'CTO' }];
+      readStdin.mockResolvedValue({ roles: ['developer'], team: mockTeam });
+      loadPreset.mockResolvedValue(mockPreset);
+      mergePresets.mockReturnValue(mockPreset);
+      buildOnboardingData.mockReturnValue({ roleName: '개발자' });
+      renderOnboardingFiles.mockResolvedValue({
+        claudeMd: '# Claude Code',
+        coreRules: '# Core Rules',
+      });
+
+      await commands['generate-onboarding']();
+
+      expect(buildOnboardingData).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ team: mockTeam }),
+      );
     });
 
     it('복수 역할 + 스택을 지원한다', async () => {
@@ -298,6 +351,49 @@ describe('infra handler', () => {
 
       expect(loadPreset).toHaveBeenCalledTimes(3);
       expect(output).toHaveBeenCalledWith({ claudeMd: '# MD', coreRules: '# Rules' });
+    });
+  });
+
+  describe('write-project-onboarding', () => {
+    it('프로젝트 디렉토리에 CLAUDE.md와 .claude/rules/core.md를 쓴다', async () => {
+      readStdin.mockResolvedValue({
+        claudeMd: '# Project Config',
+        coreRules: '# Project Rules',
+        projectDir: '/tmp/my-project',
+      });
+      safeWriteFile.mockResolvedValue({ written: true });
+      ensureDir.mockResolvedValue();
+
+      await commands['write-project-onboarding']();
+
+      expect(ensureDir).toHaveBeenCalledWith(expect.stringContaining('.claude'));
+      expect(safeWriteFile).toHaveBeenCalledTimes(2);
+      expect(safeWriteFile).toHaveBeenCalledWith(
+        expect.stringContaining('CLAUDE.md'),
+        '# Project Config',
+        { overwrite: true },
+      );
+      expect(safeWriteFile).toHaveBeenCalledWith(
+        expect.stringContaining('core.md'),
+        '# Project Rules',
+        { overwrite: true },
+      );
+      expect(output).toHaveBeenCalledWith({
+        written: expect.arrayContaining([
+          expect.stringContaining('CLAUDE.md'),
+          expect.stringContaining('core.md'),
+        ]),
+      });
+    });
+
+    it('projectDir 누락 시 에러', async () => {
+      readStdin.mockResolvedValue({ claudeMd: '# MD', coreRules: '# Rules' });
+      await expect(commands['write-project-onboarding']()).rejects.toThrow();
+    });
+
+    it('claudeMd 누락 시 에러', async () => {
+      readStdin.mockResolvedValue({ coreRules: '# Rules', projectDir: '/tmp' });
+      await expect(commands['write-project-onboarding']()).rejects.toThrow();
     });
   });
 
