@@ -38,3 +38,15 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js list-projects
 
 - "프로젝트를 선택하세요"
 - 선택 후 `good-vibe:status` 정보를 표시
+
+### 선택 후 다음 단계 안내
+
+상태에 따라 적절한 다음 단계를 함께 안내하세요:
+
+| 상태                  | 안내                                                               |
+| --------------------- | ------------------------------------------------------------------ |
+| created               | → `good-vibe:discuss`로 토론 시작                                  |
+| planning              | → `good-vibe:discuss`로 토론 계속, 또는 `good-vibe:approve`로 승인 |
+| approved              | → `good-vibe:execute`로 실행 시작                                  |
+| executing / reviewing | → `good-vibe:execute`로 중단된 작업 재개                           |
+| completed             | → `good-vibe:modify`로 수정, 또는 `good-vibe:report`로 보고서 확인 |
