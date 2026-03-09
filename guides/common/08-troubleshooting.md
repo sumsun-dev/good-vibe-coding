@@ -111,3 +111,61 @@ good-vibe:new-project
 ```
 
 `good-vibe:new`의 자동 추천 대신 직접 설정하고 싶을 때 사용합니다.
+
+---
+
+## 커맨드 실행 순서가 맞지 않을 때
+
+증상: 커맨드를 실행했지만 "프로젝트를 찾을 수 없습니다" 또는 상태 불일치 에러 발생
+
+해결:
+
+1. `good-vibe:status`로 현재 프로젝트의 상태를 확인하세요
+2. 프로젝트가 없으면 `good-vibe:new`로 먼저 생성하세요
+3. 아래 표에서 현재 상태에 맞는 커맨드를 확인하세요:
+
+| 프로젝트 상태         | 사용 가능한 커맨드                                         |
+| --------------------- | ---------------------------------------------------------- |
+| created               | `good-vibe:discuss` (토론 시작)                            |
+| planning              | `good-vibe:discuss` (재토론), `good-vibe:approve` (승인)   |
+| approved              | `good-vibe:execute` (실행 시작)                            |
+| executing / reviewing | `good-vibe:execute` (중단된 실행 재개), `good-vibe:status` |
+| completed             | `good-vibe:modify` (수정), `good-vibe:report` (보고서)     |
+
+예방: 각 커맨드 완료 시 표시되는 "다음 단계" 안내를 따라가세요.
+
+---
+
+## LLM 호출이 실패할 때
+
+증상: 토론이나 실행 중 "timeout", "network error", "rate limit" 등 오류 발생
+
+해결:
+
+1. 대부분 일시적 오류입니다. 같은 커맨드를 다시 실행하세요
+2. 실행 중이었다면 `good-vibe:execute`로 중단 지점부터 재개할 수 있습니다
+3. 토론 중이었다면 `good-vibe:discuss`로 마지막 라운드부터 이어갑니다
+4. 반복되면 네트워크 연결을 확인하세요
+
+참고: 프로젝트 상태와 실행 진행률은 project.json에 자동 저장되므로, 중단 후 재개해도 이전 작업이 유지됩니다.
+
+---
+
+## 환경 설정에 문제가 있을 때
+
+증상: `good-vibe:hello`에서 환경 체크 경고 또는 CLI 실행 오류
+
+해결:
+
+**필수 도구:**
+
+- Node.js 18 이상: `node --version`으로 확인. 미달 시 https://nodejs.org/ 에서 업데이트
+- npm: Node.js와 함께 설치됨. `npm --version`으로 확인
+- git: `git --version`으로 확인. 미설치 시 https://git-scm.com/ 에서 설치
+
+**선택 도구 (없어도 정상 동작):**
+
+- gh CLI: GitHub 기능(저장소 생성, PR) 사용 시 필요. https://cli.github.com/
+- Gemini CLI: 멀티 AI 리뷰 사용 시 필요. `npm install -g @google/gemini-cli`
+
+선택 도구가 없으면 해당 기능만 건너뛰고 나머지는 정상 동작합니다.
