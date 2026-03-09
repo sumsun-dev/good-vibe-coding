@@ -226,6 +226,50 @@ describe('advanceExecution journal 기록', () => {
   });
 });
 
+describe('phaseGuidance 저널 기록 (WS4)', () => {
+  it('build-context + phaseGuidance 시 저널에 phaseGuidance가 기록된다', async () => {
+    const project = await createTestProject(1);
+    await initExecution(project.id, { mode: 'auto' });
+    // execute-tasks → materialize → review → quality-gate(pass) → commit → build-context
+    await advanceExecution(project.id, { completedAction: 'execute-tasks' });
+    await advanceExecution(project.id, { completedAction: 'materialize' });
+    await advanceExecution(project.id, { completedAction: 'review' });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: true, issues: [] },
+    });
+    await advanceExecution(project.id, { completedAction: 'commit' });
+    const { project: updated } = await advanceExecution(project.id, {
+      completedAction: 'build-context',
+      phaseGuidance: 'CEO: 다음 Phase에서 보안에 집중해주세요',
+    });
+    const journal = updated.executionState.journal;
+    const buildContextEntry = journal.find((j) => j.action === 'build-context');
+    expect(buildContextEntry).toBeTruthy();
+    expect(buildContextEntry.phaseGuidance).toBe('CEO: 다음 Phase에서 보안에 집중해주세요');
+  });
+
+  it('phaseGuidance 없는 build-context는 저널에 phaseGuidance가 없다', async () => {
+    const project = await createTestProject(1);
+    await initExecution(project.id, { mode: 'auto' });
+    await advanceExecution(project.id, { completedAction: 'execute-tasks' });
+    await advanceExecution(project.id, { completedAction: 'materialize' });
+    await advanceExecution(project.id, { completedAction: 'review' });
+    await advanceExecution(project.id, {
+      completedAction: 'quality-gate',
+      qualityGateResult: { passed: true, issues: [] },
+    });
+    await advanceExecution(project.id, { completedAction: 'commit' });
+    const { project: updated } = await advanceExecution(project.id, {
+      completedAction: 'build-context',
+    });
+    const journal = updated.executionState.journal;
+    const buildContextEntry = journal.find((j) => j.action === 'build-context');
+    expect(buildContextEntry).toBeTruthy();
+    expect(buildContextEntry.phaseGuidance).toBeUndefined();
+  });
+});
+
 describe('PR 생성 실패 시 addPullRequest에 error 포함', () => {
   it('PR 실패 정보가 기록된다', async () => {
     // addPullRequest에 error 필드를 포함해 호출할 수 있는지 확인

@@ -8,6 +8,7 @@ import {
   updateProjectStatus,
   setProjectTeam,
   getExecutionProgress,
+  addModifyEntry,
 } from '../lib/project/project-manager.js';
 import { generateReport } from '../lib/output/report-generator.js';
 import { scanCodebase } from '../lib/project/codebase-scanner.js';
@@ -52,6 +53,8 @@ export const commands = {
       prd: data.prd,
       infraPath: data.infraPath,
       githubUrl: data.githubUrl,
+      clarityAnalysis: data.clarityAnalysis,
+      complexityAnalysis: data.complexityAnalysis,
     });
     output(project);
   },
@@ -98,6 +101,19 @@ export const commands = {
     assertWithinRoot(resolved, process.cwd(), '--path');
     const result = await scanCodebase(resolved);
     output(result);
+  },
+
+  'add-modify-history': async () => {
+    const data = await readStdin();
+    requireFields(data, ['id', 'modifiedPrd', 'complexity']);
+    const project = await addModifyEntry(data.id, {
+      modifiedPrd: data.modifiedPrd,
+      codebaseInsights: data.codebaseInsights || null,
+      affectedAreas: data.affectedAreas || [],
+      migrationRisks: data.migrationRisks || [],
+      complexity: data.complexity,
+    });
+    output(project);
   },
 
   'describe-command': async () => {

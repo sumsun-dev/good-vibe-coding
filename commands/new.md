@@ -410,8 +410,8 @@ Task tool 프롬프트:
 2. 팀 추천:
    node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js recommend-team --type {type}
 
-3. 프로젝트 생성 (PRD + 인프라 포함):
-   echo '{"name": "{name}", "type": "{type}", "description": "{description}", "mode": "{mode}", "prd": {prd}, "infraPath": "{infraPath 또는 null}", "githubUrl": "{githubUrl 또는 null}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js create-project
+3. 프로젝트 생성 (PRD + 인프라 + 분석 결과 포함):
+   echo '{"name": "{name}", "type": "{type}", "description": "{description}", "mode": "{mode}", "prd": {prd}, "infraPath": "{infraPath 또는 null}", "githubUrl": "{githubUrl 또는 null}", "clarityAnalysis": {Step 1.5의 clarity 분석 결과 또는 null}, "complexityAnalysis": {Step 3의 complexity 분석 결과 또는 null}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js create-project
 
 4. 팀 빌드 + 저장:
    echo '{"roleIds": [...], "complexity": "{level}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js build-team
@@ -628,7 +628,8 @@ Task tool 프롬프트:
 2. {ceoFeedback이 있으면: "CEO 피드백을 context.ceoFeedback으로 전달하세요: {ceoFeedback}"}
 3. 에이전트 분석/종합 시 context.prd = {prd}를 전달하세요.
 4. 기획서에 Mermaid 아키텍처 다이어그램과 화면 구조를 반드시 포함하세요.
-5. 반환 (최대 1000자):
+5. 라운드 데이터 저장 시 ceoFeedback을 roundData에 포함하세요 (discuss.md "CEO 피드백 보존" 참조).
+6. 반환 (최대 1000자):
    - planSummary: 기획서 핵심 요약
    - diagram: Mermaid 아키텍처 다이어그램
    - techStack: 기술 스택 + 작업 규모 요약
@@ -775,7 +776,8 @@ Task tool 프롬프트:
 3. {roundNumber > 1이면: "이전 라운드 기획서를 context.previousSynthesis로 전달하세요"}
 4. 에이전트 분석/종합 시 context.prd = {prd}를 전달하세요.
 5. 기획서에 Mermaid 아키텍처 다이어그램과 화면 구조를 반드시 포함하세요.
-6. 반환 (최대 1000자):
+6. 라운드 데이터 저장 시 ceoFeedback을 roundData에 포함하세요 (discuss.md "CEO 피드백 보존" 참조).
+7. 반환 (최대 1000자):
    - planSummary: 기획서 핵심 요약
    - diagram: Mermaid 아키텍처 다이어그램
    - techStack: 기술 스택 + 작업 규모 요약

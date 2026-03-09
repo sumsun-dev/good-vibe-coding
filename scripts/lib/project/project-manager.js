@@ -155,6 +155,9 @@ export async function createProject(name, type, description, options = {}) {
     prd: options.prd || null,
     infraPath: options.infraPath || null,
     githubUrl: options.githubUrl || null,
+    clarityAnalysis: options.clarityAnalysis || null,
+    complexityAnalysis: options.complexityAnalysis || null,
+    modifyHistory: [],
     team: [],
     discussion: { rounds: [], planDocument: '' },
     tasks: [],
@@ -437,6 +440,34 @@ export async function addPullRequest(projectId, prInfo) {
     pullRequests: [
       ...(project.pullRequests || []),
       { ...prInfo, recordedAt: new Date().toISOString() },
+    ],
+  }));
+}
+
+/**
+ * 프로젝트에 수정 이력을 추가한다.
+ * @param {string} projectId - 프로젝트 ID
+ * @param {object} entry - 수정 이력 엔트리
+ * @param {string} entry.modifiedPrd - 수정된 PRD
+ * @param {object|null} [entry.codebaseInsights] - 코드베이스 분석 결과
+ * @param {Array} [entry.affectedAreas] - 영향 범위
+ * @param {Array} [entry.migrationRisks] - 마이그레이션 위험 요소
+ * @param {string} entry.complexity - 복잡도
+ * @returns {Promise<object>} 업데이트된 프로젝트
+ */
+export async function addModifyEntry(projectId, entry) {
+  return withProjectLock(projectId, (project) => ({
+    ...project,
+    modifyHistory: [
+      ...(project.modifyHistory || []),
+      {
+        modifiedPrd: entry.modifiedPrd,
+        codebaseInsights: entry.codebaseInsights || null,
+        affectedAreas: entry.affectedAreas || [],
+        migrationRisks: entry.migrationRisks || [],
+        complexity: entry.complexity,
+        modifiedAt: new Date().toISOString(),
+      },
     ],
   }));
 }

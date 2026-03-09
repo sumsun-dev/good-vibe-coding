@@ -4,7 +4,7 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 
 ## 설계: CLI-as-API + SDK
 
-- `cli.js`는 경량 라우터. 125개 커맨드를 14개 핸들러 모듈(`scripts/handlers/*.js`)로 lazy-load 디스패치
+- `cli.js`는 경량 라우터. 127개 커맨드를 14개 핸들러 모듈(`scripts/handlers/*.js`)로 lazy-load 디스패치
 - 사용자는 `good-vibe:hello`, `good-vibe:new`, `good-vibe:discuss` 같은 슬래시 커맨드만 씀
 - 흐름: 슬래시 커맨드 → 에이전트 디스패치 → cli.js → 핸들러 → 코어 라이브러리
 - 에이전트 .md 파일이 `node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js <command>` 형태로 호출
@@ -164,7 +164,7 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 │  AI 팀원             15개 역할               │
 │  Tier별 병렬 분석 + 크로스 리뷰              │
 ├─────────────────────────────────────────────┤
-│  내부 API            CLI-as-API (125개)      │
+│  내부 API            CLI-as-API (127개)      │
 │  에이전트가 호출하는 인터페이스               │
 ├─────────────────────────────────────────────┤
 │  코어 라이브러리      55개 모듈 + 14개 핸들러  │
@@ -246,7 +246,7 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 
 **`project/`** — 프로젝트 관리 (12개)
 
-- `project-manager.js` — CRUD + 상태 관리 (원자적 잠금, AppError, 기여도 기록)
+- `project-manager.js` — CRUD + 상태 관리 (원자적 잠금, AppError, 기여도 기록, 수정 이력)
 - `project-scaffolder.js` — 프로젝트 인프라 생성 (폴더, CLAUDE.md, README.md, 에이전트)
 - `project-metrics.js` — 비용/토큰 추적, 에이전트 기여도, 대시보드
 - `github-manager.js` — gh CLI 래퍼 (저장소 생성, git init, push)
@@ -316,7 +316,7 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 
 **CLI 레이어**
 
-- `cli.js` — 라우터 (125개 커맨드, 14개 핸들러로 디스패치)
+- `cli.js` — 라우터 (127개 커맨드, 14개 핸들러로 디스패치)
 - `cli-utils.js` — readStdin, output, outputOk, parseArgs
 - `handlers/*.js` — 14개 핸들러: project, team, discussion, execution, review, build, eval, auth, feedback, infra, metrics, template, task, recommendation
 

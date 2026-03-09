@@ -150,19 +150,22 @@ Task tool 프롬프트:
 
 수정 PRD: {Step 3의 modifiedPrd}
 
-1. 상태 복귀:
+1. 수정 이력 저장:
+   echo '{"id":"{ID}","modifiedPrd":"{Step 3의 modifiedPrd}","codebaseInsights":{Step 3의 codebaseInsights 또는 null},"affectedAreas":{Step 3의 affectedAreas},"migrationRisks":{Step 3의 migrationRisks},"complexity":"{Step 3의 complexity}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js add-modify-history
+
+2. 상태 복귀:
    echo '{"id":"{ID}","status":"approved"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js update-status
 
-2. 작업 분배:
+3. 작업 분배:
    수정 PRD를 기반으로 작업을 분배합니다.
    node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js task-distribution-prompt --id {ID}
    → 수정/추가 작업만 포함 (기존 완료 작업은 제외)
    → 리뷰 Phase 자동 삽입
 
-3. 실행 초기화:
+4. 실행 초기화:
    echo '{"id":"{ID}","mode":"auto"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js init-execution
 
-4. 상태 변경:
+5. 상태 변경:
    echo '{"id":"{ID}","status":"executing"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js update-status
 
 반환 형식 (JSON):

@@ -21,6 +21,7 @@ import {
   addDiscussionRound,
   recordMetrics,
   recordContributions,
+  addModifyEntry,
 } from '../scripts/lib/project/project-manager.js';
 
 const TMP_DIR = resolve('.tmp-test-project-manager');
@@ -630,6 +631,92 @@ describe('withProjectLock 락 누수 방지', () => {
     // 두 번째 쓰기: 락이 해제되어 정상 동작해야 함
     const updated = await updateProjectStatus(project.id, 'approved');
     expect(updated.status).toBe('approved');
+  });
+});
+
+// --- WS1: addModifyEntry ---
+
+describe('addModifyEntry', () => {
+  it('수정 이력을 추가한다', async () => {
+    const project = await createProject('봇', 'telegram-bot', '설명');
+    const entry = {
+      modifiedPrd: '수정된 PRD',
+      codebaseInsights: { techStack: ['node'] },
+      affectedAreas: [{ file: 'src/bot.js', reason: '알림 추가', changeType: 'modify' }],
+      migrationRisks: ['API 시그니처 변경'],
+      complexity: 'medium',
+    };
+    const updated = await addModifyEntry(project.id, entry);
+    expect(updated.modifyHistory).toHaveLength(1);
+    expect(updated.modifyHistory[0].modifiedPrd).toBe('수정된 PRD');
+    expect(updated.modifyHistory[0].complexity).toBe('medium');
+    expect(updated.modifyHistory[0].modifiedAt).toBeTruthy();
+  });
+
+  it('여러 수정 이력을 누적한다', async () => {
+    const project = await createProject('봇', 'telegram-bot', '설명');
+    await addModifyEntry(project.id, { modifiedPrd: 'v1', complexity: 'simple' });
+    const updated = await addModifyEntry(project.id, { modifiedPrd: 'v2', complexity: 'medium' });
+    expect(updated.modifyHistory).toHaveLength(2);
+    expect(updated.modifyHistory[0].modifiedPrd).toBe('v1');
+    expect(updated.modifyHistory[1].modifiedPrd).toBe('v2');
+  });
+
+  it('기존 modifyHistory가 없는 프로젝트에서도 동작한다', async () => {
+    const project = await createProject('봇', 'telegram-bot', '설명');
+    const updated = await addModifyEntry(project.id, { modifiedPrd: 'test', complexity: 'simple' });
+    expect(updated.modifyHistory).toHaveLength(1);
+  });
+
+  it('존재하지 않는 프로젝트는 에러', async () => {
+    await expect(
+      addModifyEntry('no-exist', { modifiedPrd: 'test', complexity: 'simple' }),
+    ).rejects.toThrow('프로젝트를 찾을 수 없습니다');
+  });
+
+  it('선택 필드가 없으면 null로 저장된다', async () => {
+    const project = await createProject('봇', 'telegram-bot', '설명');
+    const updated = await addModifyEntry(project.id, { modifiedPrd: 'test', complexity: 'simple' });
+    expect(updated.modifyHistory[0].codebaseInsights).toBeNull();
+    expect(updated.modifyHistory[0].affectedAreas).toEqual([]);
+    expect(updated.modifyHistory[0].migrationRisks).toEqual([]);
+  });
+});
+
+// --- WS3: createProject clarityAnalysis / complexityAnalysis ---
+
+describe('createProject with analysis options', () => {
+  it('clarityAnalysis를 저장한다', async () => {
+    const analysis = { clarity: 0.85, dimensions: { scope: 0.9 } };
+    const project = await createProject('분석 테스트', 'web-app', '설명', {
+      clarityAnalysis: analysis,
+    });
+    expect(project.clarityAnalysis).toEqual(analysis);
+  });
+
+  it('complexityAnalysis를 저장한다', async () => {
+    const analysis = { level: 'medium', score: 0.6 };
+    const project = await createProject('분석 테스트', 'web-app', '설명', {
+      complexityAnalysis: analysis,
+    });
+    expect(project.complexityAnalysis).toEqual(analysis);
+  });
+
+  it('분석 옵션 없으면 null이다', async () => {
+    const project = await createProject('기본 테스트', 'web-app', '설명');
+    expect(project.clarityAnalysis).toBeNull();
+    expect(project.complexityAnalysis).toBeNull();
+  });
+
+  it('두 분석을 동시에 저장한다', async () => {
+    const clarity = { clarity: 0.9 };
+    const complexity = { level: 'complex', score: 0.8 };
+    const project = await createProject('동시 테스트', 'web-app', '설명', {
+      clarityAnalysis: clarity,
+      complexityAnalysis: complexity,
+    });
+    expect(project.clarityAnalysis).toEqual(clarity);
+    expect(project.complexityAnalysis).toEqual(complexity);
   });
 });
 

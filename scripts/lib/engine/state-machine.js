@@ -476,6 +476,9 @@ export function computeStateTransition(project, stepResult) {
   if (stepResult.completedAction === 'fix') {
     journalEntry.fixAttempt = state.fixAttempt;
   }
+  if (stepResult.completedAction === 'build-context' && stepResult.phaseGuidance) {
+    journalEntry.phaseGuidance = stepResult.phaseGuidance;
+  }
   state.journal.push(journalEntry);
 
   state.phaseResults[phase] = phaseResult;

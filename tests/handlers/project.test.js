@@ -145,6 +145,51 @@ describe('handlers/project', () => {
     expect(result.stderr).toContain('INPUT_ERROR');
   });
 
+  it('create-project에 clarityAnalysis, complexityAnalysis를 전달한다', () => {
+    const project = cliExec('create-project', {
+      name: 'analysis-test',
+      type: 'web-app',
+      description: '분석 테스트',
+      clarityAnalysis: { clarity: 0.85, dimensions: { scope: 0.9 } },
+      complexityAnalysis: { level: 'medium', score: 0.6 },
+    });
+    createdIds.push(project.id);
+
+    expect(project.clarityAnalysis).toEqual({ clarity: 0.85, dimensions: { scope: 0.9 } });
+    expect(project.complexityAnalysis).toEqual({ level: 'medium', score: 0.6 });
+  });
+
+  it('add-modify-history 수정 이력 추가', () => {
+    const project = cliExec('create-project', {
+      name: 'modify-test',
+      type: 'web-app',
+    });
+    createdIds.push(project.id);
+
+    const updated = cliExec('add-modify-history', {
+      id: project.id,
+      modifiedPrd: '수정 PRD',
+      complexity: 'medium',
+      affectedAreas: [{ file: 'src/app.js', reason: '변경', changeType: 'modify' }],
+    });
+    expect(updated.modifyHistory).toHaveLength(1);
+    expect(updated.modifyHistory[0].modifiedPrd).toBe('수정 PRD');
+    expect(updated.modifyHistory[0].complexity).toBe('medium');
+    expect(updated.modifyHistory[0].modifiedAt).toBeTruthy();
+  });
+
+  it('add-modify-history 필수 필드 누락 시 INPUT_ERROR', () => {
+    const project = cliExec('create-project', {
+      name: 'modify-err-test',
+      type: 'web-app',
+    });
+    createdIds.push(project.id);
+
+    const result = cliExecRaw('add-modify-history', { id: project.id });
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('INPUT_ERROR');
+  });
+
   it('update-status 상태 변경', () => {
     const project = cliExec('create-project', {
       name: 'status-test',

@@ -104,6 +104,16 @@ Ralph Loop로 CEO 피드백을 받은 경우, Task tool 프롬프트에 추가:
 이 피드백을 관련 역할의 agent-analysis-prompt에 context.ceoFeedback으로 주입하세요.
 ```
 
+### CEO 피드백 보존
+
+토론 라운드 데이터를 `add-discussion-round`로 저장할 때, CEO 피드백이 있으면 roundData에 `ceoFeedback` 필드로 포함하세요:
+
+```bash
+echo '{"id":"{ID}","roundData":{"round":N,"agentOutputs":[...],"synthesis":"...","reviews":[...],"converged":false,"ceoFeedback":"{ceoFeedback 또는 null}"}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js add-discussion-round
+```
+
+`addDiscussionRound()`이 roundData를 spread로 저장하므로, ceoFeedback 필드는 자동으로 project.json에 보존됩니다. 이후 `good-vibe:status`나 `good-vibe:report`에서 라운드별 CEO 피드백을 조회할 수 있습니다.
+
 ### Task tool 결과 표시
 
 메인 세션은 Task tool 반환값에서 다음만 표시:

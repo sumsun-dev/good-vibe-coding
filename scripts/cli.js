@@ -32,6 +32,7 @@ const COMMAND_MAP = {
   report: 'project',
   'describe-command': 'project',
   'scan-codebase': 'project',
+  'add-modify-history': 'project',
   // team
   'recommend-team': 'team',
   'optimized-team': 'team',
