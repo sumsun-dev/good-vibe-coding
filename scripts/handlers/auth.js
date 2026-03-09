@@ -7,8 +7,10 @@ import {
   connectWithApiKey,
   connectGeminiCli,
   removeAuth,
+  setProviderEnabled,
   listConnectedProviders,
   loadProvidersConfig,
+  saveProvidersConfig,
   setReviewStrategy,
   getProviderStatus,
 } from '../lib/llm/auth-manager.js';
@@ -38,6 +40,18 @@ export const commands = {
         );
       }
       const auth = await connectGeminiCli();
+
+      if (!data.skipVerify) {
+        const verification = await verifyConnection(providerId);
+        if (!verification.connected) {
+          await removeAuth(providerId);
+          await setProviderEnabled(providerId, false);
+          throw inputError(
+            "Gemini CLI 인증 실패: 로그인이 필요합니다. 터미널에서 'gemini' 를 실행하여 Google 로그인하세요.",
+          );
+        }
+      }
+
       outputOk({ providerId, type: auth.type });
     } else {
       const auth = await connectWithApiKey(providerId, data.apiKey);
@@ -92,6 +106,16 @@ export const commands = {
     const config = data.providerConfig || (await loadProvidersConfig());
     const assignments = await resolveReviewAssignments(data.reviewers, config);
     output({ assignments });
+  },
+
+  'update-provider-meta': async () => {
+    const data = await readStdin();
+    const meta = data.meta;
+    if (!meta || typeof meta !== 'object') throw inputError('meta 객체가 필요합니다');
+    const config = await loadProvidersConfig();
+    const updated = { ...config, meta: { ...config.meta, ...meta } };
+    await saveProvidersConfig(updated);
+    outputOk({ meta: updated.meta });
   },
 
   'gemini-review': async () => {
