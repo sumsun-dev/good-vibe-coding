@@ -42,9 +42,9 @@ options:
 
 사용자가 선택 후 구체적인 설명을 입력하면 다음 단계로 진행합니다.
 
-## Step 3: 수정 분석 + PRD (Task tool)
+## Step 3: 수정 분석 + 코드베이스 탐색 + PRD (Task tool)
 
-> **Thin Controller 원칙:** 기존 프로젝트의 맥락(PRD + 기획서 + 실행 결과)을 Task tool이 분석하고, 메인 세션은 수정 방향 확인만 합니다.
+> **Thin Controller 원칙:** 기존 프로젝트의 맥락(PRD + 기획서 + 실행 결과)과 **실제 코드 상태**를 Task tool이 분석하고, 메인 세션은 수정 방향 확인만 합니다.
 
 Task tool 프롬프트:
 
@@ -53,25 +53,57 @@ Task tool 프롬프트:
 
 수정 요청: {사용자 수정 설명}
 
-1. 기존 프로젝트 정보 조회:
-   node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js get-project --id {ID}
-   → 기존 PRD, 기획서, 팀 구성, 실행 결과 확인
+## Phase 1: 메타데이터 수집
 
-2. 수정 PRD 생성:
-   기존 PRD + 수정 요청을 바탕으로 incremental PRD를 마크다운으로 작성:
-   - **유지 항목**: 기존 기능 중 변경 없는 것 (간략 목록)
-   - **수정 항목**: 변경이 필요한 기존 기능 (변경 전/후 비교)
-   - **추가 항목**: 새로 추가할 기능 (상세 설명)
-   - **영향 범위**: 수정으로 영향 받는 기존 컴포넌트
-   - **기술 요구사항**: 추가 필요한 기술 스택/라이브러리
+node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js get-project --id {ID}
+→ 기존 PRD, 기획서, 팀 구성, 실행 결과, infraPath 확인
 
-3. 복잡도 분석:
-   수정 범위의 복잡도를 simple/medium/complex로 평가
+## Phase 2: 코드베이스 구조 스캔
+
+infraPath가 있으면:
+  node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js scan-codebase --path {infraPath}
+  → techStack, dependencies, fileStructure 확보
+
+infraPath가 없으면:
+  Phase 2-3 건너뛰기. codebaseInsights에 경고 포함:
+  "infraPath 없음 — 메타데이터 기반 분석만 수행됨"
+
+## Phase 3: 심층 코드 탐색 (Plan Mode 수준)
+
+infraPath가 있을 때만 수행:
+
+1. Glob으로 수정 요청 관련 파일 패턴 검색
+   예: "알림 추가" → **/*notif*, **/*alert*, **/*push*
+2. Read로 핵심 파일 최대 5개 읽기 (구현 상태 파악)
+   - 엔트리 포인트, 라우터, 핵심 모듈 우선
+3. Grep으로 import/require 추적 (영향 범위 산출)
+   - 수정 대상 파일을 참조하는 다른 파일 확인
+4. Glob으로 기존 테스트 파일 확인 (**/*.test.*, **/*.spec.*)
+
+## Phase 4: 수정 PRD 생성
+
+Phase 1-3 정보를 바탕으로 incremental PRD를 마크다운으로 작성:
+- **유지 항목**: 기존 기능 중 변경 없는 것 (간략 목록)
+- **수정 항목**: 변경이 필요한 기존 기능 (변경 전/후 비교, 실제 파일 경로 포함)
+- **추가 항목**: 새로 추가할 기능 (상세 설명)
+- **영향 범위**: 수정으로 영향 받는 기존 파일과 모듈 (Phase 3 결과 기반)
+- **기술 요구사항**: 추가 필요한 기술 스택/라이브러리
+
+복잡도를 simple/medium/complex로 평가.
 
 반환 형식 (JSON):
 {
-  "modifiedPrd": "수정 PRD (마크다운, 500자 이내)",
-  "affectedAreas": ["영향 받는 영역1", "영역2"],
+  "modifiedPrd": "수정 PRD (마크다운, 1000자 이내)",
+  "codebaseInsights": {
+    "techStack": ["실제 감지된 기술"],
+    "hasTests": true/false,
+    "implementationPattern": "감지된 아키텍처 패턴 (예: MVC, 모듈러, 레이어드)"
+  },
+  "affectedAreas": [
+    { "file": "src/bot.js", "reason": "알림 발송 로직 추가", "changeType": "modify" },
+    { "file": "src/notification.js", "reason": "알림 서비스 신규 생성", "changeType": "create" }
+  ],
+  "migrationRisks": ["기존 API 시그니처 변경 시 호출부 수정 필요", "..."],
   "complexity": "simple|medium|complex",
   "estimatedPhases": 숫자,
   "suggestedTeam": ["역할1", "역할2"]
@@ -82,7 +114,14 @@ CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 
 ## Step 4: CEO 확인
 
-수정 PRD를 CEO에게 표시한 후 AskUserQuestion:
+수정 PRD를 CEO에게 표시합니다:
+
+- `modifiedPrd` 마크다운 원문
+- `codebaseInsights`가 있으면 기술 스택 + 테스트 유무 + 아키텍처 패턴 요약
+- `affectedAreas`를 파일별로 표시: `[changeType] file — reason` 형식
+- `migrationRisks`가 있으면 위험 요소 목록
+
+AskUserQuestion:
 
 ```
 질문: "이 수정 방향으로 진행할까요?"
