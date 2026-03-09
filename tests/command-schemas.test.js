@@ -119,6 +119,7 @@ describe('describe-command CLI 핸들러 (e2e)', () => {
         input: '',
         encoding: 'utf-8',
         timeout: 10_000,
+        stdio: ['pipe', 'pipe', 'pipe'],
       }),
     );
   }
@@ -129,6 +130,7 @@ describe('describe-command CLI 핸들러 (e2e)', () => {
         input: '',
         encoding: 'utf-8',
         timeout: 10_000,
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       return { exitCode: 0, stdout, stderr: '' };
     } catch (err) {

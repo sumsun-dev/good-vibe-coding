@@ -137,6 +137,10 @@ const COMMAND_MAP = {
   'finalize-pr': 'infra',
   'build-merge-report': 'infra',
   'generate-ci': 'infra',
+  'read-settings': 'infra',
+  'add-permission': 'infra',
+  'generate-onboarding': 'infra',
+  'write-onboarding': 'infra',
   // metrics
   'record-metrics': 'metrics',
   'project-metrics': 'metrics',
@@ -212,6 +216,15 @@ const ERROR_HINTS = {
 async function main() {
   const [, , command] = process.argv;
 
+  // --help: 전체 커맨드 목록 출력
+  if (command === '--help' || command === '-h') {
+    const available = listAllCommands();
+    process.stdout.write(
+      `사용법: cli.js <command>\n사용 가능한 명령 (${available.length}개):\n  ${available.join(', ')}\n`,
+    );
+    process.exit(0);
+  }
+
   let handler = command ? await resolveCommand(command) : null;
 
   // NL fallback: 커맨드 매칭 실패 시 자연어 라우팅 시도
@@ -224,14 +237,14 @@ async function main() {
   }
 
   if (!handler) {
-    const available = listAllCommands();
-    let msg = `사용법: cli.js <command>\n사용 가능한 명령 (${available.length}개): ${available.join(', ')}\n`;
+    let msg = `알 수 없는 커맨드: ${command || '(없음)'}\n`;
     if (command) {
-      const similar = suggestSimilar(command, available);
+      const similar = suggestSimilar(command, listAllCommands());
       if (similar.length > 0) {
-        msg += `\n혹시 이 커맨드를 찾으셨나요? ${similar.join(', ')}\n`;
+        msg += `유사한 커맨드: ${similar.join(', ')}\n`;
       }
     }
+    msg += `전체 목록: node cli.js --help\n`;
     process.stderr.write(msg);
     process.exit(1);
   }

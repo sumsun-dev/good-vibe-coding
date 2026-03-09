@@ -129,4 +129,32 @@ export default {
     output: obj({ success: bool(), filePath: str(), strategy: objField(), commands: objField() }),
     description: 'GitHub Actions CI 워크플로우를 생성한다',
   },
+  'read-settings': {
+    handler: 'infra',
+    inputMethod: 'none',
+    input: obj({}),
+    output: obj({ permissions: objField() }),
+    description: '~/.claude/settings.json을 읽는다',
+  },
+  'add-permission': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({ pattern: str(true) }),
+    output: obj({ added: bool(), alreadyExists: bool() }),
+    description: 'settings.json의 permissions.allow에 패턴을 추가한다',
+  },
+  'generate-onboarding': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({ roles: arr(true), stack: str(), personalities: objField() }),
+    output: obj({ claudeMd: str(), coreRules: str() }),
+    description: '역할/스택 프리셋으로 CLAUDE.md + core.md 내용을 생성한다',
+  },
+  'write-onboarding': {
+    handler: 'infra',
+    inputMethod: 'stdin',
+    input: obj({ claudeMd: str(true), coreRules: str(true) }),
+    output: obj({ written: arr() }),
+    description: 'CLAUDE.md와 rules/core.md를 파일로 쓴다',
+  },
 };

@@ -28,11 +28,38 @@ vi.mock('../../scripts/lib/output/update-checker.js', () => ({
   getVersionInfo: vi.fn(),
 }));
 
+vi.mock('../../scripts/lib/core/settings-manager.js', () => ({
+  readSettings: vi.fn(),
+  addPermission: vi.fn(),
+}));
+
+vi.mock('../../scripts/lib/core/onboarding-generator.js', () => ({
+  buildOnboardingData: vi.fn(),
+  renderOnboardingFiles: vi.fn(),
+}));
+
+vi.mock('../../scripts/lib/core/preset-loader.js', () => ({
+  loadPreset: vi.fn(),
+  mergePresets: vi.fn(),
+}));
+
+vi.mock('../../scripts/lib/core/file-writer.js', () => ({
+  safeWriteFile: vi.fn(),
+  ensureDir: vi.fn(),
+}));
+
 import { readStdin, output } from '../../scripts/cli-utils.js';
 import { isGeminiCliInstalled } from '../../scripts/lib/llm/gemini-bridge.js';
 import { checkEnvironment } from '../../scripts/lib/output/env-checker.js';
 import { checkGhStatus } from '../../scripts/lib/project/github-manager.js';
 import { getVersionInfo } from '../../scripts/lib/output/update-checker.js';
+import { readSettings, addPermission } from '../../scripts/lib/core/settings-manager.js';
+import {
+  buildOnboardingData,
+  renderOnboardingFiles,
+} from '../../scripts/lib/core/onboarding-generator.js';
+import { loadPreset, mergePresets } from '../../scripts/lib/core/preset-loader.js';
+import { safeWriteFile } from '../../scripts/lib/core/file-writer.js';
 import { commands } from '../../scripts/handlers/infra.js';
 
 describe('infra handler', () => {
@@ -120,22 +147,95 @@ describe('infra handler', () => {
     });
   });
 
-  describe('build-pr-body', () => {
-    it('project 누락 시 에러', async () => {
-      readStdin.mockResolvedValue({});
-      await expect(commands['build-pr-body']()).rejects.toThrow('project');
+  describe('read-settings', () => {
+    it('설정을 읽어서 출력한다', async () => {
+      readSettings.mockResolvedValue({ permissions: { allow: ['Bash(git *)'] } });
+
+      await commands['read-settings']();
+
+      expect(readSettings).toHaveBeenCalled();
+      expect(output).toHaveBeenCalledWith({ permissions: { allow: ['Bash(git *)'] } });
     });
   });
 
-  describe('build-merge-report', () => {
-    it('project 누락 시 에러', async () => {
-      readStdin.mockResolvedValue({ executionState: {} });
-      await expect(commands['build-merge-report']()).rejects.toThrow('project');
+  describe('add-permission', () => {
+    it('패턴을 추가하고 결과를 출력한다', async () => {
+      readStdin.mockResolvedValue({ pattern: 'Bash(node * cli.js *)' });
+      addPermission.mockResolvedValue({ added: true, alreadyExists: false });
+
+      await commands['add-permission']();
+
+      expect(addPermission).toHaveBeenCalledWith('Bash(node * cli.js *)');
+      expect(output).toHaveBeenCalledWith({ added: true, alreadyExists: false });
+    });
+  });
+
+  describe('generate-onboarding', () => {
+    it('roles로 온보딩 데이터를 생성한다', async () => {
+      const mockPreset = { name: 'developer', displayName: '개발자' };
+      readStdin.mockResolvedValue({ roles: ['developer'] });
+      loadPreset.mockResolvedValue(mockPreset);
+      mergePresets.mockReturnValue(mockPreset);
+      buildOnboardingData.mockReturnValue({ roleName: '개발자' });
+      renderOnboardingFiles.mockResolvedValue({
+        claudeMd: '# Claude Code',
+        coreRules: '# Core Rules',
+      });
+
+      await commands['generate-onboarding']();
+
+      expect(loadPreset).toHaveBeenCalledWith('roles', 'developer');
+      expect(mergePresets).toHaveBeenCalled();
+      expect(buildOnboardingData).toHaveBeenCalled();
+      expect(renderOnboardingFiles).toHaveBeenCalledWith({ roleName: '개발자' });
+      expect(output).toHaveBeenCalledWith({
+        claudeMd: '# Claude Code',
+        coreRules: '# Core Rules',
+      });
     });
 
-    it('executionState 누락 시 에러', async () => {
-      readStdin.mockResolvedValue({ project: { name: 'test' } });
-      await expect(commands['build-merge-report']()).rejects.toThrow('executionState');
+    it('복수 역할 + 스택을 지원한다', async () => {
+      const devPreset = { name: 'developer', displayName: '개발자' };
+      const pmPreset = { name: 'pm', displayName: 'PM / 기획자' };
+      const stackPreset = { name: 'nextjs-supabase', displayName: 'Next.js + Supabase' };
+      const merged = { ...devPreset, stackRules: ['rule1'] };
+
+      readStdin.mockResolvedValue({
+        roles: ['developer', 'pm'],
+        stack: 'nextjs-supabase',
+      });
+      loadPreset.mockImplementation((cat, name) => {
+        if (cat === 'roles' && name === 'developer') return Promise.resolve(devPreset);
+        if (cat === 'roles' && name === 'pm') return Promise.resolve(pmPreset);
+        if (cat === 'stacks' && name === 'nextjs-supabase') return Promise.resolve(stackPreset);
+        return Promise.resolve({});
+      });
+      mergePresets.mockReturnValue(merged);
+      buildOnboardingData.mockReturnValue({ roleName: '개발자 + PM / 기획자' });
+      renderOnboardingFiles.mockResolvedValue({
+        claudeMd: '# MD',
+        coreRules: '# Rules',
+      });
+
+      await commands['generate-onboarding']();
+
+      expect(loadPreset).toHaveBeenCalledTimes(3);
+      expect(output).toHaveBeenCalledWith({ claudeMd: '# MD', coreRules: '# Rules' });
+    });
+  });
+
+  describe('write-onboarding', () => {
+    it('CLAUDE.md와 core.md를 쓴다', async () => {
+      readStdin.mockResolvedValue({
+        claudeMd: '# Claude Code',
+        coreRules: '# Core Rules',
+      });
+      safeWriteFile.mockResolvedValue({ written: true });
+
+      await commands['write-onboarding']();
+
+      expect(safeWriteFile).toHaveBeenCalledTimes(2);
+      expect(output).toHaveBeenCalledWith(expect.objectContaining({ written: expect.any(Array) }));
     });
   });
 });

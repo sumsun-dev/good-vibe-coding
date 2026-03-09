@@ -37,6 +37,7 @@ function cliExec(command, input) {
       input: inputJson,
       encoding: 'utf-8',
       timeout: 10_000,
+      stdio: ['pipe', 'pipe', 'pipe'],
     }),
   );
 }
@@ -528,6 +529,7 @@ describe('E2E: CLI 에러 경로', () => {
         input: input ? JSON.stringify(input) : '',
         encoding: 'utf-8',
         timeout: 10_000,
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
       return { exitCode: 0, stderr: '' };
     } catch (err) {
@@ -535,23 +537,24 @@ describe('E2E: CLI 에러 경로', () => {
     }
   }
 
-  it('존재하지 않는 커맨드는 exit 1과 사용 가능한 명령 목록을 반환한다', () => {
+  it('존재하지 않는 커맨드는 exit 1과 안내 메시지를 반환한다', () => {
     const result = cliExecRaw('nonexistent-command-xyz');
     expect(result.exitCode).toBe(1);
-    expect(result.stderr).toContain('사용 가능한 명령');
+    expect(result.stderr).toContain('알 수 없는 커맨드');
+    expect(result.stderr).toContain('전체 목록');
   });
 
   it('유사한 커맨드를 제안한다', () => {
     const result = cliExecRaw('build-teem'); // build-team 유사
     expect(result.exitCode).toBe(1);
-    expect(result.stderr).toContain('혹시 이 커맨드를 찾으셨나요?');
+    expect(result.stderr).toContain('유사한 커맨드');
     expect(result.stderr).toContain('build-team');
   });
 
-  it('커맨드 없이 실행하면 사용법을 출력한다', () => {
+  it('커맨드 없이 실행하면 안내 메시지를 출력한다', () => {
     const result = cliExecRaw('');
     expect(result.exitCode).toBe(1);
-    expect(result.stderr).toContain('사용법');
+    expect(result.stderr).toContain('알 수 없는 커맨드');
   });
 
   it('필수 필드 누락 시 INPUT_ERROR exit 2와 에러 힌트를 반환한다', () => {
@@ -643,10 +646,11 @@ describe('E2E: COMMAND_MAP 완전성', () => {
       }
     }
 
-    // cli.js의 listAllCommands() 결과 확인 (COMMAND_MAP 기반)
-    const cliOutput = execSync(`node ${CLI_PATH} nonexistent-xyz 2>&1 || true`, {
+    // cli.js --help로 전체 커맨드 목록 확인 (COMMAND_MAP 기반)
+    const cliOutput = execSync(`node ${CLI_PATH} --help`, {
       encoding: 'utf-8',
       timeout: 10_000,
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
 
     // 핸들러에 있는 커맨드가 모두 COMMAND_MAP에 있는지 확인

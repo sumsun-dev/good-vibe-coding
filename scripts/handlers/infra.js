@@ -1,5 +1,5 @@
 /**
- * handlers/infra — 프로젝트 인프라 셋업 + GitHub 커맨드
+ * handlers/infra — 프로젝트 인프라 셋업 + GitHub + 온보딩 + 설정 커맨드
  */
 import { readStdin, output } from '../cli-utils.js';
 import { requireFields } from '../lib/core/validators.js';
@@ -26,6 +26,12 @@ import {
 import { isGeminiCliInstalled } from '../lib/llm/gemini-bridge.js';
 import { checkEnvironment } from '../lib/output/env-checker.js';
 import { getVersionInfo } from '../lib/output/update-checker.js';
+import { readSettings, addPermission } from '../lib/core/settings-manager.js';
+import { buildOnboardingData, renderOnboardingFiles } from '../lib/core/onboarding-generator.js';
+import { loadPreset, mergePresets } from '../lib/core/preset-loader.js';
+import { safeWriteFile, ensureDir } from '../lib/core/file-writer.js';
+import { claudeDir } from '../lib/core/app-paths.js';
+import { resolve } from 'path';
 
 export const commands = {
   'setup-project-infra': async () => {
@@ -161,5 +167,53 @@ export const commands = {
     const commands = inferCommands(strategy.type, data.packageJson);
     const result = await generateCIWorkflow(data.projectDir, strategy, commands);
     output({ ...result, strategy, commands });
+  },
+
+  'read-settings': async () => {
+    const settings = await readSettings();
+    output(settings);
+  },
+
+  'add-permission': async () => {
+    const data = await readStdin();
+    requireFields(data, ['pattern']);
+    const result = await addPermission(data.pattern);
+    output(result);
+  },
+
+  'generate-onboarding': async () => {
+    const data = await readStdin();
+    requireFields(data, ['roles']);
+    const rolePresets = await Promise.all(data.roles.map((r) => loadPreset('roles', r)));
+    const presets = [...rolePresets];
+    let stackPreset = null;
+    if (data.stack) {
+      stackPreset = await loadPreset('stacks', data.stack);
+      presets.push(stackPreset);
+    }
+    const merged = mergePresets(...presets);
+    const roleNames = rolePresets.map((p) => p.displayName);
+    const onboardingData = buildOnboardingData(merged, {
+      roleNames,
+      stackName: stackPreset?.displayName,
+      personalities: data.personalities,
+    });
+    const result = await renderOnboardingFiles(onboardingData);
+    output(result);
+  },
+
+  'write-onboarding': async () => {
+    const data = await readStdin();
+    requireFields(data, ['claudeMd', 'coreRules']);
+    const claudeBase = claudeDir();
+    const claudeMdPath = resolve(claudeBase, 'CLAUDE.md');
+    const rulesDir = resolve(claudeBase, 'rules');
+    const coreRulesPath = resolve(rulesDir, 'core.md');
+    await ensureDir(rulesDir);
+    await Promise.all([
+      safeWriteFile(claudeMdPath, data.claudeMd, { overwrite: true }),
+      safeWriteFile(coreRulesPath, data.coreRules, { overwrite: true }),
+    ]);
+    output({ written: [claudeMdPath, coreRulesPath] });
   },
 };
