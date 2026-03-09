@@ -551,7 +551,7 @@ describe('buildRevisionPrompt', () => {
     const prompt = buildRevisionPrompt(task, implementer, reviews, failureContext);
     expect(prompt).toContain('시도 1/2');
     expect(prompt).not.toContain('이전 시도');
-    expect(prompt).toContain('카테고리 분포');
+    expect(prompt).toContain('문제 유형 분포');
   });
 
   it('failureContext가 null이면 무시한다', () => {

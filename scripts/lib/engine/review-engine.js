@@ -10,6 +10,7 @@
 import { parseJsonObject } from '../core/json-parser.js';
 import { config } from '../core/config.js';
 import { formatCriteriaForPrompt } from './acceptance-criteria.js';
+import { getCategoryLabel } from './execution-utils.js';
 
 /** 범용 리뷰 역할: 어떤 작업이든 리뷰 가치가 높은 역할 */
 const UNIVERSAL_REVIEWER_ROLES = ['qa', 'security', 'cto'];
@@ -165,13 +166,13 @@ export function checkQualityGate(reviews) {
   const maxImportant = config.review.maxImportantIssues ?? 10;
   let summary;
   if (passed && importantCount === 0) {
-    summary = '품질 게이트 통과';
+    summary = '품질 검증 통과';
   } else if (passed && importantCount > maxImportant) {
-    summary = `품질 게이트 통과 (경고: important ${importantCount}건 — 임계치 ${maxImportant}건 초과, 검토 필요)`;
+    summary = `품질 검증 통과 (경고: 주요 문제 ${importantCount}건 — 허용 개수 ${maxImportant}건 초과, 검토 필요)`;
   } else if (passed) {
-    summary = `품질 게이트 통과 (important ${importantCount}건 검토 권장)`;
+    summary = `품질 검증 통과 (주요 문제 ${importantCount}건 검토 권장)`;
   } else {
-    summary = `품질 게이트 실패: critical ${criticalCount}건 수정 필요`;
+    summary = `품질 검증 실패: 심각한 문제 ${criticalCount}건 수정 필요`;
   }
 
   return { passed, criticalCount, importantCount, summary };
@@ -218,16 +219,18 @@ ${issuesList}`;
       prompt += '\n\n### 이전 시도';
       for (const prev of failureContext.previousAttempts) {
         const categories = prev.issues
-          ? [...new Set(prev.issues.map((i) => i.category))].join(', ')
+          ? [...new Set(prev.issues.map((i) => i.category))].map(getCategoryLabel).join(', ')
           : '없음';
         const issueCount = prev.issues ? prev.issues.length : 0;
-        prompt += `\n- 시도 ${prev.attempt}: ${issueCount}건 (카테고리: ${categories})`;
+        prompt += `\n- 시도 ${prev.attempt}: ${issueCount}건 (유형: ${categories})`;
       }
       prompt += '\n\n**이전 시도에서 해결되지 않은 이슈에 주의하세요.**';
     }
     if (failureContext.issues && failureContext.issues.length > 0) {
-      const categories = [...new Set(failureContext.issues.map((i) => i.category))];
-      prompt += `\n\n### 이슈 카테고리 분포: ${categories.join(', ')}`;
+      const categories = [...new Set(failureContext.issues.map((i) => i.category))].map(
+        getCategoryLabel,
+      );
+      prompt += `\n\n### 문제 유형 분포: ${categories.join(', ')}`;
     }
     // CEO 피드백이 있으면 수정 프롬프트에 주입
     if (failureContext.ceoGuidance) {

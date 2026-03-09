@@ -3,6 +3,8 @@
  * plan-execute / quick-build 모드에서 Phase 진행, ETA 등을 포맷팅한다.
  */
 
+import { getCategoryLabel } from '../engine/execution-utils.js';
+
 /**
  * Phase 시작 메시지를 포맷팅한다.
  * @param {number} phase - 현재 Phase 번호
@@ -25,7 +27,7 @@ export function formatPhaseStart(phase, totalPhases, tasks) {
  */
 export function formatPhaseComplete(phase, totalPhases, phaseResult) {
   const status = phaseResult.passed ? 'PASS' : 'FAIL';
-  return `Phase ${phase}/${totalPhases} 완료\n├─ 태스크: ${phaseResult.taskCount}개\n├─ 리뷰: ${phaseResult.reviewCount}건 (critical ${phaseResult.criticalCount})\n└─ 품질: ${status}`;
+  return `Phase ${phase}/${totalPhases} 완료\n├─ 태스크: ${phaseResult.taskCount}개\n├─ 리뷰: ${phaseResult.reviewCount}건 (심각한 문제 ${phaseResult.criticalCount}건)\n└─ 품질: ${status}`;
 }
 
 /**
@@ -73,10 +75,10 @@ export function formatReviewProgress(reviewers, completedReviewers) {
  */
 export function formatQualityGateResult(result) {
   if (result.passed) {
-    return '품질 게이트 통과 (PASS)';
+    return '품질 검증 통과 (PASS)';
   }
   const fix = result.fixProgress ? ` → 수정 ${result.fixProgress}` : '';
-  return `품질 게이트 실패 (FAIL) (critical ${result.criticalCount})${fix}`;
+  return `품질 검증 실패 (FAIL) (심각한 문제 ${result.criticalCount}건)${fix}`;
 }
 
 /**
@@ -171,8 +173,8 @@ export function formatFailureHistory(journal) {
     for (const entry of entries) {
       const time = entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString('ko-KR') : '';
       if (entry.failureSummary) {
-        const cats = (entry.failureSummary.categories || []).join(', ');
-        lines.push(`├─ [${time}] 품질 게이트 실패: ${entry.failureSummary.issueCount}건 (${cats})`);
+        const cats = (entry.failureSummary.categories || []).map(getCategoryLabel).join(', ');
+        lines.push(`├─ [${time}] 품질 검증 실패: ${entry.failureSummary.issueCount}건 (${cats})`);
       }
       if (entry.action === 'escalation-response') {
         lines.push(`├─ [${time}] 에스컬레이션 처리`);
@@ -198,7 +200,7 @@ export function formatDiscussionProgress(round, maxRounds, currentTier, totalTie
   const progress = totalTiers > 0 ? (currentTier - 1) / totalTiers : 0;
   const filled = Math.round(progress * barLength);
   const bar = '█'.repeat(filled) + '░'.repeat(barLength - filled);
-  return `[${bar}] 토론 ${round}/${maxRounds} — Tier ${currentTier}/${totalTiers} (${safeAgents.join(', ')})`;
+  return `[${bar}] 토론 ${round}/${maxRounds} — 분석그룹 ${currentTier}/${totalTiers} (${safeAgents.join(', ')})`;
 }
 
 /**
@@ -211,7 +213,7 @@ export function formatDiscussionProgress(round, maxRounds, currentTier, totalTie
 export function formatTierProgress(tierName, completedAgents, totalAgents) {
   const safeCompleted = Array.isArray(completedAgents) ? completedAgents : [];
   const safeTotal = Array.isArray(totalAgents) ? totalAgents : [];
-  const lines = [`Tier: ${tierName} (${safeCompleted.length}/${safeTotal.length})`];
+  const lines = [`분석그룹: ${tierName} (${safeCompleted.length}/${safeTotal.length})`];
   for (const agent of safeTotal) {
     const icon = safeCompleted.includes(agent) ? '[v]' : '[ ]';
     lines.push(`├─ ${icon} ${agent}`);
@@ -233,9 +235,9 @@ export function formatConvergenceStatus(approvalRate, threshold, blockers) {
   const status = converged ? 'CONVERGED' : 'NOT CONVERGED';
   const safeBlockers = Array.isArray(blockers) ? blockers : [];
 
-  let result = `수렴 상태: ${status} (${percent}% / 목표 ${thresholdPercent}%)`;
+  let result = `합의 진행률: ${status} (${percent}% / 목표 ${thresholdPercent}%)`;
   if (safeBlockers.length > 0) {
-    result += `\n블로커: ${safeBlockers.length}건`;
+    result += `\n해결 필요 사항: ${safeBlockers.length}건`;
     for (const blocker of safeBlockers) {
       result += `\n├─ ${blocker}`;
     }

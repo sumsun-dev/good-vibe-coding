@@ -355,7 +355,7 @@ describe('formatFailureHistory', () => {
     expect(result).toContain('Phase 1');
     expect(result).toContain('Phase 2');
     expect(result).toContain('2건');
-    expect(result).toContain('security');
+    expect(result).toContain('보안 문제');
   });
 
   it('에스컬레이션 이벤트를 포함한다', () => {
@@ -373,7 +373,7 @@ describe('formatDiscussionProgress', () => {
   it('토론 진행률을 표시한다', () => {
     const result = formatDiscussionProgress(1, 3, 2, 4, ['fullstack', 'frontend']);
     expect(result).toContain('토론 1/3');
-    expect(result).toContain('Tier 2/4');
+    expect(result).toContain('분석그룹 2/4');
     expect(result).toContain('fullstack');
   });
 
@@ -413,12 +413,12 @@ describe('formatConvergenceStatus', () => {
     const result = formatConvergenceStatus(0.6, 0.8, ['보안 이슈 미해결']);
     expect(result).toContain('NOT CONVERGED');
     expect(result).toContain('60%');
-    expect(result).toContain('블로커');
+    expect(result).toContain('해결 필요 사항');
     expect(result).toContain('보안 이슈 미해결');
   });
 
-  it('블로커가 없으면 블로커 섹션을 생략한다', () => {
+  it('블로커가 없으면 해결 필요 사항 섹션을 생략한다', () => {
     const result = formatConvergenceStatus(0.7, 0.8, []);
-    expect(result).not.toContain('블로커');
+    expect(result).not.toContain('해결 필요 사항');
   });
 });

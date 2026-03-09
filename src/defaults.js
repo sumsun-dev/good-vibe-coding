@@ -11,4 +11,5 @@ export const DEFAULT_MODELS = Object.freeze({
 export const DEFAULTS = Object.freeze({
   maxDiscussionRounds: 3,
   maxExecutionSteps: 200,
+  enableCrossModel: false,
 });

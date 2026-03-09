@@ -238,7 +238,7 @@ describe('pr-manager', () => {
 
     it('품질 게이트 결과 테이블을 포함한다', () => {
       const report = buildMergeReport(baseProject, baseExecutionState);
-      expect(report).toContain('품질 게이트 결과');
+      expect(report).toContain('품질 검증 결과');
       expect(report).toContain('Critical');
       expect(report).toContain('Important');
       expect(report).toContain('통과');

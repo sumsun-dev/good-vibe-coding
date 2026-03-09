@@ -89,7 +89,7 @@ Task tool에 다음 작업을 위임:
 
 **진행률 표시:**
 
-- Tier 시작/완료 시: {formatDiscussionProgress(...)}
+- 분석그룹 시작/완료 시: {formatDiscussionProgress(...)}
 - 에이전트 실행 시: {emoji} {이름}이(가) 분석 중...
 ```
 

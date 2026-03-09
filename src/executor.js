@@ -16,6 +16,10 @@ import {
   checkQualityGate,
   buildRevisionPrompt,
 } from '../scripts/lib/engine/review-engine.js';
+import {
+  resolveReviewAssignments,
+  executeCrossModelReviews,
+} from '../scripts/lib/engine/cross-model-strategy.js';
 import { callLLM } from '../scripts/lib/llm/llm-provider.js';
 import { randomBytes } from 'crypto';
 import { DEFAULTS } from './defaults.js';
@@ -28,12 +32,22 @@ export class Executor {
    * @param {object} options.storage - 스토리지 인터페이스
    * @param {object} [options.hooks] - 이벤트 훅
    */
-  constructor({ provider, model, storage, hooks = {}, maxSteps }) {
+  constructor({
+    provider,
+    model,
+    storage,
+    hooks = {},
+    maxSteps,
+    enableCrossModel = false,
+    providerConfig = null,
+  }) {
     this.provider = provider;
     this.model = model;
     this.storage = storage;
     this.hooks = hooks;
     this._maxSteps = maxSteps || DEFAULTS.maxExecutionSteps;
+    this.enableCrossModel = enableCrossModel;
+    this.providerConfig = providerConfig;
   }
 
   /**
@@ -171,6 +185,10 @@ export class Executor {
    * 리뷰를 수행하고 LLM 응답을 파싱한다.
    */
   async _review(step, project) {
+    if (this.enableCrossModel && this.providerConfig) {
+      return this._crossModelReview(step, project);
+    }
+
     const team = project.team || [];
     const tasks = step.tasks || [];
     const phaseResults = project.executionState?.phaseResults?.[step.phase] || {};
@@ -192,6 +210,36 @@ export class Executor {
         }),
       );
       allReviews.push(...reviews);
+    }
+
+    return { completedAction: 'review', reviews: allReviews };
+  }
+
+  /**
+   * 크로스 모델 리뷰를 수행한다.
+   * 리뷰어별로 다른 프로바이더를 할당하여 실행.
+   */
+  async _crossModelReview(step, project) {
+    const team = project.team || [];
+    const tasks = step.tasks || [];
+    const phaseResults = project.executionState?.phaseResults?.[step.phase] || {};
+    const allReviews = [];
+    const taskOutputMap = new Map(
+      (phaseResults.taskResults || []).map((r) => [r.taskId, r.output]),
+    );
+
+    for (const task of tasks) {
+      const reviewers = selectReviewers(task, team);
+      const taskOutput = taskOutputMap.get(task.id) || '';
+      const assignments = await resolveReviewAssignments(reviewers, this.providerConfig);
+      const results = await executeCrossModelReviews(assignments, task, taskOutput);
+      allReviews.push(
+        ...results.map((r) => ({
+          reviewerId: r.reviewer.roleId,
+          provider: r.provider,
+          ...r.review,
+        })),
+      );
     }
 
     return { completedAction: 'review', reviews: allReviews };

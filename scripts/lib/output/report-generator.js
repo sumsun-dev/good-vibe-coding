@@ -319,7 +319,7 @@ export function generateExecutiveSummary(project, stats) {
         const pr = state.phaseResults[p];
         return pr.qualityGate && pr.qualityGate.passed;
       });
-      section += `\n| 품질 게이트 | ${passedPhases.length}/${phases.length} Phase 통과 |`;
+      section += `\n| 품질 검증 | ${passedPhases.length}/${phases.length} Phase 통과 |`;
     }
   }
 
@@ -404,7 +404,7 @@ export function generateExecutionSummary(project) {
   const phases = Object.keys(state.phaseResults);
   if (phases.length === 0) return null;
 
-  let section = `## 실행 기록\n\n| Phase | 태스크 | 리뷰 | 품질게이트 | 수정시도 |\n|-------|--------|------|-----------|---------|`;
+  let section = `## 실행 기록\n\n| Phase | 태스크 | 리뷰 | 품질검증 | 수정시도 |\n|-------|--------|------|---------|---------|`;
 
   for (const phase of phases) {
     const pr = state.phaseResults[phase];

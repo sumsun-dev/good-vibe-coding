@@ -128,19 +128,19 @@ const STEP_HANDLERS = {
     action: 'execute-tasks',
     phase,
     tasks: phaseTasks,
-    description: `Phase ${phase}: 태스크 실행 (${phaseTasks.length}개)`,
+    description: `Phase ${phase}: 팀 작업 수행 (${phaseTasks.length}개)`,
   }),
   materialize: (phase, phaseTasks) => ({
     action: 'materialize',
     phase,
     tasks: phaseTasks.filter((t) => isCodeTask(t)),
-    description: `Phase ${phase}: 코드 Materialization`,
+    description: `Phase ${phase}: 코드 파일 생성`,
   }),
   review: (phase, phaseTasks) => ({
     action: 'review',
     phase,
     tasks: phaseTasks,
-    description: `Phase ${phase}: 크로스 리뷰`,
+    description: `Phase ${phase}: 팀 검토`,
   }),
   'quality-gate': (phase, _phaseTasks, state) => {
     if (state.reviewIntervention && state.mode === 'interactive') {
@@ -153,7 +153,7 @@ const STEP_HANDLERS = {
     return {
       action: 'quality-gate',
       phase,
-      description: `Phase ${phase}: 품질 게이트 체크`,
+      description: `Phase ${phase}: 품질 검증`,
     };
   },
   fix: (phase, phaseTasks, state) => ({
@@ -165,7 +165,7 @@ const STEP_HANDLERS = {
   commit: (phase) => ({
     action: 'commit',
     phase,
-    description: `Phase ${phase}: 커밋`,
+    description: `Phase ${phase}: 저장`,
   }),
   'build-context': (phase, phaseTasks, state, totalPhases) => {
     if (phase >= totalPhases) {
@@ -194,7 +194,7 @@ const STEP_HANDLERS = {
       action: 'build-context',
       phase,
       tasks: phaseTasks,
-      description: `Phase ${phase}: 컨텍스트 생성 후 다음 Phase로 진행`,
+      description: `Phase ${phase}: 다음 단계 준비 중`,
     };
   },
 };
@@ -304,7 +304,7 @@ function handleQualityGate(state, phaseResult, stepResult, phase) {
     state.failureContext = buildFailureContext(state, stepResult);
     state.status = 'escalated';
     state.pendingEscalation = {
-      reason: `Phase ${phase}: 품질 게이트 ${MAX_FIX_ATTEMPTS}회 수정 후에도 실패`,
+      reason: `Phase ${phase}: 품질 검증을 ${MAX_FIX_ATTEMPTS}회 수정했지만 해결되지 않았습니다`,
       unresolvedIssues: stepResult.qualityGateResult ? stepResult.qualityGateResult.issues : [],
       failureHistory: state.failureHistory || [],
     };

@@ -181,7 +181,7 @@ export function buildMergeReport(project, executionState) {
   // 품질 게이트 결과
   if (phases.length > 0) {
     lines.push('');
-    lines.push('### 품질 게이트 결과');
+    lines.push('### 품질 검증 결과');
     lines.push('| Phase | 태스크 | Critical | Important | 통과 |');
     lines.push('|-------|--------|----------|-----------|------|');
 
@@ -261,7 +261,7 @@ export function buildMergeReport(project, executionState) {
   // CEO 체크리스트
   lines.push('');
   lines.push('### CEO 체크리스트');
-  lines.push('- [ ] 품질 게이트 전체 통과 확인');
+  lines.push('- [ ] 품질 검증 전체 통과 확인');
   lines.push('- [ ] 생성된 파일 목록 검토');
   lines.push('- [ ] 로컬에서 테스트 실행 확인');
 

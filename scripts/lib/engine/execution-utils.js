@@ -21,6 +21,26 @@ const FAILURE_CATEGORY_PATTERNS = [
   ['logic', /logic|bug|error|null|undefined|race|로직|버그/],
 ];
 
+/** 실패 카테고리 한국어 라벨 매핑 */
+export const FAILURE_CATEGORY_LABELS = {
+  security: '보안 문제',
+  build: '빌드 오류',
+  test: '테스트 실패',
+  performance: '성능 문제',
+  type: '타입 오류',
+  architecture: '구조 문제',
+  logic: '로직 오류',
+};
+
+/**
+ * 카테고리를 한국어 라벨로 변환한다.
+ * @param {string} category
+ * @returns {string}
+ */
+export function getCategoryLabel(category) {
+  return FAILURE_CATEGORY_LABELS[category] || category;
+}
+
 /**
  * 이슈를 7개 카테고리 중 하나로 분류한다 (pure).
  * @param {{ severity?: string, description?: string, suggestion?: string }} issue - 이슈 객체
@@ -127,13 +147,13 @@ export function getExecutionSummary(project) {
         : 0;
 
   const stepLabels = {
-    'execute-tasks': '태스크 실행',
-    materialize: '코드 구체화',
-    review: '크로스 리뷰',
-    'quality-gate': '품질 게이트',
+    'execute-tasks': '팀 작업 수행',
+    materialize: '코드 파일 생성',
+    review: '팀 검토',
+    'quality-gate': '품질 검증',
     fix: '수정',
-    commit: '커밋',
-    'build-context': '컨텍스트 생성',
+    commit: '저장',
+    'build-context': '다음 단계 준비',
   };
 
   const stepLabel = stepLabels[state.phaseStep] || state.phaseStep;

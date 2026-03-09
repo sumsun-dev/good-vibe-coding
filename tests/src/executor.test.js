@@ -4,6 +4,11 @@ vi.mock('../../scripts/lib/llm/llm-provider.js', () => ({
   callLLM: vi.fn(),
 }));
 
+vi.mock('../../scripts/lib/engine/cross-model-strategy.js', () => ({
+  resolveReviewAssignments: vi.fn(),
+  executeCrossModelReviews: vi.fn(),
+}));
+
 vi.mock('../../scripts/lib/llm/auth-manager.js', () => ({
   loadAuth: vi.fn().mockResolvedValue({ apiKey: 'test-key' }),
 }));
@@ -11,6 +16,10 @@ vi.mock('../../scripts/lib/llm/auth-manager.js', () => ({
 import { Executor } from '../../src/executor.js';
 import { MemoryStorage } from '../../src/storage.js';
 import { callLLM } from '../../scripts/lib/llm/llm-provider.js';
+import {
+  resolveReviewAssignments,
+  executeCrossModelReviews,
+} from '../../scripts/lib/engine/cross-model-strategy.js';
 
 function makeProject(overrides = {}) {
   return {
@@ -320,5 +329,108 @@ describe('Executor._handleStep', () => {
     await executor._handleStep(step, {});
     // onAgentCall 첫 번째 인수는 roleId 문자열이어야 함
     expect(onAgentCall).toHaveBeenCalledWith('cto', expect.any(Object));
+  });
+});
+
+describe('Executor cross-model review', () => {
+  let storage;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    storage = new MemoryStorage();
+  });
+
+  it('enableCrossModel=true 시 _crossModelReview를 호출한다', async () => {
+    const providerConfig = {
+      defaultProvider: 'claude',
+      reviewStrategy: 'cross-model',
+      providers: {
+        claude: { enabled: true },
+        gemini: { enabled: true },
+      },
+    };
+
+    const assignments = [
+      { reviewer: { roleId: 'qa' }, provider: 'gemini' },
+      { reviewer: { roleId: 'cto' }, provider: 'claude' },
+    ];
+    resolveReviewAssignments.mockResolvedValue(assignments);
+
+    const crossModelResults = [
+      {
+        reviewer: { roleId: 'qa' },
+        provider: 'gemini',
+        model: 'gemini-2.0-flash',
+        review: { verdict: 'approve', issues: [] },
+        tokenCount: 100,
+      },
+      {
+        reviewer: { roleId: 'cto' },
+        provider: 'claude',
+        model: 'claude-sonnet-4-6',
+        review: { verdict: 'approve', issues: [] },
+        tokenCount: 80,
+      },
+    ];
+    executeCrossModelReviews.mockResolvedValue(crossModelResults);
+
+    const executor = new Executor({
+      provider: 'claude',
+      model: 'claude-sonnet-4-6',
+      storage,
+      enableCrossModel: true,
+      providerConfig,
+    });
+
+    const project = makeProject();
+    project.executionState.phaseResults = {
+      1: { taskResults: [{ taskId: 'task-1', output: 'some code' }], reviews: [] },
+    };
+
+    const step = {
+      action: 'review',
+      phase: 1,
+      tasks: [{ id: 'task-1', title: 'Build feature', assignee: 'cto', description: 'Build it' }],
+    };
+
+    const result = await executor._handleStep(step, project);
+    expect(result.completedAction).toBe('review');
+    expect(resolveReviewAssignments).toHaveBeenCalled();
+    expect(executeCrossModelReviews).toHaveBeenCalled();
+    expect(result.reviews).toHaveLength(2);
+    expect(result.reviews[0].provider).toBe('gemini');
+    expect(result.reviews[1].provider).toBe('claude');
+  });
+
+  it('enableCrossModel=false 시 기존 단일 모델 리뷰를 사용한다', async () => {
+    callLLM.mockResolvedValue({
+      text: '```json\n{"verdict": "approve", "issues": []}\n```',
+      provider: 'claude',
+      model: 'claude-sonnet-4-6',
+      tokenCount: 80,
+    });
+
+    const executor = new Executor({
+      provider: 'claude',
+      model: 'claude-sonnet-4-6',
+      storage,
+      enableCrossModel: false,
+    });
+
+    const project = makeProject();
+    project.executionState.phaseResults = {
+      1: { taskResults: [{ taskId: 'task-1', output: 'some code' }], reviews: [] },
+    };
+
+    const step = {
+      action: 'review',
+      phase: 1,
+      tasks: [{ id: 'task-1', title: 'Build feature', assignee: 'cto', description: 'Build it' }],
+    };
+
+    const result = await executor._handleStep(step, project);
+    expect(result.completedAction).toBe('review');
+    expect(resolveReviewAssignments).not.toHaveBeenCalled();
+    expect(callLLM).toHaveBeenCalled();
   });
 });
