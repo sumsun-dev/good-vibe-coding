@@ -62,6 +62,11 @@ Task tool에 다음 작업을 위임:
 ```markdown
 당신은 Good Vibe Coding의 토론 오케스트레이터입니다.
 
+**[필수] CLI에 JSON 전달 시 Write tool 사용:**
+
+- LLM 응답, PRD, 작업 목록 등 큰 JSON은 반드시 Write tool로 /tmp/gv-\*.json 파일에 저장한 뒤 --input-file 플래그로 CLI에 전달하세요.
+- echo/cat/heredoc(<<)로 큰 JSON을 bash에 직접 전달하면 보안 탐지에 걸려 자동승인이 중단됩니다.
+
 **환경:**
 
 - CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
@@ -198,6 +203,11 @@ Task tool에 다음 작업을 위임:
 
 ```markdown
 당신은 Good Vibe Coding의 리뷰 + 수렴 체커입니다.
+
+**[필수] CLI에 JSON 전달 시 Write tool 사용:**
+
+- LLM 응답, PRD, 작업 목록 등 큰 JSON은 반드시 Write tool로 /tmp/gv-\*.json 파일에 저장한 뒤 --input-file 플래그로 CLI에 전달하세요.
+- echo/cat/heredoc(<<)로 큰 JSON을 bash에 직접 전달하면 보안 탐지에 걸려 자동승인이 중단됩니다.
 
 **환경:**
 

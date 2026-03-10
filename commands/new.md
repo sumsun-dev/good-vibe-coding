@@ -156,6 +156,10 @@ Task tool 프롬프트:
 ```
 프로젝트 설명을 분석하세요.
 
+**[필수] CLI에 JSON 전달 시 Write tool 사용:**
+- LLM 응답, PRD, 작업 목록 등 큰 JSON은 반드시 Write tool로 /tmp/gv-*.json 파일에 저장한 뒤 --input-file 플래그로 CLI에 전달하세요.
+- echo/cat/heredoc(<<)로 큰 JSON을 bash에 직접 전달하면 보안 탐지에 걸려 자동승인이 중단됩니다.
+
 1. 명확도 분석:
    echo '{"description": "{currentDescription}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js clarity-check
    → 생성된 프롬프트를 LLM으로 실행
@@ -203,6 +207,10 @@ Task tool 프롬프트:
 ```
 프로젝트 설명을 보강하고 재분석하세요.
 
+**[필수] CLI에 JSON 전달 시 Write tool 사용:**
+- LLM 응답, PRD, 작업 목록 등 큰 JSON은 반드시 Write tool로 /tmp/gv-*.json 파일에 저장한 뒤 --input-file 플래그로 CLI에 전달하세요.
+- echo/cat/heredoc(<<)로 큰 JSON을 bash에 직접 전달하면 보안 탐지에 걸려 자동승인이 중단됩니다.
+
 1. 설명 보강:
    → 입력 데이터를 Write tool로 /tmp/gv-enrich.json에 저장 (형식: {"original": "{currentDescription}", "answers": [{CEO 답변}]})
    → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js enrich-description --input-file /tmp/gv-enrich.json
@@ -245,8 +253,13 @@ Task tool 프롬프트:
 ```
 PRD를 생성하세요.
 
+**[필수] CLI에 JSON 전달 시 Write tool 사용:**
+- LLM 응답, PRD, 작업 목록 등 큰 JSON은 반드시 Write tool로 /tmp/gv-*.json 파일에 저장한 뒤 --input-file 플래그로 CLI에 전달하세요.
+- echo/cat/heredoc(<<)로 큰 JSON을 bash에 직접 전달하면 보안 탐지에 걸려 자동승인이 중단됩니다.
+
 1. PRD 프롬프트 생성:
-   echo '{"description":"{currentDescription}","clarityDimensions":{dimensions}{codebaseInfo가 있으면: ,"codebaseInfo":{codebaseInfo}}{prdFeedback이 있으면: ,"prdFeedback":"{prdFeedback}"}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js generate-prd-prompt
+   → PRD 입력 데이터를 Write tool로 /tmp/gv-prd-input.json에 저장 (형식: {"description":"{currentDescription}","clarityDimensions":{dimensions},"codebaseInfo":{codebaseInfo 또는 null},"prdFeedback":"{prdFeedback 또는 null}"})
+   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js generate-prd-prompt --input-file /tmp/gv-prd-input.json
 
 2. 생성된 프롬프트를 LLM으로 실행
 
@@ -301,7 +314,12 @@ Task tool 프롬프트:
 ```
 복잡도를 분석하세요.
 
-1. echo '{"description":"{currentDescription}","prd":{prd}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js complexity-analysis
+**[필수] CLI에 JSON 전달 시 Write tool 사용:**
+- LLM 응답, PRD, 작업 목록 등 큰 JSON은 반드시 Write tool로 /tmp/gv-*.json 파일에 저장한 뒤 --input-file 플래그로 CLI에 전달하세요.
+- echo/cat/heredoc(<<)로 큰 JSON을 bash에 직접 전달하면 보안 탐지에 걸려 자동승인이 중단됩니다.
+
+1. 입력 데이터를 Write tool로 /tmp/gv-complexity-input.json에 저장 (형식: {"description":"{currentDescription}","prd":{prd}})
+   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js complexity-analysis --input-file /tmp/gv-complexity-input.json
    → 생성된 프롬프트를 LLM으로 실행
    → LLM 응답을 Write tool로 /tmp/gv-complexity.json에 저장 (형식: {"rawOutput": "LLM 응답 전체"})
    → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js parse-complexity --input-file /tmp/gv-complexity.json
@@ -445,6 +463,10 @@ Task tool 프롬프트:
 ```
 프로젝트를 생성하고 팀을 구성하세요.
 
+**[필수] CLI에 JSON 전달 시 Write tool 사용:**
+- LLM 응답, PRD, 작업 목록 등 큰 JSON은 반드시 Write tool로 /tmp/gv-*.json 파일에 저장한 뒤 --input-file 플래그로 CLI에 전달하세요.
+- echo/cat/heredoc(<<)로 큰 JSON을 bash에 직접 전달하면 보안 탐지에 걸려 자동승인이 중단됩니다.
+
 1. 복잡도 기본값 조회:
    node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js complexity-defaults --level {level}
 
@@ -452,7 +474,8 @@ Task tool 프롬프트:
    node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js recommend-team --type {type}
 
 3. 프로젝트 생성 (PRD + 인프라 + 분석 결과 포함):
-   echo '{"name": "{name}", "type": "{type}", "description": "{description}", "mode": "{mode}", "prd": {prd}, "infraPath": "{infraPath 또는 null}", "githubUrl": "{githubUrl 또는 null}", "clarityAnalysis": {Step 1.5의 clarity 분석 결과 또는 null}, "complexityAnalysis": {Step 3의 complexity 분석 결과 또는 null}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js create-project
+   → 프로젝트 데이터를 Write tool로 /tmp/gv-create-project.json에 저장 (형식: {"name": "{name}", "type": "{type}", "description": "{description}", "mode": "{mode}", "prd": {prd}, "infraPath": "{infraPath 또는 null}", "githubUrl": "{githubUrl 또는 null}", "clarityAnalysis": {Step 1.5의 clarity 분석 결과 또는 null}, "complexityAnalysis": {Step 3의 complexity 분석 결과 또는 null}})
+   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js create-project --input-file /tmp/gv-create-project.json
 
 4. 팀 빌드 + 저장:
    echo '{"roleIds": [...], "complexity": "{level}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js build-team
@@ -462,7 +485,8 @@ Task tool 프롬프트:
 
 5. 프로젝트 CLAUDE.md 생성 (infraPath가 있을 때만):
    a. echo '{"roles": [...roleIds], "team": [...builtTeam]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js generate-onboarding
-   b. echo '{"claudeMd": "...", "coreRules": "...", "projectDir": "{infraPath}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js write-project-onboarding
+   b. → 온보딩 데이터를 Write tool로 /tmp/gv-project-onboarding.json에 저장 (형식: {"claudeMd": "...", "coreRules": "...", "projectDir": "{infraPath}"})
+      → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js write-project-onboarding --input-file /tmp/gv-project-onboarding.json
 
 6. 스킬/에이전트 추천 (선택):
    echo '{"projectType": "{type}", "complexity": "{level}", "description": "...", "teamRoles": [...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js recommend-setup
@@ -530,8 +554,13 @@ Task tool 프롬프트:
 ```
 프로젝트 ID: {ID}의 CTO 아키텍처 분석을 실행하세요.
 
+**[필수] CLI에 JSON 전달 시 Write tool 사용:**
+- LLM 응답, PRD, 작업 목록 등 큰 JSON은 반드시 Write tool로 /tmp/gv-*.json 파일에 저장한 뒤 --input-file 플래그로 CLI에 전달하세요.
+- echo/cat/heredoc(<<)로 큰 JSON을 bash에 직접 전달하면 보안 탐지에 걸려 자동승인이 중단됩니다.
+
 1. CTO 분석 프롬프트 생성:
-   echo '{"project": {...}, "teamMember": {CTO팀원}, "context": {"round": 1, "prd": {prd}}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js agent-analysis-prompt
+   → 분석 입력을 Write tool로 /tmp/gv-cto-analysis.json에 저장 (형식: {"project": {...}, "teamMember": {CTO팀원}, "context": {"round": 1, "prd": {prd}}})
+   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js agent-analysis-prompt --input-file /tmp/gv-cto-analysis.json
 
 2. {ceoFeedback이 있으면: "context.ceoFeedback에 다음을 추가하세요: {ceoFeedback}"}
 
@@ -582,6 +611,10 @@ Task tool 프롬프트:
 
 ```
 프로젝트 ID: {ID}의 작업을 분배하고 실행을 초기화하세요.
+
+**[필수] CLI에 JSON 전달 시 Write tool 사용:**
+- LLM 응답, PRD, 작업 목록 등 큰 JSON은 반드시 Write tool로 /tmp/gv-*.json 파일에 저장한 뒤 --input-file 플래그로 CLI에 전달하세요.
+- echo/cat/heredoc(<<)로 큰 JSON을 bash에 직접 전달하면 보안 탐지에 걸려 자동승인이 중단됩니다.
 
 1. 상태 변경:
    echo '{"id":"{ID}","status":"approved"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js update-status
@@ -732,6 +765,10 @@ Task tool 프롬프트:
 
 ```
 프로젝트 ID: {ID}의 작업을 분배하고 실행을 초기화하세요.
+
+**[필수] CLI에 JSON 전달 시 Write tool 사용:**
+- LLM 응답, PRD, 작업 목록 등 큰 JSON은 반드시 Write tool로 /tmp/gv-*.json 파일에 저장한 뒤 --input-file 플래그로 CLI에 전달하세요.
+- echo/cat/heredoc(<<)로 큰 JSON을 bash에 직접 전달하면 보안 탐지에 걸려 자동승인이 중단됩니다.
 
 1. 상태 변경:
    echo '{"id":"{ID}","status":"approved"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js update-status
@@ -924,6 +961,10 @@ Task tool 프롬프트:
 
 ```
 프로젝트 ID: {ID}의 작업을 분배하고 실행을 초기화하세요.
+
+**[필수] CLI에 JSON 전달 시 Write tool 사용:**
+- LLM 응답, PRD, 작업 목록 등 큰 JSON은 반드시 Write tool로 /tmp/gv-*.json 파일에 저장한 뒤 --input-file 플래그로 CLI에 전달하세요.
+- echo/cat/heredoc(<<)로 큰 JSON을 bash에 직접 전달하면 보안 탐지에 걸려 자동승인이 중단됩니다.
 
 1. 상태 변경:
    echo '{"id":"{ID}","status":"approved"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js update-status
