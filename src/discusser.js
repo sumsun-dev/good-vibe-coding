@@ -13,6 +13,7 @@ import {
   parseReviewOutput,
 } from '../scripts/lib/engine/orchestrator.js';
 import { callLLM } from '../scripts/lib/llm/llm-provider.js';
+import { config } from '../scripts/lib/core/config.js';
 import { DEFAULTS } from './defaults.js';
 
 export class Discusser {
@@ -22,12 +23,14 @@ export class Discusser {
    * @param {string} options.model - 모델 이름
    * @param {object} options.storage - 스토리지 인터페이스
    * @param {object} [options.hooks] - 이벤트 훅
+   * @param {boolean} [options.parallelTiers] - Tier 간 병렬 실행 여부 (기본: config.discussion.parallelTiers)
    */
-  constructor({ provider, model, storage, hooks = {} }) {
+  constructor({ provider, model, storage, hooks = {}, parallelTiers }) {
     this.provider = provider;
     this.model = model;
     this.storage = storage;
     this.hooks = hooks;
+    this.parallelTiers = parallelTiers ?? config.discussion.parallelTiers;
   }
 
   /**
@@ -45,17 +48,19 @@ export class Discusser {
     let feedbackByRole = {};
 
     for (let round = 1; round <= maxRounds; round++) {
-      // 1) Tier별 순차, tier 내부 병렬 — 에이전트 분석
+      // 1) 에이전트 분석 — parallelTiers 설정에 따라 전체 병렬 또는 Tier별 순차
       const tiers = groupAgentsForParallelDispatch(agents);
+      const parallelTiers = this.parallelTiers;
       const analyses = [];
 
-      for (const tier of tiers) {
-        const tierResults = await Promise.all(
-          tier.map(async (member) => {
+      if (parallelTiers) {
+        // 전체 에이전트 병렬 실행 (Tier 간 순차 불필요 — priorTierOutputs 미사용)
+        const allAgents = tiers.flat();
+        const allResults = await Promise.all(
+          allAgents.map(async (member) => {
             const prompt = buildAgentAnalysisPrompt(project, member, {
               round,
               previousSynthesis: lastPlan,
-              peerOutputs: analyses,
               feedbackForMe: feedbackByRole[member.roleId],
             });
             const response = await this._call(member.roleId, prompt);
@@ -67,7 +72,29 @@ export class Discusser {
             };
           }),
         );
-        analyses.push(...tierResults);
+        analyses.push(...allResults);
+      } else {
+        // 기존 Tier별 순차 실행 (fallback)
+        for (const tier of tiers) {
+          const tierResults = await Promise.all(
+            tier.map(async (member) => {
+              const prompt = buildAgentAnalysisPrompt(project, member, {
+                round,
+                previousSynthesis: lastPlan,
+                peerOutputs: analyses,
+                feedbackForMe: feedbackByRole[member.roleId],
+              });
+              const response = await this._call(member.roleId, prompt);
+              return {
+                roleId: member.roleId,
+                role: member.role,
+                emoji: member.emoji,
+                analysis: response.text,
+              };
+            }),
+          );
+          analyses.push(...tierResults);
+        }
       }
 
       // 2) 종합 — 기획서 생성

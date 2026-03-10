@@ -117,6 +117,10 @@ export function buildExecutionPrompt(task, teamMember, context = {}) {
     prompt += `\n\n## CEO 지침 (이번 Phase)\n\n${context.phaseGuidance}\n\n**위 지침을 최우선으로 반영하세요.**`;
   }
 
+  if (context.consultationEnabled) {
+    prompt += `\n\n## 전문가 상담\n다른 역할에게 질문이 필요하면:\n\`[CONSULT:역할ID]: 질문\`\n(최대 1개, 선택사항)`;
+  }
+
   return prompt;
 }
 
@@ -295,6 +299,10 @@ export function buildTddExecutionPrompt(task, teamMember, context = {}) {
 
   if (context.phaseGuidance) {
     prompt += `\n\n## CEO 지침 (이번 Phase)\n\n${context.phaseGuidance}\n\n**위 지침을 최우선으로 반영하세요.**`;
+  }
+
+  if (context.consultationEnabled) {
+    prompt += `\n\n## 전문가 상담\n다른 역할에게 질문이 필요하면:\n\`[CONSULT:역할ID]: 질문\`\n(최대 1개, 선택사항)`;
   }
 
   return prompt;

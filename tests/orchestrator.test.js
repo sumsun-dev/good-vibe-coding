@@ -159,6 +159,23 @@ describe('buildAgentAnalysisPrompt', () => {
     const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {});
     expect(prompt).not.toContain('CEO 피드백');
   });
+
+  it('messages가 있으면 다른 에이전트 메시지 섹션을 포함한다', () => {
+    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {
+      messages: [
+        { from: 'qa', type: 'question', content: '보안 검증 방법은?' },
+        { from: 'backend', type: 'fyi', content: 'REST API 설계 완료' },
+      ],
+    });
+    expect(prompt).toContain('다른 에이전트 메시지');
+    expect(prompt).toContain('보안 검증 방법은?');
+    expect(prompt).toContain('REST API 설계 완료');
+  });
+
+  it('messages가 비어있으면 메시지 섹션이 없다', () => {
+    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], { messages: [] });
+    expect(prompt).not.toContain('다른 에이전트 메시지');
+  });
 });
 
 // --- buildSynthesisPrompt ---

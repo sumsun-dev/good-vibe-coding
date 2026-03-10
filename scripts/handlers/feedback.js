@@ -17,6 +17,10 @@ import {
   listProjectOverrides,
   mergeAgentWithOverrides,
 } from '../lib/agent/agent-feedback.js';
+import {
+  analyzeMessagePatterns,
+  generateMessageAnalysisSection,
+} from '../lib/engine/message-analyzer.js';
 
 const [, , , ...args] = process.argv;
 
@@ -92,5 +96,19 @@ export const commands = {
     const overrides = data.overrides || [];
     const result = mergeAgentWithOverrides(data.baseMd, overrides);
     output({ result });
+  },
+
+  'analyze-messages': async () => {
+    const opts = parseArgs(args);
+    await withProject(opts.id, (project) => {
+      const stats = project.messageStats;
+      if (!stats) {
+        output({ hasData: false, section: '' });
+        return;
+      }
+      const analysis = analyzeMessagePatterns(stats);
+      const section = generateMessageAnalysisSection(analysis);
+      output({ ...analysis, section });
+    });
   },
 };

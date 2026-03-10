@@ -36,7 +36,19 @@ export function extractMaterializableBlocks(taskOutput) {
  * @returns {Promise<{totalBlocks: number, materializedCount: number, skippedCount: number, files: Array<{path: string, relativePath: string, written: boolean, backupPath: string|null, language: string, type: string}>}>}
  */
 export async function materializeCode(taskOutput, projectDir, options = {}) {
-  const { overwrite = true, backup = true, dryRun = false, _classifiedBlocks } = options;
+  const {
+    overwrite = true,
+    backup = true,
+    dryRun = false,
+    _classifiedBlocks,
+    worktreePath,
+  } = options;
+  const targetDir = worktreePath || projectDir;
+
+  // worktreePath가 projectDir 하위인지 검증
+  if (worktreePath && projectDir) {
+    assertWithinRoot(resolve(worktreePath), resolve(projectDir), 'worktreePath');
+  }
 
   if (!_classifiedBlocks && (!taskOutput || typeof taskOutput !== 'string')) {
     return {
@@ -74,7 +86,7 @@ export async function materializeCode(taskOutput, projectDir, options = {}) {
   }
 
   if (!dryRun) {
-    await ensureDir(projectDir);
+    await ensureDir(targetDir);
   }
 
   const files = [];
@@ -101,12 +113,12 @@ export async function materializeCode(taskOutput, projectDir, options = {}) {
       continue;
     }
 
-    const fullPath = resolve(projectDir, block.filename);
+    const fullPath = resolve(targetDir, block.filename);
     fileRecord.path = fullPath;
 
     // path traversal 방지
     try {
-      assertWithinRoot(fullPath, resolve(projectDir), 'filePath');
+      assertWithinRoot(fullPath, resolve(targetDir), 'filePath');
     } catch {
       fileRecord.error = 'path traversal detected';
       files.push(fileRecord);

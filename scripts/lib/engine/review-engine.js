@@ -119,17 +119,22 @@ ${taskOutput}${acSection}
 
 /**
  * 리뷰 결과를 파싱한다.
+ * [QUESTION]: ... 패턴이 있으면 question 필드로 추출한다.
  * @param {string} rawReview - 리뷰 결과 원문
- * @returns {{ verdict: string, issues: Array<{severity: string, description: string, suggestion: string}> }}
+ * @returns {{ verdict: string, issues: Array<{severity: string, description: string, suggestion: string}>, question?: string }}
  */
 export function parseTaskReview(rawReview) {
   if (!rawReview || rawReview.trim() === '') {
     return { verdict: 'parse-error', issues: [] };
   }
 
+  // [QUESTION]: ... 패턴 추출 (ReDoS 안전: [^\n]+ 사용)
+  const questionMatch = rawReview.match(/\[QUESTION\]:\s*([^\n]+)/);
+  const question = questionMatch ? questionMatch[1].trim() : undefined;
+
   const parsed = parseJsonObject(rawReview);
   if (parsed) {
-    return {
+    const result = {
       verdict: parsed.verdict === 'approve' ? 'approve' : 'request-changes',
       issues: Array.isArray(parsed.issues)
         ? parsed.issues.map((i) => ({
@@ -139,9 +144,16 @@ export function parseTaskReview(rawReview) {
           }))
         : [],
     };
+    // JSON 내부 question 필드 또는 텍스트 패턴
+    if (parsed.question || question) {
+      result.question = parsed.question || question;
+    }
+    return result;
   }
 
-  return { verdict: 'parse-error', issues: [] };
+  const result = { verdict: 'parse-error', issues: [] };
+  if (question) result.question = question;
+  return result;
 }
 
 /**

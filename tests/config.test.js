@@ -4,6 +4,8 @@ import { config } from '../scripts/lib/core/config.js';
 describe('config', () => {
   it('Object.freeze로 불변이다', () => {
     expect(Object.isFrozen(config)).toBe(true);
+    expect(Object.isFrozen(config.discussion)).toBe(true);
+    expect(Object.isFrozen(config.messaging)).toBe(true);
     expect(Object.isFrozen(config.convergence)).toBe(true);
     expect(Object.isFrozen(config.similarity)).toBe(true);
     expect(Object.isFrozen(config.execution)).toBe(true);
@@ -24,6 +26,11 @@ describe('config', () => {
   });
 
   it('모든 설정값에 접근할 수 있다', () => {
+    expect(config.discussion.parallelTiers).toBe(true);
+    expect(config.messaging.enabled).toBe(false);
+    expect(config.messaging.maxMessages).toBe(100);
+    expect(config.messaging.ttl).toBe(86400);
+    expect(config.messaging.maxThreadDepth).toBe(5);
     expect(config.convergence.threshold).toBe(0.8);
     expect(config.convergence.maxRounds).toBe(3);
     expect(config.similarity.redundancyThreshold).toBe(0.7);

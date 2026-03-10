@@ -1,9 +1,12 @@
 /**
- * handlers/execution — 실행 루프 + 실행 계획 커맨드
+ * handlers/execution — 실행 루프 + 실행 계획 + 메시지 커맨드
  */
 import { readStdin, output, parseArgs } from '../cli-utils.js';
 import { requireFields, inputError } from '../lib/core/validators.js';
 import { withProject } from '../lib/project/handler-helpers.js';
+import { FileMessageBus } from '../lib/core/message-bus.js';
+import { config } from '../lib/core/config.js';
+import { getProjectDir } from '../lib/project/project-manager.js';
 import {
   initExecution,
   getNextExecutionStep,
@@ -129,5 +132,35 @@ export const commands = {
       ...(data.decision === 'revise' ? { revisionGuidance: data.revisionGuidance } : {}),
     });
     output(result);
+  },
+
+  'send-message': async () => {
+    const data = await readStdin();
+    requireFields(data, ['projectId', 'from', 'to', 'type', 'content']);
+    if (!config.messaging.enabled) {
+      throw inputError('메시징이 비활성화되어 있습니다 (config.messaging.enabled = false)');
+    }
+    const projectDir = getProjectDir(data.projectId);
+    const bus = new FileMessageBus({ baseDir: `${projectDir}/messages` });
+    const message = await bus.send(data.from, data.to, {
+      type: data.type,
+      content: data.content,
+      threadId: data.threadId || undefined,
+    });
+    output(message);
+  },
+
+  'get-messages': async () => {
+    const data = await readStdin();
+    requireFields(data, ['projectId', 'agentId']);
+    if (!config.messaging.enabled) {
+      throw inputError('메시징이 비활성화되어 있습니다 (config.messaging.enabled = false)');
+    }
+    const projectDir = getProjectDir(data.projectId);
+    const bus = new FileMessageBus({ baseDir: `${projectDir}/messages` });
+    const messages = await bus.receive(data.agentId, {
+      includeRead: data.includeRead || false,
+    });
+    output(messages);
   },
 };

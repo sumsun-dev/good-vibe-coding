@@ -20,6 +20,12 @@ import {
   resolveReviewAssignments,
   executeCrossModelReviews,
 } from '../scripts/lib/engine/cross-model-strategy.js';
+import { orchestrateReviewConversation } from '../scripts/lib/engine/review-conversation.js';
+import {
+  extractConsultationRequests,
+  orchestrateConsultation,
+  enrichTaskOutputWithConsultation,
+} from '../scripts/lib/engine/expert-consultation.js';
 import { callLLM } from '../scripts/lib/llm/llm-provider.js';
 import { randomBytes } from 'crypto';
 import { DEFAULTS } from './defaults.js';
@@ -40,6 +46,7 @@ export class Executor {
     maxSteps,
     enableCrossModel = false,
     providerConfig = null,
+    messageBus = null,
   }) {
     this.provider = provider;
     this.model = model;
@@ -48,6 +55,7 @@ export class Executor {
     this._maxSteps = maxSteps || DEFAULTS.maxExecutionSteps;
     this.enableCrossModel = enableCrossModel;
     this.providerConfig = providerConfig;
+    this.messageBus = messageBus;
   }
 
   /**
@@ -67,6 +75,16 @@ export class Executor {
       const step = getNextExecutionStep(project);
 
       if (step.action === 'complete' || step.action === 'already-completed') {
+        // 완료 시 messageBus stats를 프로젝트에 저장 (fire-and-forget)
+        if (this.messageBus) {
+          try {
+            const stats = await this.messageBus.getStats();
+            const proj = await this.storage.read(projectId);
+            await this.storage.write(projectId, { ...proj, messageStats: stats });
+          } catch {
+            /* fire-and-forget */
+          }
+        }
         return { status: 'completed', projectId, journal };
       }
 
@@ -110,7 +128,7 @@ export class Executor {
   async _handleStep(step, project) {
     switch (step.action) {
       case 'execute-tasks':
-        return this._executeTasks(step);
+        return this._executeTasks(step, project);
 
       case 'materialize':
         return { completedAction: 'materialize' };
@@ -168,14 +186,44 @@ export class Executor {
   /**
    * 태스크를 병렬로 실행한다.
    */
-  async _executeTasks(step) {
+  async _executeTasks(step, project) {
     const tasks = step.tasks || [];
+    const team = project?.team || [];
+    const teamMap = new Map(team.map((m) => [m.roleId, m]));
+
     const taskResults = await Promise.all(
       tasks.map(async (task) => {
         const prompt = this._buildTaskPrompt(task, step.phase);
         const response = await callLLM(this.provider, prompt, { model: this.model });
         await this.hooks.onAgentCall?.(task.assignee, response);
-        return { taskId: task.id, output: response.text };
+
+        let output = response.text;
+
+        // consultation 패턴 추출 및 처리
+        if (this.messageBus) {
+          const requests = extractConsultationRequests(output);
+          if (requests.length > 0) {
+            const req = requests[0];
+            const expert = teamMap.get(req.role);
+            const requester = teamMap.get(task.assignee);
+            if (expert && requester) {
+              const result = await orchestrateConsultation({
+                requester,
+                expert,
+                task,
+                taskOutput: output,
+                question: req.question,
+                messageBus: this.messageBus,
+                callLLM: (prov, p, opts) => callLLM(prov, p, { model: this.model, ...opts }),
+              });
+              if (result.consultationHappened) {
+                output = enrichTaskOutputWithConsultation(output, result);
+              }
+            }
+          }
+        }
+
+        return { taskId: task.id, output };
       }),
     );
     return { completedAction: 'execute-tasks', taskResults };
@@ -197,6 +245,8 @@ export class Executor {
       (phaseResults.taskResults || []).map((r) => [r.taskId, r.output]),
     );
 
+    const teamMap = new Map(team.map((m) => [m.roleId, m]));
+
     for (const task of tasks) {
       const reviewers = selectReviewers(task, team);
       const taskOutput = taskOutputMap.get(task.id) || '';
@@ -206,7 +256,30 @@ export class Executor {
           const prompt = buildTaskReviewPrompt(r, task, taskOutput);
           const response = await callLLM(this.provider, prompt, { model: this.model });
           const parsed = parseTaskReview(response.text);
-          return { reviewerId: r.roleId, text: response.text, ...parsed };
+          let reviewResult = { reviewerId: r.roleId, text: response.text, ...parsed };
+
+          // 질문이 있고 메시지 버스가 활성화되면 리뷰 대화 오케스트레이션
+          if (parsed.question && this.messageBus) {
+            const implementer = teamMap.get(task.assignee);
+            if (implementer) {
+              const conversationResult = await orchestrateReviewConversation({
+                reviewer: r,
+                implementer,
+                task,
+                taskOutput,
+                review: { ...parsed, text: response.text },
+                messageBus: this.messageBus,
+                callLLM: (prov, p, opts) => callLLM(prov, p, { model: this.model, ...opts }),
+              });
+              reviewResult = {
+                reviewerId: r.roleId,
+                text: response.text,
+                ...conversationResult,
+              };
+            }
+          }
+
+          return reviewResult;
         }),
       );
       allReviews.push(...reviews);

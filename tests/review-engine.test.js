@@ -351,6 +351,29 @@ describe('parseTaskReview', () => {
     const result = parseTaskReview(raw);
     expect(result.issues[0].description).toBe('');
   });
+
+  it('[QUESTION]: 패턴으로 질문을 추출한다', () => {
+    const raw =
+      '```json\n{"verdict":"request-changes","issues":[]}\n```\n[QUESTION]: SQL injection 방지 방법은?';
+    const result = parseTaskReview(raw);
+    expect(result.question).toBe('SQL injection 방지 방법은?');
+  });
+
+  it('JSON 내부 question 필드를 추출한다', () => {
+    const raw = JSON.stringify({
+      verdict: 'request-changes',
+      issues: [],
+      question: '이 API는 인증이 필요한가요?',
+    });
+    const result = parseTaskReview(raw);
+    expect(result.question).toBe('이 API는 인증이 필요한가요?');
+  });
+
+  it('질문이 없으면 question 필드가 없다', () => {
+    const raw = JSON.stringify({ verdict: 'approve', issues: [] });
+    const result = parseTaskReview(raw);
+    expect(result.question).toBeUndefined();
+  });
 });
 
 // --- checkQualityGate ---

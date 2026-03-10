@@ -90,6 +90,7 @@ export const MINIMAL_GITIGNORE = `.env
 *.key
 node_modules/
 .DS_Store
+.gv-worktrees/
 `;
 
 export function commitPhase(projectDir, phase, message) {

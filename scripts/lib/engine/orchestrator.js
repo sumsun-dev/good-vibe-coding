@@ -68,6 +68,7 @@ function buildRoleQuestions(teamMember) {
  * @param {string} [context.previousSynthesis] - 이전 라운드 종합 결과
  * @param {string} [context.feedbackForMe] - 이 역할에 대한 다른 에이전트의 피드백
  * @param {string} [context.ceoFeedback] - CEO의 피드백 (Ralph Loop)
+ * @param {Array} [context.messages] - 다른 에이전트로부터 받은 메시지
  * @returns {string} 에이전트 분석 프롬프트
  */
 export function buildAgentAnalysisPrompt(project, teamMember, context = {}) {
@@ -101,6 +102,13 @@ ${buildRoleQuestions(teamMember)}`;
 
   if (context.ceoFeedback) {
     prompt += `\n\n## CEO 피드백 (최우선)\nCEO가 다음과 같은 피드백을 주었습니다. 이 피드백을 최우선으로 반영하세요:\n\n${truncateSection(context.ceoFeedback)}`;
+  }
+
+  if (context.messages && context.messages.length > 0) {
+    const msgLines = context.messages
+      .map((m) => `- **${m.from}** (${m.type}): ${m.content}`)
+      .join('\n');
+    prompt += `\n\n## 다른 에이전트 메시지\n다음은 다른 팀원으로부터 받은 메시지입니다. 분석에 참고하세요:\n\n${msgLines}`;
   }
 
   prompt += `\n\n## 요구사항 명확화 (중요)

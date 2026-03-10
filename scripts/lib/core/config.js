@@ -5,6 +5,13 @@
 
 export const config = Object.freeze({
   convergence: Object.freeze({ threshold: 0.8, maxRounds: 3 }),
+  discussion: Object.freeze({ parallelTiers: true }),
+  messaging: Object.freeze({
+    enabled: false,
+    maxMessages: 100,
+    ttl: 86400,
+    maxThreadDepth: 5,
+  }),
   similarity: Object.freeze({
     redundancyThreshold: 0.7,
     contributionThreshold: 0.5,
@@ -64,6 +71,7 @@ export const config = Object.freeze({
     autoPush: true,
     autoCreatePR: true,
     prDraft: false,
+    worktreeIsolation: false,
   }),
   clarity: Object.freeze({
     threshold: 0.8,
