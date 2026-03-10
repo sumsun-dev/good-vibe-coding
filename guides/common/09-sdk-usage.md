@@ -249,7 +249,9 @@ const dbStorage = {
 
 ## 에러 처리
 
-SDK 메서드는 `AppError`를 던집니다. `code` 필드로 에러 유형을 구분할 수 있습니다.
+SDK의 입력 검증과 비즈니스 로직 에러는 `AppError`(`code` 필드 포함)를 던집니다.
+단, 스토리지 I/O나 Hook 실행 중에는 **OS 에러 또는 사용자 코드의 예외**가 그대로 전파될 수 있습니다.
+따라서 `err.code` 체크와 일반 예외 처리를 함께 사용하세요:
 
 ```javascript
 try {
@@ -261,17 +263,21 @@ try {
     console.error('찾을 수 없음:', err.message);
   } else if (err.code === 'SYSTEM_ERROR') {
     console.error('시스템 오류:', err.message);
+  } else {
+    // 스토리지 I/O 에러(EACCES, ENOSPC 등) 또는 Hook에서 발생한 예외
+    console.error('예상치 못한 오류:', err.message);
   }
 }
 ```
 
 ### 에러 코드 요약
 
-| 에러 코드      | 발생 조건                       | 대처 방법                        |
-| -------------- | ------------------------------- | -------------------------------- |
-| `INPUT_ERROR`  | 필수 파라미터 누락, 잘못된 타입 | 입력값 확인                      |
-| `NOT_FOUND`    | 프로젝트를 찾을 수 없음         | ID 확인, `storage.list()` 실행   |
-| `SYSTEM_ERROR` | 내부 오류, LLM 호출 실패        | 재시도 또는 프로바이더 설정 확인 |
+| 에러 코드      | 발생 조건                       | 대처 방법                             |
+| -------------- | ------------------------------- | ------------------------------------- |
+| `INPUT_ERROR`  | 필수 파라미터 누락, 잘못된 타입 | 입력값 확인                           |
+| `NOT_FOUND`    | 프로젝트를 찾을 수 없음         | ID 확인, `storage.list()` 실행        |
+| `SYSTEM_ERROR` | 내부 오류, LLM 호출 실패        | 재시도 또는 프로바이더 설정 확인      |
+| (코드 없음)    | 스토리지 I/O 에러, Hook 예외    | `err.code`로 OS 에러 확인 (아래 참고) |
 
 ### 메서드별 에러 시나리오
 
@@ -282,6 +288,7 @@ try {
 | `discuss()`      | `INPUT_ERROR`  | team 객체 형식 오류 (agents 누락 등)         | `buildTeam()` 반환값을 그대로 전달     |
 | `execute()`      | `SYSTEM_ERROR` | LLM 호출 실패, Phase 실행 오류               | 재시도 — 중단된 Phase부터 자동 재개    |
 | `execute()`      | `INPUT_ERROR`  | plan 객체 형식 오류 (document/tasks 누락 등) | `discuss()` 반환값을 그대로 전달       |
+| `execute()`      | (OS 에러)      | `FileStorage` 쓰기 실패 (`EACCES`, `ENOSPC`) | 디스크 권한/공간 확인 후 재시도        |
 | `executeSteps()` | `SYSTEM_ERROR` | 개별 스텝 실행 실패                          | `step.proceed()` 재호출 또는 다음 스텝 |
 | `report()`       | `INPUT_ERROR`  | result 객체가 null/undefined                 | `execute()` 반환값을 그대로 전달       |
 
@@ -383,26 +390,54 @@ const discusser = new Discusser({
 
 ### 스토리지 에러 복구
 
-| 스토리지        | 에러 상황          | 동작                                          |
-| --------------- | ------------------ | --------------------------------------------- |
-| `MemoryStorage` | 깊은 복사 실패     | `JSON.parse(JSON.stringify())` 폴백 자동 적용 |
-| `FileStorage`   | 파일 미존재 (read) | `null` 반환 (에러 아님)                       |
-| `FileStorage`   | 쓰기 권한 없음     | OS 에러 throw (`EACCES` 등)                   |
-| 커스텀 스토리지 | 구현에 따라 다름   | `read`/`write`에서 throw 시 실행 중단         |
+> **주의:** `FileStorage`의 쓰기/읽기 에러는 `AppError`가 아닌 **OS 에러**(예: `EACCES`, `ENOSPC`)로 throw됩니다.
+> `err.code`를 확인할 때 AppError 코드와 OS 에러 코드를 모두 고려하세요.
 
-`FileStorage` 사용 시 권한 문제 해결:
+| 스토리지        | 에러 상황             | 동작                                          | `err.code` 값    |
+| --------------- | --------------------- | --------------------------------------------- | ---------------- |
+| `MemoryStorage` | 깊은 복사 실패        | `JSON.parse(JSON.stringify())` 폴백 자동 적용 | -                |
+| `FileStorage`   | 파일 미존재 (read)    | `null` 반환 (에러 아님)                       | -                |
+| `FileStorage`   | 쓰기 권한 없음        | OS 에러 throw                                 | `EACCES`         |
+| `FileStorage`   | 디스크 공간 부족      | OS 에러 throw                                 | `ENOSPC`         |
+| `FileStorage`   | JSON 파싱 실패 (read) | `SyntaxError` throw                           | -                |
+| 커스텀 스토리지 | 구현에 따라 다름      | `read`/`write`에서 throw 시 실행 중단         | 구현에 따라 다름 |
+
+`FileStorage` 사용 시 사전 권한 확인 + 에러 처리 패턴:
 
 ```javascript
 import { FileStorage } from 'good-vibe';
-
-const storage = new FileStorage('/path/to/projects');
-
-// 디렉토리 권한 확인
 import { access, constants } from 'fs/promises';
+
+// 초기화 전 권한 확인 (권장)
+const projectDir = '/path/to/projects';
 try {
-  await access('/path/to/projects', constants.W_OK);
+  await access(projectDir, constants.W_OK);
 } catch {
-  console.error('프로젝트 디렉토리에 쓰기 권한이 없습니다');
+  console.error(`프로젝트 디렉토리에 쓰기 권한이 없습니다: ${projectDir}`);
+  process.exit(1);
+}
+
+const storage = new FileStorage(projectDir);
+```
+
+`execute()` 호출 시 스토리지 에러까지 포함한 통합 에러 처리:
+
+```javascript
+try {
+  const result = await gv.execute(plan, hooks);
+} catch (err) {
+  if (err.code === 'EACCES') {
+    console.error(`파일 권한 오류: ${err.message}`);
+    console.error('프로젝트 디렉토리의 쓰기 권한을 확인하세요.');
+  } else if (err.code === 'ENOSPC') {
+    console.error('디스크 공간이 부족합니다.');
+  } else if (err.code === 'INPUT_ERROR' || err.code === 'NOT_FOUND') {
+    console.error(`입력 오류: ${err.message}`);
+  } else if (err.code === 'SYSTEM_ERROR') {
+    console.error(`시스템 오류: ${err.message} — 재시도하세요.`);
+  } else {
+    console.error(`예상치 못한 오류: ${err.message}`);
+  }
 }
 ```
 
@@ -427,7 +462,9 @@ async function executeWithRetry(gv, plan, maxRetries = 2) {
     try {
       return await gv.execute(plan, hooks);
     } catch (err) {
-      if (err.code !== 'SYSTEM_ERROR' || i === maxRetries) throw err;
+      // 입력 오류, 스토리지 I/O 에러는 재시도 불필요
+      const retryable = err.code === 'SYSTEM_ERROR';
+      if (!retryable || i === maxRetries) throw err;
       console.log(`실행 실패, ${i + 1}/${maxRetries} 재시도...`);
       // FileStorage 사용 시 중단 지점부터 자동 재개됨
     }
