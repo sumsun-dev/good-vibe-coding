@@ -119,7 +119,7 @@ export function assertWithinRoot(resolvedPath, rootDir, label) {
   const normalizedPath = normalize(resolvedPath).toLowerCase();
   const normalizedRoot = normalize(rootDir).toLowerCase();
   if (!normalizedPath.startsWith(normalizedRoot + sep) && normalizedPath !== normalizedRoot) {
-    throw inputError(`${label}이 허용 범위를 벗어났습니다`);
+    throw inputError(`${label}이 허용 범위를 벗어났습니다 (허용 경로: ${rootDir})`);
   }
 }
 
@@ -131,7 +131,9 @@ export function assertWithinRoot(resolvedPath, rootDir, label) {
 export function validateRoleId(roleId) {
   requireString(roleId, 'roleId');
   if (/[/\\]/.test(roleId) || roleId.includes('..')) {
-    throw inputError(`유효하지 않은 roleId: ${roleId}`);
+    throw inputError(
+      `유효하지 않은 roleId: ${roleId} (영문 소문자, 숫자, 하이픈만 허용. 예: cto, frontend, ui-ux)`,
+    );
   }
   return roleId;
 }
