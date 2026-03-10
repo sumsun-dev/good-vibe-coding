@@ -4,6 +4,7 @@
  * Gemini CLI (`gemini`)를 통해 LLM 호출을 수행한다.
  * CLI가 자체 인증을 처리하므로 OAuth 불필요.
  * shell injection 방지를 위해 spawnSync(args 배열) 사용.
+ * Windows에서 npm global .cmd 래퍼 인식을 위해 shell: true 사용 (args 배열이므로 injection 안전).
  */
 
 import { spawnSync } from 'child_process';
@@ -11,6 +12,7 @@ import { AppError, notFoundError } from '../core/validators.js';
 
 const DEFAULT_CLI_PATH = process.env.GEMINI_CLI_PATH || 'gemini';
 const DEFAULT_TIMEOUT_MS = 120000;
+const IS_WINDOWS = process.platform === 'win32';
 
 /** 모듈 레벨 캐시: CLI 설치 확인 결과를 path별로 저장 */
 export const _installCache = new Map();
@@ -68,6 +70,7 @@ export function isGeminiCliInstalled(cliPath) {
       timeout: 5000,
       stdio: ['ignore', 'pipe', 'pipe'],
       encoding: 'utf-8',
+      shell: IS_WINDOWS,
     });
     const installed = result.status === 0;
     _installCache.set(bin, installed);
@@ -102,6 +105,7 @@ export function callGeminiCli(prompt, options = {}) {
     stdio: ['ignore', 'pipe', 'pipe'],
     encoding: 'utf-8',
     maxBuffer: 10 * 1024 * 1024,
+    shell: IS_WINDOWS,
   });
 
   if (result.error) {

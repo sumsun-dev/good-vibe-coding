@@ -346,11 +346,15 @@ describe('callGeminiCli — 보안', () => {
     const callArgs = vi.mocked(spawnSync).mock.calls[1];
     // args 배열로 전달 — shell 해석 안 함
     expect(callArgs[1]).toContain(malicious);
-    // shell 옵션이 true가 아닌지 확인
-    expect(callArgs[2].shell).toBeFalsy();
+    // Windows에서는 .cmd 래퍼 인식을 위해 shell: true 허용 (args 배열이므로 injection 안전)
+    if (process.platform === 'win32') {
+      expect(callArgs[2].shell).toBe(true);
+    } else {
+      expect(callArgs[2].shell).toBeFalsy();
+    }
   });
 
-  it('spawnSync에 shell: true가 전달되지 않는다', () => {
+  it('Windows에서는 shell: true, 그 외에서는 shell 미사용', () => {
     const cliOutput = JSON.stringify({ response: 'ok' });
     mockInstalledThenCall({
       status: 0,
@@ -364,6 +368,10 @@ describe('callGeminiCli — 보안', () => {
     callGeminiCli('normal prompt');
 
     const options = vi.mocked(spawnSync).mock.calls[1][2];
-    expect(options.shell).toBeFalsy();
+    if (process.platform === 'win32') {
+      expect(options.shell).toBe(true);
+    } else {
+      expect(options.shell).toBeFalsy();
+    }
   });
 });
