@@ -162,8 +162,8 @@ Good Vibe Coding은 AI 팀이 파일 편집과 CLI 실행을 빈번하게 수행
 node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js read-settings
 ```
 
-반환된 JSON에서 `permissions.allow` 배열에 `"Bash(node * cli.js *)"` 패턴이 있는지 확인합니다.
-이미 있으면 "Good Vibe CLI 자동승인이 이미 설정되어 있습니다!" 표시 후 Step 3으로 진행합니다.
+반환된 JSON에서 `permissions.allow` 배열에 `"Bash"` 또는 `"Bash(node *)"` 패턴이 있는지 확인합니다.
+이미 있으면 "Good Vibe 자동승인이 이미 설정되어 있습니다!" 표시 후 Step 3으로 진행합니다.
 
 설정이 없는 경우 AskUserQuestion:
 
@@ -195,20 +195,26 @@ CLI로 자동승인 규칙을 일괄 추가합니다:
 자동 모드:
 
 ```bash
-echo '{"patterns":["Read","Write","Edit","Glob","Grep","WebFetch","WebSearch","NotebookEdit","Bash(node * cli.js *)"]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js add-permissions
+echo '{"patterns":["Read","Write","Edit","Glob","Grep","WebFetch","WebSearch","NotebookEdit","Bash"]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js add-permissions
 ```
+
+> `"Bash"`는 모든 bash 명령을 자동 승인합니다 (ls, mkdir, git, npm, echo, node 등).
 
 선택적 모드:
 
 ```bash
-echo '{"patterns":["Read","Glob","Grep","Bash(node * cli.js *)"]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js add-permissions
+echo '{"patterns":["Read","Glob","Grep","Bash(node *)","Bash(echo *)","Bash(ls *)","Bash(cat *)","Bash(pwd)","Bash(which *)"]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js add-permissions
 ```
+
+> CLI 호출(`node`, `echo ... | node` 파이프)과 읽기 전용 bash(`ls`, `cat`, `pwd`)를 자동 승인합니다.
 
 매번 확인 모드:
 
 ```bash
-echo '{"patterns":["Bash(node * cli.js *)"]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js add-permissions
+echo '{"patterns":["Bash(node *)","Bash(echo *)"]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js add-permissions
 ```
+
+> CLI 호출과 `echo ... | node` 파이프만 자동 승인합니다.
 
 결과 표시:
 

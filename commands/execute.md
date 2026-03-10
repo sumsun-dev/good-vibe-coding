@@ -59,7 +59,7 @@ options:
 
 **"자동 실행" 또는 "배치 실행" 선택 시 자동승인 확인:**
 
-`~/.claude/settings.json`의 `permissions.allow`에 `"Bash(node * cli.js *)"` 패턴이 있는지 확인합니다.
+`~/.claude/settings.json`의 `permissions.allow`에 `"Bash"` 또는 `"Bash(node *)"` 패턴이 있는지 확인합니다.
 
 **설정이 있으면** -> 그대로 진행합니다.
 
