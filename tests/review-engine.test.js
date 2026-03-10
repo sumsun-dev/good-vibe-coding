@@ -237,42 +237,57 @@ describe('buildTaskReviewPrompt', () => {
     description: 'REST API를 설계하세요',
   };
 
-  it('리뷰어 정보를 포함한다', () => {
-    const prompt = buildTaskReviewPrompt(SAMPLE_TEAM[0], task, '결과물');
-    expect(prompt).toContain('민준');
-    expect(prompt).toContain('CTO');
+  it('{ system, user } 객체를 반환한다', () => {
+    const result = buildTaskReviewPrompt(SAMPLE_TEAM[0], task, '결과물');
+    expect(result).toHaveProperty('system');
+    expect(result).toHaveProperty('user');
+    expect(typeof result.system).toBe('string');
+    expect(typeof result.user).toBe('string');
   });
 
-  it('작업 정보를 포함한다', () => {
-    const prompt = buildTaskReviewPrompt(SAMPLE_TEAM[0], task, '결과물');
-    expect(prompt).toContain('API 설계');
-    expect(prompt).toContain('task-1');
-    expect(prompt).toContain('backend');
+  it('리뷰어 정보는 system에 포함한다', () => {
+    const { system } = buildTaskReviewPrompt(SAMPLE_TEAM[0], task, '결과물');
+    expect(system).toContain('민준');
+    expect(system).toContain('CTO');
   });
 
-  it('작업 결과물을 포함한다', () => {
-    const prompt = buildTaskReviewPrompt(SAMPLE_TEAM[0], task, '## API 엔드포인트\nGET /users');
-    expect(prompt).toContain('GET /users');
+  it('작업 정보는 user에 포함한다', () => {
+    const { user } = buildTaskReviewPrompt(SAMPLE_TEAM[0], task, '결과물');
+    expect(user).toContain('API 설계');
+    expect(user).toContain('task-1');
+    expect(user).toContain('backend');
   });
 
-  it('심각도 분류 가이드를 포함한다', () => {
-    const prompt = buildTaskReviewPrompt(SAMPLE_TEAM[0], task, '결과물');
-    expect(prompt).toContain('critical');
-    expect(prompt).toContain('important');
-    expect(prompt).toContain('minor');
+  it('작업 결과물은 user에 포함한다', () => {
+    const { user } = buildTaskReviewPrompt(SAMPLE_TEAM[0], task, '## API 엔드포인트\nGET /users');
+    expect(user).toContain('GET /users');
   });
 
-  it('JSON 출력 형식을 포함한다', () => {
-    const prompt = buildTaskReviewPrompt(SAMPLE_TEAM[0], task, '결과물');
-    expect(prompt).toContain('verdict');
-    expect(prompt).toContain('approve');
-    expect(prompt).toContain('request-changes');
+  it('심각도 분류 가이드는 system에 포함한다', () => {
+    const { system } = buildTaskReviewPrompt(SAMPLE_TEAM[0], task, '결과물');
+    expect(system).toContain('critical');
+    expect(system).toContain('important');
+    expect(system).toContain('minor');
   });
 
-  it('description이 없으면 기본 텍스트를 표시한다', () => {
+  it('JSON 출력 형식은 system에 포함한다', () => {
+    const { system } = buildTaskReviewPrompt(SAMPLE_TEAM[0], task, '결과물');
+    expect(system).toContain('verdict');
+    expect(system).toContain('approve');
+    expect(system).toContain('request-changes');
+  });
+
+  it('description이 없으면 user에 기본 텍스트를 표시한다', () => {
     const taskNoDesc = { id: 'task-1', title: 'API 설계', assignee: 'backend' };
-    const prompt = buildTaskReviewPrompt(SAMPLE_TEAM[0], taskNoDesc, '결과물');
-    expect(prompt).toContain('(설명 없음)');
+    const { user } = buildTaskReviewPrompt(SAMPLE_TEAM[0], taskNoDesc, '결과물');
+    expect(user).toContain('(설명 없음)');
+  });
+
+  it('system은 같은 리뷰어라면 다른 태스크에도 동일하다 (캐시 안정성)', () => {
+    const task2 = { id: 'task-2', title: '다른 작업', assignee: 'frontend', description: '설명' };
+    const { system: s1 } = buildTaskReviewPrompt(SAMPLE_TEAM[0], task, '결과물A');
+    const { system: s2 } = buildTaskReviewPrompt(SAMPLE_TEAM[0], task2, '결과물B');
+    expect(s1).toBe(s2);
   });
 });
 
@@ -457,7 +472,21 @@ describe('buildRevisionPrompt', () => {
   const task = { id: 'task-1', title: 'API 설계' };
   const implementer = SAMPLE_TEAM[1]; // backend
 
-  it('구현자 정보를 포함한다', () => {
+  it('이슈가 있으면 { system, user } 객체를 반환한다', () => {
+    const reviews = [
+      {
+        verdict: 'request-changes',
+        issues: [{ severity: 'critical', description: 'SQL 인젝션' }],
+      },
+    ];
+    const result = buildRevisionPrompt(task, implementer, reviews);
+    expect(result).toHaveProperty('system');
+    expect(result).toHaveProperty('user');
+    expect(typeof result.system).toBe('string');
+    expect(typeof result.user).toBe('string');
+  });
+
+  it('구현자 정보는 system에 포함한다', () => {
     const reviews = [
       {
         verdict: 'request-changes',
@@ -466,12 +495,12 @@ describe('buildRevisionPrompt', () => {
         ],
       },
     ];
-    const prompt = buildRevisionPrompt(task, implementer, reviews);
-    expect(prompt).toContain('도윤');
-    expect(prompt).toContain('Backend Developer');
+    const { system } = buildRevisionPrompt(task, implementer, reviews);
+    expect(system).toContain('도윤');
+    expect(system).toContain('Backend Developer');
   });
 
-  it('critical/important 이슈만 포함한다', () => {
+  it('critical/important 이슈는 user에 포함한다', () => {
     const reviews = [
       {
         verdict: 'request-changes',
@@ -482,10 +511,10 @@ describe('buildRevisionPrompt', () => {
         ],
       },
     ];
-    const prompt = buildRevisionPrompt(task, implementer, reviews);
-    expect(prompt).toContain('보안 이슈');
-    expect(prompt).toContain('테스트 부족');
-    expect(prompt).not.toContain('코드 스타일');
+    const { user } = buildRevisionPrompt(task, implementer, reviews);
+    expect(user).toContain('보안 이슈');
+    expect(user).toContain('테스트 부족');
+    expect(user).not.toContain('코드 스타일');
   });
 
   it('빈 리뷰 배열이면 빈 문자열을 반환한다', () => {
@@ -497,11 +526,11 @@ describe('buildRevisionPrompt', () => {
     const reviews = [
       { verdict: 'approve', issues: [{ severity: 'minor', description: '사소한 이슈' }] },
     ];
-    const prompt = buildRevisionPrompt(task, implementer, reviews);
-    expect(prompt).toBe('');
+    const result = buildRevisionPrompt(task, implementer, reviews);
+    expect(result).toBe('');
   });
 
-  it('수정 방안(suggestion)이 있으면 포함한다', () => {
+  it('수정 방안(suggestion)이 있으면 user에 포함한다', () => {
     const reviews = [
       {
         verdict: 'request-changes',
@@ -510,18 +539,18 @@ describe('buildRevisionPrompt', () => {
         ],
       },
     ];
-    const prompt = buildRevisionPrompt(task, implementer, reviews);
-    expect(prompt).toContain('입력값 이스케이프 처리');
+    const { user } = buildRevisionPrompt(task, implementer, reviews);
+    expect(user).toContain('입력값 이스케이프 처리');
   });
 
-  it('여러 리뷰에서 이슈를 합산한다', () => {
+  it('여러 리뷰에서 이슈를 user에서 합산한다', () => {
     const reviews = [
       { verdict: 'request-changes', issues: [{ severity: 'critical', description: '이슈1' }] },
       { verdict: 'request-changes', issues: [{ severity: 'important', description: '이슈2' }] },
     ];
-    const prompt = buildRevisionPrompt(task, implementer, reviews);
-    expect(prompt).toContain('이슈1');
-    expect(prompt).toContain('이슈2');
+    const { user } = buildRevisionPrompt(task, implementer, reviews);
+    expect(user).toContain('이슈1');
+    expect(user).toContain('이슈2');
   });
 
   it('issues 필드가 없는 리뷰도 처리한다', () => {
@@ -529,20 +558,20 @@ describe('buildRevisionPrompt', () => {
       { verdict: 'request-changes' },
       { verdict: 'request-changes', issues: [{ severity: 'critical', description: '실제 이슈' }] },
     ];
-    const prompt = buildRevisionPrompt(task, implementer, reviews);
-    expect(prompt).toContain('실제 이슈');
+    const { user } = buildRevisionPrompt(task, implementer, reviews);
+    expect(user).toContain('실제 이슈');
   });
 
   it('failureContext 없이 호출하면 하위 호환된다', () => {
     const reviews = [
       { verdict: 'request-changes', issues: [{ severity: 'critical', description: '이슈' }] },
     ];
-    const prompt = buildRevisionPrompt(task, implementer, reviews);
-    expect(prompt).not.toContain('수정 이력');
-    expect(prompt).toContain('이슈');
+    const { user } = buildRevisionPrompt(task, implementer, reviews);
+    expect(user).not.toContain('수정 이력');
+    expect(user).toContain('이슈');
   });
 
-  it('failureContext가 있으면 시도 차수를 포함한다', () => {
+  it('failureContext가 있으면 user에 시도 차수를 포함한다', () => {
     const reviews = [
       { verdict: 'request-changes', issues: [{ severity: 'critical', description: '보안 이슈' }] },
     ];
@@ -554,14 +583,14 @@ describe('buildRevisionPrompt', () => {
         { attempt: 1, issues: [{ description: '이전 보안 이슈', category: 'security' }] },
       ],
     };
-    const prompt = buildRevisionPrompt(task, implementer, reviews, failureContext);
-    expect(prompt).toContain('시도 2/2');
-    expect(prompt).toContain('이전 시도');
-    expect(prompt).toContain('시도 1');
-    expect(prompt).toContain('이전 시도에서 해결되지 않은 이슈에 주의');
+    const { user } = buildRevisionPrompt(task, implementer, reviews, failureContext);
+    expect(user).toContain('시도 2/2');
+    expect(user).toContain('이전 시도');
+    expect(user).toContain('시도 1');
+    expect(user).toContain('이전 시도에서 해결되지 않은 이슈에 주의');
   });
 
-  it('failureContext에 이전 시도가 없으면 이전 시도 섹션을 생략한다', () => {
+  it('failureContext에 이전 시도가 없으면 user에서 이전 시도 섹션을 생략한다', () => {
     const reviews = [
       { verdict: 'request-changes', issues: [{ severity: 'critical', description: '이슈' }] },
     ];
@@ -571,18 +600,18 @@ describe('buildRevisionPrompt', () => {
       issues: [{ description: '이슈', severity: 'critical', category: 'logic' }],
       previousAttempts: [],
     };
-    const prompt = buildRevisionPrompt(task, implementer, reviews, failureContext);
-    expect(prompt).toContain('시도 1/2');
-    expect(prompt).not.toContain('이전 시도');
-    expect(prompt).toContain('문제 유형 분포');
+    const { user } = buildRevisionPrompt(task, implementer, reviews, failureContext);
+    expect(user).toContain('시도 1/2');
+    expect(user).not.toContain('이전 시도');
+    expect(user).toContain('문제 유형 분포');
   });
 
-  it('failureContext가 null이면 무시한다', () => {
+  it('failureContext가 null이면 user에 수정 이력이 없다', () => {
     const reviews = [
       { verdict: 'request-changes', issues: [{ severity: 'critical', description: '이슈' }] },
     ];
-    const prompt = buildRevisionPrompt(task, implementer, reviews, null);
-    expect(prompt).not.toContain('수정 이력');
+    const { user } = buildRevisionPrompt(task, implementer, reviews, null);
+    expect(user).not.toContain('수정 이력');
   });
 });
 
@@ -718,15 +747,15 @@ describe('checkQualityGate important 경고', () => {
 });
 
 describe('buildRevisionPrompt 최종 시도 경고', () => {
-  it('최종 시도 시 경고 문구를 포함한다', () => {
+  it('최종 시도 시 경고 문구를 user에 포함한다', () => {
     const task = { id: 'task-1', title: '구현' };
     const implementer = { emoji: '', displayName: '풀스택', role: 'fullstack' };
     const reviews = [
       { issues: [{ severity: 'critical', description: '보안 취약점', suggestion: '수정 필요' }] },
     ];
     const failureContext = { attempt: 2, maxAttempts: 2, previousAttempts: [], issues: [] };
-    const prompt = buildRevisionPrompt(task, implementer, reviews, failureContext);
-    expect(prompt).toContain('마지막');
+    const { user } = buildRevisionPrompt(task, implementer, reviews, failureContext);
+    expect(user).toContain('마지막');
   });
 });
 
@@ -734,7 +763,7 @@ describe('buildRevisionPrompt ceoGuidance', () => {
   const task = { id: 'task-1', title: 'API 설계' };
   const implementer = { displayName: '도윤', role: 'Backend Developer' };
 
-  it('ceoGuidance가 있으면 CEO 지침 섹션을 포함한다', () => {
+  it('ceoGuidance가 있으면 user에 CEO 지침 섹션을 포함한다', () => {
     const reviews = [{ issues: [{ severity: 'critical', description: '보안 이슈' }] }];
     const failureContext = {
       attempt: 1,
@@ -743,13 +772,13 @@ describe('buildRevisionPrompt ceoGuidance', () => {
       previousAttempts: [],
       ceoGuidance: 'JWT 인증 대신 OAuth2를 사용하세요',
     };
-    const prompt = buildRevisionPrompt(task, implementer, reviews, failureContext);
-    expect(prompt).toContain('CEO 지침');
-    expect(prompt).toContain('JWT 인증 대신 OAuth2를 사용하세요');
-    expect(prompt).toContain('최우선으로 반영');
+    const { user } = buildRevisionPrompt(task, implementer, reviews, failureContext);
+    expect(user).toContain('CEO 지침');
+    expect(user).toContain('JWT 인증 대신 OAuth2를 사용하세요');
+    expect(user).toContain('최우선으로 반영');
   });
 
-  it('ceoGuidance가 없으면 CEO 지침 섹션을 생략한다', () => {
+  it('ceoGuidance가 없으면 user에 CEO 지침 섹션을 생략한다', () => {
     const reviews = [{ issues: [{ severity: 'critical', description: '이슈' }] }];
     const failureContext = {
       attempt: 1,
@@ -757,8 +786,8 @@ describe('buildRevisionPrompt ceoGuidance', () => {
       issues: [],
       previousAttempts: [],
     };
-    const prompt = buildRevisionPrompt(task, implementer, reviews, failureContext);
-    expect(prompt).not.toContain('CEO 지침');
+    const { user } = buildRevisionPrompt(task, implementer, reviews, failureContext);
+    expect(user).not.toContain('CEO 지침');
   });
 });
 
@@ -766,23 +795,23 @@ describe('buildRevisionPrompt with acceptanceCriteria', () => {
   const task = { id: 'task-1', title: 'API 설계' };
   const implementer = { displayName: '도윤', role: 'Backend Developer' };
 
-  it('acceptanceCriteria가 있으면 수락 기준 섹션을 포함한다', () => {
+  it('acceptanceCriteria가 있으면 user에 수락 기준 섹션을 포함한다', () => {
     const reviews = [{ issues: [{ severity: 'critical', description: '보안 이슈' }] }];
     const ac = [{ id: 'ac-1', description: 'JWT 인증이 적용되어야 한다', status: 'pending' }];
-    const prompt = buildRevisionPrompt(task, implementer, reviews, null, ac);
-    expect(prompt).toContain('수락 기준 (반드시 충족)');
+    const { user } = buildRevisionPrompt(task, implementer, reviews, null, ac);
+    expect(user).toContain('수락 기준 (반드시 충족)');
   });
 
-  it('acceptanceCriteria가 null이면 수락 기준 섹션을 생략한다', () => {
+  it('acceptanceCriteria가 null이면 user에 수락 기준 섹션을 생략한다', () => {
     const reviews = [{ issues: [{ severity: 'critical', description: '이슈' }] }];
-    const prompt = buildRevisionPrompt(task, implementer, reviews, null, null);
-    expect(prompt).not.toContain('수락 기준 (반드시 충족)');
+    const { user } = buildRevisionPrompt(task, implementer, reviews, null, null);
+    expect(user).not.toContain('수락 기준 (반드시 충족)');
   });
 
-  it('acceptanceCriteria가 빈 배열이면 수락 기준 섹션을 생략한다', () => {
+  it('acceptanceCriteria가 빈 배열이면 user에 수락 기준 섹션을 생략한다', () => {
     const reviews = [{ issues: [{ severity: 'critical', description: '이슈' }] }];
-    const prompt = buildRevisionPrompt(task, implementer, reviews, null, []);
-    expect(prompt).not.toContain('수락 기준 (반드시 충족)');
+    const { user } = buildRevisionPrompt(task, implementer, reviews, null, []);
+    expect(user).not.toContain('수락 기준 (반드시 충족)');
   });
 });
 
@@ -790,23 +819,21 @@ describe('buildTaskReviewPrompt taskOutput truncation', () => {
   const reviewer = SAMPLE_TEAM[0]; // cto
   const task = { id: 'task-1', title: 'API 설계', assignee: 'backend', description: '설명' };
 
-  it('3000자 이하 taskOutput은 그대로 포함한다', () => {
+  it('3000자 이하 taskOutput은 user에 그대로 포함한다', () => {
     const shortOutput = 'a'.repeat(100);
-    const prompt = buildTaskReviewPrompt(reviewer, task, shortOutput);
-    expect(prompt).toContain(shortOutput);
+    const { user } = buildTaskReviewPrompt(reviewer, task, shortOutput);
+    expect(user).toContain(shortOutput);
   });
 
-  it('3000자 초과 taskOutput은 truncate한다', () => {
+  it('3000자 초과 taskOutput은 user에서 truncate한다', () => {
     const longOutput = 'x'.repeat(4000);
-    const prompt = buildTaskReviewPrompt(reviewer, task, longOutput);
-    expect(prompt).toContain('...(truncated)');
-    // truncate된 내용이 원본보다 짧아야 한다
-    const outputSection = prompt.split('## 작업 결과물\n')[1].split('\n\n## 리뷰 지시사항')[0];
-    expect(outputSection.length).toBeLessThan(longOutput.length);
+    const { user } = buildTaskReviewPrompt(reviewer, task, longOutput);
+    expect(user).toContain('...(truncated)');
+    expect(user.length).toBeLessThan(longOutput.length + 500); // user 전체가 원본보다 훨씬 짧아야 함
   });
 
-  it('taskOutput이 null이면 빈 문자열로 처리한다', () => {
-    const prompt = buildTaskReviewPrompt(reviewer, task, null);
-    expect(prompt).toContain('## 작업 결과물');
+  it('taskOutput이 null이면 user에 빈 결과물 섹션이 있다', () => {
+    const { user } = buildTaskReviewPrompt(reviewer, task, null);
+    expect(user).toContain('## 작업 결과물');
   });
 });

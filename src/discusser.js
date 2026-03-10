@@ -58,12 +58,12 @@ export class Discusser {
         const allAgents = tiers.flat();
         const allResults = await Promise.all(
           allAgents.map(async (member) => {
-            const prompt = buildAgentAnalysisPrompt(project, member, {
+            const { system, user } = buildAgentAnalysisPrompt(project, member, {
               round,
               previousSynthesis: lastPlan,
               feedbackForMe: feedbackByRole[member.roleId],
             });
-            const response = await this._call(member.roleId, prompt);
+            const response = await this._call(member.roleId, user, system);
             return {
               roleId: member.roleId,
               role: member.role,
@@ -78,13 +78,13 @@ export class Discusser {
         for (const tier of tiers) {
           const tierResults = await Promise.all(
             tier.map(async (member) => {
-              const prompt = buildAgentAnalysisPrompt(project, member, {
+              const { system, user } = buildAgentAnalysisPrompt(project, member, {
                 round,
                 previousSynthesis: lastPlan,
                 peerOutputs: analyses,
                 feedbackForMe: feedbackByRole[member.roleId],
               });
-              const response = await this._call(member.roleId, prompt);
+              const response = await this._call(member.roleId, user, system);
               return {
                 roleId: member.roleId,
                 role: member.role,
@@ -98,15 +98,19 @@ export class Discusser {
       }
 
       // 2) 종합 — 기획서 생성
-      const synthesisPrompt = buildSynthesisPrompt(project, analyses, round);
-      const planResponse = await this._call('synthesis', synthesisPrompt);
+      const { system: synthSystem, user: synthUser } = buildSynthesisPrompt(
+        project,
+        analyses,
+        round,
+      );
+      const planResponse = await this._call('synthesis', synthUser, synthSystem);
       lastPlan = planResponse.text;
 
       // 3) 전원 리뷰 (병렬)
       const reviews = await Promise.all(
         agents.map(async (member) => {
-          const prompt = buildReviewPrompt(member, lastPlan, round);
-          const response = await this._call(member.roleId, prompt);
+          const { system, user } = buildReviewPrompt(member, lastPlan, round);
+          const response = await this._call(member.roleId, user, system);
           return { roleId: member.roleId, text: response.text };
         }),
       );
@@ -169,11 +173,15 @@ export class Discusser {
   /**
    * LLM을 호출하고 훅을 실행한다.
    * @param {string} roleId - 역할 ID
-   * @param {string} prompt - 프롬프트
+   * @param {string} prompt - user 프롬프트
+   * @param {string} [systemMessage] - system 프롬프트 (프롬프트 캐싱용)
    * @returns {Promise<{ text: string, provider: string, model: string, tokenCount: number }>}
    */
-  async _call(roleId, prompt) {
-    const response = await callLLM(this.provider, prompt, { model: this.model });
+  async _call(roleId, prompt, systemMessage) {
+    const response = await callLLM(this.provider, prompt, {
+      model: this.model,
+      ...(systemMessage ? { systemMessage } : {}),
+    });
     await this.hooks.onAgentCall?.(roleId, response);
     return response;
   }

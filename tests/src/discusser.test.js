@@ -143,7 +143,7 @@ describe('Discusser', () => {
 
   it('비승인 에이전트의 피드백이 다음 라운드에 주입된다', async () => {
     let round = 0;
-    callLLM.mockImplementation(async (provider, prompt) => {
+    callLLM.mockImplementation(async (_provider, prompt) => {
       // 리뷰 응답: 1라운드에서 CTO만 거부
       if (prompt.includes('리뷰 대상')) {
         if (round === 0 && prompt.includes('CTO')) {
@@ -185,8 +185,10 @@ describe('Discusser', () => {
 
   it('parallelTiers=false일 때 tier별로 그룹화하여 순차 호출한다', async () => {
     const callOrder = [];
-    callLLM.mockImplementation(async (provider, prompt) => {
-      const match = prompt.match(/\*\*(\w+)\*\*/);
+    callLLM.mockImplementation(async (_provider, prompt, opts) => {
+      // 역할명은 system(opts.systemMessage)에 있음 — user(prompt)에는 없음
+      const searchTarget = (opts && opts.systemMessage) || prompt;
+      const match = searchTarget.match(/\*\*(\w+)\*\*/);
       if (match) callOrder.push(match[1]);
       return {
         text: '```json\n{"approved": true, "feedback": "OK", "issues": []}\n```',
@@ -221,8 +223,10 @@ describe('Discusser', () => {
 
   it('parallelTiers=true (기본값)일 때 모든 에이전트를 동시에 호출한다', async () => {
     const callTimes = {};
-    callLLM.mockImplementation(async (provider, prompt) => {
-      const match = prompt.match(/\*\*(\w+)\*\*/);
+    callLLM.mockImplementation(async (_provider, prompt, opts) => {
+      // 역할명은 system(opts.systemMessage)에 있음 — user(prompt)에는 없음
+      const searchTarget = (opts && opts.systemMessage) || prompt;
+      const match = searchTarget.match(/\*\*(\w+)\*\*/);
       if (match) callTimes[match[1]] = Date.now();
       return {
         text: '```json\n{"approved": true, "feedback": "OK", "issues": []}\n```',
@@ -256,7 +260,7 @@ describe('Discusser', () => {
 
   it('parallelTiers=true일 때 모든 에이전트 분석 결과가 종합에 포함된다', async () => {
     let synthesisPrompt = '';
-    callLLM.mockImplementation(async (provider, prompt) => {
+    callLLM.mockImplementation(async (_provider, prompt) => {
       // 종합 프롬프트 캡처
       if (prompt.includes('팀원 분석 결과')) {
         synthesisPrompt = prompt;

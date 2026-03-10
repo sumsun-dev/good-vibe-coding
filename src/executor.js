@@ -275,8 +275,11 @@ export class Executor {
 
       const reviews = await Promise.all(
         reviewers.map(async (r) => {
-          const prompt = buildTaskReviewPrompt(r, task, taskOutput);
-          const response = await callLLM(this.provider, prompt, { model: this.model });
+          const { system, user } = buildTaskReviewPrompt(r, task, taskOutput);
+          const response = await callLLM(this.provider, user, {
+            model: this.model,
+            systemMessage: system,
+          });
           const parsed = parseTaskReview(response.text);
           let reviewResult = { reviewerId: r.roleId, text: response.text, ...parsed };
 
@@ -370,9 +373,14 @@ export class Executor {
     const taskResults = await Promise.all(
       tasks.map(async (task) => {
         const implementer = teamMap.get(task.assignee) || {};
-        const prompt = buildRevisionPrompt(task, implementer, reviews, failureContext);
-        if (!prompt) return { taskId: task.id, output: '' };
-        const response = await callLLM(this.provider, prompt, { model: this.model });
+        const revisionResult = buildRevisionPrompt(task, implementer, reviews, failureContext);
+        if (!revisionResult) return { taskId: task.id, output: '' };
+        // buildRevisionPrompt는 이슈가 있으면 { system, user }를 반환
+        const { system, user } = revisionResult;
+        const response = await callLLM(this.provider, user, {
+          model: this.model,
+          systemMessage: system,
+        });
         return { taskId: task.id, output: response.text };
       }),
     );

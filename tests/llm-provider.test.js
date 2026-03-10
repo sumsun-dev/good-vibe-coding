@@ -56,6 +56,59 @@ describe('buildProviderRequest', () => {
       '지원하지 않는 프로바이더',
     );
   });
+
+  // systemMessage 옵션 테스트
+
+  it('Claude: systemMessage 제공 시 system 배열에 cache_control을 포함한다', () => {
+    const req = buildProviderRequest('claude', prompt, 'claude-sonnet-4-6', {
+      systemMessage: '당신은 유용한 어시스턴트입니다.',
+    });
+    expect(req.body.system).toBeDefined();
+    expect(req.body.system).toHaveLength(1);
+    expect(req.body.system[0].type).toBe('text');
+    expect(req.body.system[0].text).toBe('당신은 유용한 어시스턴트입니다.');
+    expect(req.body.system[0].cache_control).toEqual({ type: 'ephemeral' });
+    expect(req.body.messages[0].role).toBe('user');
+    expect(req.body.messages[0].content).toBe(prompt);
+  });
+
+  it('Claude: systemMessage 없으면 system 필드가 없다 (하위 호환)', () => {
+    const req = buildProviderRequest('claude', prompt, 'claude-sonnet-4-6');
+    expect(req.body.system).toBeUndefined();
+    expect(req.body.messages[0].role).toBe('user');
+    expect(req.body.messages[0].content).toBe(prompt);
+  });
+
+  it('OpenAI: systemMessage 제공 시 system role 메시지를 첫 번째로 추가한다', () => {
+    const req = buildProviderRequest('openai', prompt, 'gpt-4o', {
+      systemMessage: '당신은 전문가입니다.',
+    });
+    expect(req.body.messages).toHaveLength(2);
+    expect(req.body.messages[0].role).toBe('system');
+    expect(req.body.messages[0].content).toBe('당신은 전문가입니다.');
+    expect(req.body.messages[1].role).toBe('user');
+    expect(req.body.messages[1].content).toBe(prompt);
+  });
+
+  it('OpenAI: systemMessage 없으면 user 메시지만 포함한다 (하위 호환)', () => {
+    const req = buildProviderRequest('openai', prompt, 'gpt-4o');
+    expect(req.body.messages).toHaveLength(1);
+    expect(req.body.messages[0].role).toBe('user');
+  });
+
+  it('Gemini: systemMessage 제공 시 systemInstruction을 설정한다', () => {
+    const req = buildProviderRequest('gemini', prompt, 'gemini-2.0-flash', {
+      systemMessage: '시스템 지침입니다.',
+    });
+    expect(req.body.systemInstruction).toBeDefined();
+    expect(req.body.systemInstruction.parts[0].text).toBe('시스템 지침입니다.');
+    expect(req.body.contents[0].parts[0].text).toBe(prompt);
+  });
+
+  it('Gemini: systemMessage 없으면 systemInstruction 필드가 없다 (하위 호환)', () => {
+    const req = buildProviderRequest('gemini', prompt, 'gemini-2.0-flash');
+    expect(req.body.systemInstruction).toBeUndefined();
+  });
 });
 
 // --- buildAuthHeaders ---
@@ -152,6 +205,34 @@ describe('parseProviderResponse', () => {
     expect(() => parseProviderResponse('unknown', { text: 'test' }, 'model')).toThrow(
       '지원하지 않는 프로바이더 응답',
     );
+  });
+
+  it('Claude: cache_creation_input_tokens와 cache_read_input_tokens를 파싱한다', () => {
+    const data = {
+      content: [{ type: 'text', text: '캐시 응답' }],
+      model: 'claude-sonnet-4-6',
+      usage: {
+        input_tokens: 100,
+        output_tokens: 50,
+        cache_creation_input_tokens: 200,
+        cache_read_input_tokens: 80,
+      },
+    };
+    const result = parseProviderResponse('claude', data, 'claude-sonnet-4-6');
+    expect(result.cacheCreationInputTokens).toBe(200);
+    expect(result.cacheReadInputTokens).toBe(80);
+    expect(result.tokenCount).toBe(150);
+  });
+
+  it('Claude: 캐시 토큰 없을 때 0으로 기본값 처리한다', () => {
+    const data = {
+      content: [{ type: 'text', text: '일반 응답' }],
+      model: 'claude-sonnet-4-6',
+      usage: { input_tokens: 10, output_tokens: 20 },
+    };
+    const result = parseProviderResponse('claude', data, 'claude-sonnet-4-6');
+    expect(result.cacheCreationInputTokens).toBe(0);
+    expect(result.cacheReadInputTokens).toBe(0);
   });
 });
 
@@ -301,6 +382,92 @@ describe('callLLM', () => {
 
     await expect(callLLM('claude', '안녕')).rejects.toThrow('API 호출 실패 (401)');
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('systemMessage 옵션으로 Claude 프로바이더를 호출하면 system 배열이 포함된 요청을 보낸다', async () => {
+    mockLoadAuth.mockResolvedValue({ type: 'api-key', apiKey: 'sk-ant-test' });
+    const mockResponse = {
+      ok: true,
+      json: async () => ({
+        content: [{ type: 'text', text: '시스템 응답' }],
+        model: 'claude-sonnet-4-6',
+        usage: {
+          input_tokens: 10,
+          output_tokens: 20,
+          cache_creation_input_tokens: 500,
+          cache_read_input_tokens: 0,
+        },
+      }),
+    };
+    const fetchMock = vi.fn().mockResolvedValue(mockResponse);
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await callLLM('claude', '사용자 질문', {
+      systemMessage: '당신은 전문가입니다.',
+    });
+
+    expect(result.text).toBe('시스템 응답');
+    expect(result.cacheCreationInputTokens).toBe(500);
+    expect(result.cacheReadInputTokens).toBe(0);
+
+    const [, fetchOptions] = fetchMock.mock.calls[0];
+    const body = JSON.parse(fetchOptions.body);
+    expect(body.system).toBeDefined();
+    expect(body.system[0].cache_control).toEqual({ type: 'ephemeral' });
+    expect(body.system[0].text).toBe('당신은 전문가입니다.');
+    expect(body.messages[0].content).toBe('사용자 질문');
+  });
+
+  it('systemMessage 옵션으로 OpenAI 프로바이더를 호출하면 system role 메시지가 포함된 요청을 보낸다', async () => {
+    mockLoadAuth.mockResolvedValue({ type: 'api-key', apiKey: 'sk-test' });
+    const mockResponse = {
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: 'OpenAI 시스템 응답' } }],
+        model: 'gpt-4o',
+        usage: { total_tokens: 60, prompt_tokens: 30, completion_tokens: 30 },
+      }),
+    };
+    const fetchMock = vi.fn().mockResolvedValue(mockResponse);
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await callLLM('openai', '사용자 질문', {
+      systemMessage: '당신은 분석가입니다.',
+    });
+
+    expect(result.text).toBe('OpenAI 시스템 응답');
+
+    const [, fetchOptions] = fetchMock.mock.calls[0];
+    const body = JSON.parse(fetchOptions.body);
+    expect(body.messages).toHaveLength(2);
+    expect(body.messages[0].role).toBe('system');
+    expect(body.messages[0].content).toBe('당신은 분석가입니다.');
+    expect(body.messages[1].role).toBe('user');
+    expect(body.messages[1].content).toBe('사용자 질문');
+  });
+
+  it('systemMessage 없이 호출하면 기존과 동일하게 동작한다 (하위 호환)', async () => {
+    mockLoadAuth.mockResolvedValue({ type: 'api-key', apiKey: 'sk-ant-test' });
+    const mockResponse = {
+      ok: true,
+      json: async () => ({
+        content: [{ type: 'text', text: '일반 응답' }],
+        model: 'claude-sonnet-4-6',
+        usage: { input_tokens: 5, output_tokens: 10 },
+      }),
+    };
+    const fetchMock = vi.fn().mockResolvedValue(mockResponse);
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await callLLM('claude', '안녕하세요');
+
+    expect(result.text).toBe('일반 응답');
+
+    const [, fetchOptions] = fetchMock.mock.calls[0];
+    const body = JSON.parse(fetchOptions.body);
+    expect(body.system).toBeUndefined();
+    expect(body.messages).toHaveLength(1);
+    expect(body.messages[0].role).toBe('user');
   });
 
   it('3회 실패 시 최종 에러를 던진다 (#29)', { timeout: 30000 }, async () => {

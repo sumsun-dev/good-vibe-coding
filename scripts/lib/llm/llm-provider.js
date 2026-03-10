@@ -43,8 +43,9 @@ export const SUPPORTED_PROVIDERS = ['claude', 'openai', 'gemini'];
 /**
  * 통합 LLM 호출 인터페이스.
  * @param {string} providerId - 'claude' | 'openai' | 'gemini'
- * @param {string} prompt - 프롬프트 텍스트
- * @param {object} options - { model, maxTokens, timeout }
+ * @param {string} prompt - 사용자 메시지 텍스트
+ * @param {object} options - { model, maxTokens, timeout, systemMessage }
+ * @param {string} [options.systemMessage] - 시스템 메시지 (Claude: cache_control 적용, OpenAI: system role, Gemini: systemInstruction)
  * @returns {Promise<{ text: string, provider: string, model: string, tokenCount: number }>}
  */
 export async function callLLM(providerId, prompt, options = {}) {
@@ -135,30 +136,47 @@ export async function callLLM(providerId, prompt, options = {}) {
  * @param {string} prompt
  * @param {string} model
  * @param {object} options
+ * @param {string} [options.systemMessage] - 시스템 메시지
  * @returns {{ url: string, body: object }}
  */
 export function buildProviderRequest(providerId, prompt, model, options = {}) {
   const maxTokens = options.maxTokens || config.llm.defaultMaxTokens;
+  const { systemMessage } = options;
 
   switch (providerId) {
-    case 'claude':
-    case 'openai':
+    case 'claude': {
+      const body = { model, max_tokens: maxTokens };
+      if (systemMessage) {
+        body.system = [{ type: 'text', text: systemMessage, cache_control: { type: 'ephemeral' } }];
+      }
+      body.messages = [{ role: 'user', content: prompt }];
+      return { url: PROVIDER_ENDPOINTS.claude, body };
+    }
+    case 'openai': {
+      const messages = systemMessage
+        ? [
+            { role: 'system', content: systemMessage },
+            { role: 'user', content: prompt },
+          ]
+        : [{ role: 'user', content: prompt }];
       return {
-        url: PROVIDER_ENDPOINTS[providerId],
-        body: {
-          model,
-          max_tokens: maxTokens,
-          messages: [{ role: 'user', content: prompt }],
-        },
+        url: PROVIDER_ENDPOINTS.openai,
+        body: { model, max_tokens: maxTokens, messages },
       };
-    case 'gemini':
+    }
+    case 'gemini': {
+      const body = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: maxTokens },
+      };
+      if (systemMessage) {
+        body.systemInstruction = { parts: [{ text: systemMessage }] };
+      }
       return {
         url: `${PROVIDER_ENDPOINTS.gemini}/${model}:generateContent`,
-        body: {
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: maxTokens },
-        },
+        body,
       };
+    }
     default:
       throw inputError(`지원하지 않는 프로바이더: ${providerId}`);
   }
@@ -203,6 +221,8 @@ export function parseProviderResponse(providerId, data, model) {
         tokenCount: (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0),
         inputTokens: data.usage?.input_tokens || 0,
         outputTokens: data.usage?.output_tokens || 0,
+        cacheCreationInputTokens: data.usage?.cache_creation_input_tokens || 0,
+        cacheReadInputTokens: data.usage?.cache_read_input_tokens || 0,
       };
     case 'openai':
       return {

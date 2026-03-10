@@ -63,18 +63,11 @@ export function selectReviewers(task, team, previousReviewerIds = []) {
  * @param {object} reviewer - 리뷰어 팀원 정보
  * @param {object} task - 태스크 정보
  * @param {string} taskOutput - 태스크 실행 결과물
- * @returns {string} 리뷰 프롬프트
+ * @param {Array|null} [acceptanceCriteria=null] - 수락 기준
+ * @returns {{ system: string, user: string }} system은 리뷰어 역할+형식(정적), user는 태스크+결과물(동적)
  */
 export function buildTaskReviewPrompt(reviewer, task, taskOutput, acceptanceCriteria = null) {
   const reviewDomains = reviewer.reviewDomains || reviewer.skills || [];
-
-  let acSection = '';
-  if (acceptanceCriteria && acceptanceCriteria.length > 0) {
-    const formatted = formatCriteriaForPrompt(acceptanceCriteria);
-    if (formatted && typeof formatted === 'string') {
-      acSection = `\n\n## 수락 기준 검증\n${formatted}\n`;
-    }
-  }
 
   const MAX_REVIEW_OUTPUT = 3000;
   const truncatedOutput =
@@ -82,20 +75,12 @@ export function buildTaskReviewPrompt(reviewer, task, taskOutput, acceptanceCrit
       ? truncateText(taskOutput, MAX_REVIEW_OUTPUT, '\n...(truncated)')
       : taskOutput || '';
 
-  return `당신은 **${reviewer.displayName}** (${reviewer.role})입니다.
+  // system: 리뷰어 역할 + 전문 분야 + 심각도 정의 + JSON 출력 형식 (리뷰어별 고정, 캐싱 가능)
+  const system = `당신은 **${reviewer.displayName}** (${reviewer.role})입니다.
 다른 팀원의 작업 결과를 리뷰합니다.
 
 ## 당신의 전문 분야
 - ${reviewDomains.join(', ')}
-
-## 리뷰 대상 작업
-- ID: ${task.id}
-- 제목: ${task.title}
-- 담당자: ${task.assignee}
-- 설명: ${task.description || '(설명 없음)'}
-
-## 작업 결과물
-${truncatedOutput}${acSection}
 
 ## 리뷰 지시사항
 
@@ -122,6 +107,25 @@ ${truncatedOutput}${acSection}
 \`\`\`
 
 - critical 이슈가 있으면 반드시 verdict를 "request-changes"로 설정`;
+
+  // user: 태스크 정보 + 작업 결과물 + 수락 기준 (태스크마다 변경)
+  let user = `## 리뷰 대상 작업
+- ID: ${task.id}
+- 제목: ${task.title}
+- 담당자: ${task.assignee}
+- 설명: ${task.description || '(설명 없음)'}
+
+## 작업 결과물
+${truncatedOutput}`;
+
+  if (acceptanceCriteria && acceptanceCriteria.length > 0) {
+    const formatted = formatCriteriaForPrompt(acceptanceCriteria);
+    if (formatted && typeof formatted === 'string') {
+      user += `\n\n## 수락 기준 검증\n${formatted}\n`;
+    }
+  }
+
+  return { system, user };
 }
 
 /**
@@ -203,7 +207,8 @@ export function checkQualityGate(reviews) {
  * @param {object} implementer - 구현 담당자 팀원 정보
  * @param {Array<{verdict: string, issues: Array}>} reviews - 리뷰 결과 배열
  * @param {object|null} [failureContext=null] - 실패 컨텍스트 (시도 차수, 이전 이력)
- * @returns {string} 수정 프롬프트
+ * @param {Array|null} [acceptanceCriteria=null] - 수락 기준
+ * @returns {{ system: string, user: string } | ''} 이슈가 없으면 빈 문자열 반환
  */
 export function buildRevisionPrompt(
   task,
@@ -225,9 +230,18 @@ export function buildRevisionPrompt(
 
   if (!issuesList) return '';
 
-  let prompt = `당신은 **${implementer.displayName}** (${implementer.role})입니다.
+  // system: 구현자 역할 + 수정 지시사항 (구현자별 고정, 캐싱 가능)
+  const system = `당신은 **${implementer.displayName}** (${implementer.role})입니다.
 
-## 수정 대상 작업
+## 수정 지시사항
+
+위 이슈를 모두 수정하세요.
+- critical 이슈는 반드시 수정
+- important 이슈는 가능한 한 수정
+- 수정 후 각 이슈에 대한 해결 방법을 보고`;
+
+  // user: 태스크 + 리뷰 이슈 + 실패 컨텍스트 + 수락 기준 (수정마다 변경)
+  let user = `## 수정 대상 작업
 - ID: ${task.id}
 - 제목: ${task.title}
 
@@ -238,48 +252,39 @@ ${issuesList}`;
   if (acceptanceCriteria && acceptanceCriteria.length > 0) {
     const formatted = formatCriteriaForPrompt(acceptanceCriteria);
     if (formatted && typeof formatted === 'string') {
-      prompt += `\n\n## 수락 기준 (반드시 충족)\n${formatted}`;
+      user += `\n\n## 수락 기준 (반드시 충족)\n${formatted}`;
     }
   }
 
   if (failureContext) {
     if (failureContext.attempt >= failureContext.maxAttempts) {
-      prompt += `\n\n**마지막 수정 기회입니다.** 이번에 해결하지 못하면 CEO에게 에스컬레이션됩니다.`;
+      user += `\n\n**마지막 수정 기회입니다.** 이번에 해결하지 못하면 CEO에게 에스컬레이션됩니다.`;
     }
-    prompt += `\n\n## 수정 이력 (시도 ${failureContext.attempt}/${failureContext.maxAttempts})`;
+    user += `\n\n## 수정 이력 (시도 ${failureContext.attempt}/${failureContext.maxAttempts})`;
     if (failureContext.previousAttempts && failureContext.previousAttempts.length > 0) {
-      prompt += '\n\n### 이전 시도';
+      user += '\n\n### 이전 시도';
       for (const prev of failureContext.previousAttempts) {
         const categories = prev.issues
           ? [...new Set(prev.issues.map((i) => i.category))].map(getCategoryLabel).join(', ')
           : '없음';
         const issueCount = prev.issues ? prev.issues.length : 0;
-        prompt += `\n- 시도 ${prev.attempt}: ${issueCount}건 (유형: ${categories})`;
+        user += `\n- 시도 ${prev.attempt}: ${issueCount}건 (유형: ${categories})`;
       }
-      prompt += '\n\n**이전 시도에서 해결되지 않은 이슈에 주의하세요.**';
+      user += '\n\n**이전 시도에서 해결되지 않은 이슈에 주의하세요.**';
     }
     if (failureContext.issues && failureContext.issues.length > 0) {
       const categories = [...new Set(failureContext.issues.map((i) => i.category))].map(
         getCategoryLabel,
       );
-      prompt += `\n\n### 문제 유형 분포: ${categories.join(', ')}`;
+      user += `\n\n### 문제 유형 분포: ${categories.join(', ')}`;
     }
     // CEO 피드백이 있으면 수정 프롬프트에 주입
     if (failureContext.ceoGuidance) {
-      prompt += `\n\n## CEO 지침\n\n${failureContext.ceoGuidance}\n\n**위 지침을 최우선으로 반영하여 수정하세요.**`;
+      user += `\n\n## CEO 지침\n\n${failureContext.ceoGuidance}\n\n**위 지침을 최우선으로 반영하여 수정하세요.**`;
     }
   }
 
-  prompt += `
-
-## 수정 지시사항
-
-위 이슈를 모두 수정하세요.
-- critical 이슈는 반드시 수정
-- important 이슈는 가능한 한 수정
-- 수정 후 각 이슈에 대한 해결 방법을 보고`;
-
-  return prompt;
+  return { system, user };
 }
 
 /**

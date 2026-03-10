@@ -429,10 +429,11 @@ describe('E2E: 오케스트레이션 라운드 (mock)', () => {
       team: DEFAULT_TEAM,
     };
 
-    // 1. 분석 프롬프트 생성
-    const analysisPrompt = buildAgentAnalysisPrompt(project, CTO_MEMBER, {});
-    expect(analysisPrompt).toContain(CTO_MEMBER.displayName);
-    expect(analysisPrompt).toContain(project.name);
+    // 1. 분석 프롬프트 생성 — { system, user } 반환
+    const analysisResult = buildAgentAnalysisPrompt(project, CTO_MEMBER, {});
+    // 팀원 정보(정적)는 system에, 프로젝트 정보(동적)는 user에 있음
+    expect(analysisResult.system).toContain(CTO_MEMBER.displayName);
+    expect(analysisResult.user).toContain(project.name);
 
     // 2. Mock 에이전트 응답
     const agentOutputs = DEFAULT_TEAM.map((member) => ({
@@ -442,13 +443,13 @@ describe('E2E: 오케스트레이션 라운드 (mock)', () => {
       analysis: `${member.displayName}의 분석: 이 프로젝트는 좋은 구조를 가지고 있습니다.`,
     }));
 
-    // 3. 종합 프롬프트
-    const synthesisPrompt = buildSynthesisPrompt(project, agentOutputs, 1);
-    expect(synthesisPrompt).toContain('라운드 1');
+    // 3. 종합 프롬프트 — { system, user } 반환
+    const synthesisResult = buildSynthesisPrompt(project, agentOutputs, 1);
+    expect(synthesisResult.user).toContain('라운드 1');
 
-    // 4. 리뷰 프롬프트
-    const reviewPrompt = buildReviewPrompt(CTO_MEMBER, '종합 기획서 내용', 1);
-    expect(reviewPrompt).toContain(CTO_MEMBER.displayName);
+    // 4. 리뷰 프롬프트 — { system, user } 반환
+    const reviewResult = buildReviewPrompt(CTO_MEMBER, '종합 기획서 내용', 1);
+    expect(reviewResult.system).toContain(CTO_MEMBER.displayName);
 
     // 5. 수렴 확인 (80% 이상 승인)
     const reviews = DEFAULT_TEAM.map((member) => ({

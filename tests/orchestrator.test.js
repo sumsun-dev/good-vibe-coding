@@ -7,6 +7,7 @@ import {
   checkConvergence,
   groupAgentsForParallelDispatch,
   trackConvergenceEvolution,
+  compressPreviousContext,
 } from '../scripts/lib/engine/orchestrator.js';
 
 const SAMPLE_PROJECT = {
@@ -82,99 +83,128 @@ const SAMPLE_TEAM = [
 // --- buildAgentAnalysisPrompt ---
 
 describe('buildAgentAnalysisPrompt', () => {
-  it('프로젝트 정보를 포함한다', () => {
-    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0]);
-    expect(prompt).toContain('텔레그램 봇');
-    expect(prompt).toContain('telegram-bot');
-    expect(prompt).toContain('날씨를 알려주는');
+  it('{ system, user } 객체를 반환한다', () => {
+    const result = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0]);
+    expect(result).toHaveProperty('system');
+    expect(result).toHaveProperty('user');
+    expect(typeof result.system).toBe('string');
+    expect(typeof result.user).toBe('string');
   });
 
-  it('팀원 페르소나 정보를 포함한다', () => {
-    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0]);
-    expect(prompt).toContain('민준');
-    expect(prompt).toContain('CTO');
-    expect(prompt).toContain('전략적이고 큰 그림을 보는');
-    expect(prompt).toContain('확신 있고 명확한 기술 리더 스타일');
+  it('프로젝트 정보는 user에 포함한다', () => {
+    const { user } = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0]);
+    expect(user).toContain('텔레그램 봇');
+    expect(user).toContain('telegram-bot');
+    expect(user).toContain('날씨를 알려주는');
   });
 
-  it('기본 라운드는 1이다', () => {
-    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0]);
-    expect(prompt).toContain('라운드 1');
+  it('팀원 페르소나 정보는 system에 포함한다', () => {
+    const { system } = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0]);
+    expect(system).toContain('민준');
+    expect(system).toContain('CTO');
+    expect(system).toContain('전략적이고 큰 그림을 보는');
+    expect(system).toContain('확신 있고 명확한 기술 리더 스타일');
   });
 
-  it('라운드를 컨텍스트로 전달할 수 있다', () => {
-    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], { round: 3 });
-    expect(prompt).toContain('라운드 3');
+  it('기본 라운드는 1이다 (user에 포함)', () => {
+    const { user } = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0]);
+    expect(user).toContain('라운드 1');
   });
 
-  it('이전 라운드 기획서가 있으면 포함한다', () => {
-    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {
+  it('라운드를 컨텍스트로 전달할 수 있다 (user에 반영)', () => {
+    const { user } = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], { round: 3 });
+    expect(user).toContain('라운드 3');
+  });
+
+  it('이전 라운드 기획서가 있으면 user에 포함한다', () => {
+    const { user } = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {
       previousSynthesis: '## 기획서\n### 기술 스택\nNode.js',
     });
-    expect(prompt).toContain('이전 라운드 기획서');
-    expect(prompt).toContain('Node.js');
+    expect(user).toContain('이전 라운드 기획서');
+    expect(user).toContain('Node.js');
   });
 
-  it('피드백이 있으면 포함한다', () => {
-    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {
+  it('피드백이 있으면 user에 포함한다', () => {
+    const { user } = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {
       feedbackForMe: 'QA: 테스트 전략이 부족합니다',
     });
-    expect(prompt).toContain('다른 팀원의 피드백');
-    expect(prompt).toContain('테스트 전략이 부족합니다');
+    expect(user).toContain('다른 팀원의 피드백');
+    expect(user).toContain('테스트 전략이 부족합니다');
   });
 
   it('skills가 없는 팀원도 처리한다', () => {
     const member = { ...SAMPLE_TEAM[0], skills: undefined };
-    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, member);
-    expect(prompt).toContain('민준');
+    const { system } = buildAgentAnalysisPrompt(SAMPLE_PROJECT, member);
+    expect(system).toContain('민준');
   });
 
-  it('컨텍스트가 비어있으면 기본 분석 프롬프트를 생성한다', () => {
-    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {});
-    expect(prompt).toContain('분석 요청');
-    expect(prompt).not.toContain('이전 라운드');
-    expect(prompt).not.toContain('피드백');
+  it('컨텍스트가 비어있으면 user에 동적 섹션이 없다', () => {
+    const { user } = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {});
+    expect(user).toContain('분석 요청');
+    expect(user).not.toContain('이전 라운드');
+    expect(user).not.toContain('피드백');
   });
 
-  it('모든 컨텍스트 필드가 동시에 있으면 모두 포함한다', () => {
-    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {
+  it('모든 컨텍스트 필드가 동시에 있으면 모두 user에 포함한다', () => {
+    const { user } = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {
       round: 2,
       previousSynthesis: '기획서 내용',
       feedbackForMe: '피드백 내용',
     });
-    expect(prompt).toContain('라운드 2');
-    expect(prompt).toContain('기획서 내용');
-    expect(prompt).toContain('피드백 내용');
+    expect(user).toContain('라운드 2');
+    expect(user).toContain('기획서 내용');
+    expect(user).toContain('피드백 내용');
   });
 
-  it('ceoFeedback이 있으면 CEO 피드백 섹션을 포함한다', () => {
-    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {
+  it('ceoFeedback이 있으면 user에 CEO 피드백 섹션을 포함한다', () => {
+    const { user } = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {
       ceoFeedback: '마이크로서비스 대신 모놀리스로 가주세요',
     });
-    expect(prompt).toContain('CEO 피드백 (최우선)');
-    expect(prompt).toContain('마이크로서비스 대신 모놀리스로 가주세요');
+    expect(user).toContain('CEO 피드백 (최우선)');
+    expect(user).toContain('마이크로서비스 대신 모놀리스로 가주세요');
   });
 
-  it('ceoFeedback이 없으면 CEO 피드백 섹션이 없다', () => {
-    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {});
-    expect(prompt).not.toContain('CEO 피드백');
+  it('ceoFeedback이 없으면 user에 CEO 피드백 섹션이 없다', () => {
+    const { user } = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {});
+    expect(user).not.toContain('CEO 피드백');
   });
 
-  it('messages가 있으면 다른 에이전트 메시지 섹션을 포함한다', () => {
-    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {
+  it('messages가 있으면 user에 다른 에이전트 메시지 섹션을 포함한다', () => {
+    const { user } = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {
       messages: [
         { from: 'qa', type: 'question', content: '보안 검증 방법은?' },
         { from: 'backend', type: 'fyi', content: 'REST API 설계 완료' },
       ],
     });
-    expect(prompt).toContain('다른 에이전트 메시지');
-    expect(prompt).toContain('보안 검증 방법은?');
-    expect(prompt).toContain('REST API 설계 완료');
+    expect(user).toContain('다른 에이전트 메시지');
+    expect(user).toContain('보안 검증 방법은?');
+    expect(user).toContain('REST API 설계 완료');
   });
 
-  it('messages가 비어있으면 메시지 섹션이 없다', () => {
-    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], { messages: [] });
-    expect(prompt).not.toContain('다른 에이전트 메시지');
+  it('messages가 비어있으면 user에 메시지 섹션이 없다', () => {
+    const { user } = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], { messages: [] });
+    expect(user).not.toContain('다른 에이전트 메시지');
+  });
+
+  it('system은 같은 에이전트라면 라운드가 달라도 동일하다 (캐시 안정성)', () => {
+    const { system: system1 } = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {
+      round: 1,
+    });
+    const { system: system2 } = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {
+      round: 2,
+      previousSynthesis: '이전 기획서 내용',
+    });
+    expect(system1).toBe(system2);
+  });
+
+  it('user는 라운드가 다르면 달라진다', () => {
+    const { user: user1 } = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {
+      round: 1,
+    });
+    const { user: user2 } = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {
+      round: 2,
+    });
+    expect(user1).not.toBe(user2);
   });
 });
 
@@ -187,35 +217,43 @@ describe('buildSynthesisPrompt', () => {
     { roleId: 'qa', role: 'QA Engineer', emoji: '', analysis: '테스트 전략 수립' },
   ];
 
-  it('프로젝트 정보를 포함한다', () => {
-    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
-    expect(prompt).toContain('텔레그램 봇');
-    expect(prompt).toContain('telegram-bot');
+  it('{ system, user } 객체를 반환한다', () => {
+    const result = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
+    expect(result).toHaveProperty('system');
+    expect(result).toHaveProperty('user');
+    expect(typeof result.system).toBe('string');
+    expect(typeof result.user).toBe('string');
   });
 
-  it('모든 에이전트 분석 결과를 포함한다', () => {
-    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
-    expect(prompt).toContain('Node.js + telegraf 추천');
-    expect(prompt).toContain('REST API 설계 필요');
-    expect(prompt).toContain('테스트 전략 수립');
+  it('프로젝트 정보는 user에 포함한다', () => {
+    const { user } = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
+    expect(user).toContain('텔레그램 봇');
+    expect(user).toContain('telegram-bot');
   });
 
-  it('라운드 번호를 포함한다', () => {
-    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 2);
-    expect(prompt).toContain('라운드 2');
+  it('모든 에이전트 분석 결과는 user에 포함한다', () => {
+    const { user } = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
+    expect(user).toContain('Node.js + telegraf 추천');
+    expect(user).toContain('REST API 설계 필요');
+    expect(user).toContain('테스트 전략 수립');
   });
 
-  it('기획서 출력 형식 가이드를 포함한다', () => {
-    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
-    expect(prompt).toContain('프로젝트 개요');
-    expect(prompt).toContain('기술 스택');
-    expect(prompt).toContain('아키텍처');
-    expect(prompt).toContain('역할별 작업 분배');
+  it('라운드 번호는 user에 포함한다', () => {
+    const { user } = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 2);
+    expect(user).toContain('라운드 2');
   });
 
-  it('에이전트 수를 표시한다', () => {
-    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
-    expect(prompt).toContain('3명');
+  it('기획서 출력 형식 가이드는 system에 포함한다', () => {
+    const { system } = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
+    expect(system).toContain('프로젝트 개요');
+    expect(system).toContain('기술 스택');
+    expect(system).toContain('아키텍처');
+    expect(system).toContain('역할별 작업 분배');
+  });
+
+  it('에이전트 수는 user에 표시한다', () => {
+    const { user } = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
+    expect(user).toContain('3명');
   });
 
   it('빈 agentOutputs이면 에러를 throw한다', () => {
@@ -223,29 +261,35 @@ describe('buildSynthesisPrompt', () => {
     expect(() => buildSynthesisPrompt(SAMPLE_PROJECT, null, 1)).toThrow();
   });
 
-  it('context.ceoFeedback이 있으면 CEO 피드백 섹션을 포함한다', () => {
-    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1, {
+  it('context.ceoFeedback이 있으면 user에 CEO 피드백 섹션을 포함한다', () => {
+    const { user } = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1, {
       ceoFeedback: 'UI를 더 단순하게 해주세요',
     });
-    expect(prompt).toContain('## CEO 피드백');
-    expect(prompt).toContain('UI를 더 단순하게 해주세요');
+    expect(user).toContain('## CEO 피드백');
+    expect(user).toContain('UI를 더 단순하게 해주세요');
   });
 
-  it('context.ceoFeedback이 없으면 CEO 피드백 섹션이 없다', () => {
-    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1, {});
-    expect(prompt).not.toContain('CEO 피드백');
+  it('context.ceoFeedback이 없으면 user에 CEO 피드백 섹션이 없다', () => {
+    const { user } = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1, {});
+    expect(user).not.toContain('CEO 피드백');
   });
 
-  it('context가 생략되면 기존과 동일하게 동작한다', () => {
-    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
-    expect(prompt).toContain('텔레그램 봇');
-    expect(prompt).not.toContain('CEO 피드백');
+  it('context가 생략되면 기본 동작을 유지한다', () => {
+    const { user } = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
+    expect(user).toContain('텔레그램 봇');
+    expect(user).not.toContain('CEO 피드백');
   });
 
-  it('Mermaid 아키텍처 다이어그램 지시가 포함된다', () => {
-    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
-    expect(prompt).toContain('아키텍처 다이어그램');
-    expect(prompt).toContain('Mermaid');
+  it('Mermaid 아키텍처 다이어그램 지시가 system에 포함된다', () => {
+    const { system } = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
+    expect(system).toContain('아키텍처 다이어그램');
+    expect(system).toContain('Mermaid');
+  });
+
+  it('system은 라운드가 달라도 동일하다 (캐시 안정성)', () => {
+    const { system: system1 } = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
+    const { system: system2 } = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 2);
+    expect(system1).toBe(system2);
   });
 });
 
@@ -254,27 +298,47 @@ describe('buildSynthesisPrompt', () => {
 describe('buildReviewPrompt', () => {
   const plan = '## 기획서\n### 기술 스택\nNode.js + telegraf';
 
-  it('팀원 정보를 포함한다', () => {
-    const prompt = buildReviewPrompt(SAMPLE_TEAM[0], plan, 1);
-    expect(prompt).toContain('민준');
-    expect(prompt).toContain('CTO');
+  it('{ system, user } 객체를 반환한다', () => {
+    const result = buildReviewPrompt(SAMPLE_TEAM[0], plan, 1);
+    expect(result).toHaveProperty('system');
+    expect(result).toHaveProperty('user');
+    expect(typeof result.system).toBe('string');
+    expect(typeof result.user).toBe('string');
   });
 
-  it('기획서 내용을 포함한다', () => {
-    const prompt = buildReviewPrompt(SAMPLE_TEAM[0], plan, 1);
-    expect(prompt).toContain('Node.js + telegraf');
+  it('팀원 정보는 system에 포함한다', () => {
+    const { system } = buildReviewPrompt(SAMPLE_TEAM[0], plan, 1);
+    expect(system).toContain('민준');
+    expect(system).toContain('CTO');
   });
 
-  it('라운드 번호를 포함한다', () => {
-    const prompt = buildReviewPrompt(SAMPLE_TEAM[0], plan, 2);
-    expect(prompt).toContain('라운드 2');
+  it('기획서 내용은 user에 포함한다', () => {
+    const { user } = buildReviewPrompt(SAMPLE_TEAM[0], plan, 1);
+    expect(user).toContain('Node.js + telegraf');
   });
 
-  it('JSON 출력 형식 가이드를 포함한다', () => {
-    const prompt = buildReviewPrompt(SAMPLE_TEAM[0], plan, 1);
-    expect(prompt).toContain('approved');
-    expect(prompt).toContain('feedback');
-    expect(prompt).toContain('issues');
+  it('라운드 번호는 user에 포함한다', () => {
+    const { user } = buildReviewPrompt(SAMPLE_TEAM[0], plan, 2);
+    expect(user).toContain('라운드 2');
+  });
+
+  it('JSON 출력 형식 가이드는 system에 포함한다', () => {
+    const { system } = buildReviewPrompt(SAMPLE_TEAM[0], plan, 1);
+    expect(system).toContain('approved');
+    expect(system).toContain('feedback');
+    expect(system).toContain('issues');
+  });
+
+  it('system은 같은 에이전트라면 라운드가 달라도 동일하다 (캐시 안정성)', () => {
+    const { system: s1 } = buildReviewPrompt(SAMPLE_TEAM[0], plan, 1);
+    const { system: s2 } = buildReviewPrompt(SAMPLE_TEAM[0], '완전히 다른 기획서', 2);
+    expect(s1).toBe(s2);
+  });
+
+  it('user는 기획서 내용이 달라지면 달라진다', () => {
+    const { user: u1 } = buildReviewPrompt(SAMPLE_TEAM[0], '기획서 A', 1);
+    const { user: u2 } = buildReviewPrompt(SAMPLE_TEAM[0], '기획서 B', 1);
+    expect(u1).not.toBe(u2);
   });
 });
 
@@ -573,6 +637,62 @@ describe('buildSynthesisPrompt 빈 배열 에러', () => {
   });
 });
 
+// --- compressPreviousContext ---
+
+describe('compressPreviousContext', () => {
+  it('빈 입력이면 빈 문자열을 반환한다', () => {
+    expect(compressPreviousContext('')).toBe('');
+    expect(compressPreviousContext(null)).toBe('');
+    expect(compressPreviousContext(undefined)).toBe('');
+  });
+
+  it('maxLength 이하의 짧은 입력은 그대로 반환한다', () => {
+    const short = '## 기획서\n### 결정 사항\n- Node.js 사용';
+    const result = compressPreviousContext(short, 2000);
+    expect(result).toBe(short);
+  });
+
+  it('긴 입력은 maxLength 이하로 압축한다', () => {
+    const longText = '## 기획서\n' + '장황한 설명 내용. '.repeat(500);
+    const result = compressPreviousContext(longText, 500);
+    expect(result.length).toBeLessThanOrEqual(500 + 50); // suffix 여유
+  });
+
+  it('핵심 섹션(결정, 리스크, 역할, 기술 스택)을 우선 추출한다', () => {
+    // maxLength를 충분히 크게 설정하여 압축된 핵심 섹션이 포함되도록 함
+    const synthesis = `## 기획서
+
+### 프로젝트 개요
+이 프로젝트는 날씨 정보를 제공하는 텔레그램 봇입니다. 매우 긴 설명이 여기에 들어갑니다.
+${'긴 설명. '.repeat(200)}
+
+### 기술 스택
+- Node.js
+- Telegraf
+- Weather API
+
+### 결정 사항
+- 모놀리스 아키텍처로 결정
+- PostgreSQL 사용
+
+### 역할별 작업 분배
+- CTO: 아키텍처 설계
+- Backend: API 구현`;
+
+    // maxLength를 2000으로 설정하면 핵심 섹션이 충분히 추출됨
+    const result = compressPreviousContext(synthesis, 2000);
+    // 압축 결과에 핵심 섹션 정보가 포함되어야 함
+    expect(result).toContain('기술 스택');
+    expect(result).toContain('Node.js');
+  });
+
+  it('파싱 실패 시 단순 절단(fallback)으로 대응한다', () => {
+    const veryLong = 'a'.repeat(5000);
+    const result = compressPreviousContext(veryLong, 1000);
+    expect(result.length).toBeLessThanOrEqual(1100); // suffix 포함 여유
+  });
+});
+
 describe('parseReviewOutput parseError 플래그', () => {
   it('빈 응답 시 parseError: true를 반환한다', () => {
     const result = parseReviewOutput('');
@@ -655,55 +775,55 @@ describe('checkConvergence earlyExit', () => {
 });
 
 describe('buildSynthesisPrompt 프롬프트 크기 제한', () => {
-  it('3000자 초과 analysis를 절단한다', () => {
+  it('3000자 초과 analysis를 user에서 절단한다', () => {
     const longAnalysis = 'A'.repeat(5000);
     const agentOutputs = [{ roleId: 'cto', role: 'CTO', emoji: '', analysis: longAnalysis }];
-    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
-    expect(prompt).not.toContain('A'.repeat(5000));
-    expect(prompt).not.toContain('A'.repeat(3000));
-    expect(prompt).toContain('...(이하 생략)');
+    const { user } = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
+    expect(user).not.toContain('A'.repeat(5000));
+    expect(user).not.toContain('A'.repeat(3000));
+    expect(user).toContain('...(이하 생략)');
     // truncateText는 suffix 포함하여 maxLen을 보장하므로 3000 - suffix.length 만큼 포함
-    expect(prompt).toContain('A'.repeat(2989));
+    expect(user).toContain('A'.repeat(2989));
   });
 
-  it('3000자 이하 analysis는 절단하지 않는다', () => {
+  it('3000자 이하 analysis는 user에서 절단하지 않는다', () => {
     const shortAnalysis = 'B'.repeat(2000);
     const agentOutputs = [{ roleId: 'cto', role: 'CTO', emoji: '', analysis: shortAnalysis }];
-    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
-    expect(prompt).toContain(shortAnalysis);
-    expect(prompt).not.toContain('...(이하 생략)');
+    const { user } = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
+    expect(user).toContain(shortAnalysis);
+    expect(user).not.toContain('...(이하 생략)');
   });
 });
 
 // --- 명확화 + 외부 서비스 관련 ---
 
 describe('buildAgentAnalysisPrompt 명확화', () => {
-  it('요구사항 명확화 섹션을 포함한다', () => {
-    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0]);
-    expect(prompt).toContain('## 요구사항 명확화');
-    expect(prompt).toContain('외부 데이터 소스');
-    expect(prompt).toContain('외부 서비스 API 키');
-    expect(prompt).toContain('명확화 필요 사항');
+  it('요구사항 명확화 섹션을 system에 포함한다', () => {
+    const { system } = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0]);
+    expect(system).toContain('## 요구사항 명확화');
+    expect(system).toContain('외부 데이터 소스');
+    expect(system).toContain('외부 서비스 API 키');
+    expect(system).toContain('명확화 필요 사항');
   });
 });
 
 describe('buildSynthesisPrompt 외부 서비스', () => {
-  it('외부 서비스 연동 섹션을 포함한다', () => {
+  it('외부 서비스 연동 섹션을 system에 포함한다', () => {
     const agentOutputs = [{ roleId: 'cto', role: 'CTO', emoji: '', analysis: '분석 결과' }];
-    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
-    expect(prompt).toContain('### 외부 서비스 연동');
-    expect(prompt).toContain('환경변수명');
+    const { system } = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
+    expect(system).toContain('### 외부 서비스 연동');
+    expect(system).toContain('환경변수명');
   });
 
-  it('CEO 결정 필요 사항 섹션을 포함한다', () => {
+  it('CEO 결정 필요 사항 섹션을 system에 포함한다', () => {
     const agentOutputs = [{ roleId: 'cto', role: 'CTO', emoji: '', analysis: '분석' }];
-    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
-    expect(prompt).toContain('### CEO 결정 필요 사항');
+    const { system } = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
+    expect(system).toContain('### CEO 결정 필요 사항');
   });
 
-  it('명확화 필요 사항 종합 원칙을 포함한다', () => {
+  it('명확화 필요 사항 종합 원칙을 system에 포함한다', () => {
     const agentOutputs = [{ roleId: 'cto', role: 'CTO', emoji: '', analysis: '분석' }];
-    const prompt = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
-    expect(prompt).toContain('명확화 필요 사항');
+    const { system } = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
+    expect(system).toContain('명확화 필요 사항');
   });
 });

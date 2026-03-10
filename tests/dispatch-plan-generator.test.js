@@ -132,7 +132,8 @@ describe('buildDiscussionDispatchPlan', () => {
       previousSynthesis: '이전 기획서 내용',
     });
     const allAgents = plan.tiers.flatMap((t) => t.agents);
-    expect(allAgents[0].prompt).toContain('이전 기획서 내용');
+    // prompt는 { system, user } 객체 — 동적 내용은 user에 있음
+    expect(allAgents[0].prompt.user).toContain('이전 기획서 내용');
   });
 
   it('빈 팀은 빈 계획을 반환한다', () => {
@@ -150,7 +151,8 @@ describe('buildDiscussionDispatchPlan', () => {
   it('리뷰 프롬프트에 팀원 정보가 포함된다', () => {
     const plan = buildDiscussionDispatchPlan(SAMPLE_PROJECT, SAMPLE_TEAM);
     expect(plan.reviewPrompts[0].roleId).toBe('cto');
-    expect(plan.reviewPrompts[0].prompt).toContain('민준');
+    // prompt는 { system, user } 객체 — 팀원 정보(정적)는 system에 있음
+    expect(plan.reviewPrompts[0].prompt.system).toContain('민준');
   });
 });
 

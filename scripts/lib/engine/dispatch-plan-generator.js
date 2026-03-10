@@ -58,6 +58,7 @@ export function buildDiscussionDispatchPlan(project, team, context = {}) {
       displayName: member.displayName,
       emoji: member.emoji,
       model: member.model,
+      // prompt는 { system, user } 객체 — 캐싱 가능한 system + 동적 user
       prompt: buildAgentAnalysisPrompt(project, member, {
         round,
         previousSynthesis: context.previousSynthesis,
@@ -81,6 +82,7 @@ export function buildDiscussionDispatchPlan(project, team, context = {}) {
     roleId: member.roleId,
     displayName: member.displayName,
     emoji: member.emoji,
+    // prompt는 { system, user } 객체
     prompt: buildReviewPrompt(member, '{{synthesized_plan}}', round),
   }));
 
@@ -177,6 +179,7 @@ export function buildExecutionDispatchPlan(project, tasks, team, context = {}) {
             displayName: r.displayName,
             emoji: r.emoji,
             model: r.model || 'sonnet',
+            // prompt는 { system, user } 객체
             prompt: buildTaskReviewPrompt(r, task, `{{${task.id}_output}}`),
           })),
         };
