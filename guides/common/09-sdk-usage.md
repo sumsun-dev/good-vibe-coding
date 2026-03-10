@@ -340,6 +340,83 @@ onEscalation: async (context) => {
 },
 ```
 
+### LLM 내부 재시도 동작
+
+SDK가 사용하는 LLM 프로바이더(`llm-provider.js`)는 내부적으로 재시도 로직을 갖추고 있습니다:
+
+| 설정                   | 기본값 | 설명               |
+| ---------------------- | ------ | ------------------ |
+| `llm.maxRetries`       | 3      | 최대 재시도 횟수   |
+| `llm.defaultTimeout`   | 60s    | LLM 호출 타임아웃  |
+| `llm.pingTimeout`      | 15s    | 연결 확인 타임아웃 |
+| `llm.defaultMaxTokens` | 4096   | 기본 최대 토큰     |
+
+재시도는 네트워크 오류, 타임아웃, 일시적 서버 오류(5xx)에 대해 자동으로 수행됩니다.
+인증 오류(401/403), 입력 오류(400)는 즉시 실패합니다.
+
+SDK 사용자가 직접 재시도 로직을 작성할 필요는 없지만, 내부 재시도 모두 실패하면 `SYSTEM_ERROR`가 throw됩니다.
+
+### Discusser `onError` Hook
+
+`Discusser`는 토론 중간 결과를 저장(`persist`)할 때 실패해도 토론을 중단하지 않습니다.
+이 실패를 감지하려면 `onError` Hook을 사용하세요:
+
+```javascript
+const discusser = new Discusser({
+  provider: 'claude',
+  storage,
+  hooks: {
+    onError: (type, err) => {
+      if (type === 'persist-failed') {
+        console.warn(`중간 결과 저장 실패: ${err.message}`);
+        // 토론은 계속 진행됨 — 최종 결과는 반환값으로 받을 수 있음
+      }
+    },
+    onRoundComplete: (round, convergence) => {
+      console.log(`Round ${round}: ${convergence.approvalRate}%`);
+    },
+  },
+});
+```
+
+> `onError`는 비차단(non-blocking)입니다. 토론 자체는 중단되지 않으며, 최종 결과는 `run()` 반환값으로 받을 수 있습니다. 단, `MemoryStorage` 사용 시에는 persist 실패가 발생하지 않습니다.
+
+### 스토리지 에러 복구
+
+| 스토리지        | 에러 상황          | 동작                                          |
+| --------------- | ------------------ | --------------------------------------------- |
+| `MemoryStorage` | 깊은 복사 실패     | `JSON.parse(JSON.stringify())` 폴백 자동 적용 |
+| `FileStorage`   | 파일 미존재 (read) | `null` 반환 (에러 아님)                       |
+| `FileStorage`   | 쓰기 권한 없음     | `SYSTEM_ERROR` throw                          |
+| 커스텀 스토리지 | 구현에 따라 다름   | `read`/`write`에서 throw 시 실행 중단         |
+
+`FileStorage` 사용 시 권한 문제 해결:
+
+```javascript
+import { FileStorage } from 'good-vibe';
+
+const storage = new FileStorage('/path/to/projects');
+
+// 디렉토리 권한 확인
+import { access, constants } from 'fs/promises';
+try {
+  await access('/path/to/projects', constants.W_OK);
+} catch {
+  console.error('프로젝트 디렉토리에 쓰기 권한이 없습니다');
+}
+```
+
+### Cross-model 리뷰 에러 처리
+
+`execute()` 옵션에 `enableCrossModel: true`를 설정하면 Gemini CLI로 교차 리뷰를 수행합니다.
+Gemini CLI가 설치되지 않았거나 인증이 만료되어도 실행은 중단되지 않습니다:
+
+- Gemini CLI 미설치 → 해당 리뷰만 건너뜀 (`skipped: true`)
+- 인증 만료 → 해당 리뷰만 건너뜀, Claude 리뷰만으로 품질 게이트 진행
+- 네트워크 오류 → 재시도 후 실패 시 건너뜀
+
+> Cross-model 리뷰 실패는 `SYSTEM_ERROR`를 발생시키지 않습니다. Graceful degradation으로 처리됩니다.
+
 ### 실행 실패 복구 패턴
 
 LLM 호출 실패 시 재시도하는 패턴:
