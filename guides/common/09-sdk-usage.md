@@ -369,11 +369,18 @@ for await (const step of gv.executeSteps(plan)) {
       await step.proceed();
     }
   } catch (err) {
+    if (err.code === 'SYSTEM_ERROR') {
+      // 상태 전이 중 오류 — 계속 진행하면 데이터 손상 위험
+      console.error(`치명적 오류, 실행 중단: ${err.message}`);
+      break;
+    }
+    // INPUT_ERROR, NOT_FOUND 등은 해당 스텝만 실패
     console.error(`스텝 실패: ${step.action} (Phase ${step.phase})`);
-    // 다음 스텝으로 계속 진행 가능
   }
 }
 ```
+
+> **주의:** `SYSTEM_ERROR`는 내부 상태가 불완전하게 변경되었을 수 있으므로 루프를 중단하세요. `FileStorage` 사용 시 다음 `execute()` 호출에서 자동 재개됩니다.
 
 ### AppError 타입 확인
 
