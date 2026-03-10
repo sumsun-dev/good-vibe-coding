@@ -273,8 +273,9 @@ options:
 
 **"생성"** 선택 시:
 
-```bash
-echo '{"claudeMd":"...생성된 내용...","coreRules":"...생성된 내용..."}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js write-global-onboarding
+```
+→ 온보딩 데이터를 Write tool로 /tmp/gv-onboarding.json에 저장 (형식: {"claudeMd":"...생성된 내용...","coreRules":"...생성된 내용..."})
+→ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js write-global-onboarding --input-file /tmp/gv-onboarding.json
 ```
 
 반환: `{ "written": ["~/.claude/CLAUDE.md", "~/.claude/rules/core.md"] }`

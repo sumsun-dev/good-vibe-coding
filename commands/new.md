@@ -581,7 +581,8 @@ Task tool 프롬프트:
    node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js task-distribution-prompt --id {ID}
    → 생성된 프롬프트를 LLM으로 실행 → 작업 목록 생성
    → 작업 목록을 프로젝트에 저장:
-   echo '{"id":"{ID}","tasks":[...생성된 작업 배열...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js save-tasks
+   → 작업 데이터를 Write tool로 /tmp/gv-tasks.json에 저장 (형식: {"id":"{ID}","tasks":[...생성된 작업 배열...]})
+   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js save-tasks --input-file /tmp/gv-tasks.json
 
 3. 실행 초기화:
    echo '{"id":"{ID}","mode":"auto"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js init-execution
@@ -730,7 +731,8 @@ Task tool 프롬프트:
    node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js task-distribution-prompt --id {ID}
    → 생성된 프롬프트를 LLM으로 실행 → 작업 목록 생성
    → 작업 목록을 프로젝트에 저장:
-   echo '{"id":"{ID}","tasks":[...생성된 작업 배열...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js save-tasks
+   → 작업 데이터를 Write tool로 /tmp/gv-tasks.json에 저장 (형식: {"id":"{ID}","tasks":[...생성된 작업 배열...]})
+   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js save-tasks --input-file /tmp/gv-tasks.json
 
 3. 실행 초기화:
    echo '{"id":"{ID}","mode":"auto"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js init-execution
@@ -921,7 +923,8 @@ Task tool 프롬프트:
    node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js task-distribution-prompt --id {ID}
    → 생성된 프롬프트를 LLM으로 실행 → 작업 목록 생성
    → 작업 목록을 프로젝트에 저장:
-   echo '{"id":"{ID}","tasks":[...생성된 작업 배열...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js save-tasks
+   → 작업 데이터를 Write tool로 /tmp/gv-tasks.json에 저장 (형식: {"id":"{ID}","tasks":[...생성된 작업 배열...]})
+   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js save-tasks --input-file /tmp/gv-tasks.json
 
 3. 실행 초기화:
    echo '{"id":"{ID}","mode":"{선택된모드}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js init-execution

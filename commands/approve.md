@@ -71,7 +71,8 @@ Task tool 프롬프트:
 3. 생성된 프롬프트를 실행하여 작업 목록 생성
 
 4. 작업 목록을 프로젝트에 저장:
-   echo '{"id":"{프로젝트ID}","tasks":[...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js save-tasks
+   → 작업 데이터를 Write tool로 /tmp/gv-tasks.json에 저장 (형식: {"id":"{프로젝트ID}","tasks":[...]})
+   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js save-tasks --input-file /tmp/gv-tasks.json
 
 **반환 형식 (필수):**
 반드시 다음 형식의 마크다운 테이블로 반환하세요 (최대 2000자):

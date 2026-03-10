@@ -110,8 +110,9 @@ Ralph Loop로 CEO 피드백을 받은 경우, Task tool 프롬프트에 추가:
 
 토론 라운드 데이터를 `add-discussion-round`로 저장할 때, CEO 피드백이 있으면 roundData에 `ceoFeedback` 필드로 포함하세요:
 
-```bash
-echo '{"id":"{ID}","roundData":{"round":N,"agentOutputs":[...],"synthesis":"...","reviews":[...],"converged":false,"ceoFeedback":"{ceoFeedback 또는 null}"}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js add-discussion-round
+```
+→ 라운드 데이터를 Write tool로 /tmp/gv-discussion-round.json에 저장 (형식: {"id":"{ID}","roundData":{"round":N,"agentOutputs":[...],"synthesis":"...","reviews":[...],"converged":false,"ceoFeedback":"{ceoFeedback 또는 null}"}})
+→ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js add-discussion-round --input-file /tmp/gv-discussion-round.json
 ```
 
 `addDiscussionRound()`이 roundData를 spread로 저장하므로, ceoFeedback 필드는 자동으로 project.json에 보존됩니다. 이후 `good-vibe:status`나 `good-vibe:report`에서 라운드별 CEO 피드백을 조회할 수 있습니다.
@@ -290,8 +291,9 @@ echo '{"id":"{프로젝트ID}","status":"planning"}' | node ${CLAUDE_PLUGIN_ROOT
 
 프로젝트에 infraPath가 설정되어 있으면 (`good-vibe:hello`로 생성된 경우), 기획서의 아키텍처 섹션을 CLAUDE.md에 추가합니다:
 
-```bash
-echo '{"claudeMdPath":"{infraPath}/CLAUDE.md","sectionName":"architecture-placeholder","content":"### 아키텍처\n{기획서에서 추출한 아키텍처 요약}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js append-claude-md
+```
+→ 아키텍처 데이터를 Write tool로 /tmp/gv-append-claude-md.json에 저장 (형식: {"claudeMdPath":"{infraPath}/CLAUDE.md","sectionName":"architecture-placeholder","content":"### 아키텍처\n{기획서에서 추출한 아키텍처 요약}"})
+→ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js append-claude-md --input-file /tmp/gv-append-claude-md.json
 ```
 
 **추출할 내용:**

@@ -151,7 +151,8 @@ Task tool 프롬프트:
 수정 PRD: {Step 3의 modifiedPrd}
 
 1. 수정 이력 저장:
-   echo '{"id":"{ID}","modifiedPrd":"{Step 3의 modifiedPrd}","codebaseInsights":{Step 3의 codebaseInsights 또는 null},"affectedAreas":{Step 3의 affectedAreas},"migrationRisks":{Step 3의 migrationRisks},"complexity":"{Step 3의 complexity}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js add-modify-history
+   → 수정 데이터를 Write tool로 /tmp/gv-modify-history.json에 저장 (형식: {"id":"{ID}","modifiedPrd":"{Step 3의 modifiedPrd}","codebaseInsights":{Step 3의 codebaseInsights 또는 null},"affectedAreas":{Step 3의 affectedAreas},"migrationRisks":{Step 3의 migrationRisks},"complexity":"{Step 3의 complexity}"})
+   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js add-modify-history --input-file /tmp/gv-modify-history.json
 
 2. 상태 복귀:
    echo '{"id":"{ID}","status":"approved"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js update-status
@@ -164,7 +165,8 @@ Task tool 프롬프트:
    → 리뷰 Phase 자동 삽입
 
 4. 작업 목록 저장:
-   echo '{"id":"{ID}","tasks":[...생성된 작업 배열...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js save-tasks
+   → 작업 데이터를 Write tool로 /tmp/gv-tasks.json에 저장 (형식: {"id":"{ID}","tasks":[...생성된 작업 배열...]})
+   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js save-tasks --input-file /tmp/gv-tasks.json
 
 5. 실행 초기화:
    echo '{"id":"{ID}","mode":"auto"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js init-execution
