@@ -529,6 +529,76 @@ CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 
 ## Step 5: 선택된 모드로 플로우 실행
 
+### Phase 실행 프롬프트 템플릿 (A-4/B-4/C-4 공통)
+
+> 아래 템플릿을 각 Phase의 Task tool 프롬프트로 사용합니다. `{ID}`, `{N}` 등을 실제 값으로 치환하세요.
+
+```
+프로젝트 ID: {ID}의 Phase {N}을 실행하세요.
+
+**[필수] CLI에 JSON 전달 시 Write tool 사용:**
+- LLM 응답 등 큰 JSON은 반드시 Write tool로 /tmp/gv-*.json에 저장 후 --input-file로 전달하세요.
+
+**Phase 실행 루프:**
+1. `node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js next-step --id {ID}` → 현재 action 확인
+2. action별 처리 (아래 레시피)
+3. `echo '{"id":"{ID}","stepResult":{...}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js advance-execution`
+4. complete, confirm-next-phase, escalate까지 반복
+
+**Action 레시피 (action → CLI → advance stepResult):**
+
+execute-tasks:
+- echo '{"task":{task}}' | node ... is-code-task → {isCodeTask}
+- 코드→tdd-execution-prompt, 비코드→execution-prompt (stdin: {"task":..,"teamMember":..})
+- 저장: echo '{"id":"{ID}","taskId":"{taskId}","output":"..."}' | node ... save-task-output
+- advance: {"completedAction":"execute-tasks"}
+
+materialize (코드 태스크만):
+- echo '{"taskOutput":"..","task":{task},"projectDir":"{dir}"}' | node ... verify-and-materialize
+- 저장: echo '{"id":"{ID}","taskId":"{taskId}","materializeResult":{result}}' | node ... add-task-materialization
+- 상태: echo '{"id":"{ID}","status":"reviewing"}' | node ... update-status
+- advance: {"completedAction":"materialize"}
+
+review:
+- echo '{"task":{task},"team":[..]}' | node ... select-reviewers
+- echo '{"reviewers":[..]}' | node ... resolve-review-assignments
+- echo '{"reviewer":{r},"task":{task},"taskOutput":".."}' | node ... task-review-prompt → LLM
+- echo '{"id":"{ID}","taskId":"{taskId}","reviews":[..]}' | node ... add-task-reviews
+- advance: {"completedAction":"review"}
+
+quality-gate:
+- echo '{"reviews":[..],"executionResult":{materializeResult}}' | node ... enhanced-quality-gate
+- 상태: echo '{"id":"{ID}","status":"executing"}' | node ... update-status
+- advance: {"completedAction":"quality-gate","qualityGateResult":{"passed":bool,"issues":[..]}}
+
+fix:
+- node ... get-failure-context --id {ID}
+- echo '{"task":{task},"implementer":{m},"reviews":[..],"failureContext":{ctx}}' | node ... revision-prompt → LLM
+- save-task-output → advance: {"completedAction":"fix"}
+
+commit:
+- echo '{"projectDir":"{dir}","phase":{N}}' | node ... commit-phase (infraPath 없으면 건너뜀)
+- advance: {"completedAction":"commit"}
+
+build-context:
+- echo '{"completedTasks":[..]}' | node ... build-phase-context
+- advance: {"completedAction":"build-context"}
+
+**주의사항:**
+- project.json/execute.md 직접 Read 금지 (next-step이 필요 정보 반환, 레시피가 자체 완결)
+- 프로젝트 파일 전체 Read 금지 (태스크에 명시된 파일만)
+- 빌드 에러 일괄 수정 (반복 빌드 방지)
+- 큰 JSON은 Write tool → /tmp/gv-*.json → --input-file
+
+완료 후 반환 (최대 1000자):
+- phaseSummary: 완료된 작업 목록 (한 줄씩)
+- qualityGate: { passed, critical, important }
+- errors: 실패 시 원인 (있을 때만)
+상세 리뷰 결과와 빌드 로그는 project.json에 저장하세요.
+
+CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
+```
+
 ### 모드 A: 바로 만들기 (quick-build)
 
 토론/승인 없이 CTO 분석 → 바로 실행 → QA 리뷰.
@@ -643,22 +713,7 @@ CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 
 `next-step`으로 실행 계획의 Phase 수를 파악한 뒤, **각 Phase를 개별 Task tool**로 실행합니다.
 
-각 Phase의 Task tool 프롬프트:
-
-```
-프로젝트 ID: {ID}의 Phase {N}을 실행하세요.
-
-1. `next-step --id {ID}`으로 현재 action을 확인합니다.
-2. commands/execute.md의 "서브에이전트 모드" 섹션을 따릅니다.
-3. action이 build-context 또는 confirm-next-phase가 될 때까지 action을 순서대로 처리합니다.
-4. 완료 후 반환 (최대 1000자):
-   - phaseSummary: 완료된 작업 목록 (한 줄씩)
-   - qualityGate: { passed, critical, important }
-   - errors: 실패 시 원인 (있을 때만)
-   상세 리뷰 결과와 빌드 로그는 project.json에 저장하세요.
-
-CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
-```
+각 Phase의 Task tool 프롬프트: **"Phase 실행 프롬프트 템플릿"** (Step 5 상단 공통 섹션)을 사용합니다.
 
 Phase가 끝날 때마다 메인 세션에서 진행률을 표시합니다:
 
@@ -694,8 +749,8 @@ Task tool 프롬프트:
 ```
 프로젝트 ID: {ID}로 discuss 라운드 {roundNumber}을 실행하세요.
 
-1. commands/discuss.md의 Step 2-5를 실행합니다 (Tier별 분석 + 종합).
-   Step 5.5(CEO 확인)과 Step 6-9(리뷰/수렴)는 실행하지 마세요.
+1. commands/discuss.md의 Step 2를 실행합니다 (Phase A: Tier별 분석 + 종합 + Phase B: 리뷰 + 수렴).
+   Step 3(CEO 확인)과 Step 4-5(저장/안내)는 실행하지 마세요.
 2. {ceoFeedback이 있으면: "CEO 피드백을 context.ceoFeedback으로 전달하세요: {ceoFeedback}"}
 3. 에이전트 분석/종합 시 context.prd = {prd}를 전달하세요.
 4. 기획서에 Mermaid 아키텍처 다이어그램과 화면 구조를 반드시 포함하세요.
@@ -745,7 +800,7 @@ Task tool 프롬프트:
 ```
 프로젝트 ID: {ID}의 기획서를 팀원들이 리뷰합니다.
 
-1. commands/discuss.md의 Step 6-8을 실행합니다 (리뷰 + 수렴 확인 + 기획서 저장).
+1. commands/discuss.md의 Step 2 Phase B를 실행합니다 (리뷰 + 수렴 확인 + 라운드 데이터 저장).
 2. CEO가 이미 승인했으므로, 에이전트 수렴 여부와 관계없이 기획서를 확정합니다.
 3. 반환: 리뷰 요약 + 수렴 상태
 
@@ -797,22 +852,7 @@ CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 
 `next-step`으로 실행 계획의 Phase 수를 파악한 뒤, **각 Phase를 개별 Task tool**로 실행합니다.
 
-각 Phase의 Task tool 프롬프트:
-
-```
-프로젝트 ID: {ID}의 Phase {N}을 실행하세요.
-
-1. `next-step --id {ID}`으로 현재 action을 확인합니다.
-2. commands/execute.md의 "서브에이전트 모드" 섹션을 따릅니다.
-3. action이 build-context 또는 confirm-next-phase가 될 때까지 action을 순서대로 처리합니다.
-4. 완료 후 반환 (최대 1000자):
-   - phaseSummary: 완료된 작업 목록 (한 줄씩)
-   - qualityGate: { passed, critical, important }
-   - errors: 실패 시 원인 (있을 때만)
-   상세 리뷰 결과와 빌드 로그는 project.json에 저장하세요.
-
-CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
-```
+각 Phase의 Task tool 프롬프트: **"Phase 실행 프롬프트 템플릿"** (Step 5 상단 공통 섹션)을 사용합니다.
 
 Phase가 끝날 때마다 메인 세션에서 진행률을 표시합니다:
 
@@ -847,8 +887,8 @@ Task tool 프롬프트:
 ```
 프로젝트 ID: {ID}로 discuss 라운드 {roundNumber}을 실행하세요.
 
-1. commands/discuss.md의 Step 2-5를 실행합니다 (Tier별 분석 + 종합).
-   Step 5.5(CEO 확인)과 Step 6-9(리뷰/수렴)는 실행하지 마세요.
+1. commands/discuss.md의 Step 2를 실행합니다 (Phase A: Tier별 분석 + 종합 + Phase B: 리뷰 + 수렴).
+   Step 3(CEO 확인)과 Step 4-5(저장/안내)는 실행하지 마세요.
 2. {ceoFeedback이 있으면: "CEO 피드백을 context.ceoFeedback으로 전달하세요: {ceoFeedback}"}
 3. {roundNumber > 1이면: "이전 라운드 기획서를 context.previousSynthesis로 전달하세요"}
 4. 에이전트 분석/종합 시 context.prd = {prd}를 전달하세요.
@@ -901,7 +941,7 @@ Task tool 프롬프트:
 ```
 프로젝트 ID: {ID}의 기획서를 팀원들이 리뷰합니다.
 
-1. commands/discuss.md의 Step 6-8을 실행합니다 (리뷰 + 수렴 확인 + 기획서 저장).
+1. commands/discuss.md의 Step 2 Phase B를 실행합니다 (리뷰 + 수렴 확인 + 라운드 데이터 저장).
 2. CEO가 이미 승인했으므로, 에이전트 수렴 여부와 관계없이 기획서를 확정합니다.
 3. 반환: 리뷰 요약 + 수렴 상태
 
@@ -993,22 +1033,7 @@ CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 
 `next-step`으로 실행 계획의 Phase 수를 파악한 뒤, **각 Phase를 개별 Task tool**로 실행합니다.
 
-각 Phase의 Task tool 프롬프트:
-
-```
-프로젝트 ID: {ID}의 Phase {N}을 실행하세요.
-
-1. `next-step --id {ID}`으로 현재 action을 확인합니다.
-2. commands/execute.md의 "서브에이전트 모드" 섹션을 따릅니다.
-3. action이 build-context 또는 confirm-next-phase가 될 때까지 action을 순서대로 처리합니다.
-4. 완료 후 반환 (최대 1000자):
-   - phaseSummary: 완료된 작업 목록 (한 줄씩)
-   - qualityGate: { passed, critical, important }
-   - errors: 실패 시 원인 (있을 때만)
-   상세 리뷰 결과와 빌드 로그는 project.json에 저장하세요.
-
-CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
-```
+각 Phase의 Task tool 프롬프트: **"Phase 실행 프롬프트 템플릿"** (Step 5 상단 공통 섹션)을 사용합니다.
 
 Phase가 끝날 때마다 메인 세션에서 진행률을 표시합니다:
 
@@ -1095,6 +1120,7 @@ echo '{"id":"{프로젝트ID}","status":"completed"}' | node ${CLAUDE_PLUGIN_ROO
 
 ```
 다음 단계:
+  good-vibe:modify    → 기능 추가/수정 (완료된 프로젝트 기반)
   good-vibe:report    → 프로젝트 보고서 생성
   good-vibe:feedback  → 팀원 성과 분석 + 개선점
   good-vibe:status    → 프로젝트 상태 확인

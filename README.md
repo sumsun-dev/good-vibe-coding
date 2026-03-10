@@ -11,14 +11,21 @@ AI 팀을 만들고, 프로젝트를 함께 굴려보세요.
 
 ## 왜 쓰나요?
 
-혼자 코딩할 때 놓치는 게 많습니다.
+**혼자 코딩할 때 이런 경험, 있지 않나요?**
+
+- 기능 구현에 집중하다 보안 취약점을 놓침
+- 나중에 보니 아키텍처가 엉망이 되어 있음
+- 테스트를 미루다가 결국 안 작성함
+- 문서화는 항상 "나중에"
+
+**Good Vibe Coding은 이 문제를 AI 팀으로 해결합니다.**
 
 - CTO가 아키텍처를 잡고, Security Engineer가 보안 취약점을 짚어줍니다
 - QA가 테스트 전략을 세우고, 코드 리뷰에서 로직 오류를 잡습니다
 - DevOps가 CI/CD를 구성하고, Tech Writer가 문서를 정리합니다
 - 2회 수정해도 안 되면 CEO(당신)에게 판단을 요청합니다
 
-아이디어를 말하면, AI 팀이 기획 - 토론 - 실행 - 리뷰까지 해줍니다.
+아이디어를 말하면, AI 팀이 **기획 → 토론 → 실행 → 리뷰**까지 해줍니다.
 
 ## 설치
 
@@ -50,32 +57,6 @@ npm install
 /plugin install good-vibe@good-vibe
 ```
 
-### 기존 유저 마이그레이션 (v1.1.0 이전 → v1.2.0)
-
-플러그인 이름이 `good-vibe-coding`에서 `good-vibe`로 변경되었습니다.
-기존 설치를 업데이트하려면:
-
-**자동 (권장):**
-
-```bash
-node scripts/migrate.js
-```
-
-**수동:**
-
-```bash
-# 1. 이전 플러그인 제거
-/plugin uninstall good-vibe-coding
-
-# 2. 마켓플레이스 업데이트
-/plugin marketplace update good-vibe
-
-# 3. 새 플러그인 설치
-/plugin install good-vibe@good-vibe
-```
-
-프로젝트 데이터(`~/.claude/good-vibe/`)는 영향받지 않습니다.
-
 ### 업데이트
 
 ```bash
@@ -96,12 +77,29 @@ node scripts/migrate.js
 아이디어만 입력하면, 복잡도를 분석해서 알아서 끝까지 진행합니다.
 
 ```
-good-vibe:new
-→ "날씨 알림 텔레그램 봇 만들어줘"
-→ 복잡도 분석: simple → quick-build 모드 자동 선택
-→ 팀 구성: CTO, Backend, QA (3명)
-→ CTO 아키텍처 분석 → 작업 분배 → 실행 → QA 리뷰
-→ 완료!
+> good-vibe:new
+
+CEO: "날씨 알림 텔레그램 봇 만들어줘"
+
+🔍 복잡도 분석 중...
+   복잡도: simple → 추천 모드: quick-build
+
+👥 팀 구성:
+   CTO (opus) · Backend Developer (sonnet) · QA Engineer (haiku)
+
+🏗️ CTO 아키텍처 분석...
+   → Node.js + Telegraf + OpenWeatherMap API
+   → 3개 Phase, 5개 태스크
+
+⚡ 실행 중...
+   Phase 1/3: 프로젝트 셋업 ✓
+   Phase 2/3: 핵심 기능 구현 ✓
+   Phase 3/3: 테스트 + 문서 ✓
+
+📋 QA 리뷰: 통과 (critical 0, important 1)
+
+✅ 프로젝트 완료!
+→ 다음: good-vibe:report로 보고서를 확인하세요
 ```
 
 처음이라면 `good-vibe:hello`로 환경 설정과 개인 설정을 먼저 하고 `good-vibe:new`를 실행하세요.
@@ -139,24 +137,39 @@ good-vibe:hello  →  good-vibe:new  →  good-vibe:discuss  →  good-vibe:appr
 | plan-execute | 3-5명   | 1라운드      | 웹앱, API 서버, 중간 규모 프로젝트 | 10-20분  |
 | plan-only    | 5-8명   | 최대 3라운드 | 대규모 시스템, 충분한 토론 후 실행 | 20-40분  |
 
-### 모드별 진행 흐름
+### 모드별 실제 진행 예시
 
-quick-build — 토론 없이 바로 만들기
+**quick-build** — "텔레그램 봇 만들어줘"
 
 ```
 good-vibe:new → CTO 분석 → 작업 분배 → 실행 + QA 리뷰 → 완료
+
+  👥 팀: CTO, Backend, QA (3명)
+  📋 Phase 3개, 태스크 5개
+  ⏱️ 약 5분
 ```
 
-plan-execute — 간단히 논의하고 자동 실행
+**plan-execute** — "팀 프로젝트 관리 웹앱"
 
 ```
 good-vibe:new → 팀 토론(1라운드) → 자동 승인 → 자동 실행 + 크로스 리뷰 → 완료
+
+  👥 팀: CTO, PO, Fullstack, Frontend, QA (5명)
+  💬 토론 1라운드 → 승인율 85% → 기획서 확정
+  📋 Phase 5개, 태스크 12개
+  ⏱️ 약 15분
 ```
 
-plan-only — 충분히 논의한 후 CEO 승인
+**plan-only** — "마이크로서비스 SaaS 플랫폼"
 
 ```
-good-vibe:new → 팀 토론(최대 3라운드) → CEO 승인(good-vibe:approve) → 실행(good-vibe:execute) → 완료
+good-vibe:new → 팀 토론(최대 3라운드) → CEO 승인 → 실행 → 완료
+
+  👥 팀: CTO, PO, Backend, Frontend, DevOps, Security, QA, Tech Writer (8명)
+  💬 토론 2라운드 → 승인율 82% → 기획서 확정
+  📋 Phase 8개, 태스크 25개
+  ⏱️ 약 40분
+  ⚠️ CEO 승인 필요: good-vibe:approve → good-vibe:execute
 ```
 
 ## 실행 모드
@@ -319,159 +332,14 @@ const gv = new GoodVibe({
   storage: 'memory', // 경로 문자열 또는 커스텀 객체
 });
 
-// 팀 구성 (로컬 계산, LLM 미사용)
-const team = await gv.buildTeam('날씨 알림 텔레그램 봇', {
-  complexity: 'simple',
-});
-
-// 토론 자동 루프 (LLM 호출)
+// 팀 구성 → 토론 → 실행 → 보고서
+const team = await gv.buildTeam('날씨 알림 텔레그램 봇', { complexity: 'simple' });
 const plan = await gv.discuss(team);
-
-// 실행 자동 루프 (LLM 호출, auto 모드 고정)
-const result = await gv.execute(plan, {
-  onEscalation: async (ctx) => 'skip', // 품질 게이트 실패 시
-  onPhaseComplete: async (phase) => {}, // Phase 완료 시
-});
-
-// 보고서
+const result = await gv.execute(plan);
 const report = gv.report(result);
 ```
 
-### Storage 옵션
-
-| 옵션                   | 설명                                        | 사용 시점                |
-| ---------------------- | ------------------------------------------- | ------------------------ |
-| `'memory'`             | 인메모리 저장. 프로세스 종료 시 데이터 소멸 | 테스트, 일회성 실행      |
-| `'/path/to/dir'`       | 파일 시스템 저장. 경로를 문자열로 전달      | 영구 저장이 필요할 때    |
-| `{ save, load, list }` | 커스텀 저장소 객체. 세 메서드를 직접 구현   | DB 연동, 클라우드 저장소 |
-
-### 에러 처리
-
-```javascript
-try {
-  const result = await gv.execute(plan);
-} catch (err) {
-  if (err.code === 'INPUT_ERROR') {
-    // 입력값 문제 — plan 객체 확인
-  } else if (err.code === 'NOT_FOUND') {
-    // 프로젝트나 에이전트를 찾지 못함
-  } else {
-    // SYSTEM_ERROR — LLM 호출 실패 등
-  }
-}
-```
-
-### Discusser, Executor 개별 사용
-
-토론과 실행을 분리해서 세밀하게 제어할 수 있습니다.
-
-```javascript
-import { Discusser, Executor, Storage } from 'good-vibe';
-
-// 토론만 실행
-const discusser = new Discusser({ provider: 'claude', storage: new Storage('/data') });
-const plan = await discusser.run(team);
-
-// 실행만 실행 (이미 승인된 plan 사용)
-const executor = new Executor({ provider: 'claude', storage: new Storage('/data') });
-const result = await executor.run(plan, {
-  onEscalation: async (ctx) => 'skip',
-});
-```
-
-## 아키텍처
-
-```
-┌─────────────────────────────────────────────┐
-│  사용자              슬래시 커맨드 6개        │
-│  hello → new → discuss → approve →           │
-│  execute → report                            │
-├─────────────────────────────────────────────┤
-│  SDK                 GoodVibe 클래스         │
-│  buildTeam → discuss → execute → report     │
-├─────────────────────────────────────────────┤
-│  AI 팀원             15개 역할               │
-│  Tier별 병렬 분석 + 크로스 리뷰              │
-├─────────────────────────────────────────────┤
-│  내부 API            CLI-as-API (152개)      │
-│  에이전트가 호출하는 인터페이스               │
-├─────────────────────────────────────────────┤
-│  코어 라이브러리      60개 모듈 + 15개 핸들러  │
-│  프로젝트 관리, 오케스트레이션, 리뷰 엔진 등  │
-└─────────────────────────────────────────────┘
-```
-
-사용자가 슬래시 커맨드를 입력하면, 에이전트가 내부 API를 호출하고, 코어 라이브러리가 실제 로직을 처리합니다. SDK는 동일한 코어 라이브러리를 프로그래밍 API로 노출합니다.
-
-## 프로젝트 구조
-
-```
-good-vibe/
-├── src/             SDK (GoodVibe, Discusser, Executor, Storage)
-├── plugin/          Claude Code 어댑터
-├── agents/          23개 에이전트 (팀 15 + 서포트 8)
-├── commands/        20개 슬래시 커맨드 정의
-├── scripts/
-│   ├── cli.js       내부 API 라우터 (152개 커맨드)
-│   ├── handlers/    15개 핸들러 모듈
-│   └── lib/         60개 코어 라이브러리
-│       ├── core/        기반 유틸 (validators, config, cache 등)
-│       ├── project/     프로젝트 관리 (project-manager, scaffolder, branch, PR, CI 등)
-│       ├── engine/      실행 엔진 (orchestrator, execution-loop, review 등)
-│       ├── llm/         LLM 연동 (llm-provider, gemini-bridge 등)
-│       ├── agent/       에이전트/팀 (team-builder, optimizer 등)
-│       └── output/      보고/환경 (report-generator, env-checker 등)
-├── presets/         역할, 프로젝트 타입, 템플릿, CI 템플릿
-├── guides/          사용자 가이드
-├── templates/       Handlebars 템플릿
-├── skills/          5개 내장 스킬
-├── internal/        Daily Improvement 자율 파이프라인 (내부 개발 도구)
-└── tests/           2,250+ 테스트 (Vitest)
-```
-
-## 개발
-
-```bash
-npm install           # 의존성 설치
-npm test              # 전체 테스트
-npm run test:watch    # 감시 모드
-npm run test:coverage # 커버리지 리포트
-```
-
-## 기술 스택
-
-- Node.js 18+ (ESM)
-- Handlebars 템플릿 엔진
-- Vitest 테스트 (2,250+개)
-- GitHub Actions CI (Node 18/20/22)
-
-## 지원 범위
-
-### 빌드 검증 지원 언어
-
-| 언어    | 빌드 커맨드                                | 타임아웃 |
-| ------- | ------------------------------------------ | -------- |
-| Node.js | `npm install --ignore-scripts && npm test` | 30초     |
-| Python  | `pip install && pytest`                    | 30초     |
-| Go      | `go build ./...`                           | 45초     |
-| Java    | `mvn compile`                              | 60초     |
-
-### 미지원 (현재)
-
-- Rust, C/C++ 빌드 검증
-- Docker 기반 빌드/배포
-- GUI 테스트 (Playwright, Cypress 등)
-- 모바일 앱 빌드 (Flutter, React Native 등)
-
-### 정책 제약
-
-| 항목              | 제한         | 설명                        |
-| ----------------- | ------------ | --------------------------- |
-| Phase당 수정 시도 | 최대 2회     | 초과 시 CEO 에스컬레이션    |
-| 토론 라운드       | 최대 3회     | 80%+ 동의 시 조기 수렴      |
-| 에이전트 호출     | 세션당 500회 | 무한 루프 방지              |
-| 크로스 리뷰어     | 2-3명        | 도메인 매칭 기반 자동 선정  |
-| 리비전 라운드     | 최대 2회     | critical + important 이슈만 |
+Storage 옵션, 에러 처리, Discusser/Executor 개별 사용 등 상세 내용은 [SDK 사용 가이드](guides/common/09-sdk-usage.md)를 참고하세요.
 
 ## 트러블슈팅
 
@@ -504,6 +372,40 @@ good-vibe:execute     # 중단된 실행이 있으면 자동으로 재개 여부
 
 최대 3라운드 토론 후에도 80% 동의에 도달하지 못하면, 마지막 라운드 결과로 기획서를 확정합니다. `good-vibe:approve`에서 직접 수정 피드백을 남길 수 있습니다.
 
+## FAQ
+
+### 처음인데 뭐부터 하면 되나요?
+
+`good-vibe:hello`를 입력하세요. 환경을 자동으로 확인하고, CLAUDE.md와 개인 설정을 만들어줍니다. 그 다음 `good-vibe:new`로 아이디어를 입력하면 됩니다.
+
+### Claude Code 없이도 쓸 수 있나요?
+
+SDK를 사용하면 Claude Code 없이 Node.js 환경에서 직접 호출할 수 있습니다. 다만 슬래시 커맨드(`good-vibe:new`, `good-vibe:execute` 등)는 Claude Code 플러그인이 필요합니다.
+
+### 어떤 LLM을 지원하나요?
+
+Claude, OpenAI, Gemini를 지원합니다. 팀원마다 다른 모델을 배정할 수도 있습니다.
+
+### 기존 코드베이스에 적용할 수 있나요?
+
+기존 코드베이스 폴더에서 `good-vibe:new`를 실행하면, 기술 스택과 구조를 자동으로 파악합니다. 이 정보가 팀 구성과 토론에 반영됩니다.
+
+### 팀원을 직접 골라도 되나요?
+
+`good-vibe:new`에서 자동 추천된 팀을 수정할 수 있습니다. 또는 `good-vibe:new-project`로 처음부터 직접 선택할 수도 있습니다.
+
+### 완료된 프로젝트를 수정하고 싶어요
+
+`good-vibe:modify`를 사용하세요. 기존 맥락(팀 구성, 기획서, 실행 이력)을 유지하면서 기능을 추가하거나 수정할 수 있습니다.
+
+### 실행 중 세션이 끊기면 어떻게 되나요?
+
+실행 상태가 `project.json`에 자동 저장됩니다. `good-vibe:execute`를 다시 실행하면 이전 Phase부터 재개할 수 있습니다.
+
+### GitHub 연동은 필수인가요?
+
+아닙니다. 기본값은 `github.enabled = false`이고, 켜지 않으면 main 브랜치에 직접 커밋합니다. GitHub CLI가 설치되지 않아도 에러 없이 동작합니다.
+
 ## 데이터 저장 위치
 
 | 데이터                         | 경로                                                  |
@@ -513,35 +415,95 @@ good-vibe:execute     # 중단된 실행이 있으면 자동으로 재개 여부
 | 에이전트 오버라이드 (프로젝트) | `{projectDir}/.good-vibe/agent-overrides/{roleId}.md` |
 | 커스텀 템플릿                  | `~/.claude/good-vibe/custom-templates/`               |
 
-## FAQ
+<details>
+<summary><strong>개발자 정보 (Contributing)</strong></summary>
 
-### Claude Code 없이도 쓸 수 있나요?
+### 아키텍처
 
-SDK를 사용하면 Claude Code 없이 Node.js 환경에서 직접 호출할 수 있습니다. 다만 슬래시 커맨드(`good-vibe:new`, `good-vibe:execute` 등)는 Claude Code 플러그인이 필요합니다.
+```
+┌─────────────────────────────────────────────┐
+│  사용자              슬래시 커맨드 6개        │
+│  hello → new → discuss → approve →           │
+│  execute → report                            │
+├─────────────────────────────────────────────┤
+│  SDK                 GoodVibe 클래스         │
+│  buildTeam → discuss → execute → report     │
+├─────────────────────────────────────────────┤
+│  AI 팀원             15개 역할               │
+│  Tier별 병렬 분석 + 크로스 리뷰              │
+├─────────────────────────────────────────────┤
+│  내부 API            CLI-as-API (152개)      │
+│  에이전트가 호출하는 인터페이스               │
+├─────────────────────────────────────────────┤
+│  코어 라이브러리      60개 모듈 + 15개 핸들러  │
+│  프로젝트 관리, 오케스트레이션, 리뷰 엔진 등  │
+└─────────────────────────────────────────────┘
+```
 
-### 어떤 LLM을 지원하나요?
+### 프로젝트 구조
 
-Claude, OpenAI, Gemini를 지원합니다. `llm-provider.js`에서 프로바이더를 추상화하고 있어서, 팀원마다 다른 모델을 배정할 수도 있습니다.
+```
+good-vibe/
+├── src/             SDK (GoodVibe, Discusser, Executor, Storage)
+├── plugin/          Claude Code 어댑터
+├── agents/          23개 에이전트 (팀 15 + 서포트 8)
+├── commands/        20개 슬래시 커맨드 정의
+├── scripts/
+│   ├── cli.js       내부 API 라우터 (152개 커맨드)
+│   ├── handlers/    15개 핸들러 모듈
+│   └── lib/         60개 코어 라이브러리
+│       ├── core/        기반 유틸 (validators, config, cache 등)
+│       ├── project/     프로젝트 관리 (project-manager, scaffolder, branch, PR, CI 등)
+│       ├── engine/      실행 엔진 (orchestrator, execution-loop, review 등)
+│       ├── llm/         LLM 연동 (llm-provider, gemini-bridge 등)
+│       ├── agent/       에이전트/팀 (team-builder, optimizer 등)
+│       └── output/      보고/환경 (report-generator, env-checker 등)
+├── presets/         역할, 프로젝트 타입, 템플릿, CI 템플릿
+├── guides/          사용자 가이드
+├── templates/       Handlebars 템플릿
+├── skills/          5개 내장 스킬
+├── internal/        Daily Improvement 자율 파이프라인 (내부 개발 도구)
+└── tests/           2,250+ 테스트 (Vitest)
+```
 
-### 토큰 비용은 얼마나 드나요?
+### 기술 스택
 
-모드와 팀 규모에 따라 다릅니다. quick-build는 $0.5-2, plan-execute는 $3-8, plan-only는 $8-20+ 정도입니다. `good-vibe:report`에서 실제 사용량을 확인할 수 있습니다.
+- Node.js 18+ (ESM)
+- Handlebars 템플릿 엔진
+- Vitest 테스트 (2,250+개)
+- GitHub Actions CI (Node 18/20/22)
 
-### 기존 코드베이스에 적용할 수 있나요?
+### 개발
 
-기존 코드베이스 폴더에서 `good-vibe:new`를 실행하면, `codebase-scanner`가 기술 스택과 구조를 파악합니다. 이 정보가 팀 구성과 토론에 반영됩니다.
+```bash
+npm install           # 의존성 설치
+npm test              # 전체 테스트
+npm run test:watch    # 감시 모드
+npm run test:coverage # 커버리지 리포트
+```
 
-### 실행 중 세션이 끊기면 어떻게 되나요?
+### 지원 범위
 
-실행 상태(Phase, 수정 이력, 작업 결과)가 `project.json`에 자동 저장됩니다. `good-vibe:execute`를 다시 실행하면 이전 Phase부터 재개할 수 있습니다.
+**빌드 검증 지원 언어:**
 
-### GitHub 연동은 필수인가요?
+| 언어    | 빌드 커맨드                                | 타임아웃 |
+| ------- | ------------------------------------------ | -------- |
+| Node.js | `npm install --ignore-scripts && npm test` | 30초     |
+| Python  | `pip install && pytest`                    | 30초     |
+| Go      | `go build ./...`                           | 45초     |
+| Java    | `mvn compile`                              | 60초     |
 
-아닙니다. 기본값은 `github.enabled = false`이고, 켜지 않으면 main 브랜치에 직접 커밋합니다. GitHub CLI가 설치되지 않아도 에러 없이 동작합니다.
+**정책 제약:**
 
-### 프로젝트 데이터는 어디에 저장되나요?
+| 항목              | 제한         | 설명                        |
+| ----------------- | ------------ | --------------------------- |
+| Phase당 수정 시도 | 최대 2회     | 초과 시 CEO 에스컬레이션    |
+| 토론 라운드       | 최대 3회     | 80%+ 동의 시 조기 수렴      |
+| 에이전트 호출     | 세션당 500회 | 무한 루프 방지              |
+| 크로스 리뷰어     | 2-3명        | 도메인 매칭 기반 자동 선정  |
+| 리비전 라운드     | 최대 2회     | critical + important 이슈만 |
 
-`~/.claude/good-vibe/projects/{id}/project.json`에 저장됩니다. 에이전트 오버라이드는 `~/.claude/good-vibe/agent-overrides/`에 있습니다.
+</details>
 
 ## 라이선스
 
