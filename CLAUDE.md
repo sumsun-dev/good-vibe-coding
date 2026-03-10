@@ -38,22 +38,21 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 ## 프로젝트 상태 전이
 
 ```
-created → planning → approved → executing → reviewing → completed
-                  ↗                                ↗        │
-           (재토론)                          (fix 후 재실행)  │
-                                                            ↓
-                                                     (good-vibe:modify)
-                                                     approved → executing → completed
+planning → approved → executing → reviewing → completed
+        ↗                                ↗        │
+ (재토론)                          (fix 후 재실행)  │
+                                                  ↓
+                                           (good-vibe:modify)
+                                           approved → executing → completed
 ```
 
-| 상태        | 가능한 커맨드                                                | 설명                          |
-| ----------- | ------------------------------------------------------------ | ----------------------------- |
-| `created`   | `good-vibe:new`, `good-vibe:discuss`                         | 프로젝트 생성됨, 팀 구성 완료 |
-| `planning`  | `good-vibe:discuss`, `good-vibe:approve`                     | 토론 중 또는 기획서 작성됨    |
-| `approved`  | `good-vibe:execute`, `good-vibe:report`                      | CEO 승인 완료, 작업 분배됨    |
-| `executing` | `good-vibe:status`, (자동 진행)                              | 실행 중                       |
-| `reviewing` | `good-vibe:status`, (자동 진행)                              | 리뷰 중                       |
-| `completed` | `good-vibe:report`, `good-vibe:feedback`, `good-vibe:modify` | 전체 완료                     |
+| 상태        | 가능한 커맨드                                                | 설명                       |
+| ----------- | ------------------------------------------------------------ | -------------------------- |
+| `planning`  | `good-vibe:discuss`, `good-vibe:approve`                     | 토론 중 또는 기획서 작성됨 |
+| `approved`  | `good-vibe:execute`, `good-vibe:report`                      | CEO 승인 완료, 작업 분배됨 |
+| `executing` | `good-vibe:status`, (자동 진행)                              | 실행 중                    |
+| `reviewing` | `good-vibe:status`, (자동 진행)                              | 리뷰 중                    |
+| `completed` | `good-vibe:report`, `good-vibe:feedback`, `good-vibe:modify` | 전체 완료                  |
 
 ## 기존 프로젝트 이어서 작업
 
@@ -167,7 +166,7 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 │  내부 API            CLI-as-API (152개)      │
 │  에이전트가 호출하는 인터페이스               │
 ├─────────────────────────────────────────────┤
-│  코어 라이브러리      59개 모듈 + 15개 핸들러  │
+│  코어 라이브러리      60개 모듈 + 15개 핸들러  │
 │  프로젝트 관리, 오케스트레이션, 리뷰 엔진 등  │
 └─────────────────────────────────────────────┘
 ```
@@ -229,7 +228,7 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 
 ## 코어 모듈 (`scripts/lib/`)
 
-**`core/`** — 기반 유틸리티 (15개)
+**`core/`** — 기반 유틸리티 (16개)
 
 - `validators.js` — 입력 검증 + AppError (inputError/notFoundError/systemError)
 - `config.js` — 중앙 설정 (Object.freeze, 전체 정책 상수)
@@ -246,6 +245,7 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 - `onboarding-generator.js` — 온보딩 CLAUDE.md/rules 생성
 - `settings-manager.js` — 사용자 설정 관리
 - `text-utils.js` — 텍스트 유틸리티
+- `intent-gate.js` — 의도 분류 게이트 (resume/modify/status/create 라우팅, 프로젝트 상태 기반)
 
 **`project/`** — 프로젝트 관리 (13개)
 

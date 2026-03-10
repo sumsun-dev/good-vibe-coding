@@ -65,42 +65,70 @@ options:
 
 ---
 
-## Step 0.5: 기존 프로젝트 확인
+## Step 0.5: 의도 분류 (Intent Gate)
 
-기존 프로젝트가 있는지 확인합니다:
+사용자가 전달한 텍스트(있는 경우)로 의도를 분류합니다:
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js list-projects
+echo '{"input": "{사용자 입력 텍스트}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js classify-intent
 ```
 
-프로젝트가 **없으면** → Step 1로 바로 진행.
+> 사용자가 텍스트 없이 `good-vibe:new`만 실행한 경우: `{"input": ""}` 전달
 
-프로젝트가 **있으면** → 전체 목록을 보여주고 AskUserQuestion:
+**결과별 분기:**
+
+### intent: "create" + hasExistingProjects: false
+
+→ Step 1로 바로 진행합니다.
+
+### intent: "create" + hasExistingProjects: true
+
+기존 프로젝트가 있으므로, 이어할지 새로 시작할지 물어봅니다:
 
 ```
 질문: "기존 프로젝트를 이어서 할까요, 새로 시작할까요?"
 header: "프로젝트 선택"
 options:
-  - label: "{프로젝트1명} ({status})"
-    description: "{mode} · 팀 {team.length}명"
-  - label: "{프로젝트2명} ({status})"  (여러 개면 추가, 최대 3개 + Other)
-    description: "{mode} · 팀 {team.length}명"
+  - label: "{projects[0].name} ({projects[0].status})"
+    description: "{projects[0].mode} · 팀 {projects[0].teamSize}명"
+  - label: "{projects[1].name} ({projects[1].status})"  (있으면, 최대 3개)
+    description: "..."
   - label: "새 프로젝트 시작"
     description: "새로운 아이디어로 프로젝트를 시작합니다"
 ```
 
-### 기존 프로젝트 선택 시 — 상태별 다음 단계 안내
-
-| 상태                  | 안내                                                               |
-| --------------------- | ------------------------------------------------------------------ |
-| created               | → `good-vibe:discuss`로 토론 시작                                  |
-| planning              | → `good-vibe:discuss`로 토론 계속, 또는 `good-vibe:approve`로 승인 |
-| approved              | → `good-vibe:execute`로 실행 시작                                  |
-| executing / reviewing | → `good-vibe:execute`로 중단된 작업 재개                           |
-| completed             | → `good-vibe:modify`로 수정, 또는 `good-vibe:report`로 보고서 확인 |
-
-기존 프로젝트를 선택한 경우 상태별 다음 커맨드를 안내하고 여기서 종료합니다.
+기존 프로젝트 선택 시 → **route.message** 안내 후 종료.
 "새 프로젝트 시작" 선택 시 → Step 1로 진행.
+
+### intent: "resume"
+
+CEO에게 재개 안내:
+
+```
+"{suggestedProject.name}" 프로젝트를 이어서 진행할 수 있습니다.
+
+현재 상태: {suggestedProject.status}
+다음 단계: {route.message}
+```
+
+종료.
+
+### intent: "modify"
+
+```
+"{suggestedProject.name}" 프로젝트를 수정합니다.
+→ good-vibe:modify를 사용하세요.
+```
+
+종료.
+
+### intent: "status"
+
+```
+프로젝트 상태 확인은 good-vibe:status를 사용하세요.
+```
+
+종료.
 
 ---
 
@@ -548,7 +576,8 @@ Task tool 프롬프트:
 2. 작업 분배 프롬프트 생성 + LLM 실행:
    node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js task-distribution-prompt --id {ID}
    → 생성된 프롬프트를 LLM으로 실행 → 작업 목록 생성
-   → 작업 목록을 프로젝트에 저장
+   → 작업 목록을 프로젝트에 저장:
+   echo '{"id":"{ID}","tasks":[...생성된 작업 배열...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js save-tasks
 
 3. 실행 초기화:
    echo '{"id":"{ID}","mode":"auto"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js init-execution
@@ -696,7 +725,8 @@ Task tool 프롬프트:
 2. 작업 분배 프롬프트 생성 + LLM 실행:
    node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js task-distribution-prompt --id {ID}
    → 생성된 프롬프트를 LLM으로 실행 → 작업 목록 생성
-   → 작업 목록을 프로젝트에 저장
+   → 작업 목록을 프로젝트에 저장:
+   echo '{"id":"{ID}","tasks":[...생성된 작업 배열...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js save-tasks
 
 3. 실행 초기화:
    echo '{"id":"{ID}","mode":"auto"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js init-execution
@@ -846,6 +876,17 @@ options:
 
 "수정 요청" 선택 시 CEO 피드백을 받아 `ceoFeedback`에 저장하고 C-1a로 돌아갑니다.
 
+"중단" 선택 시:
+
+```
+프로젝트가 planning 상태로 유지됩니다. 나중에 재개하려면:
+- good-vibe:discuss — 토론 재개
+- good-vibe:approve — 기획서 승인
+- good-vibe:status — 현재 상태 확인
+```
+
+종료.
+
 승인 시, 실행 모드를 선택합니다 (메인 세션 — CEO 터치포인트):
 
 ```
@@ -875,7 +916,8 @@ Task tool 프롬프트:
 2. 작업 분배 프롬프트 생성 + LLM 실행:
    node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js task-distribution-prompt --id {ID}
    → 생성된 프롬프트를 LLM으로 실행 → 작업 목록 생성
-   → 작업 목록을 프로젝트에 저장
+   → 작업 목록을 프로젝트에 저장:
+   echo '{"id":"{ID}","tasks":[...생성된 작업 배열...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js save-tasks
 
 3. 실행 초기화:
    echo '{"id":"{ID}","mode":"{선택된모드}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js init-execution

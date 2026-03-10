@@ -159,13 +159,17 @@ Task tool 프롬프트:
 3. 작업 분배:
    수정 PRD를 기반으로 작업을 분배합니다.
    node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js task-distribution-prompt --id {ID}
+   → 생성된 프롬프트를 LLM으로 실행 → 작업 목록 생성
    → 수정/추가 작업만 포함 (기존 완료 작업은 제외)
    → 리뷰 Phase 자동 삽입
 
-4. 실행 초기화:
+4. 작업 목록 저장:
+   echo '{"id":"{ID}","tasks":[...생성된 작업 배열...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js save-tasks
+
+5. 실행 초기화:
    echo '{"id":"{ID}","mode":"auto"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js init-execution
 
-5. 상태 변경:
+6. 상태 변경:
    echo '{"id":"{ID}","status":"executing"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js update-status
 
 반환 형식 (JSON):
@@ -183,8 +187,7 @@ CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 execute.md의 Phase별 실행 흐름을 따릅니다.
 
 > `good-vibe:execute`의 Step 2~4와 동일한 실행 흐름입니다.
-> 실행 모드는 Step 5에서 auto로 초기화되었으므로, 에스컬레이션만 CEO에게 올라갑니다.
-> 단, 수정 규모가 크면 (complexity: complex) CEO에게 모드 선택을 물어봅니다.
+> 실행 모드는 auto로 초기화됩니다. 에스컬레이션만 CEO에게 올라갑니다.
 
 ## Step 7: 완료
 
