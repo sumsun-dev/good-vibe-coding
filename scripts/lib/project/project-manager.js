@@ -20,6 +20,27 @@ const VALID_STATUSES = ['planning', 'approved', 'executing', 'reviewing', 'compl
 const VALID_MODES = ['plan-only', 'plan-execute', 'quick-build'];
 
 /**
+ * 프로젝트 상태 전이 규칙.
+ * - planning → approved: CEO 승인 (approve)
+ * - planning → planning: 재토론 (discuss --reset)
+ * - approved → executing: 실행 시작 (execute)
+ * - approved → planning: 승인 철회 (discuss --reset)
+ * - executing → reviewing: 리뷰 단계 진입 (materialize 완료 후)
+ * - executing → completed: 전체 실행 완료
+ * - executing → approved: "처음부터 다시" (execute 재개 시)
+ * - reviewing → executing: 리뷰 완료 후 실행 복귀 (quality-gate 후)
+ * - reviewing → completed: 마지막 Phase 리뷰 후 완료
+ * - completed → approved: 수정 모드 (modify)
+ */
+const VALID_TRANSITIONS = {
+  planning: ['approved', 'planning'],
+  approved: ['executing', 'planning'],
+  executing: ['reviewing', 'completed', 'approved'],
+  reviewing: ['executing', 'completed'],
+  completed: ['approved'],
+};
+
+/**
  * 테스트용 베이스 디렉토리를 설정한다.
  * @param {string} dir - 새 베이스 디렉토리
  */
@@ -217,7 +238,15 @@ export async function updateProjectStatus(projectId, status) {
   if (!VALID_STATUSES.includes(status)) {
     throw inputError(`유효하지 않은 상태: ${status}. 가능한 값: ${VALID_STATUSES.join(', ')}`);
   }
-  return withProjectLock(projectId, (project) => ({ ...project, status }));
+  return withProjectLock(projectId, (project) => {
+    const allowed = VALID_TRANSITIONS[project.status];
+    if (!allowed || !allowed.includes(status)) {
+      throw inputError(
+        `상태 전이 불가: ${project.status} → ${status}. 허용: ${(allowed || []).join(', ')}`,
+      );
+    }
+    return { ...project, status };
+  });
 }
 
 /**

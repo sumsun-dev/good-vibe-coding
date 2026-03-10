@@ -270,6 +270,36 @@ describe('phaseGuidance 저널 기록 (WS4)', () => {
   });
 });
 
+describe('initExecution 상태 검증', () => {
+  it('planning 상태에서 initExecution → 에러', async () => {
+    const { createProject } = await import('../../scripts/lib/project/project-manager.js');
+    // createTestProject는 approved로 변경하므로 직접 planning 상태 프로젝트 생성
+    const project = await createProject('상태검증', 'web-app', '설명', { mode: 'plan-execute' });
+    await expect(initExecution(project.id)).rejects.toThrow(
+      '실행 초기화는 approved 상태에서만 가능합니다',
+    );
+  });
+
+  it('resume=true + executing → 허용', async () => {
+    const project = await createTestProject();
+    await initExecution(project.id);
+    // initExecution이 실행되면 executionState가 설정됨
+    // project status는 아직 approved — executing으로 변경
+    const { updateProjectStatus } = await import('../../scripts/lib/project/project-manager.js');
+    await updateProjectStatus(project.id, 'executing');
+    const result = await initExecution(project.id, { resume: true });
+    expect(result.resumed).toBe(true);
+  });
+
+  it('resume=true + planning → 에러', async () => {
+    const { createProject } = await import('../../scripts/lib/project/project-manager.js');
+    const project = await createProject('재개검증', 'web-app', '설명', { mode: 'plan-execute' });
+    await expect(initExecution(project.id, { resume: true })).rejects.toThrow(
+      '재개는 approved/executing/reviewing 상태에서만 가능합니다',
+    );
+  });
+});
+
 describe('PR 생성 실패 시 addPullRequest에 error 포함', () => {
   it('PR 실패 정보가 기록된다', async () => {
     // addPullRequest에 error 필드를 포함해 호출할 수 있는지 확인

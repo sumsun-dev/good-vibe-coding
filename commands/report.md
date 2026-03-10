@@ -23,6 +23,13 @@ description: '최종 보고서 생성 — 프로젝트 전체 과정 정리'
 node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js list-projects
 ```
 
+프로젝트가 없으면 아래와 같이 안내하고 종료합니다:
+
+```
+프로젝트가 아직 없습니다.
+good-vibe:new로 프로젝트를 시작해보세요!
+```
+
 ## Step 2: 보고서 생성
 
 ```bash

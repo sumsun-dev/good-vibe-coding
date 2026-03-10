@@ -269,4 +269,75 @@ describe('handlers/project', () => {
     const updated = cliExec('update-status', { id: project.id, status: 'planning' });
     expect(updated.status).toBe('planning');
   });
+
+  it('save-tasks 정상 저장', () => {
+    const project = cliExec('create-project', {
+      name: 'save-tasks-test',
+      type: 'web-app',
+    });
+    createdIds.push(project.id);
+
+    const result = cliExec('save-tasks', {
+      id: project.id,
+      tasks: [
+        { id: 'task-1', title: 'API 설계', assignee: 'backend', status: 'pending' },
+        { id: 'task-2', title: 'UI 구현', assignee: 'frontend', status: 'pending' },
+      ],
+    });
+    expect(result.success).toBe(true);
+    expect(result.count).toBe(2);
+  });
+
+  it('save-tasks 필수 필드 누락 시 INPUT_ERROR', () => {
+    const result = cliExecRaw('save-tasks', { id: 'some-id' });
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('INPUT_ERROR');
+  });
+
+  it('save-tasks tasks가 배열이 아닐 때 INPUT_ERROR', () => {
+    const project = cliExec('create-project', {
+      name: 'save-tasks-err',
+      type: 'web-app',
+    });
+    createdIds.push(project.id);
+
+    const result = cliExecRaw('save-tasks', {
+      id: project.id,
+      tasks: 'not-an-array',
+    });
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('배열');
+  });
+
+  it('classify-intent 입력 없이 → create', () => {
+    const result = cliExec('classify-intent', { input: '' });
+    expect(result.intent).toBe('create');
+    expect(typeof result.hasExistingProjects).toBe('boolean');
+    expect(Array.isArray(result.projects)).toBe(true);
+  });
+
+  it('classify-intent 프로젝트 생성 후 → hasExistingProjects: true', () => {
+    const project = cliExec('create-project', {
+      name: 'intent-test',
+      type: 'web-app',
+    });
+    createdIds.push(project.id);
+
+    const result = cliExec('classify-intent', { input: '' });
+    expect(result.hasExistingProjects).toBe(true);
+    expect(result.projects.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('classify-intent 재개 패턴 + 미완료 프로젝트 → resume', () => {
+    const project = cliExec('create-project', {
+      name: 'resume-intent-test',
+      type: 'web-app',
+    });
+    createdIds.push(project.id);
+
+    const result = cliExec('classify-intent', { input: '이어서' });
+    expect(result.intent).toBe('resume');
+    expect(result.suggestedProject).not.toBeNull();
+    expect(result.route).not.toBeNull();
+  });
 });

@@ -178,6 +178,48 @@ describe('updateProjectStatus', () => {
   it('존재하지 않는 프로젝트는 에러', async () => {
     await expect(updateProjectStatus('no-exist', 'approved')).rejects.toThrow();
   });
+
+  it('planning→approved 전이를 허용한다', async () => {
+    const project = await createProject('전이테스트', 'web-app', '설명');
+    const updated = await updateProjectStatus(project.id, 'approved');
+    expect(updated.status).toBe('approved');
+  });
+
+  it('planning→completed 전이를 거부한다', async () => {
+    const project = await createProject('전이테스트', 'web-app', '설명');
+    await expect(updateProjectStatus(project.id, 'completed')).rejects.toThrow('상태 전이 불가');
+  });
+
+  it('completed→approved 전이를 허용한다 (modify)', async () => {
+    const project = await createProject('전이테스트', 'web-app', '설명');
+    await updateProjectStatus(project.id, 'approved');
+    await updateProjectStatus(project.id, 'executing');
+    await updateProjectStatus(project.id, 'completed');
+    const updated = await updateProjectStatus(project.id, 'approved');
+    expect(updated.status).toBe('approved');
+  });
+
+  it('completed→executing 전이를 거부한다', async () => {
+    const project = await createProject('전이테스트', 'web-app', '설명');
+    await updateProjectStatus(project.id, 'approved');
+    await updateProjectStatus(project.id, 'executing');
+    await updateProjectStatus(project.id, 'completed');
+    await expect(updateProjectStatus(project.id, 'executing')).rejects.toThrow('상태 전이 불가');
+  });
+
+  it('approved→planning 전이를 허용한다 (--reset)', async () => {
+    const project = await createProject('전이테스트', 'web-app', '설명');
+    await updateProjectStatus(project.id, 'approved');
+    const updated = await updateProjectStatus(project.id, 'planning');
+    expect(updated.status).toBe('planning');
+  });
+
+  it('executing→planning 전이를 거부한다', async () => {
+    const project = await createProject('전이테스트', 'web-app', '설명');
+    await updateProjectStatus(project.id, 'approved');
+    await updateProjectStatus(project.id, 'executing');
+    await expect(updateProjectStatus(project.id, 'planning')).rejects.toThrow('상태 전이 불가');
+  });
 });
 
 describe('setProjectTeam', () => {

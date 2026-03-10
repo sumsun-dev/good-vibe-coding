@@ -34,6 +34,8 @@ const COMMAND_MAP = {
   'describe-command': 'project',
   'scan-codebase': 'project',
   'add-modify-history': 'project',
+  'classify-intent': 'project',
+  'save-tasks': 'project',
   // team
   'recommend-team': 'team',
   'optimized-team': 'team',

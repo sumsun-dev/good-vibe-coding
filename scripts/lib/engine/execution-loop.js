@@ -136,6 +136,19 @@ export async function initExecution(projectId, options = {}) {
   const project = await getProject(projectId);
   if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${projectId}`);
 
+  // 상태 검증
+  if (resume) {
+    if (!['approved', 'executing', 'reviewing'].includes(project.status)) {
+      throw inputError(
+        `재개는 approved/executing/reviewing 상태에서만 가능합니다 (현재: ${project.status})`,
+      );
+    }
+  } else {
+    if (project.status !== 'approved') {
+      throw inputError(`실행 초기화는 approved 상태에서만 가능합니다 (현재: ${project.status})`);
+    }
+  }
+
   const hasExistingState = project.executionState && isValidExecutionState(project.executionState);
 
   if (hasExistingState && resume) {

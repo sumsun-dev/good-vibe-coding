@@ -1,7 +1,7 @@
 /**
  * handlers/project — 프로젝트 CRUD + 상태 관리 커맨드
  */
-import { readStdin, output, parseArgs } from '../cli-utils.js';
+import { readStdin, output, outputOk, parseArgs } from '../cli-utils.js';
 import {
   createProject,
   listProjects,
@@ -9,6 +9,7 @@ import {
   setProjectTeam,
   getExecutionProgress,
   addModifyEntry,
+  addProjectTasks,
 } from '../lib/project/project-manager.js';
 import { generateReport } from '../lib/output/report-generator.js';
 import { scanCodebase } from '../lib/project/codebase-scanner.js';
@@ -140,6 +141,22 @@ export const commands = {
       complexity: data.complexity,
     });
     output(project);
+  },
+
+  'classify-intent': async () => {
+    const data = await readStdin();
+    const { classifyIntent } = await import('../lib/core/intent-gate.js');
+    const projects = await listProjects();
+    const result = classifyIntent(data.input || null, projects);
+    output(result);
+  },
+
+  'save-tasks': async () => {
+    const data = await readStdin();
+    requireFields(data, ['id', 'tasks']);
+    if (!Array.isArray(data.tasks)) throw inputError('tasks는 배열이어야 합니다');
+    await addProjectTasks(data.id, data.tasks);
+    outputOk({ id: data.id, count: data.tasks.length });
   },
 
   'describe-command': async () => {
