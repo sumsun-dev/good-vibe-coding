@@ -381,3 +381,9 @@ options:
   good-vibe:new   -> 프로젝트 시작 (역할 선택 + 폴더 생성 + 기획 + 실행)
   good-vibe:learn  -> Claude Code 활용법 배우기
 ```
+
+---
+
+## 문제가 생기면
+
+`good-vibe:learn 문제해결`을 실행하면 에러 코드별 해결 방법과 자주 만나는 상황의 복구 가이드를 확인할 수 있습니다.

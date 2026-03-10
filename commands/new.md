@@ -1113,3 +1113,9 @@ echo '{"id":"{프로젝트ID}","status":"completed"}' | node ${CLAUDE_PLUGIN_ROO
   good-vibe:feedback  → 팀원 성과 분석 + 개선점
   good-vibe:status    → 프로젝트 상태 확인
 ```
+
+---
+
+## 문제가 생기면
+
+`good-vibe:learn 문제해결`을 실행하면 에러 코드별 해결 방법과 자주 만나는 상황의 복구 가이드를 확인할 수 있습니다.

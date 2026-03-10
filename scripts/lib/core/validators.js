@@ -116,7 +116,7 @@ export function assertWithinRoot(resolvedPath, rootDir, label) {
   const normalizedPath = normalize(resolvedPath).toLowerCase();
   const normalizedRoot = normalize(rootDir).toLowerCase();
   if (!normalizedPath.startsWith(normalizedRoot + sep) && normalizedPath !== normalizedRoot) {
-    throw inputError(`${label}이 허용 범위를 벗어났습니다`);
+    throw inputError(`${label}이 허용된 디렉토리(${rootDir}) 범위를 벗어났습니다`);
   }
 }
 

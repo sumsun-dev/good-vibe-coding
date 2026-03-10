@@ -318,10 +318,10 @@ describe('saveProjectOverride / loadProjectOverride', () => {
 
   it('projectsDir 밖의 경로를 거부한다', async () => {
     await expect(saveProjectOverride('/tmp/evil', 'backend', 'x')).rejects.toThrow(
-      '허용 범위를 벗어났습니다',
+      '범위를 벗어났습니다',
     );
     await expect(loadProjectOverride('/tmp/evil', 'backend')).rejects.toThrow(
-      '허용 범위를 벗어났습니다',
+      '범위를 벗어났습니다',
     );
   });
 });
@@ -341,7 +341,7 @@ describe('listProjectOverrides', () => {
   });
 
   it('projectsDir 밖의 경로를 거부한다', async () => {
-    await expect(listProjectOverrides('/tmp/evil')).rejects.toThrow('허용 범위를 벗어났습니다');
+    await expect(listProjectOverrides('/tmp/evil')).rejects.toThrow('범위를 벗어났습니다');
   });
 });
 

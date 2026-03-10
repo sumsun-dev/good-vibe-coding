@@ -110,7 +110,7 @@ describe('setup-installer', () => {
         sourcePath: 'agents/code-reviewer-kr.md',
         installPath: '../../etc/passwd',
       };
-      await expect(installItem(item)).rejects.toThrow('허용 범위를 벗어났습니다');
+      await expect(installItem(item)).rejects.toThrow('범위를 벗어났습니다');
     });
 
     it('sourcePath path traversal을 차단한다', async () => {
@@ -119,7 +119,7 @@ describe('setup-installer', () => {
         sourcePath: '../../../etc/passwd',
         installPath: 'agents/safe.md',
       };
-      await expect(installItem(item)).rejects.toThrow('허용 범위를 벗어났습니다');
+      await expect(installItem(item)).rejects.toThrow('범위를 벗어났습니다');
     });
 
     it('소스 파일 미존재 시 에러를 던진다', async () => {

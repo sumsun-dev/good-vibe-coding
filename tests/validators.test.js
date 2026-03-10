@@ -220,7 +220,7 @@ describe('assertWithinRoot', () => {
 
   it('루트 바깥 경로를 거부한다', () => {
     expect(() => assertWithinRoot(resolve('/project/other'), root, 'file')).toThrow(
-      '허용 범위를 벗어났습니다',
+      '범위를 벗어났습니다',
     );
     try {
       assertWithinRoot(resolve('/project/other'), root, 'file');
@@ -232,20 +232,20 @@ describe('assertWithinRoot', () => {
 
   it('../로 탈출하는 경로를 거부한다', () => {
     expect(() => assertWithinRoot(resolve('/project/dir/../other'), root, 'file')).toThrow(
-      '허용 범위를 벗어났습니다',
+      '범위를 벗어났습니다',
     );
   });
 
   it('루트 이름의 prefix 디렉토리를 거부한다', () => {
     // /project/dir-evil은 /project/dir로 시작하지만 sep가 아님
     expect(() => assertWithinRoot(resolve('/project/dir-evil/file'), root, 'file')).toThrow(
-      '허용 범위를 벗어났습니다',
+      '범위를 벗어났습니다',
     );
   });
 
   it('절대 경로가 완전히 다른 경우를 거부한다', () => {
     expect(() => assertWithinRoot(resolve('/etc/passwd'), root, 'file')).toThrow(
-      '허용 범위를 벗어났습니다',
+      '범위를 벗어났습니다',
     );
   });
 });
