@@ -73,7 +73,9 @@ export function requireArray(value, fieldName) {
  */
 export function requireOneOf(value, allowed, fieldName) {
   if (!allowed.includes(value)) {
-    throw inputError(`${fieldName}는 다음 중 하나여야 합니다: ${allowed.join(', ')}`);
+    throw inputError(
+      `${fieldName}는 다음 중 하나여야 합니다: ${allowed.join(', ')} (받은 값: ${JSON.stringify(value)})`,
+    );
   }
   return value;
 }
@@ -98,10 +100,11 @@ export function requireDefined(value, fieldName) {
  * @returns {object} 원본 data (필드가 모두 존재)
  */
 export function requireFields(data, fields) {
-  for (const field of fields) {
-    if (!Object.hasOwn(data, field) || data[field] === undefined || data[field] === null) {
-      throw inputError(`${field} 필드가 필요합니다`);
-    }
+  const missing = fields.filter(
+    (f) => !Object.hasOwn(data, f) || data[f] === undefined || data[f] === null,
+  );
+  if (missing.length > 0) {
+    throw inputError(`다음 필드가 필요합니다: ${missing.join(', ')}`);
   }
   return data;
 }

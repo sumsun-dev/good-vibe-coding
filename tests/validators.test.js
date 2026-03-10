@@ -75,7 +75,9 @@ describe('requireOneOf', () => {
   });
 
   it('허용되지 않은 값이면 AppError(INPUT_ERROR)를 던진다', () => {
-    expect(() => requireOneOf('d', ['a', 'b', 'c'], 'choice')).toThrow('choice는 다음 중 하나');
+    expect(() => requireOneOf('d', ['a', 'b', 'c'], 'choice')).toThrow(
+      'choice는 다음 중 하나여야 합니다: a, b, c (받은 값: "d")',
+    );
     try {
       requireOneOf('d', ['a', 'b', 'c'], 'choice');
     } catch (e) {
@@ -114,7 +116,7 @@ describe('requireFields', () => {
   });
 
   it('필드가 없으면 AppError(INPUT_ERROR)를 던진다', () => {
-    expect(() => requireFields({ a: 1 }, ['a', 'b'])).toThrow('b 필드가 필요합니다');
+    expect(() => requireFields({ a: 1 }, ['a', 'b'])).toThrow('다음 필드가 필요합니다: b');
     try {
       requireFields({ a: 1 }, ['a', 'b']);
     } catch (e) {
@@ -123,8 +125,12 @@ describe('requireFields', () => {
     }
   });
 
+  it('여러 필드가 없으면 모든 누락 필드를 한번에 보고한다', () => {
+    expect(() => requireFields({}, ['a', 'b', 'c'])).toThrow('다음 필드가 필요합니다: a, b, c');
+  });
+
   it('필드가 null이면 에러를 던진다', () => {
-    expect(() => requireFields({ a: null }, ['a'])).toThrow('a 필드가 필요합니다');
+    expect(() => requireFields({ a: null }, ['a'])).toThrow('다음 필드가 필요합니다: a');
   });
 
   it('빈 배열 필드는 허용한다', () => {
