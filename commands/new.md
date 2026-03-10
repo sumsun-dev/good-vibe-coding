@@ -269,24 +269,24 @@ CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 
 결과 처리: `currentDescription = enrichedDescription`, 1.5.B로 돌아감 (clarity >= 0.8까지 반복)
 
-## Step 2: PRD 생성 + CEO 확인 (CEO 피드백 루프)
+## Step 2: PRD + 복잡도 분석 + CEO 확인 (CEO 피드백 루프)
 
-> **Thin Controller:** PRD 생성은 Task tool로 위임. 메인 세션은 결과 표시 + CEO 피드백만.
+> **Thin Controller:** PRD 생성 + 복잡도 분석은 Task tool 1회로 위임. 메인 세션은 결과 표시 + CEO 피드백만.
 
-명확도 통과 후, 복잡도 분석 전에 경량 PRD를 생성하여 CEO에게 보여줍니다.
-CEO가 방향성을 확인한 후 PRD 기반으로 복잡도를 분석하면 더 정확한 판단이 가능합니다.
+명확도 통과 후, PRD를 생성하고 복잡도까지 한번에 분석합니다.
+CEO가 PRD와 복잡도를 함께 확인하여 방향성을 빠르게 결정합니다.
 
 **변수 초기화:**
 
 - `prd = null`
 - `prdFeedback = null`
 
-### 2.A: PRD 생성 (Task tool)
+### 2.A: PRD + 복잡도 분석 (Task tool)
 
 Task tool 프롬프트:
 
 ```
-PRD를 생성하세요.
+PRD를 생성하고 복잡도를 분석하세요.
 
 **[필수] CLI에 JSON 전달 시 Write tool 사용:**
 - LLM 응답, PRD, 작업 목록 등 큰 JSON은 반드시 Write tool로 /tmp/gv-*.json 파일에 저장한 뒤 --input-file 플래그로 CLI에 전달하세요.
@@ -302,7 +302,14 @@ PRD를 생성하세요.
    → LLM 응답을 Write tool로 /tmp/gv-prd.json에 저장 (형식: {"rawOutput": "LLM 응답 전체"})
    → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js parse-prd --input-file /tmp/gv-prd.json
 
-반환: { prd, formatted, quality }
+4. 복잡도 분석:
+   → 입력 데이터를 Write tool로 /tmp/gv-complexity-input.json에 저장 (형식: {"description":"{currentDescription}","prd":{3에서 파싱된 prd}})
+   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js complexity-analysis --input-file /tmp/gv-complexity-input.json
+   → 생성된 프롬프트를 LLM으로 실행
+   → LLM 응답을 Write tool로 /tmp/gv-complexity.json에 저장 (형식: {"rawOutput": "LLM 응답 전체"})
+   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js parse-complexity --input-file /tmp/gv-complexity.json
+
+반환: { prd, formatted, quality, complexity: { level, score, reasoning, dimensions } }
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
 
@@ -317,61 +324,12 @@ PRD 마크다운(`formatted`)을 CEO에게 표시합니다.
 {quality.warnings를 줄바꿈으로 표시}
 ```
 
-AskUserQuestion:
+**복잡도 분석 결과를 함께 표시합니다.** `complexity.dimensions`가 있으면:
 
 ```
-질문: "이 방향으로 진행할까요?"
-header: "PRD 확인"
-options:
-  - label: "이대로 진행 (Recommended)"  (quality.adequate가 true일 때만 Recommended)
-    description: "이 PRD를 기반으로 복잡도 분석 + 팀 구성을 진행합니다"
-  - label: "자동 보강"  (quality.adequate가 false일 때만 표시, Recommended 표시)
-    description: "부족한 부분을 자동으로 보강하여 PRD를 다시 생성합니다"
-  - label: "수정 요청"
-    description: "구체적 피드백을 입력하면 PRD를 다시 생성합니다"
-  - label: "처음부터 다시"
-    description: "프로젝트 아이디어 입력부터 다시 시작합니다"
-```
+복잡도 분석: {complexity.level} ({complexity.score*100}점)
 
-- **"이대로 진행"** → `prd` 저장 → Step 3로
-- **"자동 보강"** → `prdFeedback = quality.warnings.join("\n")` → 2.A로
-- **"수정 요청"** → CEO 피드백을 `prdFeedback`에 저장 → 2.A로 (prdFeedback 주입)
-- **"처음부터 다시"** → `infraPath = null`, `githubUrl = null` 리셋 → Step 1로 돌아감
-
-## Step 3: 복잡도 분석 + 모드 선택
-
-### 3.A: 복잡도 분석 (Task tool)
-
-PRD를 기반으로 복잡도를 분석합니다:
-
-Task tool 프롬프트:
-
-```
-복잡도를 분석하세요.
-
-**[필수] CLI에 JSON 전달 시 Write tool 사용:**
-- LLM 응답, PRD, 작업 목록 등 큰 JSON은 반드시 Write tool로 /tmp/gv-*.json 파일에 저장한 뒤 --input-file 플래그로 CLI에 전달하세요.
-- echo/cat/heredoc(<<)로 큰 JSON을 bash에 직접 전달하면 보안 탐지에 걸려 자동승인이 중단됩니다.
-
-1. 입력 데이터를 Write tool로 /tmp/gv-complexity-input.json에 저장 (형식: {"description":"{currentDescription}","prd":{prd}})
-   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js complexity-analysis --input-file /tmp/gv-complexity-input.json
-   → 생성된 프롬프트를 LLM으로 실행
-   → LLM 응답을 Write tool로 /tmp/gv-complexity.json에 저장 (형식: {"rawOutput": "LLM 응답 전체"})
-   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js parse-complexity --input-file /tmp/gv-complexity.json
-
-반환: { level, score, reasoning, dimensions }
-
-CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
-```
-
-### 3.B: 복잡도 결과 표시 (메인 세션)
-
-복잡도 표시 형식 — `dimensions`가 있으면:
-
-```
-복잡도 분석: {level} ({complexityScore*100}점)
-
-{reasoning}
+{complexity.reasoning}
 
 차원별 점수:
 - 기능 범위: {featureScope.score*100}% — {featureScope.evidence}
@@ -381,9 +339,30 @@ CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 - 확장성: {scalability.score*100}% — {scalability.evidence}
 ```
 
-`dimensions`가 없으면 `{level}` + `{reasoning}`만 표시합니다.
+`complexity.dimensions`가 없으면 `{complexity.level}` + `{complexity.reasoning}`만 표시합니다.
 
-### 3.C: 모드 선택
+AskUserQuestion:
+
+```
+질문: "이 방향으로 진행할까요?"
+header: "PRD + 복잡도 확인"
+options:
+  - label: "이대로 진행 (Recommended)"  (quality.adequate가 true일 때만 Recommended)
+    description: "이 PRD를 기반으로 모드 선택 + 팀 구성을 진행합니다"
+  - label: "자동 보강"  (quality.adequate가 false일 때만 표시, Recommended 표시)
+    description: "부족한 부분을 자동으로 보강하여 PRD를 다시 생성합니다"
+  - label: "수정 요청"
+    description: "구체적 피드백을 입력하면 PRD를 다시 생성합니다"
+  - label: "처음부터 다시"
+    description: "프로젝트 아이디어 입력부터 다시 시작합니다"
+```
+
+- **"이대로 진행"** → `prd`, `complexity` 저장 → Step 3(모드 선택)으로
+- **"자동 보강"** → `prdFeedback = quality.warnings.join("\n")` → 2.A로 (PRD+복잡도 함께 재생성)
+- **"수정 요청"** → CEO 피드백을 `prdFeedback`에 저장 → 2.A로 (prdFeedback 주입)
+- **"처음부터 다시"** → `infraPath = null`, `githubUrl = null` 리셋 → Step 1로 돌아감
+
+## Step 3: 모드 선택 + 인프라 선택
 
 ### 첫 프로젝트 사용자 (기존 프로젝트 없음)
 
@@ -393,39 +372,13 @@ CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 - medium → "간단 기획 후 만들기" (plan-execute) 자동 선택
 - complex → "팀 토론 후 만들기" (plan-only) 자동 선택
 
-자동 선택 후 안내:
+자동 선택 후, 인프라 선택만 AskUserQuestion으로 물어봅니다:
 
 ```
 복잡도 분석 결과: {level}
 → "{선택된 모드}" 모드로 진행합니다.
   다른 모드를 원하시면 말씀해주세요.
 ```
-
-### 기존 사용자 (프로젝트가 1개 이상 있음)
-
-AskUserQuestion으로 모드를 선택하게 하세요.
-복잡도 분석 결과에 따라 권장 모드를 표시합니다.
-
-옵션:
-
-- **"바로 만들기"** (quick-build) — 빠르게 결과물을 얻고 싶을 때
-  - 소요시간: 3-5분
-  - simple 프로젝트에 권장 (간단한 봇, 유틸리티, 스크립트)
-  - 2-3명 팀이 토론 없이 바로 만들고 QA 리뷰
-
-- **"간단 기획 후 만들기"** (plan-execute) — 기획과 실행을 한번에
-  - 소요시간: 10-20분
-  - medium 프로젝트에 권장 (웹앱, API 서버, CRUD 앱)
-  - 3-5명 팀이 1라운드 토론 후 자동 실행
-
-- **"팀 토론 후 만들기"** (plan-only → plan-execute) — 충분히 논의한 후 시작
-  - 소요시간: 20-40분
-  - complex 프로젝트에 권장 (대규모 시스템, 멀티서비스, 플랫폼)
-  - 5-8명 팀이 최대 3라운드 토론 + CEO 승인 후 실행
-
-## Step 3.5: 프로젝트 인프라 선택
-
-프로젝트 폴더(CLAUDE.md, README, .gitignore)를 생성할지 CEO에게 묻습니다.
 
 AskUserQuestion:
 
@@ -441,7 +394,40 @@ options:
     description: "폴더 없이 기획/보고서만 진행"
 ```
 
-CEO의 선택(`infraChoice`)을 Step 4에 전달합니다.
+### 기존 사용자 (프로젝트가 1개 이상 있음)
+
+AskUserQuestion **1회로 모드 + 인프라를 동시에** 선택하게 하세요 (questions 배열 2개).
+복잡도 분석 결과에 따라 권장 모드를 표시합니다.
+
+```
+questions:
+  - question: "어떤 모드로 진행할까요?"
+    header: "모드"
+    multiSelect: false
+    options:
+      - label: "바로 만들기"  (simple일 때 Recommended)
+        description: "3-5분 · 2-3명 팀 · 토론 없이 바로 만들고 QA 리뷰"
+      - label: "간단 기획 후 만들기"  (medium일 때 Recommended)
+        description: "10-20분 · 3-5명 팀 · 1라운드 토론 후 자동 실행"
+      - label: "팀 토론 후 만들기"  (complex일 때 Recommended)
+        description: "20-40분 · 5-8명 팀 · 최대 3라운드 토론 + CEO 승인"
+  - question: "프로젝트 폴더를 생성할까요?"
+    header: "인프라"
+    multiSelect: false
+    options:
+      - label: "폴더 생성 (Recommended)"
+        description: "프로젝트 폴더 + CLAUDE.md + README.md + .gitignore 생성"
+      - label: "폴더 + GitHub 저장소"
+        description: "프로젝트 폴더 생성 + GitHub 저장소 자동 생성 (gh CLI 필요)"
+      - label: "건너뛰기"
+        description: "폴더 없이 기획/보고서만 진행"
+```
+
+모드 매핑:
+
+- **"바로 만들기"** → quick-build
+- **"간단 기획 후 만들기"** → plan-execute
+- **"팀 토론 후 만들기"** → plan-only
 
 ## Step 4: 프로젝트 셋업 (Thin Controller)
 
@@ -479,7 +465,7 @@ Task tool 프롬프트:
    node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js recommend-team --type {type}
 
 5. 프로젝트 생성 (PRD + 인프라 + 분석 결과 포함):
-   → 프로젝트 데이터를 Write tool로 /tmp/gv-create-project.json에 저장 (형식: {"name": "{name}", "type": "{type}", "description": "{description}", "mode": "{mode}", "prd": {prd}, "infraPath": "{infraPath 또는 null}", "githubUrl": "{githubUrl 또는 null}", "clarityAnalysis": {Step 1.5의 clarity 분석 결과 또는 null}, "complexityAnalysis": {Step 3의 complexity 분석 결과 또는 null}})
+   → 프로젝트 데이터를 Write tool로 /tmp/gv-create-project.json에 저장 (형식: {"name": "{name}", "type": "{type}", "description": "{description}", "mode": "{mode}", "prd": {prd}, "infraPath": "{infraPath 또는 null}", "githubUrl": "{githubUrl 또는 null}", "clarityAnalysis": {Step 1.5의 clarity 분석 결과 또는 null}, "complexityAnalysis": {Step 2의 complexity 분석 결과 또는 null}})
    → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js create-project --input-file /tmp/gv-create-project.json
 
 6. 팀 빌드 + 저장:

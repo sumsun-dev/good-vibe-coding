@@ -50,12 +50,10 @@ Step 4: 완료 → good-vibe:new
 **Task tool로 일괄 확인합니다** (Thin Controller 원칙):
 
 ```
-다음 CLI를 순서대로 실행하세요:
+다음 2개 CLI를 병렬로 실행하세요 (Bash tool을 2번 동시 호출하여 병렬 실행):
 
-1. node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js check-environment
-2. node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js read-settings
-
-1이 실패해도 2는 반드시 실행하세요.
+병렬 1: node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js check-environment
+병렬 2: node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js read-settings
 
 반환 형식 (JSON):
 {
