@@ -4,22 +4,23 @@
 
 플러그인 접두사로 시작하는 명령어입니다. Claude Code 대화창에 `good-vibe:new`처럼 입력하면 실행됩니다.
 
-### 기본 플로우 (6개)
+### 기본 플로우 (7개)
 
 프로젝트 하나를 처음부터 끝까지 만드는 순서입니다.
 
 ```
-good-vibe:hello → good-vibe:new → good-vibe:discuss → good-vibe:approve → good-vibe:execute → good-vibe:report
+good-vibe:hello → good-vibe:new → good-vibe:discuss → good-vibe:approve → good-vibe:execute → good-vibe:report → good-vibe:modify
 ```
 
 | 커맨드              | 뭘 하나요?                                     | 언제?                |
 | ------------------- | ---------------------------------------------- | -------------------- |
-| `good-vibe:hello`   | 프로젝트 폴더 + GitHub 저장소 생성             | 맨 처음              |
+| `good-vibe:hello`   | 환경 설정 + 개인 설정 (도구 확인, CLAUDE.md)   | 맨 처음              |
 | `good-vibe:new`     | 아이디어 입력, 복잡도 분석, 팀 자동 구성       | good-vibe:hello 후   |
 | `good-vibe:discuss` | 팀원들이 토론해서 기획서 작성                  | good-vibe:new 후     |
 | `good-vibe:approve` | 기획서 확인하고 승인하거나 수정 요청           | good-vibe:discuss 후 |
 | `good-vibe:execute` | 팀원들이 작업하고 서로 리뷰, 문제 시 자동 수정 | good-vibe:approve 후 |
 | `good-vibe:report`  | 전체 과정 정리 보고서                          | good-vibe:execute 후 |
+| `good-vibe:modify`  | 완료된 프로젝트 기능 추가/수정                 | good-vibe:report 후  |
 
 ### 관리 커맨드
 
@@ -66,7 +67,7 @@ Claude Code 대화창에서 슬래시와 함께 입력합니다:
 | 스킬                | 뭘 하나요?              | 언제 켜지나요?                   |
 | ------------------- | ----------------------- | -------------------------------- |
 | `onboarding-wizard` | 대화형 온보딩 진행      | `good-vibe:hello` 입력 시        |
-| `project-setup`     | 프로젝트 폴더/파일 생성 | `good-vibe:hello` 입력 시        |
+| `project-setup`     | 프로젝트 폴더/파일 생성 | `good-vibe:new` 입력 시          |
 | `korean-workflow`   | 역할별 워크플로우 안내  | "워크플로우 보여줘" 같은 질문 시 |
 | `beginner-guide`    | 입문자 학습 가이드      | `good-vibe:learn` 입력 시        |
 

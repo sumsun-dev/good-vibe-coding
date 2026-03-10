@@ -585,3 +585,10 @@ Step 4: 다음 단계 안내 (메인 세션 — 결과 표시)
 - 에스컬레이션 결정 적용 (handle-escalation + 재개)
 - 완료 처리 (update-status + 결과 추출)
 - 모든 LLM 호출과 멀티-CLI 체인
+
+---
+
+## 문제가 생기면?
+
+- `good-vibe:learn 문제해결` — 자주 발생하는 문제와 해결 방법
+- `good-vibe:status` — 현재 프로젝트 상태 확인

@@ -379,3 +379,10 @@ options:
   good-vibe:new   -> 프로젝트 시작 (역할 선택 + 폴더 생성 + 기획 + 실행)
   good-vibe:learn  -> Claude Code 활용법 배우기
 ```
+
+---
+
+## 문제가 생기면?
+
+- `good-vibe:learn 문제해결` — 자주 발생하는 문제와 해결 방법
+- `good-vibe:status` — 현재 프로젝트 상태 확인

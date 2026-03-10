@@ -1125,3 +1125,10 @@ echo '{"id":"{프로젝트ID}","status":"completed"}' | node ${CLAUDE_PLUGIN_ROO
   good-vibe:feedback  → 팀원 성과 분석 + 개선점
   good-vibe:status    → 프로젝트 상태 확인
 ```
+
+---
+
+## 문제가 생기면?
+
+- `good-vibe:learn 문제해결` — 자주 발생하는 문제와 해결 방법
+- `good-vibe:status` — 현재 프로젝트 상태 확인

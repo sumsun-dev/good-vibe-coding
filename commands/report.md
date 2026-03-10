@@ -58,3 +58,10 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js report --id {프로젝트ID}
 
 보고서 내용 중 이해가 안 되거나 더 알고 싶은 부분이 있으면, 편하게 질문해 주세요!
 ```
+
+---
+
+## 문제가 생기면?
+
+- `good-vibe:learn 문제해결` — 자주 발생하는 문제와 해결 방법
+- `good-vibe:status` — 현재 프로젝트 상태 확인

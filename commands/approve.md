@@ -116,11 +116,11 @@ Task tool 실행 결과를 CEO에게 그대로 표시합니다.
 기획과 작업 분배가 완료되었습니다!
 
 다음 중 하나를 선택하세요:
-- `good-vibe:execute` — 작업 실행 시작 (실행 모드: interactive/semi-auto/auto 선택)
+- `good-vibe:execute` — 작업 실행 시작 (실행 모드: 인터랙티브/배치 실행/자동 실행 선택)
 - `good-vibe:report` — 기획 보고서만 먼저 확인 (실행 전 검토용)
 - `good-vibe:status` — 현재 프로젝트 상태와 작업 분배 현황 확인
 
-💡 처음이라면 good-vibe:execute → interactive 모드를 추천합니다.
+💡 처음이라면 good-vibe:execute → 인터랙티브 모드를 추천합니다.
    Phase별로 진행 상황을 확인하면서 실행할 수 있습니다.
 ```
 
@@ -130,8 +130,15 @@ Task tool 실행 결과를 CEO에게 그대로 표시합니다.
 작업이 분배되었습니다!
 
 다음 중 하나를 선택하세요:
-- `good-vibe:execute` — 작업 실행 시작 (실행 모드: interactive/semi-auto/auto 선택)
+- `good-vibe:execute` — 작업 실행 시작 (실행 모드: 인터랙티브/배치 실행/자동 실행 선택)
 - `good-vibe:status` — 현재 프로젝트 상태와 작업 분배 현황 확인
 
 💡 문제가 생기면 자동으로 수정하고, 2번 시도해도 안 되면 물어봅니다.
 ```
+
+---
+
+## 문제가 생기면?
+
+- `good-vibe:learn 문제해결` — 자주 발생하는 문제와 해결 방법
+- `good-vibe:status` — 현재 프로젝트 상태 확인

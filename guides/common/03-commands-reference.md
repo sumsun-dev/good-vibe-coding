@@ -5,21 +5,22 @@ Good Vibe Coding에는 20개의 슬래시 커맨드가 있습니다.
 
 ---
 
-## 기본 플로우 (6개)
+## 기본 플로우 (7개)
 
 프로젝트 하나를 처음부터 끝까지 만드는 순서입니다.
 
-| #   | 커맨드              | 뭘 하나요?    | 걸리는 시간 | 뭘 넣고 뭘 받나요?                            |
-| --- | ------------------- | ------------- | ----------- | --------------------------------------------- |
-| 1   | `good-vibe:hello`   | 프로젝트 세팅 | 2-3분       | 프로젝트명, 설명, 스택 → 폴더 + GitHub 저장소 |
-| 2   | `good-vibe:new`     | 팀 구성       | 1-2분       | 아이디어 → 팀 구성 + 모드 선택                |
-| 3   | `good-vibe:discuss` | 팀 토론       | 3-10분      | (자동) → 기획서                               |
-| 4   | `good-vibe:approve` | 기획서 승인   | 1-2분       | 승인/수정/재토론 → 작업 분배                  |
-| 5   | `good-vibe:execute` | 실행 + 리뷰   | 5-15분      | 실행 모드 선택 → 완성된 결과물                |
-| 6   | `good-vibe:report`  | 보고서        | 1분         | (자동) → 마크다운 보고서                      |
+| #   | 커맨드              | 뭘 하나요?            | 걸리는 시간 | 뭘 넣고 뭘 받나요?                  |
+| --- | ------------------- | --------------------- | ----------- | ----------------------------------- |
+| 1   | `good-vibe:hello`   | 환경 설정 + 개인 설정 | 2-3분       | 도구 확인 + CLAUDE.md 생성/개선     |
+| 2   | `good-vibe:new`     | 팀 구성               | 1-2분       | 아이디어 → 팀 구성 + 모드 선택      |
+| 3   | `good-vibe:discuss` | 팀 토론               | 3-10분      | (자동) → 기획서                     |
+| 4   | `good-vibe:approve` | 기획서 승인           | 1-2분       | 승인/수정/재토론 → 작업 분배        |
+| 5   | `good-vibe:execute` | 실행 + 리뷰           | 5-15분      | 실행 모드 선택 → 완성된 결과물      |
+| 6   | `good-vibe:report`  | 보고서                | 1분         | (자동) → 마크다운 보고서            |
+| 7   | `good-vibe:modify`  | 완료 프로젝트 수정    | 5-15분      | 수정 사항 → 기존 맥락 유지하며 변경 |
 
 ```
-good-vibe:hello  →  good-vibe:new  →  good-vibe:discuss  →  good-vibe:approve  →  good-vibe:execute  →  good-vibe:report
+good-vibe:hello  →  good-vibe:new  →  good-vibe:discuss  →  good-vibe:approve  →  good-vibe:execute  →  good-vibe:report  →  good-vibe:modify
 ```
 
 > `good-vibe:hello` 없이 `good-vibe:new`로 바로 시작할 수도 있습니다. 폴더/저장소가 이미 있을 때.
