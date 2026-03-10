@@ -761,3 +761,52 @@ describe('buildRevisionPrompt ceoGuidance', () => {
     expect(prompt).not.toContain('CEO 지침');
   });
 });
+
+describe('buildRevisionPrompt with acceptanceCriteria', () => {
+  const task = { id: 'task-1', title: 'API 설계' };
+  const implementer = { displayName: '도윤', role: 'Backend Developer' };
+
+  it('acceptanceCriteria가 있으면 수락 기준 섹션을 포함한다', () => {
+    const reviews = [{ issues: [{ severity: 'critical', description: '보안 이슈' }] }];
+    const ac = [{ id: 'ac-1', description: 'JWT 인증이 적용되어야 한다', status: 'pending' }];
+    const prompt = buildRevisionPrompt(task, implementer, reviews, null, ac);
+    expect(prompt).toContain('수락 기준 (반드시 충족)');
+  });
+
+  it('acceptanceCriteria가 null이면 수락 기준 섹션을 생략한다', () => {
+    const reviews = [{ issues: [{ severity: 'critical', description: '이슈' }] }];
+    const prompt = buildRevisionPrompt(task, implementer, reviews, null, null);
+    expect(prompt).not.toContain('수락 기준 (반드시 충족)');
+  });
+
+  it('acceptanceCriteria가 빈 배열이면 수락 기준 섹션을 생략한다', () => {
+    const reviews = [{ issues: [{ severity: 'critical', description: '이슈' }] }];
+    const prompt = buildRevisionPrompt(task, implementer, reviews, null, []);
+    expect(prompt).not.toContain('수락 기준 (반드시 충족)');
+  });
+});
+
+describe('buildTaskReviewPrompt taskOutput truncation', () => {
+  const reviewer = SAMPLE_TEAM[0]; // cto
+  const task = { id: 'task-1', title: 'API 설계', assignee: 'backend', description: '설명' };
+
+  it('3000자 이하 taskOutput은 그대로 포함한다', () => {
+    const shortOutput = 'a'.repeat(100);
+    const prompt = buildTaskReviewPrompt(reviewer, task, shortOutput);
+    expect(prompt).toContain(shortOutput);
+  });
+
+  it('3000자 초과 taskOutput은 truncate한다', () => {
+    const longOutput = 'x'.repeat(4000);
+    const prompt = buildTaskReviewPrompt(reviewer, task, longOutput);
+    expect(prompt).toContain('...(truncated)');
+    // truncate된 내용이 원본보다 짧아야 한다
+    const outputSection = prompt.split('## 작업 결과물\n')[1].split('\n\n## 리뷰 지시사항')[0];
+    expect(outputSection.length).toBeLessThan(longOutput.length);
+  });
+
+  it('taskOutput이 null이면 빈 문자열로 처리한다', () => {
+    const prompt = buildTaskReviewPrompt(reviewer, task, null);
+    expect(prompt).toContain('## 작업 결과물');
+  });
+});

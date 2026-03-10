@@ -429,6 +429,28 @@ questions:
 - **"간단 기획 후 만들기"** → plan-execute
 - **"팀 토론 후 만들기"** → plan-only
 
+### 3.1 워크트리 격리 설정 (GitHub 선택 시만)
+
+> **"폴더 + GitHub 저장소"를 선택한 경우에만** 이 단계를 진행합니다.
+> 다른 인프라 옵션을 선택했으면 건너뜁니다.
+
+AskUserQuestion:
+
+```
+질문: "Phase별 워크트리 격리를 사용할까요?"
+header: "워크트리"
+options:
+  - label: "기본 (Recommended)"
+    description: "하나의 브랜치에서 순차적으로 작업합니다"
+  - label: "워크트리 격리 ON"
+    description: "Phase마다 독립 브랜치에서 작업 후 머지 (코드 격리, 병렬 실행 준비)"
+```
+
+- **"기본"** → `worktreeIsolation = false`
+- **"워크트리 격리 ON"** → `worktreeIsolation = true`
+
+선택 결과를 Step 4.A Task tool에 전달합니다.
+
 ## Step 4: 프로젝트 셋업 (Thin Controller)
 
 > **Thin Controller 원칙:** 인프라 생성 + 프로젝트 생성 + 팀 구성 + 추천을 하나의 Task tool로 묶어 메인 세션의 CLI 체인을 제거합니다.
@@ -456,6 +478,7 @@ Task tool 프롬프트:
    echo '{"repoName": "{slug}", "description": "{description}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js create-github-repo
    echo '{"projectDir": "{infraPath}", "remoteUrl": "{remoteUrl}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js git-init-push
    → githubUrl = 반환된 URL
+   → worktreeIsolation = Step 3.1의 선택 결과 (true/false)
 
 {항상:}
 3. 복잡도 기본값 조회:
@@ -465,7 +488,7 @@ Task tool 프롬프트:
    node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js recommend-team --type {type}
 
 5. 프로젝트 생성 (PRD + 인프라 + 분석 결과 포함):
-   → 프로젝트 데이터를 Write tool로 /tmp/gv-create-project.json에 저장 (형식: {"name": "{name}", "type": "{type}", "description": "{description}", "mode": "{mode}", "prd": {prd}, "infraPath": "{infraPath 또는 null}", "githubUrl": "{githubUrl 또는 null}", "clarityAnalysis": {Step 1.5의 clarity 분석 결과 또는 null}, "complexityAnalysis": {Step 2의 complexity 분석 결과 또는 null}})
+   → 프로젝트 데이터를 Write tool로 /tmp/gv-create-project.json에 저장 (형식: {"name": "{name}", "type": "{type}", "description": "{description}", "mode": "{mode}", "prd": {prd}, "infraPath": "{infraPath 또는 null}", "githubUrl": "{githubUrl 또는 null}", "worktreeIsolation": {worktreeIsolation 또는 false}, "clarityAnalysis": {Step 1.5의 clarity 분석 결과 또는 null}, "complexityAnalysis": {Step 2의 complexity 분석 결과 또는 null}})
    → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js create-project --input-file /tmp/gv-create-project.json
 
 6. 팀 빌드 + 저장:

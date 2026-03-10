@@ -153,17 +153,27 @@ export function buildExecutionPlanWithReviews(tasks, team) {
     });
   }
 
-  return { phases: phasesWithReviews, dependencies: basePlan.dependencies };
+  return {
+    phases: phasesWithReviews,
+    dependencies: basePlan.dependencies,
+    phaseDependencies: basePlan.phaseDependencies,
+    parallelGroups: basePlan.parallelGroups,
+  };
 }
 
 export function buildExecutionPlan(tasks, _team) {
   const phaseMap = new Map();
   const dependencies = {};
 
+  // 태스크 ID → Phase 번호 매핑 (의존성 추론용)
+  const taskPhaseMap = {};
+
   for (const task of tasks) {
     const phase = task.phase || 1;
     if (!phaseMap.has(phase)) phaseMap.set(phase, []);
     phaseMap.get(phase).push(task);
+
+    taskPhaseMap[task.id] = phase;
 
     if (task.dependencies && task.dependencies.length > 0) {
       dependencies[task.id] = task.dependencies;
@@ -174,7 +184,65 @@ export function buildExecutionPlan(tasks, _team) {
     .sort(([a], [b]) => a - b)
     .map(([phase, phaseTasks]) => ({ phase, tasks: phaseTasks }));
 
-  return { phases, dependencies };
+  // Phase 간 의존성 추론: 태스크 의존성에서 Phase 의존성을 도출
+  const phaseDependencies = {};
+  for (const [taskId, depTaskIds] of Object.entries(dependencies)) {
+    const taskPhase = taskPhaseMap[taskId];
+    if (taskPhase === undefined) continue;
+
+    for (const depTaskId of depTaskIds) {
+      const depPhase = taskPhaseMap[depTaskId];
+      if (depPhase === undefined || depPhase === taskPhase) continue;
+
+      if (!phaseDependencies[taskPhase]) phaseDependencies[taskPhase] = [];
+      if (!phaseDependencies[taskPhase].includes(depPhase)) {
+        phaseDependencies[taskPhase].push(depPhase);
+      }
+    }
+  }
+
+  // 위상 정렬(topological sort) 기반 parallelGroups 생성
+  const parallelGroups = _buildParallelGroups(phases, phaseDependencies);
+
+  return { phases, dependencies, phaseDependencies, parallelGroups };
+}
+
+/**
+ * phaseDependencies에서 위상 정렬 기반으로 병렬 실행 가능한 Phase 그룹(tier)을 생성한다.
+ * @param {Array<{phase: number}>} phases - 정렬된 phase 배열
+ * @param {object} phaseDependencies - Phase → 선행 Phase[] 매핑
+ * @returns {Array<Array<number>>} tier별 Phase 번호 배열
+ */
+function _buildParallelGroups(phases, phaseDependencies) {
+  const phaseNums = phases.map((p) => p.phase);
+  const tierOf = {};
+  const groups = [];
+
+  // 의존이 없는 Phase부터 tier 0 배치 (Kahn's algorithm 변형)
+  let remaining = [...phaseNums];
+
+  while (remaining.length > 0) {
+    // 현재 tier: 이전 tier들에서 의존이 모두 해결된 Phase들
+    const currentTierPhases = remaining.filter((phase) => {
+      const deps = phaseDependencies[phase] || [];
+      return deps.every((dep) => tierOf[dep] !== undefined);
+    });
+
+    if (currentTierPhases.length === 0) {
+      // 순환 의존이 있거나 의존 대상이 tasks에 없는 경우 — 나머지를 마지막 tier로
+      const tierIdx = groups.length;
+      groups.push([...remaining]);
+      for (const ph of remaining) tierOf[ph] = tierIdx;
+      break;
+    }
+
+    const tierIdx = groups.length;
+    groups.push(currentTierPhases);
+    for (const ph of currentTierPhases) tierOf[ph] = tierIdx;
+    remaining = remaining.filter((ph) => !currentTierPhases.includes(ph));
+  }
+
+  return groups;
 }
 
 /**
@@ -313,12 +381,12 @@ export function buildTddExecutionPrompt(task, teamMember, context = {}) {
  * 다음 Phase 에이전트에게 이전 결과를 전달하기 위한 요약 텍스트.
  * @param {Array<object>} completedTasks - taskOutput이 포함된 완료 태스크 배열
  * @param {object} options - 옵션
- * @param {number} [options.maxLinesPerTask=15] - 태스크당 최대 줄 수
+ * @param {number} [options.maxLinesPerTask=8] - 태스크당 최대 줄 수
  * @returns {string} Phase 컨텍스트 텍스트
  */
 export function buildPhaseContext(completedTasks, options = {}) {
   if (!completedTasks || completedTasks.length === 0) return '';
-  const maxLines = options.maxLinesPerTask || 15;
+  const maxLines = options.maxLinesPerTask || 8;
 
   return completedTasks
     .filter((t) => t.taskOutput && t.taskOutput.trim())

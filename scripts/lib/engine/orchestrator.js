@@ -12,6 +12,25 @@ function truncateSection(text) {
   return truncateText(text, config.llm.maxPromptSectionLength, '\n...(truncated)');
 }
 
+/**
+ * 피드백 내 중복 라인을 제거한다 (대소문자 무시, 앞뒤 공백 무시).
+ * @param {string} feedback - 원본 피드백 문자열
+ * @returns {string} 중복 제거된 피드백
+ */
+function deduplicateFeedback(feedback) {
+  if (!feedback) return '';
+  const lines = feedback.split('\n').filter((l) => l.trim());
+  const seen = new Set();
+  return lines
+    .filter((line) => {
+      const normalized = line.trim().toLowerCase();
+      if (seen.has(normalized)) return false;
+      seen.add(normalized);
+      return true;
+    })
+    .join('\n');
+}
+
 /** 역할 카테고리별 맞춤 분석 항목 */
 const ROLE_SPECIFIC_QUESTIONS = {
   leadership: [
@@ -97,7 +116,7 @@ ${buildRoleQuestions(teamMember)}`;
   }
 
   if (context.feedbackForMe) {
-    prompt += `\n\n## 다른 팀원의 피드백\n다음은 다른 팀원들이 당신의 이전 분석에 대해 준 피드백입니다:\n\n${context.feedbackForMe}`;
+    prompt += `\n\n## 다른 팀원의 피드백\n다음은 다른 팀원들이 당신의 이전 분석에 대해 준 피드백입니다:\n\n${deduplicateFeedback(context.feedbackForMe)}`;
   }
 
   if (context.ceoFeedback) {
@@ -297,8 +316,9 @@ function normalizeReviewResult(parsed) {
 
 /**
  * 수렴 여부를 확인한다. 80% 이상 승인 시 수렴으로 판단.
+ * earlyExit: 승인율 85% 이상 + critical 블로커 0개 시 조기 수렴 판정.
  * @param {Array<{approved: boolean, feedback: string, issues: Array}>} reviews - 리뷰 결과 배열
- * @returns {{ converged: boolean, approvalRate: number, blockers: Array<string> }}
+ * @returns {{ converged: boolean, approvalRate: number, blockers: Array<string>, earlyExit: boolean }}
  */
 export function checkConvergence(reviews) {
   if (!reviews || reviews.length === 0) {
@@ -307,7 +327,6 @@ export function checkConvergence(reviews) {
 
   const approvedCount = reviews.filter((r) => r.approved).length;
   const approvalRate = approvedCount / reviews.length;
-  const converged = approvalRate >= config.convergence.threshold;
 
   const blockers = reviews
     .filter((r) => !r.approved)
@@ -315,7 +334,10 @@ export function checkConvergence(reviews) {
       (r.issues || []).filter((i) => i.severity === 'critical').map((i) => i.description),
     );
 
-  return { converged, approvalRate, blockers };
+  const earlyExit = approvalRate >= 0.85 && blockers.length === 0;
+  const converged = approvalRate >= config.convergence.threshold || earlyExit;
+
+  return { converged, approvalRate, blockers, earlyExit };
 }
 
 /**

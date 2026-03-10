@@ -1,12 +1,16 @@
 /**
- * handlers/execution — 실행 루프 + 실행 계획 + 메시지 커맨드
+ * handlers/execution — 실행 루프 + 실행 계획 + 메시지 + 워크트리 커맨드
  */
 import { readStdin, output, parseArgs } from '../cli-utils.js';
 import { requireFields, inputError } from '../lib/core/validators.js';
 import { withProject } from '../lib/project/handler-helpers.js';
 import { FileMessageBus } from '../lib/core/message-bus.js';
-import { config } from '../lib/core/config.js';
 import { getProjectDir } from '../lib/project/project-manager.js';
+import {
+  createPhaseWorktree,
+  removePhaseWorktree,
+  listWorktrees,
+} from '../lib/project/worktree-manager.js';
 import {
   initExecution,
   getNextExecutionStep,
@@ -26,7 +30,11 @@ export const commands = {
   'init-execution': async () => {
     const data = await readStdin();
     requireFields(data, ['id']);
-    const result = await initExecution(data.id, { mode: data.mode, resume: data.resume });
+    const result = await initExecution(data.id, {
+      mode: data.mode,
+      resume: data.resume,
+      messaging: data.messaging,
+    });
     output(result);
   },
 
@@ -137,9 +145,13 @@ export const commands = {
   'send-message': async () => {
     const data = await readStdin();
     requireFields(data, ['projectId', 'from', 'to', 'type', 'content']);
-    if (!config.messaging.enabled) {
-      throw inputError('메시징이 비활성화되어 있습니다 (config.messaging.enabled = false)');
-    }
+    await withProject(data.projectId, (project) => {
+      if (!project.executionState?.messaging) {
+        throw inputError(
+          '메시징이 비활성화되어 있습니다. 실행 초기화 시 messaging: true로 설정하세요.',
+        );
+      }
+    });
     const projectDir = getProjectDir(data.projectId);
     const bus = new FileMessageBus({ baseDir: `${projectDir}/messages` });
     const message = await bus.send(data.from, data.to, {
@@ -153,14 +165,47 @@ export const commands = {
   'get-messages': async () => {
     const data = await readStdin();
     requireFields(data, ['projectId', 'agentId']);
-    if (!config.messaging.enabled) {
-      throw inputError('메시징이 비활성화되어 있습니다 (config.messaging.enabled = false)');
-    }
+    await withProject(data.projectId, (project) => {
+      if (!project.executionState?.messaging) {
+        throw inputError(
+          '메시징이 비활성화되어 있습니다. 실행 초기화 시 messaging: true로 설정하세요.',
+        );
+      }
+    });
     const projectDir = getProjectDir(data.projectId);
     const bus = new FileMessageBus({ baseDir: `${projectDir}/messages` });
     const messages = await bus.receive(data.agentId, {
       includeRead: data.includeRead || false,
     });
     output(messages);
+  },
+
+  'create-worktree': async () => {
+    const data = await readStdin();
+    requireFields(data, ['projectId', 'phase', 'branchName']);
+    const projectDir = getProjectDir(data.projectId);
+    const result = await createPhaseWorktree(projectDir, {
+      phase: data.phase,
+      branchName: data.branchName,
+    });
+    output(result);
+  },
+
+  'remove-worktree': async () => {
+    const data = await readStdin();
+    requireFields(data, ['projectId', 'phase']);
+    const projectDir = getProjectDir(data.projectId);
+    const result = await removePhaseWorktree(projectDir, {
+      phase: data.phase,
+      merge: data.merge || false,
+    });
+    output(result);
+  },
+
+  'list-worktrees': async () => {
+    const opts = parseArgs(args);
+    const projectDir = getProjectDir(opts.id);
+    const worktrees = await listWorktrees(projectDir);
+    output(worktrees);
   },
 };

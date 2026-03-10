@@ -142,10 +142,10 @@ describe('getDefaultsForComplexity', () => {
     expect(defaults.modelTiers.support).toBe('haiku');
   });
 
-  it('medium은 engineering=sonnet, support=haiku', () => {
+  it('medium은 engineering=sonnet, design=haiku, support=haiku', () => {
     const defaults = getDefaultsForComplexity('medium');
     expect(defaults.modelTiers.engineering).toBe('sonnet');
-    expect(defaults.modelTiers.design).toBe('sonnet');
+    expect(defaults.modelTiers.design).toBe('haiku');
     expect(defaults.modelTiers.support).toBe('haiku');
   });
 

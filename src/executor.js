@@ -27,6 +27,10 @@ import {
   enrichTaskOutputWithConsultation,
 } from '../scripts/lib/engine/expert-consultation.js';
 import { callLLM } from '../scripts/lib/llm/llm-provider.js';
+import {
+  createPhaseWorktree,
+  removePhaseWorktree,
+} from '../scripts/lib/project/worktree-manager.js';
 import { randomBytes } from 'crypto';
 import { DEFAULTS } from './defaults.js';
 
@@ -47,6 +51,8 @@ export class Executor {
     enableCrossModel = false,
     providerConfig = null,
     messageBus = null,
+    worktreeIsolation = false,
+    projectDir = null,
   }) {
     this.provider = provider;
     this.model = model;
@@ -56,6 +62,9 @@ export class Executor {
     this.enableCrossModel = enableCrossModel;
     this.providerConfig = providerConfig;
     this.messageBus = messageBus;
+    this.worktreeIsolation = worktreeIsolation;
+    this.projectDir = projectDir;
+    this._worktreePaths = new Map(); // phase -> worktreePath
   }
 
   /**
@@ -127,11 +136,19 @@ export class Executor {
    */
   async _handleStep(step, project) {
     switch (step.action) {
-      case 'execute-tasks':
+      case 'execute-tasks': {
+        // Phase 시작 시 worktree 생성 (opt-in)
+        if (this.worktreeIsolation && this.projectDir) {
+          await this._ensureWorktree(step.phase, project);
+        }
         return this._executeTasks(step, project);
+      }
 
       case 'materialize':
-        return { completedAction: 'materialize' };
+        return {
+          completedAction: 'materialize',
+          worktreePath: this._worktreePaths.get(step.phase) || null,
+        };
 
       case 'review':
         return this._review(step, project);
@@ -151,9 +168,14 @@ export class Executor {
         await this.hooks.onCommit?.(step);
         return { completedAction: 'commit' };
 
-      case 'build-context':
+      case 'build-context': {
+        // Phase 완료 시 worktree 머지 + 삭제
+        if (this.worktreeIsolation && this.projectDir && this._worktreePaths.has(step.phase)) {
+          await this._cleanupWorktree(step.phase);
+        }
         await this.hooks.onPhaseComplete?.(step.phase, step.context);
         return { completedAction: 'build-context' };
+      }
 
       case 'confirm-next-phase': {
         const confirmResult = await (this.hooks.onConfirmPhase?.(step) ?? true);
@@ -382,6 +404,35 @@ export class Executor {
     };
     await this.storage.write(projectId, project);
     return projectId;
+  }
+
+  /**
+   * Phase용 worktree를 생성한다 (graceful degradation).
+   */
+  async _ensureWorktree(phase, project) {
+    if (this._worktreePaths.has(phase)) return;
+    try {
+      const slug = (project.name || 'project').replace(/[^a-zA-Z0-9-]/g, '-').slice(0, 20);
+      const branchName = `gv-phase-${phase}-${slug}`;
+      const result = await createPhaseWorktree(this.projectDir, { phase, branchName });
+      if (result.success && result.worktreePath) {
+        this._worktreePaths.set(phase, result.worktreePath);
+      }
+    } catch {
+      /* graceful degradation — worktree 실패 시 기본 디렉토리 사용 */
+    }
+  }
+
+  /**
+   * Phase worktree를 머지하고 삭제한다 (graceful degradation).
+   */
+  async _cleanupWorktree(phase) {
+    try {
+      await removePhaseWorktree(this.projectDir, { phase, merge: true });
+      this._worktreePaths.delete(phase);
+    } catch {
+      /* graceful degradation */
+    }
   }
 
   /**

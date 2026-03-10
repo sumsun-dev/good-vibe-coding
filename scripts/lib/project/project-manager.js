@@ -176,6 +176,7 @@ export async function createProject(name, type, description, options = {}) {
     prd: options.prd || null,
     infraPath: options.infraPath || null,
     githubUrl: options.githubUrl || null,
+    worktreeIsolation: Boolean(options.worktreeIsolation),
     clarityAnalysis: options.clarityAnalysis || null,
     complexityAnalysis: options.complexityAnalysis || null,
     modifyHistory: [],

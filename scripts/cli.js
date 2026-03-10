@@ -77,6 +77,10 @@ const COMMAND_MAP = {
   // messaging
   'send-message': 'execution',
   'get-messages': 'execution',
+  // worktree
+  'create-worktree': 'execution',
+  'remove-worktree': 'execution',
+  'list-worktrees': 'execution',
   // review
   'select-reviewers': 'review',
   'task-review-prompt': 'review',
