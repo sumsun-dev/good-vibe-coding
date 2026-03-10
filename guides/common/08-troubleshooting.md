@@ -151,6 +151,48 @@ good-vibe:new-project
 
 ---
 
+## Gemini CLI 인증이 만료됐을 때
+
+증상: 멀티 AI 리뷰 중 `SYSTEM_ERROR: Gemini CLI 실행 실패` 또는 `Gemini CLI 비정상 종료` 에러 발생
+
+해결:
+
+1. 터미널에서 `gemini`를 실행하여 재로그인하세요
+2. 로그인 후 `good-vibe:execute`를 다시 실행하면 중단 지점부터 재개됩니다
+3. Gemini 리뷰가 필요 없다면: Gemini 없이도 실행은 정상 동작합니다. cross-model 리뷰만 건너뜁니다
+
+확인: `gemini --version`이 정상 출력되면 인증이 유효합니다.
+
+---
+
+## LLM 프로바이더 인증 정보가 없을 때
+
+증상: `NOT_FOUND: {프로바이더} 인증 정보가 없습니다` 에러 발생
+
+해결:
+
+1. `good-vibe:my-config`를 실행하여 LLM 프로바이더를 연결하세요
+2. Claude는 Claude Code 세션에서 자동 인증됩니다 (별도 설정 불필요)
+3. OpenAI/Gemini 등 외부 프로바이더는 API 키 또는 CLI 인증이 필요합니다
+
+참고: 프로바이더 연결 상태는 `good-vibe:my-config`에서 확인할 수 있습니다.
+
+---
+
+## 실행 상태가 손상됐을 때
+
+증상: `good-vibe:execute` 실행 시 `INPUT_ERROR: 기존 실행 상태가 손상되었습니다` 에러 발생
+
+해결:
+
+1. `good-vibe:execute`를 다시 실행하세요
+2. "이전 실행이 있습니다. 재개하시겠습니까?"에서 **"아니오"**를 선택하세요
+3. 새로운 실행이 처음부터 시작됩니다 (기획서와 팀 구성은 유지됨)
+
+원인: 실행 중 비정상 종료(네트워크 단절, 세션 만료 등)로 `project.json`의 실행 상태가 불완전하게 저장된 경우 발생합니다.
+
+---
+
 ## 환경 설정에 문제가 있을 때
 
 증상: `good-vibe:hello`에서 환경 체크 경고 또는 CLI 실행 오류
