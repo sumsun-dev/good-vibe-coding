@@ -57,7 +57,7 @@ describe('recommendTeam', () => {
   it('web-app에 cto+fullstack+qa를 추천한다', async () => {
     const result = await recommendTeam('web-app');
     expect(result.recommended).toEqual(['cto', 'fullstack', 'qa']);
-    expect(result.optional).toContain('uiux');
+    expect(result.required).toEqual(['uiux', 'qa', 'security']);
   });
 
   it('telegram-bot에 cto+backend+qa를 추천한다', async () => {
@@ -75,6 +75,7 @@ describe('recommendTeam', () => {
   it('존재하지 않는 타입은 custom으로 fallback', async () => {
     const result = await recommendTeam('nonexistent');
     expect(result.recommended).toEqual(['cto']);
+    expect(result.required).toEqual([]);
   });
 });
 
@@ -156,22 +157,26 @@ describe('getTeamSummary', () => {
 });
 
 describe('getOptimizedTeam', () => {
-  it('web-app + medium → fullstack 제거, frontend+backend 유지', async () => {
+  it('web-app + medium → fullstack 제거, required 보너스 슬롯으로 추가', async () => {
     const result = await getOptimizedTeam('web-app', 'medium');
     expect(result.roles).not.toContain('fullstack');
-    expect(result.roles).toContain('frontend');
-    expect(result.roles).toContain('backend');
+    // 기존 우선순위로 max 5까지 채운 뒤, 밀려난 required가 보너스 슬롯으로 복원
     expect(result.roles).toContain('cto');
+    expect(result.roles).toContain('backend');
+    expect(result.roles).toContain('frontend');
     expect(result.roles).toContain('qa');
+    expect(result.roles).toContain('uiux');
+    expect(result.roles).toContain('security');
   });
 
-  it('mobile-app + simple → fullstack 유지, qa도 core에 포함', async () => {
+  it('mobile-app + simple → 기존 max 3 유지 + required 보너스 슬롯', async () => {
     const result = await getOptimizedTeam('mobile-app', 'simple');
-    expect(result.roles).toContain('fullstack');
-    // 우선순위 기반: cto(0) > fullstack(4) > qa(5) — uiux(7)보다 qa가 core
+    // recommended: [cto, fullstack, uiux, qa] → max 3 → cto, fullstack, qa
+    // required [uiux, qa, security] 중 밀려난 uiux, security가 보너스로 복원
+    expect(result.roles).toContain('cto');
     expect(result.roles).toContain('qa');
-    expect(result.roles.length).toBeLessThanOrEqual(3);
-    expect(result.optional).toContain('uiux');
+    expect(result.roles).toContain('uiux');
+    expect(result.roles).toContain('security');
   });
 
   it('우선순위 순서대로 core에 배치된다', async () => {
@@ -183,17 +188,68 @@ describe('getOptimizedTeam', () => {
     expect(ctoIdx).toBe(0);
   });
 
-  it('max size를 초과하지 않는다', async () => {
+  it('required 보너스 슬롯으로 팀 크기가 동적으로 확장된다', async () => {
+    // web-app + simple: max 3으로 cto, fullstack, qa 선택
+    // required(uiux, security)가 밀려났으므로 보너스 슬롯으로 복원
+    // qa는 이미 max 안에 포함 → 보너스 불필요
     const result = await getOptimizedTeam('web-app', 'simple');
+    expect(result.roles).toContain('cto');
+    expect(result.roles).toContain('qa');
+    expect(result.roles).toContain('uiux');
+    expect(result.roles).toContain('security');
+    expect(result.roles.length).toBeGreaterThan(3);
+  });
+
+  it('custom + simple → requiredRoles 비어있어 기존 max size 제한 동작 유지', async () => {
+    const result = await getOptimizedTeam('custom', 'simple');
     expect(result.roles.length).toBeLessThanOrEqual(3);
   });
 
   it('overflow된 역할이 optional에 포함된다', async () => {
     const result = await getOptimizedTeam('web-app', 'simple');
-    // max 3인데 union이 3 초과 → 나머지는 optional
     for (const r of result.optional) {
       expect(result.roles).not.toContain(r);
     }
+  });
+
+  it('web-app + simple → required는 optional에 포함되지 않는다', async () => {
+    const result = await getOptimizedTeam('web-app', 'simple');
+    expect(result.roles).toContain('uiux');
+    expect(result.roles).toContain('qa');
+    expect(result.roles).toContain('security');
+    expect(result.optional).not.toContain('uiux');
+    expect(result.optional).not.toContain('qa');
+    expect(result.optional).not.toContain('security');
+  });
+
+  it('api-server + simple → qa + security가 core에 포함 (required 보호)', async () => {
+    const result = await getOptimizedTeam('api-server', 'simple');
+    expect(result.roles).toContain('qa');
+    expect(result.roles).toContain('security');
+  });
+
+  it('recommendTeam 반환값에 required 필드가 존재한다', async () => {
+    const result = await recommendTeam('web-app');
+    expect(result).toHaveProperty('required');
+    expect(Array.isArray(result.required)).toBe(true);
+    expect(result.required).toContain('uiux');
+    expect(result.required).toContain('qa');
+    expect(result.required).toContain('security');
+  });
+
+  it('custom의 required는 빈 배열이다', async () => {
+    const result = await recommendTeam('custom');
+    expect(result.required).toEqual([]);
+  });
+
+  it('required 역할은 우선순위 순으로 정렬된다', async () => {
+    const result = await getOptimizedTeam('web-app', 'simple');
+    const qaIdx = result.roles.indexOf('qa');
+    const secIdx = result.roles.indexOf('security');
+    const uiuxIdx = result.roles.indexOf('uiux');
+    // qa(5) < security(6) < uiux(7)
+    expect(qaIdx).toBeLessThan(secIdx);
+    expect(secIdx).toBeLessThan(uiuxIdx);
   });
 });
 

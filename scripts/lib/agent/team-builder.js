@@ -52,13 +52,14 @@ async function loadTeamPersonalities() {
 /**
  * 프로젝트 타입에 따른 팀을 추천한다.
  * @param {string} projectType - 프로젝트 타입
- * @returns {Promise<{recommended: string[], optional: string[]}>} 추천/선택 역할
+ * @returns {Promise<{recommended: string[], required: string[], optional: string[]}>} 추천/필수/선택 역할
  */
 export async function recommendTeam(projectType) {
   const types = await loadProjectTypes();
   const typeConfig = types.types[projectType] || types.types['custom'];
   return {
     recommended: typeConfig.recommendedTeam,
+    required: typeConfig.requiredRoles || [],
     optional: typeConfig.optionalRoles || [],
   };
 }
@@ -213,15 +214,18 @@ const ROLE_PRIORITY = {
 /**
  * 프로젝트 타입 + 복잡도를 결합하여 최적 팀을 생성한다.
  * Rule 1: fullstack + frontend + backend 공존 시 fullstack 제거
- * Rule 2: teamSize.max 초과 시 우선순위 기반으로 overflow → optional로 이동
+ * Rule 2: non-required는 teamSize.max 기준으로 절단, 초과분 → optional로 이동
+ * Rule 3: required 역할은 보너스 슬롯으로 추가 (기존 max에 이미 포함된 required는 슬롯 소비 없음)
  * @param {string} projectType - 프로젝트 타입
  * @param {string} complexity - 복잡도 ('simple' | 'medium' | 'complex')
- * @returns {Promise<{roles: string[], optional: string[]}>}
+ * @param {object} [codebaseInfo] - 코드베이스 스캔 정보
+ * @returns {Promise<{roles: string[], optional: string[]}>} roles는 required 보너스 슬롯으로 max 초과 가능
  */
 export async function getOptimizedTeam(projectType, complexity, codebaseInfo = null) {
   const typeRec = await recommendTeam(projectType);
   const defaults = getDefaultsForComplexity(complexity);
-  const baseRoles = new Set([...typeRec.recommended, ...defaults.suggestedRoles]);
+  const requiredRoles = typeRec.required || [];
+  const baseRoles = new Set([...typeRec.recommended, ...defaults.suggestedRoles, ...requiredRoles]);
 
   // codebaseInfo에서 추천된 역할을 병합
   if (codebaseInfo && Array.isArray(codebaseInfo.suggestedRoles)) {
@@ -245,9 +249,20 @@ export async function getOptimizedTeam(projectType, complexity, codebaseInfo = n
   // 우선순위 정렬 (낮을수록 core 우선)
   const sorted = [...baseRoles].sort((a, b) => (ROLE_PRIORITY[a] ?? 99) - (ROLE_PRIORITY[b] ?? 99));
 
-  // Rule 2: max size 제한
-  const coreRoles = sorted.slice(0, defaults.teamSize.max);
-  const optionalSet = new Set([...typeRec.optional, ...sorted.slice(defaults.teamSize.max)]);
+  // Rule 2: non-required를 max 기준으로 절단
+  const coreByPriority = sorted.slice(0, defaults.teamSize.max);
+  const overflow = sorted.slice(defaults.teamSize.max);
+
+  // Rule 3: required 보너스 슬롯 — max 절단으로 밀려난 required를 복원
+  const requiredSet = new Set(requiredRoles);
+  const missingRequired = overflow.filter((r) => requiredSet.has(r));
+  const coreRoles = [...coreByPriority, ...missingRequired];
+  coreRoles.sort((a, b) => (ROLE_PRIORITY[a] ?? 99) - (ROLE_PRIORITY[b] ?? 99));
+
+  const optionalSet = new Set([
+    ...typeRec.optional,
+    ...overflow.filter((r) => !requiredSet.has(r)),
+  ]);
   for (const r of coreRoles) optionalSet.delete(r);
 
   return { roles: coreRoles, optional: [...optionalSet] };
