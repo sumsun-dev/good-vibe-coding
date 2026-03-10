@@ -64,12 +64,13 @@ Claude Code 대화창에서 슬래시와 함께 입력합니다:
 
 ### 내장 스킬
 
-| 스킬                | 뭘 하나요?              | 언제 켜지나요?                   |
-| ------------------- | ----------------------- | -------------------------------- |
-| `onboarding-wizard` | 대화형 온보딩 진행      | `good-vibe:hello` 입력 시        |
-| `project-setup`     | 프로젝트 폴더/파일 생성 | `good-vibe:new` 입력 시          |
-| `korean-workflow`   | 역할별 워크플로우 안내  | "워크플로우 보여줘" 같은 질문 시 |
-| `beginner-guide`    | 입문자 학습 가이드      | `good-vibe:learn` 입력 시        |
+| 스킬                | 뭘 하나요?                     | 언제 켜지나요?                   |
+| ------------------- | ------------------------------ | -------------------------------- |
+| `onboarding-wizard` | 대화형 온보딩 진행             | `good-vibe:hello` 입력 시        |
+| `project-setup`     | 프로젝트 폴더/파일 생성        | `good-vibe:new` 입력 시          |
+| `multi-review`      | 멀티 AI 리뷰 설정 및 결과 검증 | `good-vibe:execute` 실행 시      |
+| `korean-workflow`   | 역할별 워크플로우 안내         | "워크플로우 보여줘" 같은 질문 시 |
+| `beginner-guide`    | 입문자 학습 가이드             | `good-vibe:learn` 입력 시        |
 
 ### 스킬이 켜지는 두 가지 방식
 

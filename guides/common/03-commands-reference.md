@@ -115,7 +115,7 @@ good-vibe:hello  →  good-vibe:new  →  good-vibe:discuss  →  good-vibe:appr
 
 ## 에이전트용 내부 API
 
-에이전트가 내부적으로 사용하는 CLI 커맨드가 114개 있습니다.
+에이전트가 내부적으로 사용하는 CLI 커맨드가 152개 있습니다.
 일반 사용자는 쓸 일이 없지만, 커스텀 에이전트를 만들 때 참고할 수 있습니다.
 
 ```bash
