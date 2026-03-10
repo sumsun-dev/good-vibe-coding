@@ -4,7 +4,7 @@
  */
 
 /** 프롬프트 빌더 버전. 프롬프트 구조 변경 시 업데이트. */
-export const PROMPT_VERSION = '1.3.0';
+export const PROMPT_VERSION = '1.4.0';
 
 /**
  * 섹션들을 조합하여 프롬프트를 생성한다.

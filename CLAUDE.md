@@ -734,7 +734,7 @@ logs/
 
 ## 프롬프트 버전 관리
 
-- `PROMPT_VERSION` 상수 (`prompt-builder.js`) — 현재 `1.2.0`
+- `PROMPT_VERSION` 상수 (`prompt-builder.js`) — 현재 `1.4.0`
 - `buildSectioned` 출력에 `<!-- prompt-version: X.X.X -->` 주석 자동 삽입
 - 프롬프트 구조 변경 시 버전 업데이트하여 추적 가능
 

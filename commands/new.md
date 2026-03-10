@@ -35,7 +35,16 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js check-version
 
 **`updateAvailable: false`** → Step 1로 바로 진행합니다.
 
-**`updateAvailable: true`** → 업데이트 여부를 물어봅니다:
+**`updateAvailable: true`** → 주요 변경사항을 안내하고 업데이트 여부를 물어봅니다:
+
+```
+v1.2.0 주요 변경사항:
+- 실행 속도 ~50% 개선 (Phase DAG 병렬 실행)
+- 비용 ~44% 절감 (모델 다운그레이드 + 토큰 최적화)
+- 워크트리 격리 (Phase별 독립 git worktree, opt-in)
+- 팀 커뮤니케이션 토글 (plan-execute/plan-only)
+- 토론 조기 종료 + Phase context 압축
+```
 
 ```
 질문: "새 버전이 있습니다 (현재: {version}). 업데이트하시겠습니까?"
