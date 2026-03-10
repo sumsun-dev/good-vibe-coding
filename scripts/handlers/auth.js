@@ -124,8 +124,9 @@ export const commands = {
     const { buildTaskReviewPrompt, parseTaskReview } =
       await import('../lib/engine/review-engine.js');
     const { callGeminiCli } = await import('../lib/llm/gemini-bridge.js');
-    const prompt = buildTaskReviewPrompt(data.reviewer, data.task, data.taskOutput);
-    const response = callGeminiCli(prompt, { model: data.model });
+    const { system, user } = buildTaskReviewPrompt(data.reviewer, data.task, data.taskOutput);
+    const fullPrompt = system ? `${system}\n\n${user}` : user;
+    const response = callGeminiCli(fullPrompt, { model: data.model });
     const review = parseTaskReview(response.text);
     output({
       reviewer: data.reviewer,

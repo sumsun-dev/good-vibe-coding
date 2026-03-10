@@ -104,16 +104,16 @@ export async function executeCrossModelReviews(assignments, task, taskOutput) {
 
   const results = await Promise.allSettled(
     assignments.map(async ({ reviewer, provider }) => {
-      const prompt = buildTaskReviewPrompt(reviewer, task, taskOutput);
-      const response = await callLLM(provider, prompt);
+      const { system, user } = buildTaskReviewPrompt(reviewer, task, taskOutput);
+      const response = await callLLM(provider, user, { systemMessage: system });
       let review = parseTaskReview(response.text);
 
       // parse-error 시 형식 강조 프롬프트로 1회 재시도
       if (review.verdict === 'parse-error') {
-        const retryPrompt =
-          prompt +
+        const retryUser =
+          user +
           '\n\n반드시 위 JSON 형식으로만 응답하세요. 다른 텍스트 없이 ```json ... ``` 블록만 출력하세요.';
-        const retryResponse = await callLLM(provider, retryPrompt);
+        const retryResponse = await callLLM(provider, retryUser, { systemMessage: system });
         review = parseTaskReview(retryResponse.text);
 
         // 2회 연속 parse-error → fallback

@@ -101,8 +101,11 @@ function makeMessageBusTests(name, createBus) {
     it('receive는 기본적으로 읽지 않은 메시지만 반환한다', async () => {
       await bus.send('cto', 'qa', { type: 'question', content: '질문1' });
       await bus.send('cto', 'qa', { type: 'question', content: '질문2' });
-      const first = await bus.receive('qa');
-      await bus.markAsRead(first[0].id);
+      const all = await bus.receive('qa');
+      expect(all.length).toBe(2);
+      // 동일 밀리초에 생성되면 정렬 순서 불안정 → content로 특정
+      const msg1 = all.find((m) => m.content === '질문1');
+      await bus.markAsRead(msg1.id);
       const unread = await bus.receive('qa');
       expect(unread.length).toBe(1);
       expect(unread[0].content).toBe('질문2');

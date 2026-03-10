@@ -61,7 +61,8 @@ export async function callLLM(providerId, prompt, options = {}) {
   // Gemini CLI 인증일 때 서브프로세스 경로로 분기
   if (providerId === 'gemini' && auth.type === 'cli') {
     const model = options.model || DEFAULT_MODELS.gemini;
-    return callGeminiCli(prompt, { model, timeout: options.timeout });
+    const fullPrompt = options.systemMessage ? `${options.systemMessage}\n\n${prompt}` : prompt;
+    return callGeminiCli(fullPrompt, { model, timeout: options.timeout });
   }
 
   const model = options.model || DEFAULT_MODELS[providerId];

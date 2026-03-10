@@ -44,7 +44,7 @@ function deduplicateFeedback(feedback) {
  * @returns {string} 압축된 요약
  */
 export function compressPreviousContext(synthesis, maxLength = 2000) {
-  if (!synthesis) return '';
+  if (!synthesis || typeof synthesis !== 'string') return '';
   if (synthesis.length <= maxLength) return synthesis;
 
   try {
