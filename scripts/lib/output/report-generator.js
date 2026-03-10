@@ -24,10 +24,10 @@ function generateOverviewSection(project, stats, team) {
 - 상태: ${project.status || '-'}`;
 }
 
-function generateTeamSection(team, tasks) {
+function generateTeamSection(team, tasksByAssignee) {
   const roleSummaries = team
     .map((member) => {
-      const memberTasks = tasks.filter((t) => t.assignee === member.roleId);
+      const memberTasks = tasksByAssignee.get(member.roleId) || [];
       return generateRoleSummary(member, memberTasks);
     })
     .join('\n\n');
@@ -246,13 +246,13 @@ export function generateGettingStartedSection(project) {
   return section;
 }
 
-function generateCostSection(project) {
+function generateCostSection(project, tasksByAssignee) {
   if (!project.metrics) return '';
 
   const costSummary = getCostSummary(project.metrics);
   const contributions = {};
   for (const member of project.team) {
-    const memberTasks = project.tasks.filter((t) => t.assignee === member.roleId);
+    const memberTasks = tasksByAssignee.get(member.roleId) || [];
     const completedRatio =
       memberTasks.length > 0
         ? memberTasks.filter((t) => t.status === 'completed').length / memberTasks.length
@@ -350,12 +350,22 @@ export function generateReport(project) {
   const team = project.team || [];
   const tasks = project.tasks || [];
 
+  // Build assignee → tasks Map once to avoid repeated O(team × tasks) filtering
+  const tasksByAssignee = new Map();
+  for (const task of tasks) {
+    const assignee = task.assignee || 'unassigned';
+    if (!tasksByAssignee.has(assignee)) {
+      tasksByAssignee.set(assignee, []);
+    }
+    tasksByAssignee.get(assignee).push(task);
+  }
+
   let report = generateOverviewSection(project, stats, team);
 
   // Executive Summary 삽입
   report += '\n\n' + generateExecutiveSummary(project, stats);
 
-  report += '\n\n' + generateTeamSection(team, tasks);
+  report += '\n\n' + generateTeamSection(team, tasksByAssignee);
   report += '\n\n' + generatePlanSection(project);
   report += '\n\n' + generateStatsTable(stats);
 
@@ -379,7 +389,7 @@ export function generateReport(project) {
     if (msgSection) report += '\n\n' + msgSection;
   }
 
-  report += generateCostSection(project);
+  report += generateCostSection(project, tasksByAssignee);
 
   return report;
 }

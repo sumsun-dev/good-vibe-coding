@@ -13,13 +13,22 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(__dirname, '../../..');
 
 /**
- * package.json에서 현재 버전을 읽어 반환한다.
+ * package.json에서 현재 버전을 읽어 반환한다 (런타임 중 변경되지 않으므로 캐싱).
  * @returns {string}
  */
+let _cachedVersion = null;
 export function getCurrentVersion() {
-  const pkgPath = join(REPO_ROOT, 'package.json');
-  const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
-  return pkg.version;
+  if (!_cachedVersion) {
+    const pkgPath = join(REPO_ROOT, 'package.json');
+    const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+    _cachedVersion = pkg.version;
+  }
+  return _cachedVersion;
+}
+
+/** @internal 테스트용 캐시 초기화 */
+export function _resetVersionCache() {
+  _cachedVersion = null;
 }
 
 /**

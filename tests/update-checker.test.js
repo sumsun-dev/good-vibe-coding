@@ -16,11 +16,13 @@ import {
   getCurrentVersion,
   checkForUpdates,
   getVersionInfo,
+  _resetVersionCache,
 } from '../scripts/lib/output/update-checker.js';
 
 describe('update-checker', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    _resetVersionCache();
   });
 
   describe('getCurrentVersion', () => {

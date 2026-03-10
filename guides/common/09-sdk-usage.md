@@ -158,6 +158,16 @@ const result = await gv.execute(plan, {
 }
 ```
 
+**status별 의미와 복구:**
+
+| status               | 의미                                         | 복구 방법                                                                           |
+| -------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `completed`          | 모든 Phase가 성공적으로 완료됨               | `gv.report(result)`로 보고서 생성                                                   |
+| `paused`             | 에스컬레이션 대기 또는 CEO 개입 필요         | `onEscalation` Hook 확인, 같은 plan으로 `execute()` 재호출                          |
+| `stuck`              | 동일 스텝이 3회 이상 반복됨 (무한 루프 감지) | `journal`에서 반복 스텝 확인, plan 수정 후 재실행 또는 `executeSteps()`로 수동 제어 |
+| `max-steps-exceeded` | 최대 스텝 수(기본 500) 초과                  | 태스크가 너무 많거나 수정 루프가 반복됨 — plan 단순화 또는 `maxSteps` 옵션 증가     |
+| `not-started`        | 실행 상태가 초기화되지 않음                  | plan에 tasks/document가 포함되어 있는지 확인                                        |
+
 ### `executeSteps(plan)`
 
 수동 모드로 한 스텝씩 실행합니다. 각 스텝에서 진행/중단을 직접 결정할 수 있습니다.
