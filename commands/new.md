@@ -159,7 +159,8 @@ Task tool 프롬프트:
 1. 명확도 분석:
    echo '{"description": "{currentDescription}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js clarity-check
    → 생성된 프롬프트를 LLM으로 실행
-   → echo '{"rawOutput": "LLM 응답"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js parse-clarity
+   → LLM 응답을 Write tool로 /tmp/gv-clarity.json에 저장 (형식: {"rawOutput": "LLM 응답 전체"})
+   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js parse-clarity --input-file /tmp/gv-clarity.json
 
 반환 (JSON):
 - clarity: 명확도 점수
@@ -203,7 +204,8 @@ Task tool 프롬프트:
 프로젝트 설명을 보강하고 재분석하세요.
 
 1. 설명 보강:
-   echo '{"original": "{currentDescription}", "answers": [{CEO 답변}]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js enrich-description
+   → 입력 데이터를 Write tool로 /tmp/gv-enrich.json에 저장 (형식: {"original": "{currentDescription}", "answers": [{CEO 답변}]})
+   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js enrich-description --input-file /tmp/gv-enrich.json
    → 생성된 프롬프트를 LLM으로 실행 → enriched description 획득
 
 2. 보강된 설명으로 명확도 재분석 (1.5.A와 동일 절차)
@@ -240,7 +242,8 @@ PRD를 생성하세요.
 2. 생성된 프롬프트를 LLM으로 실행
 
 3. PRD 파싱:
-   echo '{"rawOutput":"LLM 응답"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js parse-prd
+   → LLM 응답을 Write tool로 /tmp/gv-prd.json에 저장 (형식: {"rawOutput": "LLM 응답 전체"})
+   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js parse-prd --input-file /tmp/gv-prd.json
 
 반환: { prd, formatted, quality }
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
@@ -291,7 +294,8 @@ Task tool 프롬프트:
 
 1. echo '{"description":"{currentDescription}","prd":{prd}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js complexity-analysis
    → 생성된 프롬프트를 LLM으로 실행
-   → echo '{"rawOutput":"LLM 응답"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js parse-complexity
+   → LLM 응답을 Write tool로 /tmp/gv-complexity.json에 저장 (형식: {"rawOutput": "LLM 응답 전체"})
+   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js parse-complexity --input-file /tmp/gv-complexity.json
 
 반환: { level, score, reasoning, dimensions }
 

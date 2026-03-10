@@ -30,9 +30,23 @@ function sanitizeJson(obj) {
 }
 
 /**
- * stdin에서 JSON을 읽는다.
+ * stdin 또는 --input-file에서 JSON을 읽는다.
+ * --input-file 플래그가 있으면 해당 파일에서, 없으면 stdin에서 읽는다.
  */
 export async function readStdin() {
+  const fileIdx = process.argv.indexOf('--input-file');
+  if (fileIdx !== -1 && fileIdx + 1 < process.argv.length) {
+    const filePath = process.argv[fileIdx + 1];
+    const { readFile } = await import('fs/promises');
+    const raw = (await readFile(filePath, 'utf-8')).trim();
+    if (!raw) return {};
+    try {
+      return sanitizeJson(JSON.parse(raw));
+    } catch (err) {
+      throw inputError(`잘못된 JSON 파일: ${err.message}`);
+    }
+  }
+
   const chunks = [];
   let totalBytes = 0;
   for await (const chunk of process.stdin) {
