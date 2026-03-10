@@ -88,12 +88,22 @@ Phase 1-3 정보를 바탕으로 incremental PRD를 마크다운으로 작성:
 - **추가 항목**: 새로 추가할 기능 (상세 설명)
 - **영향 범위**: 수정으로 영향 받는 기존 파일과 모듈 (Phase 3 결과 기반)
 - **기술 요구사항**: 추가 필요한 기술 스택/라이브러리
+- **Before/After 아키텍처 다이어그램** (Mermaid):
+  - Before: 기존 기획서의 다이어그램 또는 코드 탐색 기반 현재 구조
+  - After: 수정 반영 후 예상 구조 (추가/변경 컴포넌트를 강조 표시)
+- **Before/After 화면 구조** (UI 프로젝트인 경우):
+  - Before: 현재 화면 흐름
+  - After: 수정 후 화면 흐름 (추가/변경 화면을 강조 표시)
 
 복잡도를 simple/medium/complex로 평가.
 
 반환 형식 (JSON):
 {
   "modifiedPrd": "수정 PRD (마크다운, 1000자 이내)",
+  "beforeAfter": {
+    "architecture": { "before": "Mermaid 코드", "after": "Mermaid 코드" },
+    "ui": { "before": "Mermaid/ASCII", "after": "Mermaid/ASCII" }
+  },
   "codebaseInsights": {
     "techStack": ["실제 감지된 기술"],
     "hasTests": true/false,
@@ -109,17 +119,50 @@ Phase 1-3 정보를 바탕으로 incremental PRD를 마크다운으로 작성:
   "suggestedTeam": ["역할1", "역할2"]
 }
 
+beforeAfter.ui는 UI 프로젝트(web-app, frontend 등)인 경우에만 포함합니다.
+beforeAfter.architecture는 항상 포함합니다.
+
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
 
 ## Step 4: CEO 확인
 
-수정 PRD를 CEO에게 표시합니다:
+수정 PRD를 CEO에게 시각적으로 표시합니다 (다이어그램을 먼저 보여줘서 변경 규모를 직관적으로 파악):
 
+- `beforeAfter.architecture`의 Before/After 아키텍처 다이어그램 (나란히 표시)
+- `beforeAfter.ui`의 Before/After 화면 구조 (UI 프로젝트인 경우)
 - `modifiedPrd` 마크다운 원문
-- `codebaseInsights`가 있으면 기술 스택 + 테스트 유무 + 아키텍처 패턴 요약
 - `affectedAreas`를 파일별로 표시: `[changeType] file — reason` 형식
 - `migrationRisks`가 있으면 위험 요소 목록
+
+표시 형식:
+
+```
+### Before (현재 구조)
+
+{beforeAfter.architecture.before — Mermaid 다이어그램}
+
+### After (수정 후 구조)
+
+{beforeAfter.architecture.after — Mermaid 다이어그램}
+
+{beforeAfter.ui가 있으면:}
+### 화면 구조 변경
+
+Before: {beforeAfter.ui.before}
+After: {beforeAfter.ui.after}
+
+---
+
+{modifiedPrd 마크다운 원문}
+
+영향 범위:
+{affectedAreas를 [changeType] file — reason 형식으로}
+
+{migrationRisks가 있으면:}
+위험 요소:
+{migrationRisks 목록}
+```
 
 AskUserQuestion:
 
@@ -188,12 +231,131 @@ Task tool 프롬프트:
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
 
-## Step 6: Phase별 실행
+## Step 6: Phase별 실행 (Task tool로 격리)
 
-execute.md의 Phase별 실행 흐름을 따릅니다.
-
-> `good-vibe:execute`의 Step 2~4와 동일한 실행 흐름입니다.
+> **컨텍스트 보호:** 각 Phase를 독립 Task tool로 실행하여 메인 세션의 컨텍스트 폭발을 방지합니다.
 > 실행 모드는 auto로 초기화됩니다. 에스컬레이션만 CEO에게 올라갑니다.
+
+`next-step`으로 실행 계획의 Phase 수를 파악한 뒤, **각 Phase를 개별 Task tool**로 실행합니다.
+
+### Phase 실행 프롬프트 템플릿
+
+각 Phase의 Task tool 프롬프트:
+
+```
+프로젝트 ID: {ID}의 Phase {N}을 실행하세요.
+
+**[필수] CLI에 JSON 전달 시 Write tool 사용:**
+- LLM 응답 등 큰 JSON은 반드시 Write tool로 /tmp/gv-*.json에 저장 후 --input-file로 전달하세요.
+
+**Phase 실행 루프:**
+1. `node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js next-step --id {ID}` → 현재 action 확인
+2. action별 처리 (아래 레시피)
+3. `echo '{"id":"{ID}","stepResult":{...}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js advance-execution`
+4. complete, confirm-next-phase, escalate까지 반복
+
+**Action 레시피 (action → CLI → advance stepResult):**
+
+execute-tasks:
+- echo '{"task":{task}}' | node ... is-code-task → {isCodeTask}
+- 코드→tdd-execution-prompt, 비코드→execution-prompt (stdin: {"task":..,"teamMember":..})
+- 저장: echo '{"id":"{ID}","taskId":"{taskId}","output":"..."}' | node ... save-task-output
+- advance: {"completedAction":"execute-tasks"}
+
+materialize (코드 태스크만):
+- echo '{"taskOutput":"..","task":{task},"projectDir":"{dir}"}' | node ... verify-and-materialize
+- 저장: echo '{"id":"{ID}","taskId":"{taskId}","materializeResult":{result}}' | node ... add-task-materialization
+- 상태: echo '{"id":"{ID}","status":"reviewing"}' | node ... update-status
+- advance: {"completedAction":"materialize"}
+
+review:
+- echo '{"task":{task},"team":[..]}' | node ... select-reviewers
+- echo '{"reviewers":[..]}' | node ... resolve-review-assignments
+- echo '{"reviewer":{r},"task":{task},"taskOutput":".."}' | node ... task-review-prompt → LLM
+- echo '{"id":"{ID}","taskId":"{taskId}","reviews":[..]}' | node ... add-task-reviews
+- advance: {"completedAction":"review"}
+
+quality-gate:
+- echo '{"reviews":[..],"executionResult":{materializeResult}}' | node ... enhanced-quality-gate
+- 상태: echo '{"id":"{ID}","status":"executing"}' | node ... update-status
+- advance: {"completedAction":"quality-gate","qualityGateResult":{"passed":bool,"issues":[..]}}
+
+fix:
+- node ... get-failure-context --id {ID}
+- echo '{"task":{task},"implementer":{m},"reviews":[..],"failureContext":{ctx}}' | node ... revision-prompt → LLM
+- save-task-output → advance: {"completedAction":"fix"}
+
+commit:
+- echo '{"projectDir":"{dir}","phase":{N}}' | node ... commit-phase (infraPath 없으면 건너뜀)
+- advance: {"completedAction":"commit"}
+
+build-context:
+- echo '{"completedTasks":[..]}' | node ... build-phase-context
+- advance: {"completedAction":"build-context"}
+
+**주의사항:**
+- project.json 직접 Read 금지 (next-step이 필요 정보 반환, 레시피가 자체 완결)
+- 프로젝트 파일 전체 Read 금지 (태스크에 명시된 파일만)
+- 빌드 에러 일괄 수정 (반복 빌드 방지)
+- 큰 JSON은 Write tool → /tmp/gv-*.json → --input-file
+
+완료 후 반환 (최대 1000자):
+- phaseSummary: 완료된 작업 목록 (한 줄씩)
+- qualityGate: { passed, critical, important }
+- errors: 실패 시 원인 (있을 때만)
+상세 리뷰 결과와 빌드 로그는 project.json에 저장하세요.
+
+CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
+```
+
+Phase가 끝날 때마다 메인 세션에서 진행률을 표시합니다:
+
+```
+Phase {N}/{total} 완료 — {Phase 요약}
+품질게이트: {passed/failed}
+```
+
+### 에스컬레이션 처리
+
+Task tool이 에스컬레이션 정보를 반환하면, CEO에게 판단을 요청합니다:
+
+```
+수정을 2번 시도했지만 해결되지 않았습니다.
+
+Phase: {N}
+실패 카테고리: {categories}
+Critical 이슈:
+- {issue 1}
+- {issue 2}
+```
+
+AskUserQuestion:
+
+```
+질문: "다음 중 하나를 선택하세요"
+options:
+  - label: "계속 수정"
+    description: "핵심 기능이라 반드시 성공해야 할 때. 한 번 더 시도합니다."
+  - label: "건너뛰기"
+    description: "부가 기능이라 나중에 추가할 수 있을 때. 이 Phase를 넘어갑니다."
+  - label: "중단"
+    description: "기획 자체를 재검토해야 할 때. 실행을 종료합니다."
+```
+
+에스컬레이션 결정 후, 새 Task tool로 실행을 이어갑니다:
+
+```
+프로젝트 ID: {ID}
+CEO 결정: {decision} (continue/skip/abort)
+CEO 지침: {ceoGuidance} ("직접 지시" 선택 시)
+
+1. handle-escalation CLI 호출 (decision + ceoGuidance 전달)
+2. continue → Phase 실행 루프 재개
+3. skip → 다음 Phase로 진행
+4. abort → 즉시 중단 (프로젝트 상태는 executing 유지)
+
+환경변수: CLAUDE_PLUGIN_ROOT={CLAUDE_PLUGIN_ROOT}
+```
 
 ## Step 7: 완료
 
