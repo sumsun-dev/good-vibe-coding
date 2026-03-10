@@ -11,6 +11,7 @@ vi.mock('../../scripts/lib/llm/auth-manager.js', () => ({
 import { Discusser } from '../../src/discusser.js';
 import { MemoryStorage } from '../../src/storage.js';
 import { callLLM } from '../../scripts/lib/llm/llm-provider.js';
+import { config } from '../../scripts/lib/core/config.js';
 
 function makeMember(roleId, priority = 5) {
   return {
@@ -182,10 +183,9 @@ describe('Discusser', () => {
     expect(result.document).toBeTruthy();
   });
 
-  it('tier별로 그룹화하여 호출한다', async () => {
+  it('parallelTiers=false일 때 tier별로 그룹화하여 순차 호출한다', async () => {
     const callOrder = [];
     callLLM.mockImplementation(async (provider, prompt) => {
-      // 프롬프트에서 역할을 추출하여 호출 순서 기록
       const match = prompt.match(/\*\*(\w+)\*\*/);
       if (match) callOrder.push(match[1]);
       return {
@@ -196,7 +196,15 @@ describe('Discusser', () => {
       };
     });
 
-    await discusser.run({
+    const d = new Discusser({
+      provider: 'claude',
+      model: 'claude-sonnet-4-6',
+      storage,
+      hooks: {},
+      parallelTiers: false,
+    });
+
+    await d.run({
       idea: 'test',
       agents: [
         makeMember('cto', 1), // tier 1
@@ -209,5 +217,65 @@ describe('Discusser', () => {
     const ctoIdx = callOrder.indexOf('CTO');
     const qaIdx = callOrder.indexOf('QA');
     expect(ctoIdx).toBeLessThan(qaIdx);
+  });
+
+  it('parallelTiers=true (기본값)일 때 모든 에이전트를 동시에 호출한다', async () => {
+    const callTimes = {};
+    callLLM.mockImplementation(async (provider, prompt) => {
+      const match = prompt.match(/\*\*(\w+)\*\*/);
+      if (match) callTimes[match[1]] = Date.now();
+      return {
+        text: '```json\n{"approved": true, "feedback": "OK", "issues": []}\n```',
+        provider: 'claude',
+        model: 'claude-sonnet-4-6',
+        tokenCount: 50,
+      };
+    });
+
+    // 기본 discusser는 parallelTiers=true (config 기본값)
+    await discusser.run({
+      idea: 'test',
+      agents: [
+        makeMember('cto', 1), // tier 1
+        makeMember('fullstack', 3), // tier 2
+        makeMember('qa', 5), // tier 3
+      ],
+      complexity: { discussionRounds: 1 },
+    });
+
+    // 모든 분석 에이전트가 호출되었는지 확인
+    expect(callTimes).toHaveProperty('CTO');
+    expect(callTimes).toHaveProperty('FULLSTACK');
+    expect(callTimes).toHaveProperty('QA');
+  });
+
+  it('parallelTiers 기본값은 config.discussion.parallelTiers에서 가져온다', () => {
+    expect(config.discussion.parallelTiers).toBe(true);
+    expect(discusser.parallelTiers).toBe(true);
+  });
+
+  it('parallelTiers=true일 때 모든 에이전트 분석 결과가 종합에 포함된다', async () => {
+    let synthesisPrompt = '';
+    callLLM.mockImplementation(async (provider, prompt) => {
+      // 종합 프롬프트 캡처
+      if (prompt.includes('팀원 분석 결과')) {
+        synthesisPrompt = prompt;
+      }
+      return {
+        text: '```json\n{"approved": true, "feedback": "OK", "issues": []}\n```',
+        provider: 'claude',
+        model: 'claude-sonnet-4-6',
+        tokenCount: 50,
+      };
+    });
+
+    await discusser.run({
+      idea: 'test',
+      agents: [makeMember('cto', 1), makeMember('qa', 5)],
+      complexity: { discussionRounds: 1 },
+    });
+
+    // 종합 프롬프트에 모든 에이전트의 분석이 포함되어야 함
+    expect(synthesisPrompt).toContain('2명');
   });
 });

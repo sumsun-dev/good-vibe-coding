@@ -65,6 +65,7 @@ export const commands = {
       prd: data.prd,
       infraPath: data.infraPath,
       githubUrl: data.githubUrl,
+      worktreeIsolation: data.worktreeIsolation,
       clarityAnalysis: data.clarityAnalysis,
       complexityAnalysis: data.complexityAnalysis,
     });

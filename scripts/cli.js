@@ -74,6 +74,13 @@ const COMMAND_MAP = {
   'handle-escalation': 'execution',
   'confirm-phase': 'execution',
   'handle-review-intervention': 'execution',
+  // messaging
+  'send-message': 'execution',
+  'get-messages': 'execution',
+  // worktree
+  'create-worktree': 'execution',
+  'remove-worktree': 'execution',
+  'list-worktrees': 'execution',
   // review
   'select-reviewers': 'review',
   'task-review-prompt': 'review',
@@ -125,6 +132,7 @@ const COMMAND_MAP = {
   'load-project-override': 'feedback',
   'list-project-overrides': 'feedback',
   'merge-all-overrides': 'feedback',
+  'analyze-messages': 'feedback',
   // infra
   'setup-project-infra': 'infra',
   'check-gh-status': 'infra',

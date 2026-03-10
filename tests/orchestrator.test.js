@@ -159,6 +159,23 @@ describe('buildAgentAnalysisPrompt', () => {
     const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {});
     expect(prompt).not.toContain('CEO 피드백');
   });
+
+  it('messages가 있으면 다른 에이전트 메시지 섹션을 포함한다', () => {
+    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {
+      messages: [
+        { from: 'qa', type: 'question', content: '보안 검증 방법은?' },
+        { from: 'backend', type: 'fyi', content: 'REST API 설계 완료' },
+      ],
+    });
+    expect(prompt).toContain('다른 에이전트 메시지');
+    expect(prompt).toContain('보안 검증 방법은?');
+    expect(prompt).toContain('REST API 설계 완료');
+  });
+
+  it('messages가 비어있으면 메시지 섹션이 없다', () => {
+    const prompt = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], { messages: [] });
+    expect(prompt).not.toContain('다른 에이전트 메시지');
+  });
 });
 
 // --- buildSynthesisPrompt ---
@@ -568,6 +585,72 @@ describe('checkConvergence 빈 reviews noReviews 플래그', () => {
     const result = checkConvergence([]);
     expect(result.noReviews).toBe(true);
     expect(result.converged).toBe(false);
+  });
+});
+
+describe('checkConvergence earlyExit', () => {
+  it('승인율 0.86, blockers 0 → earlyExit=true, converged=true', () => {
+    // 7명 중 6명 승인 → 6/7 ≈ 0.857
+    const reviews = [
+      { approved: true, feedback: 'OK', issues: [] },
+      { approved: true, feedback: 'OK', issues: [] },
+      { approved: true, feedback: 'OK', issues: [] },
+      { approved: true, feedback: 'OK', issues: [] },
+      { approved: true, feedback: 'OK', issues: [] },
+      { approved: true, feedback: 'OK', issues: [] },
+      {
+        approved: false,
+        feedback: '개선 필요',
+        issues: [{ severity: 'minor', description: '사소한 이슈' }],
+      },
+    ];
+    const result = checkConvergence(reviews);
+    expect(result.earlyExit).toBe(true);
+    expect(result.converged).toBe(true);
+    expect(result.blockers).toEqual([]);
+  });
+
+  it('승인율 0.86, blockers 1 → earlyExit=false', () => {
+    // 7명 중 6명 승인이지만 critical 블로커 존재
+    const reviews = [
+      { approved: true, feedback: 'OK', issues: [] },
+      { approved: true, feedback: 'OK', issues: [] },
+      { approved: true, feedback: 'OK', issues: [] },
+      { approved: true, feedback: 'OK', issues: [] },
+      { approved: true, feedback: 'OK', issues: [] },
+      { approved: true, feedback: 'OK', issues: [] },
+      {
+        approved: false,
+        feedback: '보안 문제',
+        issues: [{ severity: 'critical', description: 'SQL 인젝션' }],
+      },
+    ];
+    const result = checkConvergence(reviews);
+    expect(result.earlyExit).toBe(false);
+    expect(result.blockers).toEqual(['SQL 인젝션']);
+  });
+
+  it('승인율 0.70, blockers 0 → earlyExit=false, converged=false', () => {
+    // 10명 중 7명 승인 → 0.7, critical 블로커 없음
+    const reviews = Array.from({ length: 7 }, () => ({
+      approved: true,
+      feedback: 'OK',
+      issues: [],
+    }));
+    reviews.push(
+      {
+        approved: false,
+        feedback: '개선 필요',
+        issues: [{ severity: 'minor', description: '사소' }],
+      },
+      { approved: false, feedback: '개선 필요', issues: [] },
+      { approved: false, feedback: '개선 필요', issues: [] },
+    );
+    const result = checkConvergence(reviews);
+    expect(result.approvalRate).toBeCloseTo(0.7, 5);
+    expect(result.earlyExit).toBe(false);
+    expect(result.converged).toBe(false);
+    expect(result.blockers).toEqual([]);
   });
 });
 

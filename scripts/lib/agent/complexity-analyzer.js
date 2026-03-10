@@ -257,8 +257,8 @@ export function getDefaultsForComplexity(level) {
       modelTiers: {
         leadership: 'sonnet',
         engineering: 'sonnet',
-        design: 'sonnet',
-        research: 'sonnet',
+        design: 'haiku',
+        research: 'haiku',
         support: 'haiku',
       },
     },
@@ -270,7 +270,7 @@ export function getDefaultsForComplexity(level) {
       modelTiers: {
         leadership: 'opus',
         engineering: 'sonnet',
-        design: 'sonnet',
+        design: 'haiku',
         research: 'sonnet',
         support: 'haiku',
       },

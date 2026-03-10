@@ -11,6 +11,7 @@ import { parseJsonObject } from '../core/json-parser.js';
 import { config } from '../core/config.js';
 import { formatCriteriaForPrompt } from './acceptance-criteria.js';
 import { getCategoryLabel } from './execution-utils.js';
+import { truncateText } from '../core/text-utils.js';
 
 /** 범용 리뷰 역할: 어떤 작업이든 리뷰 가치가 높은 역할 */
 const UNIVERSAL_REVIEWER_ROLES = ['qa', 'security', 'cto'];
@@ -75,6 +76,12 @@ export function buildTaskReviewPrompt(reviewer, task, taskOutput, acceptanceCrit
     }
   }
 
+  const MAX_REVIEW_OUTPUT = 3000;
+  const truncatedOutput =
+    taskOutput && taskOutput.length > MAX_REVIEW_OUTPUT
+      ? truncateText(taskOutput, MAX_REVIEW_OUTPUT, '\n...(truncated)')
+      : taskOutput || '';
+
   return `당신은 **${reviewer.displayName}** (${reviewer.role})입니다.
 다른 팀원의 작업 결과를 리뷰합니다.
 
@@ -88,7 +95,7 @@ export function buildTaskReviewPrompt(reviewer, task, taskOutput, acceptanceCrit
 - 설명: ${task.description || '(설명 없음)'}
 
 ## 작업 결과물
-${taskOutput}${acSection}
+${truncatedOutput}${acSection}
 
 ## 리뷰 지시사항
 
@@ -119,17 +126,22 @@ ${taskOutput}${acSection}
 
 /**
  * 리뷰 결과를 파싱한다.
+ * [QUESTION]: ... 패턴이 있으면 question 필드로 추출한다.
  * @param {string} rawReview - 리뷰 결과 원문
- * @returns {{ verdict: string, issues: Array<{severity: string, description: string, suggestion: string}> }}
+ * @returns {{ verdict: string, issues: Array<{severity: string, description: string, suggestion: string}>, question?: string }}
  */
 export function parseTaskReview(rawReview) {
   if (!rawReview || rawReview.trim() === '') {
     return { verdict: 'parse-error', issues: [] };
   }
 
+  // [QUESTION]: ... 패턴 추출 (ReDoS 안전: [^\n]+ 사용)
+  const questionMatch = rawReview.match(/\[QUESTION\]:\s*([^\n]+)/);
+  const question = questionMatch ? questionMatch[1].trim() : undefined;
+
   const parsed = parseJsonObject(rawReview);
   if (parsed) {
-    return {
+    const result = {
       verdict: parsed.verdict === 'approve' ? 'approve' : 'request-changes',
       issues: Array.isArray(parsed.issues)
         ? parsed.issues.map((i) => ({
@@ -139,9 +151,16 @@ export function parseTaskReview(rawReview) {
           }))
         : [],
     };
+    // JSON 내부 question 필드 또는 텍스트 패턴
+    if (parsed.question || question) {
+      result.question = parsed.question || question;
+    }
+    return result;
   }
 
-  return { verdict: 'parse-error', issues: [] };
+  const result = { verdict: 'parse-error', issues: [] };
+  if (question) result.question = question;
+  return result;
 }
 
 /**
@@ -186,7 +205,13 @@ export function checkQualityGate(reviews) {
  * @param {object|null} [failureContext=null] - 실패 컨텍스트 (시도 차수, 이전 이력)
  * @returns {string} 수정 프롬프트
  */
-export function buildRevisionPrompt(task, implementer, reviews, failureContext = null) {
+export function buildRevisionPrompt(
+  task,
+  implementer,
+  reviews,
+  failureContext = null,
+  acceptanceCriteria = null,
+) {
   if (!reviews || reviews.length === 0) return '';
 
   const issuesList = reviews
@@ -209,6 +234,13 @@ export function buildRevisionPrompt(task, implementer, reviews, failureContext =
 ## 리뷰에서 발견된 이슈
 
 ${issuesList}`;
+
+  if (acceptanceCriteria && acceptanceCriteria.length > 0) {
+    const formatted = formatCriteriaForPrompt(acceptanceCriteria);
+    if (formatted && typeof formatted === 'string') {
+      prompt += `\n\n## 수락 기준 (반드시 충족)\n${formatted}`;
+    }
+  }
 
   if (failureContext) {
     if (failureContext.attempt >= failureContext.maxAttempts) {

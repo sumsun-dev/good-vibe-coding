@@ -88,8 +88,11 @@ export function createInitialExecutionState(mode = 'interactive', options = {}) 
     fixAttempt: 0,
     mode: resolvedMode,
     batchSize,
+    messaging: Boolean(options.messaging),
     lastCompletedStep: null,
     completedPhases: [],
+    activePhases: [],
+    parallelGroups: null,
     pendingEscalation: null,
     startedAt: new Date().toISOString(),
     completedAt: null,
@@ -249,7 +252,17 @@ export function getNextExecutionStep(project) {
   }
 
   const totalPhases = getTotalPhases(project);
-  const currentPhase = state.currentPhase;
+
+  // activePhases가 있을 때: 첫 번째 미완료 active phase를 currentPhase로 사용
+  let currentPhase = state.currentPhase;
+  if (state.activePhases && state.activePhases.length > 0) {
+    const completedSet = new Set(state.completedPhases);
+    const firstPending = state.activePhases.find((ph) => !completedSet.has(ph));
+    if (firstPending !== undefined) {
+      currentPhase = firstPending;
+    }
+  }
+
   const phaseTasks = getTasksForPhase(project, currentPhase);
 
   const handler = STEP_HANDLERS[state.phaseStep];
@@ -339,15 +352,51 @@ function handleBuildContext(state, _phaseResult, stepResult, phase, totalPhases)
   state.lastCompletedStep = 'build-context';
   state.phaseGuidance = stepResult.phaseGuidance || null;
 
-  if (phase >= totalPhases) {
-    state.status = 'completed';
-    state.completedAt = new Date().toISOString();
+  // parallelGroups가 있으면 다음 tier의 Phase들을 activePhases에 세팅
+  if (state.parallelGroups) {
+    const completedSet = new Set(state.completedPhases);
+    const nextTierPhases = _findNextTierPhases(state.parallelGroups, completedSet);
+
+    if (nextTierPhases.length === 0) {
+      // 모든 tier 완료
+      state.status = 'completed';
+      state.completedAt = new Date().toISOString();
+      state.activePhases = [];
+    } else {
+      state.activePhases = nextTierPhases;
+      state.currentPhase = nextTierPhases[0];
+      state.phaseStep = 'execute-tasks';
+      state.fixAttempt = 0;
+      state.status = 'executing';
+    }
   } else {
-    state.currentPhase = phase + 1;
-    state.phaseStep = 'execute-tasks';
-    state.fixAttempt = 0;
-    state.status = 'executing';
+    // 하위 호환: 기존 순차 실행 로직 유지
+    if (phase >= totalPhases) {
+      state.status = 'completed';
+      state.completedAt = new Date().toISOString();
+    } else {
+      state.currentPhase = phase + 1;
+      state.phaseStep = 'execute-tasks';
+      state.fixAttempt = 0;
+      state.status = 'executing';
+    }
   }
+}
+
+/**
+ * parallelGroups에서 완료되지 않은 다음 tier의 Phase들을 반환한다.
+ * @param {Array<Array<number>>} parallelGroups - tier별 Phase 번호 배열
+ * @param {Set<number>} completedSet - 완료된 Phase 번호 집합
+ * @returns {Array<number>} 다음 실행 가능한 Phase 번호들
+ */
+function _findNextTierPhases(parallelGroups, completedSet) {
+  for (const tierPhases of parallelGroups) {
+    const pending = tierPhases.filter((ph) => !completedSet.has(ph));
+    if (pending.length > 0) {
+      return pending;
+    }
+  }
+  return [];
 }
 
 function handleReviewIntervention(state, _phaseResult, stepResult) {

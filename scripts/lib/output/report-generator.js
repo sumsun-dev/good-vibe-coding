@@ -3,6 +3,10 @@
  */
 
 import { getCostSummary, getAgentPerformanceSummary } from '../project/project-metrics.js';
+import {
+  analyzeMessagePatterns,
+  generateMessageAnalysisSection,
+} from '../engine/message-analyzer.js';
 
 /**
  * 전체 프로젝트 보고서를 생성한다.
@@ -378,6 +382,12 @@ export function generateReport(project) {
 
   const gettingStarted = generateGettingStartedSection(project);
   if (gettingStarted) report += '\n\n' + gettingStarted;
+
+  if (project.messageStats) {
+    const msgAnalysis = analyzeMessagePatterns(project.messageStats);
+    const msgSection = generateMessageAnalysisSection(msgAnalysis);
+    if (msgSection) report += '\n\n' + msgSection;
+  }
 
   report += generateCostSection(project, tasksByAssignee);
 

@@ -228,7 +228,7 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 
 ## 코어 모듈 (`scripts/lib/`)
 
-**`core/`** — 기반 유틸리티 (16개)
+**`core/`** — 기반 유틸리티 (17개)
 
 - `validators.js` — 입력 검증 + AppError (inputError/notFoundError/systemError)
 - `config.js` — 중앙 설정 (Object.freeze, 전체 정책 상수)
@@ -241,6 +241,7 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 - `cache.js` — 지연 로딩 캐시
 - `preset-loader.js` — 프리셋 JSON 로딩
 - `prompt-builder.js` — 프롬프트 조합 유틸리티 (순수 마크다운 포맷팅, 인젝션 방어: sanitizeForPrompt/wrapUserInput/DATA_BOUNDARY_INSTRUCTION)
+- `message-bus.js` — 에이전트 간 비동기 메시지 교환 (FileMessageBus/MemoryMessageBus, 원자적 쓰기, Path Traversal 방어, getStats() 통계)
 - `nl-router.js` — 자연어 → 커맨드 매핑 (규칙 기반, LLM 호출 없음)
 - `onboarding-generator.js` — 온보딩 CLAUDE.md/rules 생성
 - `settings-manager.js` — 사용자 설정 관리
@@ -261,17 +262,21 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 - `branch-manager.js` — feature branch 생성/관리 (timestamp/phase/custom 전략, graceful skip)
 - `pr-manager.js` — Pull Request 생성/관리 (gh CLI 래퍼, graceful skip)
 - `ci-generator.js` — GitHub Actions CI 워크플로우 자동 생성 (Node/Python/Go/Java)
+- `worktree-manager.js` — git worktree 기반 격리 작업 공간 (Phase별 독립 worktree, opt-in, graceful degradation)
 - `prd-generator.js` — PRD 프롬프트 생성/파싱/포맷 (명확도 → 복잡도 사이 CEO 확인용)
 
-**`engine/`** — 실행 엔진 (15개)
+**`engine/`** — 실행 엔진 (16개)
 
-- `orchestrator.js` — 멀티에이전트 오케스트레이션 (4-tier 병렬 디스패치, 수렴 확인, 역할별 피드백 주입)
+- `orchestrator.js` — 멀티에이전트 오케스트레이션 (4-tier 병렬 디스패치, 수렴 확인, 역할별 피드백 주입, 메시지 컨텍스트)
 - `discussion-engine.js` — 토론 프롬프트 생성
 - `state-machine.js` — 실행 상태 전이 (순수 함수, Phase 내 액션 흐름 정의)
 - `execution-utils.js` — 실행 유틸리티 (실패 분류, 실패 컨텍스트, 기여도 추출, 부실 감지)
 - `execution-loop.js` — 실행 루프 드라이버 (state-machine 기반 전이, 시맨틱 검증, 저널, 실패 복구, 기여도 수집)
 - `task-distributor.js` — 작업 분배 + 실행 계획 (리뷰 페이즈 자동 삽입, TDD, 코드 태스크 판별, 페이즈 컨텍스트 주입)
-- `review-engine.js` — 크로스 리뷰 (도메인 매칭 리뷰어 선정, 2단계 품질 게이트, 수정 이력 기반 리비전 프롬프트)
+- `review-engine.js` — 크로스 리뷰 (도메인 매칭 리뷰어 선정, 2단계 품질 게이트, 수정 이력 기반 리비전 프롬프트, question 추출)
+- `review-conversation.js` — 리뷰어-구현자 1왕복 대화 오케스트레이션 (질문 → 답변 → 최종 리뷰, graceful degradation)
+- `expert-consultation.js` — 에이전트 간 전문가 협의 ([CONSULT:role]: question 패턴, 1왕복, graceful degradation)
+- `message-analyzer.js` — 프로젝트 메시지 패턴 분석 (타입 분포, 에이전트 활동도, 인사이트 생성)
 - `cross-model-strategy.js` — 구현자와 다른 모델로 리뷰어 배정 (라운드로빈, fallback)
 - `execution-verifier.js` — 다언어 빌드 검증 (Node/Python/Go/Java, /tmp 샌드박스, npm install --ignore-scripts)
 - `code-materializer.js` — 마크다운에서 파일 추출 → 실제 기록 (path traversal 방지, dry-run 지원)
@@ -327,68 +332,79 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 
 ## 정책 상수 (`config.js`)
 
-| 영역       | 상수                               | 값        | 설명                                        |
-| ---------- | ---------------------------------- | --------- | ------------------------------------------- |
-| 수렴       | `convergence.threshold`            | 0.8       | 80% 승인 시 기획서 확정                     |
-| 수렴       | `convergence.maxRounds`            | 3         | 최대 토론 라운드                            |
-| 실행       | `execution.maxFixAttempts`         | 2         | Phase당 수정 시도, 초과 시 CEO 에스컬레이션 |
-| 실행       | `execution.maxAgentCalls`          | 500       | 세션당 에이전트 호출 상한 (무한 루프 방지)  |
-| 실행       | `execution.maxEscalationAttempts`  | 3         | 에스컬레이션 최대 횟수                      |
-| 실행       | `execution.maxOutputLines`         | 200       | 에이전트 출력 최대 라인                     |
-| 실행       | `execution.reviewIntervention`     | false     | 리뷰 후 CEO 개입 (interactive 모드에서만)   |
-| 리뷰       | `review.minReviewers`              | 2         | 최소 리뷰어 수                              |
-| 리뷰       | `review.maxReviewers`              | 3         | 최대 리뷰어 수                              |
-| 리뷰       | `review.maxRevisionRounds`         | 2         | 리비전 최대 라운드                          |
-| 리뷰       | `review.maxImportantIssues`        | 10        | Important 이슈 최대 포함 수                 |
-| 유사도     | `similarity.redundancyThreshold`   | 0.7       | 에이전트 중복 감지 Jaccard 임계값           |
-| 유사도     | `similarity.contributionThreshold` | 0.5       | 기여도 미달 시 제거 대상                    |
-| 빌드       | `build.defaultTimeout`             | 30s       | Node/Python 빌드 타임아웃                   |
-| 빌드       | `build.goTimeout`                  | 45s       | Go 빌드 타임아웃                            |
-| 빌드       | `build.javaTimeout`                | 60s       | Java/Maven 빌드 타임아웃                    |
-| 팀         | `team.simple`                      | 2-3명     | quick-build                                 |
-| 팀         | `team.medium`                      | 3-5명     | plan-execute                                |
-| 팀         | `team.complex`                     | 5-8명     | plan-only                                   |
-| 추천       | `recommendation.minScore`          | 3         | 추천 노출 최소 점수                         |
-| LLM        | `llm.defaultTimeout`               | 60s       | LLM 호출 타임아웃                           |
-| LLM        | `llm.defaultMaxTokens`             | 4096      | 기본 최대 토큰                              |
-| LLM        | `llm.pingTimeout`                  | 15s       | 연결 확인 타임아웃                          |
-| LLM        | `llm.maxRetries`                   | 3         | 재시도 횟수                                 |
-| GitHub     | `github.enabled`                   | false     | GitHub 협업 기능 활성화                     |
-| GitHub     | `github.branchStrategy`            | timestamp | 브랜치 네이밍 전략 (timestamp/phase/custom) |
-| GitHub     | `github.baseBranch`                | main      | 베이스 브랜치                               |
-| GitHub     | `github.autoPush`                  | true      | 브랜치 자동 push                            |
-| GitHub     | `github.autoCreatePR`              | true      | 실행 완료 후 자동 PR 생성                   |
-| GitHub     | `github.prDraft`                   | false     | PR을 Draft로 생성                           |
-| 품질       | `quality.criticalPenalty`          | 20        | Critical 이슈 감점                          |
-| 품질       | `quality.importantPenalty`         | 5         | Important 이슈 감점                         |
-| 품질       | `quality.fixAttemptPenalty`        | 10        | 수정 시도 감점                              |
-| 품질       | `quality.buildFailurePenalty`      | 30        | 빌드 실패 감점                              |
-| 품질       | `quality.firstPhaseWeight`         | 0.3       | 첫 Phase 가중치                             |
-| 진화       | `evolution.targetScore`            | 80        | A/B 평가 목표 점수                          |
-| 진화       | `evolution.maxGenerations`         | 3         | 최대 세대 수                                |
-| 진화       | `evolution.minImprovement`         | 5         | 최소 개선 폭                                |
-| 명확도     | `clarity.threshold`                | 0.8       | 명확도 목표                                 |
-| 명확도     | `clarity.dimensionThreshold`       | 0.6       | 차원별 최소 점수                            |
-| 태스크분류 | `taskClassification.engineerRoles` | 5개 역할  | 코드 태스크 판별 대상                       |
-| CLI        | `cli.suggestionThreshold`          | 3         | NL→커맨드 매핑 최소 점수                    |
-| 코드베이스 | `codebase.ignoredDirs`             | 11개      | 스캔 제외 디렉토리                          |
-| 코드베이스 | `codebase.techStackMap`            | 16개      | 기술→도메인 매핑                            |
+| 영역       | 상수                               | 값        | 설명                                                                                                |
+| ---------- | ---------------------------------- | --------- | --------------------------------------------------------------------------------------------------- |
+| 토론       | `discussion.parallelTiers`         | true      | Tier 간 병렬 실행 (false: 순차 fallback)                                                            |
+| 수렴       | `convergence.threshold`            | 0.8       | 80% 승인 시 기획서 확정                                                                             |
+| 수렴       | `convergence.maxRounds`            | 3         | 최대 토론 라운드                                                                                    |
+| 실행       | `execution.maxFixAttempts`         | 2         | Phase당 수정 시도, 초과 시 CEO 에스컬레이션                                                         |
+| 실행       | `execution.maxAgentCalls`          | 500       | 세션당 에이전트 호출 상한 (무한 루프 방지)                                                          |
+| 실행       | `execution.maxEscalationAttempts`  | 3         | 에스컬레이션 최대 횟수                                                                              |
+| 실행       | `execution.maxOutputLines`         | 200       | 에이전트 출력 최대 라인                                                                             |
+| 실행       | `execution.reviewIntervention`     | false     | 리뷰 후 CEO 개입 (interactive 모드에서만)                                                           |
+| 리뷰       | `review.minReviewers`              | 2         | 최소 리뷰어 수                                                                                      |
+| 리뷰       | `review.maxReviewers`              | 3         | 최대 리뷰어 수                                                                                      |
+| 리뷰       | `review.maxRevisionRounds`         | 2         | 리비전 최대 라운드                                                                                  |
+| 리뷰       | `review.maxImportantIssues`        | 10        | Important 이슈 최대 포함 수                                                                         |
+| 유사도     | `similarity.redundancyThreshold`   | 0.7       | 에이전트 중복 감지 Jaccard 임계값                                                                   |
+| 유사도     | `similarity.contributionThreshold` | 0.5       | 기여도 미달 시 제거 대상                                                                            |
+| 빌드       | `build.defaultTimeout`             | 30s       | Node/Python 빌드 타임아웃                                                                           |
+| 빌드       | `build.goTimeout`                  | 45s       | Go 빌드 타임아웃                                                                                    |
+| 빌드       | `build.javaTimeout`                | 60s       | Java/Maven 빌드 타임아웃                                                                            |
+| 팀         | `team.simple`                      | 2-3명     | quick-build                                                                                         |
+| 팀         | `team.medium`                      | 3-5명     | plan-execute                                                                                        |
+| 팀         | `team.complex`                     | 5-8명     | plan-only                                                                                           |
+| 추천       | `recommendation.minScore`          | 3         | 추천 노출 최소 점수                                                                                 |
+| LLM        | `llm.defaultTimeout`               | 60s       | LLM 호출 타임아웃                                                                                   |
+| LLM        | `llm.defaultMaxTokens`             | 4096      | 기본 최대 토큰                                                                                      |
+| LLM        | `llm.pingTimeout`                  | 15s       | 연결 확인 타임아웃                                                                                  |
+| LLM        | `llm.maxRetries`                   | 3         | 재시도 횟수                                                                                         |
+| GitHub     | `github.enabled`                   | false     | GitHub 협업 기능 활성화                                                                             |
+| GitHub     | `github.branchStrategy`            | timestamp | 브랜치 네이밍 전략 (timestamp/phase/custom)                                                         |
+| GitHub     | `github.baseBranch`                | main      | 베이스 브랜치                                                                                       |
+| GitHub     | `github.autoPush`                  | true      | 브랜치 자동 push                                                                                    |
+| GitHub     | `github.autoCreatePR`              | true      | 실행 완료 후 자동 PR 생성                                                                           |
+| GitHub     | `github.prDraft`                   | false     | PR을 Draft로 생성                                                                                   |
+| GitHub     | `github.worktreeIsolation`         | false     | Phase별 git worktree 격리 (good-vibe:new에서 GitHub 선택 시 제시, project.worktreeIsolation에 저장) |
+| 품질       | `quality.criticalPenalty`          | 20        | Critical 이슈 감점                                                                                  |
+| 품질       | `quality.importantPenalty`         | 5         | Important 이슈 감점                                                                                 |
+| 품질       | `quality.fixAttemptPenalty`        | 10        | 수정 시도 감점                                                                                      |
+| 품질       | `quality.buildFailurePenalty`      | 30        | 빌드 실패 감점                                                                                      |
+| 품질       | `quality.firstPhaseWeight`         | 0.3       | 첫 Phase 가중치                                                                                     |
+| 진화       | `evolution.targetScore`            | 80        | A/B 평가 목표 점수                                                                                  |
+| 진화       | `evolution.maxGenerations`         | 3         | 최대 세대 수                                                                                        |
+| 진화       | `evolution.minImprovement`         | 5         | 최소 개선 폭                                                                                        |
+| 명확도     | `clarity.threshold`                | 0.8       | 명확도 목표                                                                                         |
+| 명확도     | `clarity.dimensionThreshold`       | 0.6       | 차원별 최소 점수                                                                                    |
+| 태스크분류 | `taskClassification.engineerRoles` | 5개 역할  | 코드 태스크 판별 대상                                                                               |
+| 메시징     | `messaging.enabled`                | false     | 에이전트 간 메시징 활성화 (plan-execute/plan-only에서 선택, quick-build는 항상 OFF)                 |
+| 메시징     | `messaging.maxMessages`            | 100       | 프로젝트당 최대 메시지 수                                                                           |
+| 메시징     | `messaging.ttl`                    | 86400     | 메시지 TTL (24시간, 초)                                                                             |
+| 메시징     | `messaging.maxThreadDepth`         | 5         | 스레드 최대 깊이                                                                                    |
+| CLI        | `cli.suggestionThreshold`          | 3         | NL→커맨드 매핑 최소 점수                                                                            |
+| 코드베이스 | `codebase.ignoredDirs`             | 11개      | 스캔 제외 디렉토리                                                                                  |
+| 코드베이스 | `codebase.techStackMap`            | 16개      | 기술→도메인 매핑                                                                                    |
 
 ## 토론 플로우
 
 ```
 Round N:
-  [병렬] Tier 1 (priority 1-2) — CTO, PO, Market/Business Researcher (전략/요구사항)
-  [병렬] Tier 2 (priority 3-4) — Fullstack, UI/UX, Frontend, Backend (구현 관점)
-  [병렬] Tier 3 (priority 5-7) — QA, Security, DevOps, Data, Tech/Design Researcher (검증)
-  [병렬] Tier 4 (priority 8+) — Tech Writer (보완)
+  parallelTiers=true (기본값):
+    [전체 병렬] 모든 에이전트 동시 분석 — 토론 시간 60-75% 단축
+  parallelTiers=false (fallback):
+    [병렬] Tier 1 (priority 1-2) — CTO, PO, Market/Business Researcher (전략/요구사항)
+    [병렬] Tier 2 (priority 3-4) — Fullstack, UI/UX, Frontend, Backend (구현 관점)
+    [병렬] Tier 3 (priority 5-7) — QA, Security, DevOps, Data, Tech/Design Researcher (검증)
+    [병렬] Tier 4 (priority 8+) — Tech Writer (보완)
   → 전체 결과 종합 (기획서)
   [병렬] 전 에이전트 리뷰 (critical 이슈만 블로커로 추출)
   → 80%+ 승인 시 수렴, 아니면 역할별 피드백 주입 후 다음 라운드 (최대 3회)
 ```
 
+- **Tier 병렬화**: `config.discussion.parallelTiers` 또는 `Discusser({ parallelTiers })` 옵션으로 제어. `buildAgentAnalysisPrompt()`가 `priorTierOutputs`를 미사용하므로 전체 병렬 안전
 - **역할별 피드백 주입**: 비승인 에이전트의 피드백이 해당 역할 에이전트의 다음 라운드 프롬프트에 타겟 주입
 - **블로커 추출**: `checkConvergence`가 critical 이슈만 블로커로 분류, important/minor는 무시
+- **메시지 컨텍스트**: `context.messages`로 다른 에이전트의 메시지를 프롬프트에 주입 가능 (opt-in)
 
 ## 실행 + 리뷰 + 실패 복구 플로우
 
@@ -421,6 +437,9 @@ Phase N:
 - **시맨틱 상태 검증**: 6가지 규칙 (fixAttempt 상한, completedAt 필수, escalation 플래그, 중복 Phase 방지 등)
 - **리뷰어 선정**: 도메인 오버랩 점수 + 유니버셜 리뷰어(qa/security/cto) +1 보너스
 - **리비전 프롬프트**: critical + important 이슈만 포함, minor는 자동 제외
+- **리뷰 대화**: 리뷰어가 `[QUESTION]:` 또는 JSON `question` 필드로 질문 → 구현자 답변 → 최종 리뷰 (최대 1왕복, `messageBus` 활성 시). LLM 실패 시 원본 리뷰 유지 (graceful degradation)
+- **전문가 상담**: 에이전트가 `[CONSULT:역할ID]: 질문` 패턴으로 다른 역할에게 ad-hoc 질문 (최대 1회, `messageBus` 활성 시). 답변이 태스크 출력에 `## Expert Consultation` 섹션으로 append
+- **메시지 분석**: 프로젝트 완료 시 `messageBus.getStats()` 결과를 `project.messageStats`에 저장, 보고서에 팀 커뮤니케이션 분석 섹션 삽입
 
 ## GitHub 협업 워크플로우 (opt-in)
 

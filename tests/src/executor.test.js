@@ -213,9 +213,9 @@ describe('Executor._handleStep', () => {
     });
   });
 
-  it('materialize는 completedAction만 반환한다', async () => {
+  it('materialize는 completedAction과 worktreePath를 반환한다', async () => {
     const result = await executor._handleStep({ action: 'materialize' }, {});
-    expect(result).toEqual({ completedAction: 'materialize' });
+    expect(result).toEqual({ completedAction: 'materialize', worktreePath: null });
   });
 
   it('commit은 completedAction을 반환하고 훅을 호출한다', async () => {

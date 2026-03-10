@@ -351,6 +351,29 @@ describe('parseTaskReview', () => {
     const result = parseTaskReview(raw);
     expect(result.issues[0].description).toBe('');
   });
+
+  it('[QUESTION]: 패턴으로 질문을 추출한다', () => {
+    const raw =
+      '```json\n{"verdict":"request-changes","issues":[]}\n```\n[QUESTION]: SQL injection 방지 방법은?';
+    const result = parseTaskReview(raw);
+    expect(result.question).toBe('SQL injection 방지 방법은?');
+  });
+
+  it('JSON 내부 question 필드를 추출한다', () => {
+    const raw = JSON.stringify({
+      verdict: 'request-changes',
+      issues: [],
+      question: '이 API는 인증이 필요한가요?',
+    });
+    const result = parseTaskReview(raw);
+    expect(result.question).toBe('이 API는 인증이 필요한가요?');
+  });
+
+  it('질문이 없으면 question 필드가 없다', () => {
+    const raw = JSON.stringify({ verdict: 'approve', issues: [] });
+    const result = parseTaskReview(raw);
+    expect(result.question).toBeUndefined();
+  });
 });
 
 // --- checkQualityGate ---
@@ -736,5 +759,54 @@ describe('buildRevisionPrompt ceoGuidance', () => {
     };
     const prompt = buildRevisionPrompt(task, implementer, reviews, failureContext);
     expect(prompt).not.toContain('CEO 지침');
+  });
+});
+
+describe('buildRevisionPrompt with acceptanceCriteria', () => {
+  const task = { id: 'task-1', title: 'API 설계' };
+  const implementer = { displayName: '도윤', role: 'Backend Developer' };
+
+  it('acceptanceCriteria가 있으면 수락 기준 섹션을 포함한다', () => {
+    const reviews = [{ issues: [{ severity: 'critical', description: '보안 이슈' }] }];
+    const ac = [{ id: 'ac-1', description: 'JWT 인증이 적용되어야 한다', status: 'pending' }];
+    const prompt = buildRevisionPrompt(task, implementer, reviews, null, ac);
+    expect(prompt).toContain('수락 기준 (반드시 충족)');
+  });
+
+  it('acceptanceCriteria가 null이면 수락 기준 섹션을 생략한다', () => {
+    const reviews = [{ issues: [{ severity: 'critical', description: '이슈' }] }];
+    const prompt = buildRevisionPrompt(task, implementer, reviews, null, null);
+    expect(prompt).not.toContain('수락 기준 (반드시 충족)');
+  });
+
+  it('acceptanceCriteria가 빈 배열이면 수락 기준 섹션을 생략한다', () => {
+    const reviews = [{ issues: [{ severity: 'critical', description: '이슈' }] }];
+    const prompt = buildRevisionPrompt(task, implementer, reviews, null, []);
+    expect(prompt).not.toContain('수락 기준 (반드시 충족)');
+  });
+});
+
+describe('buildTaskReviewPrompt taskOutput truncation', () => {
+  const reviewer = SAMPLE_TEAM[0]; // cto
+  const task = { id: 'task-1', title: 'API 설계', assignee: 'backend', description: '설명' };
+
+  it('3000자 이하 taskOutput은 그대로 포함한다', () => {
+    const shortOutput = 'a'.repeat(100);
+    const prompt = buildTaskReviewPrompt(reviewer, task, shortOutput);
+    expect(prompt).toContain(shortOutput);
+  });
+
+  it('3000자 초과 taskOutput은 truncate한다', () => {
+    const longOutput = 'x'.repeat(4000);
+    const prompt = buildTaskReviewPrompt(reviewer, task, longOutput);
+    expect(prompt).toContain('...(truncated)');
+    // truncate된 내용이 원본보다 짧아야 한다
+    const outputSection = prompt.split('## 작업 결과물\n')[1].split('\n\n## 리뷰 지시사항')[0];
+    expect(outputSection.length).toBeLessThan(longOutput.length);
+  });
+
+  it('taskOutput이 null이면 빈 문자열로 처리한다', () => {
+    const prompt = buildTaskReviewPrompt(reviewer, task, null);
+    expect(prompt).toContain('## 작업 결과물');
   });
 });

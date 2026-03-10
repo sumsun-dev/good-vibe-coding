@@ -196,6 +196,105 @@ describe('buildExecutionPlan', () => {
     const plan = buildExecutionPlan(tasks, []);
     expect(plan.dependencies).toEqual({});
   });
+
+  it('phaseDependencies와 parallelGroups를 반환한다', () => {
+    const tasks = [
+      { id: 'task-1', title: 'A', assignee: 'cto', phase: 1, dependencies: [] },
+      { id: 'task-2', title: 'B', assignee: 'backend', phase: 2, dependencies: ['task-1'] },
+    ];
+    const plan = buildExecutionPlan(tasks, []);
+    expect(plan.phaseDependencies).toBeDefined();
+    expect(plan.parallelGroups).toBeDefined();
+  });
+
+  it('태스크 의존성에서 Phase 의존성을 자동 추론한다', () => {
+    // task-5(Phase2)가 task-1(Phase1)에 의존 → Phase2는 Phase1에 의존
+    const tasks = [
+      { id: 'task-1', title: 'A', assignee: 'cto', phase: 1, dependencies: [] },
+      { id: 'task-5', title: 'B', assignee: 'backend', phase: 2, dependencies: ['task-1'] },
+    ];
+    const plan = buildExecutionPlan(tasks, []);
+    expect(plan.phaseDependencies[2]).toContain(1);
+  });
+
+  it('같은 Phase 내 의존성은 phaseDependencies에 포함되지 않는다', () => {
+    const tasks = [
+      { id: 'task-1', title: 'A', assignee: 'cto', phase: 1, dependencies: [] },
+      { id: 'task-2', title: 'B', assignee: 'backend', phase: 1, dependencies: ['task-1'] },
+    ];
+    const plan = buildExecutionPlan(tasks, []);
+    // Phase 1 내부 의존이므로 phaseDependencies에 없어야 함
+    expect(plan.phaseDependencies[1] || []).not.toContain(1);
+  });
+
+  it('의존 없는 Phase들은 tier 0으로 묶인다', () => {
+    // Phase 1, 2, 3이 모두 독립적이면 tier 0에 함께 배치
+    const tasks = [
+      { id: 'task-1', title: 'A', assignee: 'cto', phase: 1, dependencies: [] },
+      { id: 'task-2', title: 'B', assignee: 'backend', phase: 2, dependencies: [] },
+      { id: 'task-3', title: 'C', assignee: 'qa', phase: 3, dependencies: [] },
+    ];
+    const plan = buildExecutionPlan(tasks, []);
+    // 모두 의존이 없으므로 하나의 tier에 묶임
+    expect(plan.parallelGroups[0]).toEqual(expect.arrayContaining([1, 2, 3]));
+    expect(plan.parallelGroups.length).toBe(1);
+  });
+
+  it('Phase 2,3이 Phase 1에만 의존하면 parallelGroups가 [[1],[2,3]]이다', () => {
+    const tasks = [
+      { id: 'task-1', title: 'A', assignee: 'cto', phase: 1, dependencies: [] },
+      { id: 'task-2', title: 'B', assignee: 'backend', phase: 2, dependencies: ['task-1'] },
+      { id: 'task-3', title: 'C', assignee: 'qa', phase: 3, dependencies: ['task-1'] },
+    ];
+    const plan = buildExecutionPlan(tasks, []);
+    expect(plan.parallelGroups[0]).toEqual([1]);
+    expect(plan.parallelGroups[1]).toEqual(expect.arrayContaining([2, 3]));
+    expect(plan.parallelGroups.length).toBe(2);
+  });
+
+  it('선형 의존성에서 parallelGroups는 각 Phase가 별도 tier를 가진다', () => {
+    // Phase1 → Phase2 → Phase3 → Phase4: 각 Phase가 하나씩 tier를 가짐
+    const tasks = [
+      { id: 'task-1', title: 'A', assignee: 'cto', phase: 1, dependencies: [] },
+      { id: 'task-2', title: 'B', assignee: 'backend', phase: 2, dependencies: ['task-1'] },
+      { id: 'task-3', title: 'C', assignee: 'qa', phase: 3, dependencies: ['task-2'] },
+      { id: 'task-4', title: 'D', assignee: 'frontend', phase: 4, dependencies: ['task-3'] },
+    ];
+    const plan = buildExecutionPlan(tasks, []);
+    expect(plan.parallelGroups.length).toBe(4);
+    expect(plan.parallelGroups[0]).toEqual([1]);
+    expect(plan.parallelGroups[1]).toEqual([2]);
+    expect(plan.parallelGroups[2]).toEqual([3]);
+    expect(plan.parallelGroups[3]).toEqual([4]);
+  });
+
+  it('복잡한 DAG: Phase 2,3이 Phase 1에 의존하고 Phase 4가 Phase 2,3에 의존한다', () => {
+    const tasks = [
+      { id: 'task-1', title: 'A', assignee: 'cto', phase: 1, dependencies: [] },
+      { id: 'task-2', title: 'B', assignee: 'backend', phase: 2, dependencies: ['task-1'] },
+      { id: 'task-3', title: 'C', assignee: 'frontend', phase: 3, dependencies: ['task-1'] },
+      { id: 'task-4', title: 'D', assignee: 'qa', phase: 4, dependencies: ['task-2', 'task-3'] },
+    ];
+    const plan = buildExecutionPlan(tasks, []);
+    // tier 0: [1], tier 1: [2, 3], tier 2: [4]
+    expect(plan.parallelGroups[0]).toEqual([1]);
+    expect(plan.parallelGroups[1]).toEqual(expect.arrayContaining([2, 3]));
+    expect(plan.parallelGroups[2]).toEqual([4]);
+    expect(plan.parallelGroups.length).toBe(3);
+  });
+
+  it('parallelGroups가 null이면 기존 순차 실행과 동일하게 동작한다', () => {
+    // tasks에 의존성이 없을 때: phaseDependencies 빈 객체, parallelGroups는 단일 tier
+    const tasks = [
+      { id: 'task-1', title: 'A', assignee: 'cto', phase: 1, dependencies: [] },
+      { id: 'task-2', title: 'B', assignee: 'backend', phase: 2, dependencies: [] },
+    ];
+    const plan = buildExecutionPlan(tasks, []);
+    expect(plan.phases.length).toBe(2);
+    expect(plan.dependencies).toEqual({});
+    // 의존이 없으므로 phaseDependencies는 비어있음
+    expect(plan.phaseDependencies).toEqual({});
+  });
 });
 
 describe('isCodeTask', () => {
@@ -382,5 +481,24 @@ describe('buildPhaseContext', () => {
     expect(context).not.toContain('task-1');
     expect(context).toContain('task-2');
     expect(context).toContain('실제 결과');
+  });
+
+  it('기본 maxLinesPerTask는 8이다', () => {
+    // 9줄 출력을 넣으면 기본값 8로 잘려야 한다
+    const lines = Array.from({ length: 9 }, (_, i) => `line${i + 1}`).join('\n');
+    const tasks = [{ id: 'task-1', title: 'A', assignee: 'cto', taskOutput: lines }];
+    const context = buildPhaseContext(tasks);
+    expect(context).toContain('line8');
+    expect(context).toContain('...(truncated)');
+    expect(context).not.toContain('line9');
+  });
+
+  it('options.maxLinesPerTask로 기본값을 덮어쓸 수 있다 (하위 호환)', () => {
+    // 기본값 8이지만 옵션으로 15를 지정하면 15줄까지 허용
+    const lines = Array.from({ length: 10 }, (_, i) => `line${i + 1}`).join('\n');
+    const tasks = [{ id: 'task-1', title: 'A', assignee: 'cto', taskOutput: lines }];
+    const context = buildPhaseContext(tasks, { maxLinesPerTask: 15 });
+    expect(context).toContain('line10');
+    expect(context).not.toContain('...(truncated)');
   });
 });
