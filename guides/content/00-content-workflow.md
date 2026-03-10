@@ -51,3 +51,10 @@ Technical Writer, Content Editor 역할의 콘텐츠 제작 가이드입니다.
 - Read: 기존 문서 분석
 - Write/Edit: 문서 작성 및 수정
 - Grep: 코드에서 예시 추출
+
+## 추천 에이전트
+
+- `@content-editor-kr`: 콘텐츠 편집 및 톤/스타일 교정
+- `@doc-reviewer-kr`: 문서 기술 정확성 검토 및 피드백
+
+`good-vibe:add-agent`로 설치하거나, 대화에서 `@에이전트명`으로 호출할 수 있습니다.

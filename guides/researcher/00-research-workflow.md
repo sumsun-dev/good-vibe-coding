@@ -45,6 +45,8 @@
 
 ## 팀 협업
 
-- Tier 1에서 전략적 리서치 수행 (CTO, PO와 동시)
-- 분석 결과를 Tier 2 엔지니어링 팀에 전달
+- **Market/Business Researcher**: Tier 1에서 전략적 리서치 수행 (CTO, PO와 동시, priority 2)
+- **Tech/Design Researcher**: Tier 3에서 기술/디자인 검증 수행 (QA, Security와 동시, priority 5)
+- 기본 설정(`parallelTiers=true`)에서는 모든 에이전트가 동시 실행되므로 Tier 구분 없이 병렬 분석
+- 분석 결과는 종합 단계에서 기획서에 반영
 - 크로스 리뷰 시 도메인 전문성 기반 피드백 제공
