@@ -266,19 +266,26 @@ export async function getProviderStatus() {
   const connected = await listConnectedProviders();
   const connectedIds = new Set(connected.map((c) => c.providerId));
 
+  const { isGeminiCliInstalled } = await import('./gemini-bridge.js');
+
   const status = {};
   for (const [id, provConfig] of Object.entries(config.providers)) {
-    status[id] = {
+    const entry = {
       enabled: provConfig.enabled,
       authType: provConfig.authType,
       model: provConfig.model,
       connected: connectedIds.has(id),
     };
+    if (id === 'gemini') {
+      entry.cliInstalled = isGeminiCliInstalled();
+    }
+    status[id] = entry;
   }
 
   return {
     defaultProvider: config.defaultProvider,
     reviewStrategy: config.reviewStrategy,
     providers: status,
+    meta: config.meta || {},
   };
 }

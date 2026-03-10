@@ -27,8 +27,8 @@ CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 **판정:**
 
 - `reviewStrategy === 'cross-model'` → "이미 활성화" 표시, 셋업 종료
-- gemini `connected: false` → "Gemini CLI 미설치" 안내, 셋업 종료
-- gemini `connected: true` + `enabled: false` + `meta.geminiOffered` 없음 → 2단계로
+- gemini `cliInstalled: false` → "Gemini CLI 미설치. `npm install -g @google/gemini-cli`로 설치하세요" 안내, 셋업 종료
+- gemini `cliInstalled: true` + `meta.geminiOffered` 없음 → 2단계로
 - `meta.geminiOffered === true` → 셋업 종료 (이전 거절)
 
 #### 2단계: CEO에게 제안

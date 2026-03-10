@@ -18,6 +18,7 @@ import {
   connectWithApiKey,
   getProviderStatus,
 } from '../scripts/lib/llm/auth-manager.js';
+import { _installCache } from '../scripts/lib/llm/gemini-bridge.js';
 
 let tempDir;
 
@@ -242,6 +243,14 @@ describe('connectWithApiKey', () => {
 // --- 상태 요약 ---
 
 describe('getProviderStatus', () => {
+  beforeEach(() => {
+    _installCache.set('gemini', true);
+  });
+
+  afterEach(() => {
+    _installCache.delete('gemini');
+  });
+
   it('전체 프로바이더 상태를 반환한다', async () => {
     await connectWithApiKey('claude', 'sk-test');
     const status = await getProviderStatus();
@@ -251,6 +260,7 @@ describe('getProviderStatus', () => {
     expect(status.providers.claude.enabled).toBe(true);
     expect(status.providers.openai.connected).toBe(false);
     expect(status.providers.gemini.connected).toBe(false);
+    expect(status.providers.gemini.cliInstalled).toBe(true);
   });
 
   it('연결 없으면 모두 disconnected', async () => {
@@ -258,5 +268,17 @@ describe('getProviderStatus', () => {
     expect(status.providers.claude.connected).toBe(false);
     expect(status.providers.openai.connected).toBe(false);
     expect(status.providers.gemini.connected).toBe(false);
+  });
+
+  it('gemini CLI 미설치 시 cliInstalled: false', async () => {
+    _installCache.set('gemini', false);
+    const status = await getProviderStatus();
+    expect(status.providers.gemini.cliInstalled).toBe(false);
+  });
+
+  it('meta 필드를 반환한다', async () => {
+    const status = await getProviderStatus();
+    expect(status.meta).toBeDefined();
+    expect(typeof status.meta).toBe('object');
   });
 });
