@@ -37,6 +37,46 @@ gh auth login
 - 저장소 생성 → git init → 초기 커밋 → push 자동 처리
 - 이후 `good-vibe:execute`에서 작성한 코드가 자동으로 커밋됨
 
+### GitHub 협업 워크플로우
+
+기본적으로 GitHub 협업 기능은 꺼져 있습니다 (`github.enabled = false`).
+활성화하면 feature branch, conventional commit, 자동 PR 생성 등 팀 협업에 필요한 기능이 추가됩니다.
+
+`good-vibe:new`에서 GitHub 저장소를 설정할 때 활성화할 수 있습니다.
+
+**활성화 시 동작:**
+
+```
+good-vibe:execute 시작
+  → feature branch 생성 (gv/{프로젝트}-{timestamp})
+  → Phase별 conventional commit (feat/fix/test/refactor/chore)
+  → 실행 완료 시 자동 PR 생성 (품질 보고서 포함)
+  → CEO가 GitHub에서 직접 merge 승인
+```
+
+**설정 옵션:**
+
+| 설정                | 기본값      | 설명                                         |
+| ------------------- | ----------- | -------------------------------------------- |
+| `enabled`           | `false`     | GitHub 협업 기능 활성화                      |
+| `branchStrategy`    | `timestamp` | 브랜치 네이밍 (`timestamp`/`phase`/`custom`) |
+| `baseBranch`        | `main`      | PR의 베이스 브랜치                           |
+| `autoPush`          | `true`      | 브랜치 자동 push                             |
+| `autoCreatePR`      | `true`      | 실행 완료 후 자동 PR 생성                    |
+| `prDraft`           | `false`     | PR을 Draft로 생성                            |
+| `worktreeIsolation` | `false`     | Phase별 git worktree 격리                    |
+
+**커밋 형식:** `feat(phase-1): API 라우터 구현` + Co-authored-by
+
+**PR 보고서에 포함되는 내용:**
+
+- 품질 게이트 결과 (critical/important 이슈 수)
+- 리뷰 요약 (리뷰어별 피드백)
+- 생성된 파일 목록
+- CEO 체크리스트
+
+> GitHub 협업을 끈 상태에서는 main에 직접 커밋됩니다 (기존 동작). gh CLI가 없으면 GitHub 기능만 건너뛰고 나머지는 정상 동작합니다.
+
 ### GitHub Actions CI
 
 `good-vibe:execute`가 코드를 생성한 뒤, CI 파이프라인을 자동으로 설정할 수 있습니다.
