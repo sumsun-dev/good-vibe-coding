@@ -17,7 +17,7 @@ description: '환경 설정 + 개인 설정 — 도구 확인, CLAUDE.md 생성/
 ```
 Step 1: Welcome
   ↓
-Step 2: 도구 확인 ──→ [미설치 + 가이드 선택] → 종료
+Step 2: 도구 + 자동승인 확인 ──→ [미설치 + 가이드 선택] → 종료
   ↓ (모두 OK 또는 "이대로 진행")
 Step 2.5: 자동승인 설정
   ↓
@@ -50,19 +50,29 @@ Step 4: 완료 → good-vibe:new
 **Task tool로 일괄 확인합니다** (Thin Controller 원칙):
 
 ```
-다음 CLI를 실행하세요:
-node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js check-environment
+다음 CLI를 순서대로 실행하세요:
+
+1. node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js check-environment
+2. node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js read-settings
+
+1이 실패해도 2는 반드시 실행하세요.
 
 반환 형식 (JSON):
 {
-  "node": { "version": "...", "meetsMinimum": bool },
-  "git": { "installed": bool, "version": "..." },
-  "gh": { "installed": bool, "authenticated": bool },
-  "gemini": { "installed": bool },
-  "healthy": bool
+  "environment": {
+    "node": { "version": "...", "meetsMinimum": bool },
+    "git": { "installed": bool, "version": "..." },
+    "gh": { "installed": bool, "authenticated": bool },
+    "gemini": { "installed": bool },
+    "healthy": bool
+  },
+  "settings": {
+    "hasAutoApprove": bool
+  }
 }
 
-healthy=true면 필수 도구(node/npm/git) 모두 정상입니다.
+environment.healthy=true면 필수 도구(node/npm/git) 모두 정상입니다.
+settings.hasAutoApprove=true면 permissions.allow 배열에 "Bash" 또는 "Bash(node *)" 패턴이 이미 있습니다.
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
 
@@ -156,14 +166,8 @@ gh auth login -> GitHub.com -> HTTPS -> Login with a web browser
 Good Vibe Coding은 AI 팀이 파일 편집과 CLI 실행을 빈번하게 수행합니다.
 자동승인 모드를 설정하면 매번 승인하지 않아도 됩니다.
 
-먼저 CLI로 현재 설정을 확인합니다:
-
-```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js read-settings
-```
-
-반환된 JSON에서 `permissions.allow` 배열에 `"Bash"` 또는 `"Bash(node *)"` 패턴이 있는지 확인합니다.
-이미 있으면 "Good Vibe 자동승인이 이미 설정되어 있습니다!" 표시 후 Step 3으로 진행합니다.
+Step 2에서 확인한 `settings.hasAutoApprove`를 사용합니다.
+이미 true이면 "Good Vibe 자동승인이 이미 설정되어 있습니다!" 표시 후 Step 3으로 진행합니다.
 
 설정이 없는 경우 AskUserQuestion:
 

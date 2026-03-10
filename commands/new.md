@@ -65,23 +65,56 @@ options:
 
 ---
 
-## Step 0.5: 의도 분류 (Intent Gate)
+## Step 0.5: 의도 분류 + 조건부 명확도 분석 (Intent Gate)
 
-사용자가 전달한 텍스트(있는 경우)로 의도를 분류합니다:
+사용자가 전달한 텍스트(있는 경우)로 의도를 분류합니다.
+입력 텍스트가 있고 intent="create"이면 명확도 분석까지 한번에 수행하여 Task 호출을 줄입니다.
 
-```bash
-echo '{"input": "{사용자 입력 텍스트}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js classify-intent
+**Task tool로 실행합니다:**
+
+```
+의도를 분류하고, 조건 충족 시 명확도까지 분석하세요.
+
+**[필수] CLI에 JSON 전달 시 Write tool 사용:**
+- LLM 응답 등 큰 JSON은 반드시 Write tool로 /tmp/gv-*.json에 저장 후 --input-file로 전달하세요.
+- echo/cat/heredoc(<<)로 큰 JSON을 bash에 직접 전달하면 보안 탐지에 걸려 자동승인이 중단됩니다.
+
+1. 의도 분류:
+   echo '{"input": "{사용자 입력 텍스트}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js classify-intent
+
+2. intent가 "create"이고 입력 텍스트가 비어있지 않으면, 명확도 분석도 수행:
+   echo '{"description": "{사용자 입력 텍스트}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js clarity-check
+   → 생성된 프롬프트를 LLM으로 실행
+   → LLM 응답을 Write tool로 /tmp/gv-clarity.json에 저장 (형식: {"rawOutput": "LLM 응답 전체"})
+   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js parse-clarity --input-file /tmp/gv-clarity.json
+
+   intent가 "create"가 아니거나 입력 텍스트가 없으면, clarity는 null로 반환.
+
+반환 (JSON):
+- intent: 의도 분류 결과 전체 (intent, route, projects 등)
+- clarity: 명확도 분석 결과 (clarity, dimensions, summary, questions) 또는 null
+
+CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
 
-> 사용자가 텍스트 없이 `good-vibe:new`만 실행한 경우: `{"input": ""}` 전달
+> 사용자가 텍스트 없이 `good-vibe:new`만 실행한 경우: `{"input": ""}` 전달 → clarity는 null
 
 **결과별 분기:**
 
-### intent: "create" + hasExistingProjects: false
+### intent: "create" + clarity가 있음 (입력 텍스트로 명확도 분석 완료)
+
+`currentDescription = 사용자 입력 텍스트`로 설정합니다.
+
+hasExistingProjects 확인:
+
+- **false** → Step 1.5.B(결과 처리)로 바로 진행합니다 (Step 1, 1.5.A 건너뜀).
+- **true** → 기존 프로젝트 선택 AskUserQuestion (아래 참조). "새 프로젝트 시작" 선택 시 Step 1.5.B로 진행.
+
+### intent: "create" + clarity가 null (입력 텍스트 없음) + hasExistingProjects: false
 
 → Step 1로 바로 진행합니다.
 
-### intent: "create" + hasExistingProjects: true
+### intent: "create" + clarity가 null + hasExistingProjects: true
 
 기존 프로젝트가 있으므로, 이어할지 새로 시작할지 물어봅니다:
 
@@ -150,6 +183,8 @@ CEO에게 재개 안내:
 - `currentDescription = 사용자 입력`
 
 ### 1.5.A: 분석 실행 (Task tool)
+
+> **건너뛰기 조건:** Step 0.5에서 clarity가 이미 반환되었으면 이 단계를 건너뛰고 1.5.B로 진행합니다.
 
 Task tool 프롬프트:
 
@@ -388,12 +423,7 @@ AskUserQuestion으로 모드를 선택하게 하세요.
   - complex 프로젝트에 권장 (대규모 시스템, 멀티서비스, 플랫폼)
   - 5-8명 팀이 최대 3라운드 토론 + CEO 승인 후 실행
 
-## Step 3.5: 프로젝트 인프라 생성 (선택)
-
-**변수 초기화:**
-
-- `infraPath = null`
-- `githubUrl = null`
+## Step 3.5: 프로젝트 인프라 선택
 
 프로젝트 폴더(CLAUDE.md, README, .gitignore)를 생성할지 CEO에게 묻습니다.
 
@@ -411,89 +441,67 @@ options:
     description: "폴더 없이 기획/보고서만 진행"
 ```
 
-**"건너뛰기"** → infraPath = null, Step 4로 진행
-
-**"폴더 생성" 또는 "폴더 + GitHub 저장소"** → Task tool:
-
-Task tool 프롬프트:
-
-```
-프로젝트 인프라를 생성하세요.
-
-1. 프로젝트 폴더 생성:
-   echo '{"name": "{name}", "targetDir": "{targetDir}", "description": "{description}", "techStack": "{techStack}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js setup-project-infra
-
-{GitHub 선택 시에만:}
-2. GitHub 저장소 생성:
-   echo '{"repoName": "{slug}", "description": "{description}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js create-github-repo
-
-3. Git 초기화 + push:
-   echo '{"projectDir": "{projectDir}", "remoteUrl": "{remoteUrl}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js git-init-push
-
-반환:
-- projectDir: 생성된 프로젝트 디렉토리 경로
-- githubUrl: GitHub URL (해당 시) 또는 null
-- files: 생성된 파일 목록
-
-CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
-```
-
-targetDir 기본값: ~/projects/{slug} (setupProjectInfra가 자동 결정)
-
-CEO에게 결과 표시:
-
-```
-프로젝트 폴더 생성 완료: {projectDir}
-생성된 파일: CLAUDE.md, README.md, .gitignore, .good-vibe/
-{GitHub URL (해당 시)}
-```
-
-infraPath와 githubUrl을 Step 4에 전달합니다.
+CEO의 선택(`infraChoice`)을 Step 4에 전달합니다.
 
 ## Step 4: 프로젝트 셋업 (Thin Controller)
 
-> **Thin Controller 원칙:** 프로젝트 생성 + 팀 구성 + 추천을 하나의 Task tool로 묶어 메인 세션의 CLI 체인을 제거합니다.
+> **Thin Controller 원칙:** 인프라 생성 + 프로젝트 생성 + 팀 구성 + 추천을 하나의 Task tool로 묶어 메인 세션의 CLI 체인을 제거합니다.
 
 프로젝트 설명에서 타입을 추론하세요 (web-app, api-server, telegram-bot, cli-tool 등).
 
-### 4.A: 프로젝트 생성 + 팀 구성 (Task tool)
+### 4.A: 인프라 생성 + 프로젝트 생성 + 팀 구성 (Task tool)
 
 Task tool 프롬프트:
 
 ```
-프로젝트를 생성하고 팀을 구성하세요.
+프로젝트 인프라를 생성하고, 프로젝트를 생성하고, 팀을 구성하세요.
 
 **[필수] CLI에 JSON 전달 시 Write tool 사용:**
 - LLM 응답, PRD, 작업 목록 등 큰 JSON은 반드시 Write tool로 /tmp/gv-*.json 파일에 저장한 뒤 --input-file 플래그로 CLI에 전달하세요.
 - echo/cat/heredoc(<<)로 큰 JSON을 bash에 직접 전달하면 보안 탐지에 걸려 자동승인이 중단됩니다.
 
-1. 복잡도 기본값 조회:
+{infraChoice가 "건너뛰기"가 아닐 때:}
+1. 프로젝트 폴더 생성:
+   echo '{"name": "{name}", "targetDir": "{targetDir}", "description": "{description}", "techStack": "{techStack}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js setup-project-infra
+   → infraPath = 반환된 projectDir
+
+{infraChoice가 "폴더 + GitHub 저장소"일 때:}
+2. GitHub 저장소 생성 + Git 초기화:
+   echo '{"repoName": "{slug}", "description": "{description}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js create-github-repo
+   echo '{"projectDir": "{infraPath}", "remoteUrl": "{remoteUrl}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js git-init-push
+   → githubUrl = 반환된 URL
+
+{항상:}
+3. 복잡도 기본값 조회:
    node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js complexity-defaults --level {level}
 
-2. 팀 추천:
+4. 팀 추천:
    node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js recommend-team --type {type}
 
-3. 프로젝트 생성 (PRD + 인프라 + 분석 결과 포함):
+5. 프로젝트 생성 (PRD + 인프라 + 분석 결과 포함):
    → 프로젝트 데이터를 Write tool로 /tmp/gv-create-project.json에 저장 (형식: {"name": "{name}", "type": "{type}", "description": "{description}", "mode": "{mode}", "prd": {prd}, "infraPath": "{infraPath 또는 null}", "githubUrl": "{githubUrl 또는 null}", "clarityAnalysis": {Step 1.5의 clarity 분석 결과 또는 null}, "complexityAnalysis": {Step 3의 complexity 분석 결과 또는 null}})
    → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js create-project --input-file /tmp/gv-create-project.json
 
-4. 팀 빌드 + 저장:
+6. 팀 빌드 + 저장:
    echo '{"roleIds": [...], "complexity": "{level}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js build-team
    echo '{"id": "{projectId}", "team": [...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js set-team
 
    **중요:** build-team → set-team을 반드시 실행. 건너뛰면 displayName, trait, speakingStyle이 undefined.
 
-5. 프로젝트 CLAUDE.md 생성 (infraPath가 있을 때만):
+7. 프로젝트 CLAUDE.md 생성 (infraPath가 있을 때만):
    a. echo '{"roles": [...roleIds], "team": [...builtTeam]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js generate-onboarding
    b. → 온보딩 데이터를 Write tool로 /tmp/gv-project-onboarding.json에 저장 (형식: {"claudeMd": "...", "coreRules": "...", "projectDir": "{infraPath}"})
       → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js write-project-onboarding --input-file /tmp/gv-project-onboarding.json
 
-6. 스킬/에이전트 추천 (선택):
+8. 스킬/에이전트 추천 (선택):
    echo '{"projectType": "{type}", "complexity": "{level}", "description": "...", "teamRoles": [...]}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js recommend-setup
+
+targetDir 기본값: ~/projects/{slug} (setupProjectInfra가 자동 결정)
 
 반환:
 - projectId: 생성된 프로젝트 ID
 - teamSummary: "팀명 (N명): 역할1, 역할2, ..." (1줄)
+- infraResult: { projectDir, githubUrl, files } 또는 null (건너뛰기 시)
 - recommendations: { skills: [...], agents: [...], formatted: "마크다운 테이블" } 또는 null
 
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
@@ -503,6 +511,7 @@ CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 
 결과 표시:
 
+- infraResult가 있으면: "프로젝트 폴더 생성 완료: {infraResult.projectDir}" + GitHub URL (해당 시)
 - "프로젝트 생성 완료: {projectId}"
 - "팀 구성: {teamSummary}"
 
