@@ -18,7 +18,8 @@
         "./skills/onboarding-wizard",
         "./skills/korean-workflow",
         "./skills/beginner-guide",
-        "./skills/project-setup"
+        "./skills/project-setup",
+        "./skills/multi-review"
       ]
     }
   ]
