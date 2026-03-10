@@ -387,7 +387,7 @@ const discusser = new Discusser({
 | --------------- | ------------------ | --------------------------------------------- |
 | `MemoryStorage` | 깊은 복사 실패     | `JSON.parse(JSON.stringify())` 폴백 자동 적용 |
 | `FileStorage`   | 파일 미존재 (read) | `null` 반환 (에러 아님)                       |
-| `FileStorage`   | 쓰기 권한 없음     | `SYSTEM_ERROR` throw                          |
+| `FileStorage`   | 쓰기 권한 없음     | OS 에러 throw (`EACCES` 등)                   |
 | 커스텀 스토리지 | 구현에 따라 다름   | `read`/`write`에서 throw 시 실행 중단         |
 
 `FileStorage` 사용 시 권한 문제 해결:
@@ -411,11 +411,11 @@ try {
 `execute()` 옵션에 `enableCrossModel: true`를 설정하면 Gemini CLI로 교차 리뷰를 수행합니다.
 Gemini CLI가 설치되지 않았거나 인증이 만료되어도 실행은 중단되지 않습니다:
 
-- Gemini CLI 미설치 → 해당 리뷰만 건너뜀 (`skipped: true`)
-- 인증 만료 → 해당 리뷰만 건너뜀, Claude 리뷰만으로 품질 게이트 진행
-- 네트워크 오류 → 재시도 후 실패 시 건너뜀
+- Gemini CLI 미설치/인증 만료/네트워크 오류 → `verdict: 'request-changes'` + `severity: 'important'` 이슈로 변환
+- 실행은 중단되지 않지만, 품질 게이트에서 important 이슈로 집계됨
+- Claude 리뷰와 함께 품질 게이트를 통과해야 함
 
-> Cross-model 리뷰 실패는 `SYSTEM_ERROR`를 발생시키지 않습니다. Graceful degradation으로 처리됩니다.
+> Cross-model 리뷰 실패는 `SYSTEM_ERROR`를 발생시키지 않습니다. 실패한 리뷰는 `request-changes` 폴백으로 변환되어 품질 게이트에 반영됩니다.
 
 ### 실행 실패 복구 패턴
 
