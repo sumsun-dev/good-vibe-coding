@@ -208,9 +208,18 @@ Task tool 프롬프트:
    → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js enrich-description --input-file /tmp/gv-enrich.json
    → 생성된 프롬프트를 LLM으로 실행 → enriched description 획득
 
-2. 보강된 설명으로 명확도 재분석 (1.5.A와 동일 절차)
+2. 보강된 설명으로 명확도 재분석:
+   echo '{"description": "{enrichedDescription}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js clarity-check
+   → 생성된 프롬프트를 LLM으로 실행
+   → LLM 응답을 Write tool로 /tmp/gv-clarity.json에 저장 (형식: {"rawOutput": "LLM 응답 전체"})
+   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js parse-clarity --input-file /tmp/gv-clarity.json
 
-반환: 1.5.A와 동일 형식 + enrichedDescription
+반환 (JSON):
+- clarity: 명확도 점수
+- dimensions: 차원별 점수
+- summary: 명확도 요약
+- questions: 부족한 차원의 질문 배열 (clarity < 0.8일 때만)
+- enrichedDescription: 보강된 설명
 
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
