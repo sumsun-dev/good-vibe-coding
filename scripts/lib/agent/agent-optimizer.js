@@ -24,15 +24,12 @@ function extractNgrams(text, n = 2) {
 }
 
 /**
- * 두 에이전트 출력 간 Jaccard 유사도를 계산한다 (bigram 기반).
- * @param {string} outputA - 에이전트 A의 출력
- * @param {string} outputB - 에이전트 B의 출력
+ * 두 ngram 집합 간 Jaccard 유사도를 계산한다.
+ * @param {Set<string>} ngramsA - ngram 집합 A
+ * @param {Set<string>} ngramsB - ngram 집합 B
  * @returns {number} 0-1 사이의 유사도 점수
  */
-export function measureOutputSimilarity(outputA, outputB) {
-  const ngramsA = extractNgrams(outputA);
-  const ngramsB = extractNgrams(outputB);
-
+function jaccardSimilarity(ngramsA, ngramsB) {
   if (ngramsA.size === 0 && ngramsB.size === 0) {
     return 1.0;
   }
@@ -52,6 +49,16 @@ export function measureOutputSimilarity(outputA, outputB) {
 }
 
 /**
+ * 두 에이전트 출력 간 Jaccard 유사도를 계산한다 (bigram 기반).
+ * @param {string} outputA - 에이전트 A의 출력
+ * @param {string} outputB - 에이전트 B의 출력
+ * @returns {number} 0-1 사이의 유사도 점수
+ */
+export function measureOutputSimilarity(outputA, outputB) {
+  return jaccardSimilarity(extractNgrams(outputA), extractNgrams(outputB));
+}
+
+/**
  * 에이전트 출력 배열에서 중복 에이전트 쌍을 탐지한다.
  * @param {Array<{roleId: string, output: string}>} agentOutputs - 에이전트 출력 배열
  * @param {number} [threshold=0.7] - 유사도 임계값
@@ -65,11 +72,14 @@ export function detectRedundantAgents(
     return [];
   }
 
+  // Pre-compute ngram sets once per agent to avoid O(n²) extractNgrams calls
+  const ngramSets = agentOutputs.map((a) => extractNgrams(a.output));
+
   const redundant = [];
 
   for (let i = 0; i < agentOutputs.length; i++) {
     for (let j = i + 1; j < agentOutputs.length; j++) {
-      const similarity = measureOutputSimilarity(agentOutputs[i].output, agentOutputs[j].output);
+      const similarity = jaccardSimilarity(ngramSets[i], ngramSets[j]);
 
       if (similarity > threshold) {
         redundant.push({

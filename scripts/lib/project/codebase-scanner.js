@@ -377,19 +377,15 @@ const JS_TS_PATTERN = /\.(js|mjs|ts|tsx|jsx)$/;
 async function analyzeModules(projectPath, files) {
   const jsFiles = files.filter((f) => JS_TS_PATTERN.test(f));
   const sampled = jsFiles.slice(0, MAX_MODULE_FILES);
-  const results = [];
 
-  for (const file of sampled) {
-    try {
+  const settled = await Promise.allSettled(
+    sampled.map(async (file) => {
       const code = await readFile(resolve(projectPath, file), 'utf-8');
       const exp = extractExports(code);
       const imp = extractImports(code);
-      if (exp.length > 0 || imp.length > 0) {
-        results.push({ file, exports: exp, imports: imp });
-      }
-    } catch {
-      /* 읽기 실패 무시 */
-    }
-  }
-  return results;
+      return exp.length > 0 || imp.length > 0 ? { file, exports: exp, imports: imp } : null;
+    }),
+  );
+
+  return settled.filter((r) => r.status === 'fulfilled' && r.value !== null).map((r) => r.value);
 }
