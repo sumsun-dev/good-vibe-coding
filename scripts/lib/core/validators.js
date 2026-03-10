@@ -73,7 +73,9 @@ export function requireArray(value, fieldName) {
  */
 export function requireOneOf(value, allowed, fieldName) {
   if (!allowed.includes(value)) {
-    throw inputError(`${fieldName}는 다음 중 하나여야 합니다: ${allowed.join(', ')}`);
+    throw inputError(
+      `${fieldName}는 다음 중 하나여야 합니다: ${allowed.join(', ')} (받은 값: ${JSON.stringify(value)})`,
+    );
   }
   return value;
 }
@@ -98,10 +100,11 @@ export function requireDefined(value, fieldName) {
  * @returns {object} 원본 data (필드가 모두 존재)
  */
 export function requireFields(data, fields) {
-  for (const field of fields) {
-    if (!Object.hasOwn(data, field) || data[field] === undefined || data[field] === null) {
-      throw inputError(`${field} 필드가 필요합니다`);
-    }
+  const missing = fields.filter(
+    (f) => !Object.hasOwn(data, f) || data[f] === undefined || data[f] === null,
+  );
+  if (missing.length > 0) {
+    throw inputError(`다음 필드가 필요합니다: ${missing.join(', ')}`);
   }
   return data;
 }
@@ -116,7 +119,7 @@ export function assertWithinRoot(resolvedPath, rootDir, label) {
   const normalizedPath = normalize(resolvedPath).toLowerCase();
   const normalizedRoot = normalize(rootDir).toLowerCase();
   if (!normalizedPath.startsWith(normalizedRoot + sep) && normalizedPath !== normalizedRoot) {
-    throw inputError(`${label}이 허용 범위를 벗어났습니다`);
+    throw inputError(`${label}이 허용 범위를 벗어났습니다 (허용 경로: ${rootDir})`);
   }
 }
 
@@ -128,7 +131,9 @@ export function assertWithinRoot(resolvedPath, rootDir, label) {
 export function validateRoleId(roleId) {
   requireString(roleId, 'roleId');
   if (/[/\\]/.test(roleId) || roleId.includes('..')) {
-    throw inputError(`유효하지 않은 roleId: ${roleId}`);
+    throw inputError(
+      `유효하지 않은 roleId: ${roleId} (영문 소문자, 숫자, 하이픈만 허용. 예: cto, frontend, ui-ux)`,
+    );
   }
   return roleId;
 }
