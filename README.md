@@ -2,7 +2,6 @@
 
 AI 팀을 만들고, 프로젝트를 함께 굴려보세요.
 
-[![npm version](https://img.shields.io/npm/v/good-vibe.svg)](https://www.npmjs.com/package/good-vibe)
 [![CI](https://github.com/sumsun-dev/good-vibe-coding/actions/workflows/ci.yml/badge.svg)](https://github.com/sumsun-dev/good-vibe-coding/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-green.svg)](https://nodejs.org/)
