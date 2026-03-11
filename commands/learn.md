@@ -40,6 +40,8 @@ Claude Code 학습 가이드
 10. 실행 모드 가이드 (good-vibe:learn 실행모드)
 11. CEO 가이드 (good-vibe:learn CEO)
 12. 퀵스타트 (good-vibe:learn 퀵스타트)
+13. 커맨드 레퍼런스 (good-vibe:learn 레퍼런스)
+14. 고급 커맨드 (good-vibe:learn 고급커맨드)
 ```
 
 **개발자 추가:**
@@ -73,3 +75,5 @@ Claude Code 학습 가이드
 예: `good-vibe:learn 기초` → `guides/common/01-what-is-claude-code.md` 내용 기반 안내
 예: `good-vibe:learn 사용법` → `guides/common/02-basic-usage.md` 내용 기반 안내
 예: `good-vibe:learn TDD` → `guides/developer/tdd-workflow.md` 내용 기반 안내
+예: `good-vibe:learn 레퍼런스` → `guides/common/03-commands-reference.md` 내용 기반 안내
+예: `good-vibe:learn 고급커맨드` → `guides/common/12-advanced-commands.md` 내용 기반 안내
