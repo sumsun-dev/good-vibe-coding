@@ -1077,11 +1077,13 @@ header: "모드"
 options:
   - label: "인터랙티브 (Recommended)"
     description: "각 Phase 완료 후 진행 여부를 확인합니다"
+  - label: "배치 실행"
+    description: "3 Phase마다 확인합니다 (Phase가 많을 때 추천)"
   - label: "자동 실행"
     description: "에스컬레이션이 필요한 경우에만 중단합니다"
 ```
 
-> **자동승인 필수:** "자동 실행" 선택 시, Claude Code가 자동승인 모드(Auto-accept edits 이상)가 아니면 매 작업마다 수동 승인이 필요해 자동 실행의 의미가 없습니다. 자동승인이 아닌 경우 `commands/execute.md` Step 1.2의 안내를 따릅니다.
+> **자동승인 필수:** "자동 실행" 또는 "배치 실행" 선택 시, Claude Code가 자동승인 모드(Auto-accept edits 이상)가 아니면 매 작업마다 수동 승인이 필요해 자동 실행의 의미가 없습니다. 자동승인이 아닌 경우 `commands/execute.md` Step 1.2의 안내를 따릅니다.
 
 #### C-3. 승인 + 작업 분배 + 실행 초기화 (Task tool)
 
