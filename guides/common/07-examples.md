@@ -63,9 +63,7 @@ good-vibe:new
 3. 팀 구성: CTO, PO, Fullstack, Backend, QA — 5명
 
 4. good-vibe:discuss (1라운드)
-   Tier 1: CTO(아키텍처), PO(요구사항) 병렬 분석
-   Tier 2: Fullstack, Backend 구현 관점 분석
-   Tier 3: QA(테스트 전략), Security(인증 보안) 분석
+   [전체 병렬] CTO, PO, Fullstack, Backend, QA, Security 동시 분석
    → 종합 → 리뷰 → 승인율 85% → 수렴!
 
 5. 자동 승인 → 작업 분배 (Phase 3개, 태스크 8개)
@@ -124,6 +122,36 @@ good-vibe:new
    Phase 5: 통합 테스트 + API 게이트웨이
 
 7. 완료!
+```
+
+---
+
+## 예제 4: 완료된 프로젝트에 기능 추가 (modify)
+
+프로젝트가 완료(`completed`)된 후, 기능을 추가하거나 변경할 때.
+
+### 입력
+
+```
+good-vibe:modify
+→ 프로젝트 선택: "날씨 알림 텔레그램 봇"
+→ "미세먼지 정보도 같이 알려줘. 기준치 초과 시 경고 메시지도 보내줘"
+```
+
+### 진행 과정
+
+```
+1. 코드베이스 스캔: 기존 파일 구조 + 기술 스택 파악
+2. 영향 범위 분석:
+   - 변경: weather-service.js (API 추가)
+   - 신규: dust-service.js, alert-scheduler.js
+   - 테스트: 2개 추가
+3. Before/After 아키텍처 다이어그램 표시
+4. CEO 확인: "이대로 진행"
+5. 자동 실행 (auto 모드):
+   Phase 1: 미세먼지 API 연동 → 리뷰 → PASS
+   Phase 2: 경고 알림 기능 → 리뷰 → PASS
+6. 완료!
 ```
 
 ---
