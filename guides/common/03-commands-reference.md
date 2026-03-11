@@ -58,6 +58,30 @@ good-vibe:hello  →  good-vibe:new  →  good-vibe:discuss  →  good-vibe:appr
 
 ---
 
+## 프로젝트 상태 흐름
+
+프로젝트는 아래 순서로 상태가 전이됩니다. 각 상태에서 사용할 수 있는 커맨드가 다릅니다.
+
+```
+planning ──→ approved ──→ executing ──→ reviewing ──→ completed
+   ↑            │                                        │
+   └── 재토론 ──┘                                        │
+   (discuss --reset)                          good-vibe:modify
+                                     approved → executing → completed
+```
+
+| 상태      | 사용 가능한 커맨드                                           |
+| --------- | ------------------------------------------------------------ |
+| planning  | `good-vibe:discuss` (토론), `good-vibe:approve` (승인)       |
+| approved  | `good-vibe:execute` (실행 시작)                              |
+| executing | `good-vibe:status` (진행률 확인)                             |
+| reviewing | `good-vibe:status` (진행률 확인)                             |
+| completed | `good-vibe:report`, `good-vibe:modify`, `good-vibe:feedback` |
+
+> 현재 상태를 모르겠으면 `good-vibe:status`를 실행하세요.
+
+---
+
 ## 모드 비교
 
 `good-vibe:new`에서 복잡도를 분석한 결과에 따라 자동 추천됩니다.
@@ -104,11 +128,58 @@ good-vibe:hello  →  good-vibe:new  →  good-vibe:discuss  →  good-vibe:appr
 
 ---
 
+## `good-vibe:modify` — 완료된 프로젝트 수정
+
+프로젝트가 완료(`completed`)된 후, 기능을 추가하거나 기존 기능을 수정할 때 사용합니다.
+`good-vibe:new`와 달리 기존 코드와 맥락을 유지하면서 변경합니다.
+
+### 언제 쓰나요?
+
+- "알림 기능 추가해줘" — 완료된 프로젝트에 새 기능 추가
+- "로그인 방식을 JWT로 바꿔줘" — 기존 기능 변경
+- "버그 고쳐줘" — 완료된 프로젝트의 문제 수정
+
+### CEO 관점 플로우
+
+```
+good-vibe:modify
+  → 프로젝트 선택 (completed 상태만)
+  → 수정 내용 설명
+  → AI가 코드베이스 스캔 + 영향 범위 분석
+  → Before/After 아키텍처 다이어그램 표시
+  → CEO 확인: 이대로 진행 / 수정 요청 / 취소
+  → 자동 실행 (Phase별 실행 + 리뷰 + 품질 게이트)
+  → 완료
+```
+
+### 주요 특징
+
+| 항목            | 설명                                           |
+| --------------- | ---------------------------------------------- |
+| 대상            | `completed` 상태 프로젝트만 가능               |
+| 코드베이스 분석 | 실제 코드를 스캔하여 수정 영향 범위를 파악     |
+| Before/After    | 변경 전후 아키텍처를 다이어그램으로 비교       |
+| 마이그레이션    | 기존 API 변경 등 위험 요소를 미리 경고         |
+| 실행 모드       | auto로 자동 실행 (에스컬레이션만 CEO에게 질문) |
+
+### `good-vibe:new`와의 차이
+
+| 항목    | `good-vibe:new` | `good-vibe:modify`              |
+| ------- | --------------- | ------------------------------- |
+| 대상    | 새 프로젝트     | 완료된 프로젝트                 |
+| 팀 구성 | 새로 구성       | 기존 팀 유지                    |
+| 토론    | 필요 시 토론    | 생략 (코드베이스 분석으로 대체) |
+| 맥락    | 처음부터 시작   | 기존 PRD + 기획서 + 코드 유지   |
+| 실행    | 모드 선택 가능  | auto 고정                       |
+
+---
+
 ## 헷갈리기 쉬운 것들
 
 | 이거랑             | 저거는                  | 이렇게 다릅니다                                                                  |
 | ------------------ | ----------------------- | -------------------------------------------------------------------------------- |
 | `good-vibe:new`    | `good-vibe:new-project` | `good-vibe:new`는 복잡도를 보고 알아서 추천, `good-vibe:new-project`는 직접 고름 |
+| `good-vibe:new`    | `good-vibe:modify`      | `good-vibe:new`는 새 프로젝트 시작, `good-vibe:modify`는 완료된 프로젝트 수정    |
 | `good-vibe:status` | `good-vibe:projects`    | `good-vibe:status`는 현재 프로젝트만, `good-vibe:projects`는 전체 목록           |
 
 ---
