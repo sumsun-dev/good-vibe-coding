@@ -40,7 +40,8 @@ export const commands = {
 
   'next-step': async () => {
     const opts = parseArgs(args);
-    await withProject(opts.id, (project) => output(getNextExecutionStep(project)));
+    const targetPhase = opts.phase ? Number(opts.phase) : undefined;
+    await withProject(opts.id, (project) => output(getNextExecutionStep(project, targetPhase)));
   },
 
   'advance-execution': async () => {

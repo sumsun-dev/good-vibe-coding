@@ -81,6 +81,15 @@ export function createInitialExecutionState(mode = 'interactive', options = {}) 
   const resolvedMode = validModes.includes(mode) ? mode : 'interactive';
   const batchSize = resolvedMode === 'semi-auto' ? options.batchSize || 3 : 0;
 
+  // 병렬 실행을 위한 per-phase 상태 초기화
+  const initialPhaseStates = {};
+  const firstTier = options.parallelGroups?.[0];
+  if (firstTier) {
+    for (const ph of firstTier) {
+      initialPhaseStates[ph] = { phaseStep: 'execute-tasks', fixAttempt: 0 };
+    }
+  }
+
   return {
     status: 'executing',
     currentPhase: 1,
@@ -91,8 +100,9 @@ export function createInitialExecutionState(mode = 'interactive', options = {}) 
     messaging: Boolean(options.messaging),
     lastCompletedStep: null,
     completedPhases: [],
-    activePhases: options.parallelGroups ? options.parallelGroups[0] || [] : [],
+    activePhases: firstTier || [],
     parallelGroups: options.parallelGroups || null,
+    phaseStates: initialPhaseStates,
     pendingEscalation: null,
     startedAt: new Date().toISOString(),
     completedAt: null,
@@ -208,7 +218,7 @@ const STEP_HANDLERS = {
  * @param {object} project - 프로젝트 객체 (executionState 포함)
  * @returns {object} 액션 descriptor
  */
-export function getNextExecutionStep(project) {
+export function getNextExecutionStep(project, targetPhase) {
   const state = project.executionState;
 
   if (!state) {
@@ -254,9 +264,19 @@ export function getNextExecutionStep(project) {
 
   const totalPhases = getTotalPhases(project);
 
-  // activePhases가 있을 때: 첫 번째 미완료 active phase를 currentPhase로 사용
   let currentPhase = state.currentPhase;
-  if (state.activePhases && state.activePhases.length > 0) {
+  let phaseStep = state.phaseStep;
+  let fixAttempt = state.fixAttempt;
+
+  if (targetPhase !== undefined) {
+    // 병렬 실행: 특정 Phase의 per-phase 상태를 사용
+    currentPhase = targetPhase;
+    if (state.phaseStates?.[targetPhase]) {
+      phaseStep = state.phaseStates[targetPhase].phaseStep;
+      fixAttempt = state.phaseStates[targetPhase].fixAttempt ?? 0;
+    }
+  } else if (state.activePhases && state.activePhases.length > 0) {
+    // activePhases가 있을 때: 첫 번째 미완료 active phase를 사용 (공유 상태 유지)
     const completedSet = new Set(state.completedPhases);
     const firstPending = state.activePhases.find((ph) => !completedSet.has(ph));
     if (firstPending !== undefined) {
@@ -266,15 +286,21 @@ export function getNextExecutionStep(project) {
 
   const phaseTasks = getTasksForPhase(project, currentPhase);
 
-  const handler = STEP_HANDLERS[state.phaseStep];
+  // targetPhase 명시 시에만 per-phase state view 생성 (하위 호환)
+  const stateView =
+    targetPhase !== undefined && state.phaseStates?.[currentPhase]
+      ? { ...state, phaseStep, fixAttempt }
+      : state;
+
+  const handler = STEP_HANDLERS[phaseStep];
   if (handler) {
-    return handler(currentPhase, phaseTasks, state, totalPhases);
+    return handler(currentPhase, phaseTasks, stateView, totalPhases);
   }
 
   return {
     action: 'not-started',
     phase: currentPhase,
-    description: `알 수 없는 phaseStep: ${state.phaseStep}`,
+    description: `알 수 없는 phaseStep: ${phaseStep}`,
   };
 }
 
@@ -369,6 +395,13 @@ function handleBuildContext(state, _phaseResult, stepResult, phase, totalPhases)
       state.phaseStep = 'execute-tasks';
       state.fixAttempt = 0;
       state.status = 'executing';
+      // 새 tier Phase들의 phaseStates 초기화 (기존 항목은 유지)
+      if (!state.phaseStates) state.phaseStates = {};
+      for (const ph of nextTierPhases) {
+        if (!state.phaseStates[ph]) {
+          state.phaseStates[ph] = { phaseStep: 'execute-tasks', fixAttempt: 0 };
+        }
+      }
     }
   } else {
     // 하위 호환: 기존 순차 실행 로직 유지
@@ -478,6 +511,22 @@ export function computeStateTransition(project, stepResult) {
 
   const state = structuredClone(project.executionState);
   const totalPhases = getTotalPhases(project);
+
+  // ── 병렬 Phase 지원: stepResult.phase로 특정 Phase의 상태를 로드/저장 ──
+  const isParallelPhase = stepResult.phase !== undefined && state.parallelGroups;
+  let originalFromStep;
+  if (isParallelPhase) {
+    const tp = stepResult.phase;
+    if (!state.phaseStates) state.phaseStates = {};
+    if (!state.phaseStates[tp]) {
+      state.phaseStates[tp] = { phaseStep: 'execute-tasks', fixAttempt: 0 };
+    }
+    originalFromStep = state.phaseStates[tp].phaseStep;
+    state.currentPhase = tp;
+    state.phaseStep = state.phaseStates[tp].phaseStep;
+    state.fixAttempt = state.phaseStates[tp].fixAttempt;
+  }
+
   const phase = state.currentPhase;
 
   // phase 결과 캐시 초기화 (deep clone)
@@ -500,11 +549,19 @@ export function computeStateTransition(project, stepResult) {
   }
   handler(state, phaseResult, stepResult, phase, totalPhases);
 
-  // 전이 유효성 검증
-  const fromStep = project.executionState.phaseStep;
+  // 전이 유효성 검증 (병렬 모드: per-phase 원본 사용)
+  const fromStep = isParallelPhase ? originalFromStep : project.executionState.phaseStep;
   const toStep = state.phaseStep;
   if (fromStep !== toStep && !isValidTransition(fromStep, toStep)) {
     throw inputError(`유효하지 않은 상태 전이: ${fromStep} → ${toStep}`);
+  }
+
+  // 병렬 Phase: 변경된 상태를 phaseStates에 저장
+  if (isParallelPhase) {
+    state.phaseStates[phase] = {
+      phaseStep: state.phaseStep,
+      fixAttempt: state.fixAttempt,
+    };
   }
 
   // 저널 기록

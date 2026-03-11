@@ -1344,3 +1344,146 @@ describe('getNextExecutionStep — activePhases 지원', () => {
     expect(step.phase).toBe(3);
   });
 });
+
+// ──────────────── 병렬 Phase (targetPhase + phaseStates) ────────────────
+
+describe('getNextExecutionStep — targetPhase 병렬 실행', () => {
+  it('targetPhase로 특정 Phase의 상태를 조회한다', () => {
+    const tasks = [...makeTasks(2, 1), ...makeTasks(2, 2)];
+    const project = makeProject(tasks, {
+      activePhases: [1, 2],
+      parallelGroups: [[1, 2]],
+      phaseStates: {
+        1: { phaseStep: 'review', fixAttempt: 0 },
+        2: { phaseStep: 'execute-tasks', fixAttempt: 0 },
+      },
+    });
+    const step1 = getNextExecutionStep(project, 1);
+    expect(step1.action).toBe('review');
+    expect(step1.phase).toBe(1);
+
+    const step2 = getNextExecutionStep(project, 2);
+    expect(step2.action).toBe('execute-tasks');
+    expect(step2.phase).toBe(2);
+  });
+
+  it('targetPhase 없이 호출하면 공유 상태를 사용한다 (하위 호환)', () => {
+    const tasks = [...makeTasks(2, 1), ...makeTasks(2, 2)];
+    const project = makeProject(tasks, {
+      phaseStep: 'review',
+      activePhases: [1, 2],
+      parallelGroups: [[1, 2]],
+      phaseStates: {
+        1: { phaseStep: 'materialize', fixAttempt: 0 },
+        2: { phaseStep: 'execute-tasks', fixAttempt: 0 },
+      },
+    });
+    // targetPhase 없이 호출 → 공유 state.phaseStep('review') 사용
+    const step = getNextExecutionStep(project);
+    expect(step.action).toBe('review');
+  });
+});
+
+describe('computeStateTransition — stepResult.phase 병렬 전이', () => {
+  it('stepResult.phase로 특정 Phase만 전이한다', () => {
+    const tasks = [...makeTasks(2, 1), ...makeTasks(2, 2)];
+    const project = makeProject(tasks, {
+      activePhases: [1, 2],
+      parallelGroups: [[1, 2]],
+      phaseStates: {
+        1: { phaseStep: 'execute-tasks', fixAttempt: 0 },
+        2: { phaseStep: 'execute-tasks', fixAttempt: 0 },
+      },
+    });
+
+    // Phase 1만 execute-tasks → materialize 전이
+    const updated = computeStateTransition(project, {
+      completedAction: 'execute-tasks',
+      taskResults: [],
+      phase: 1,
+    });
+
+    // Phase 1은 materialize로 전이
+    expect(updated.executionState.phaseStates[1].phaseStep).toBe('materialize');
+    // Phase 2는 그대로 execute-tasks
+    expect(updated.executionState.phaseStates[2].phaseStep).toBe('execute-tasks');
+  });
+
+  it('Phase 2를 독립적으로 전이할 수 있다', () => {
+    const tasks = [...makeTasks(2, 1), ...makeTasks(2, 2)];
+    const project = makeProject(tasks, {
+      activePhases: [1, 2],
+      parallelGroups: [[1, 2]],
+      phaseStates: {
+        1: { phaseStep: 'review', fixAttempt: 0 },
+        2: { phaseStep: 'execute-tasks', fixAttempt: 0 },
+      },
+    });
+
+    const updated = computeStateTransition(project, {
+      completedAction: 'execute-tasks',
+      taskResults: [],
+      phase: 2,
+    });
+
+    // Phase 1 그대로
+    expect(updated.executionState.phaseStates[1].phaseStep).toBe('review');
+    // Phase 2만 전이
+    expect(updated.executionState.phaseStates[2].phaseStep).toBe('materialize');
+  });
+
+  it('같은 Tier의 모든 Phase가 build-context를 완료하면 다음 Tier로 전이한다', () => {
+    const tasks = [...makeTasks(1, 1), ...makeTasks(1, 2), ...makeTasks(1, 3)];
+    const project = makeProject(tasks, {
+      activePhases: [1, 2],
+      parallelGroups: [[1, 2], [3]],
+      completedPhases: [1],
+      phaseStates: {
+        1: { phaseStep: 'build-context', fixAttempt: 0 },
+        2: { phaseStep: 'build-context', fixAttempt: 0 },
+      },
+      currentPhase: 2,
+      phaseStep: 'build-context',
+    });
+
+    // Phase 2의 build-context 완료 → Phase 1도 이미 완료 → 다음 Tier [3]으로
+    const updated = computeStateTransition(project, {
+      completedAction: 'build-context',
+      phase: 2,
+    });
+
+    expect(updated.executionState.completedPhases).toContain(2);
+    expect(updated.executionState.activePhases).toEqual([3]);
+    expect(updated.executionState.phaseStates[3]).toEqual({
+      phaseStep: 'execute-tasks',
+      fixAttempt: 0,
+    });
+  });
+
+  it('Tier 내 일부 Phase만 완료되면 같은 Tier에 머문다', () => {
+    const tasks = [...makeTasks(1, 1), ...makeTasks(1, 2), ...makeTasks(1, 3)];
+    const project = makeProject(tasks, {
+      activePhases: [1, 2],
+      parallelGroups: [[1, 2], [3]],
+      completedPhases: [],
+      phaseStates: {
+        1: { phaseStep: 'build-context', fixAttempt: 0 },
+        2: { phaseStep: 'review', fixAttempt: 0 },
+      },
+      currentPhase: 1,
+      phaseStep: 'build-context',
+    });
+
+    // Phase 1 build-context 완료, Phase 2는 아직 진행 중
+    const updated = computeStateTransition(project, {
+      completedAction: 'build-context',
+      phase: 1,
+    });
+
+    expect(updated.executionState.completedPhases).toEqual([1]);
+    // Phase 2가 아직 남아있으므로 같은 Tier
+    expect(updated.executionState.activePhases).toEqual([2]);
+    // Phase 2의 상태는 보존
+    expect(updated.executionState.phaseStates[2].phaseStep).toBe('review');
+  });
+});

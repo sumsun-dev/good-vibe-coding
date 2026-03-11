@@ -566,65 +566,77 @@ CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ### Phase 실행 프롬프트 템플릿 (A-4/B-4/C-4 공통)
 
 > 아래 템플릿을 각 Phase의 Task tool 프롬프트로 사용합니다. `{ID}`, `{N}` 등을 실제 값으로 치환하세요.
+> **병렬 실행 시:** 같은 Tier의 Phase들을 동시에 여러 Task tool로 실행합니다. 각 Task tool은 `--phase {N}`으로 자신의 Phase를 명시합니다.
 
 ```
 프로젝트 ID: {ID}의 Phase {N}을 실행하세요.
+{병렬 실행이면: "병렬 실행 모드: 이 Phase는 다른 Phase와 동시에 실행됩니다."}
+{워크트리 격리이면: "워크트리 격리: Phase별 독립 worktree를 사용합니다."}
 
 **[필수] CLI에 JSON 전달 시 Write tool 사용:**
 - LLM 응답 등 큰 JSON은 반드시 Write tool로 /tmp/gv-*.json에 저장 후 --input-file로 전달하세요.
 
 **Phase 실행 루프:**
-1. `node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js next-step --id {ID}` → 현재 action 확인
+1. `node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js next-step --id {ID} --phase {N}` → Phase {N}의 현재 action 확인
 2. action별 처리 (아래 레시피)
-3. `echo '{"id":"{ID}","stepResult":{...}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js advance-execution`
+3. `echo '{"id":"{ID}","stepResult":{"completedAction":"...","phase":{N}}}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js advance-execution`
+   (stepResult에 반드시 `"phase": {N}` 포함 — 병렬 실행 시 해당 Phase의 상태만 전이)
 4. complete, confirm-next-phase, escalate까지 반복
 
 **Action 레시피 (action → CLI → advance stepResult):**
 
 execute-tasks:
+{워크트리 격리이면:}
+- echo '{"projectId":"{ID}","phase":{N},"branchName":"gv-phase-{N}-{slug}"}' | node ... create-worktree
+  → {success, worktreePath} — materialize/commit에서 사용
 - echo '{"task":{task}}' | node ... is-code-task → {isCodeTask}
 - 코드→tdd-execution-prompt, 비코드→execution-prompt (stdin: {"task":..,"teamMember":..})
 - 저장: echo '{"id":"{ID}","taskId":"{taskId}","output":"..."}' | node ... save-task-output
-- advance: {"completedAction":"execute-tasks"}
+- advance: {"completedAction":"execute-tasks","phase":{N}}
 
 materialize (코드 태스크만):
-- echo '{"taskOutput":"..","task":{task},"projectDir":"{dir}"}' | node ... verify-and-materialize
+- echo '{"taskOutput":"..","task":{task},"projectDir":"{dir}","worktreePath":"{worktreePath || null}"}' | node ... verify-and-materialize
 - 저장: echo '{"id":"{ID}","taskId":"{taskId}","materializeResult":{result}}' | node ... add-task-materialization
 - 상태: echo '{"id":"{ID}","status":"reviewing"}' | node ... update-status
-- advance: {"completedAction":"materialize"}
+- advance: {"completedAction":"materialize","phase":{N}}
 
 review:
 - echo '{"task":{task},"team":[..]}' | node ... select-reviewers
 - echo '{"reviewers":[..]}' | node ... resolve-review-assignments
 - echo '{"reviewer":{r},"task":{task},"taskOutput":".."}' | node ... task-review-prompt → LLM
 - echo '{"id":"{ID}","taskId":"{taskId}","reviews":[..]}' | node ... add-task-reviews
-- advance: {"completedAction":"review"}
+- advance: {"completedAction":"review","phase":{N}}
 
 quality-gate:
 - echo '{"reviews":[..],"executionResult":{materializeResult}}' | node ... enhanced-quality-gate
 - 상태: echo '{"id":"{ID}","status":"executing"}' | node ... update-status
-- advance: {"completedAction":"quality-gate","qualityGateResult":{"passed":bool,"issues":[..]}}
+- advance: {"completedAction":"quality-gate","qualityGateResult":{"passed":bool,"issues":[..]},"phase":{N}}
 
 fix:
 - node ... get-failure-context --id {ID}
 - echo '{"task":{task},"implementer":{m},"reviews":[..],"failureContext":{ctx}}' | node ... revision-prompt → LLM
-- save-task-output → advance: {"completedAction":"fix"}
+- save-task-output → advance: {"completedAction":"fix","phase":{N}}
 
 commit:
-- echo '{"projectDir":"{dir}","phase":{N}}' | node ... commit-phase (infraPath 없으면 건너뜀)
-- advance: {"completedAction":"commit"}
+- echo '{"projectDir":"{worktreePath || dir}","phase":{N}}' | node ... commit-phase (infraPath 없으면 건너뜀)
+- advance: {"completedAction":"commit","phase":{N}}
 
 build-context:
+{워크트리 격리이면:}
+- echo '{"projectId":"{ID}","phase":{N},"merge":true}' | node ... remove-worktree
+  → worktree 브랜치를 메인에 머지 후 정리
 - echo '{"completedTasks":[..]}' | node ... build-phase-context
-- advance: {"completedAction":"build-context"}
+- advance: {"completedAction":"build-context","phase":{N}}
 
 **주의사항:**
 - project.json/execute.md 직접 Read 금지 (next-step이 필요 정보 반환, 레시피가 자체 완결)
 - 프로젝트 파일 전체 Read 금지 (태스크에 명시된 파일만)
 - 빌드 에러 일괄 수정 (반복 빌드 방지)
 - 큰 JSON은 Write tool → /tmp/gv-*.json → --input-file
+- **병렬 실행 시:** advance-execution의 stepResult에 반드시 `"phase": {N}` 포함
 
 완료 후 반환 (최대 1000자):
+- phaseNumber: {N}
 - phaseSummary: 완료된 작업 목록 (한 줄씩)
 - qualityGate: { passed, critical, important }
 - errors: 실패 시 원인 (있을 때만)
@@ -728,32 +740,51 @@ Task tool 프롬프트:
 3. 실행 초기화:
    echo '{"id":"{ID}","mode":"auto"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js init-execution
 
-4. 상태 변경:
+4. 실행 계획 조회 (parallelGroups 확인):
+   node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js execution-plan-with-reviews --id {ID}
+   → parallelGroups (예: [[1,2],[3],[4,5]]) 확인
+
+5. 상태 변경:
    echo '{"id":"{ID}","status":"executing"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js update-status
 
 반환:
 - phaseCount: 총 Phase 수
 - taskCount: 총 태스크 수
 - taskSummary: Phase별 태스크 요약 (3줄 이내)
+- parallelGroups: Tier별 Phase 병렬 실행 그룹 (예: [[1,2],[3]])
 
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
 
 메인 세션에서 표시: "작업 분배 완료: Phase {N}개, 태스크 {M}개"
 
-#### A-4. Phase별 실행 (Task tool로 격리)
+#### A-4. Phase별 실행 (Tier 병렬 디스패치)
 
-> **컨텍스트 보호:** 각 Phase를 독립 Task tool로 실행하여 메인 세션의 컨텍스트 폭발을 방지합니다.
+> **컨텍스트 보호 + 병렬 실행:** 각 Phase를 독립 Task tool로 격리하되,
+> 같은 Tier의 Phase들은 **동시에 여러 Task tool을 병렬 실행**합니다.
 
-`next-step`으로 실행 계획의 Phase 수를 파악한 뒤, **각 Phase를 개별 Task tool**로 실행합니다.
-
-각 Phase의 Task tool 프롬프트: **"Phase 실행 프롬프트 템플릿"** (Step 5 상단 공통 섹션)을 사용합니다.
-
-Phase가 끝날 때마다 메인 세션에서 진행률을 표시합니다:
+A-2에서 반환된 `parallelGroups`를 사용하여 Tier별로 디스패치합니다:
 
 ```
-Phase {N}/{total} 완료 — {Phase 요약}
-품질게이트: {passed/failed}
+parallelGroups 예시: [[1, 2], [3], [4, 5]]
+
+Tier 0: Phase 1, Phase 2 → Task tool 2개 동시 실행 (병렬)
+  ↓ (둘 다 완료 후)
+Tier 1: Phase 3 → Task tool 1개 실행
+  ↓ (완료 후)
+Tier 2: Phase 4, Phase 5 → Task tool 2개 동시 실행 (병렬)
+```
+
+**같은 Tier의 Phase들은 반드시 동시에 여러 Task tool로 병렬 실행합니다.**
+각 Phase의 Task tool 프롬프트: **"Phase 실행 프롬프트 템플릿"** (Step 5 상단 공통 섹션)을 사용합니다.
+
+`parallelGroups`가 없거나 모든 Tier가 1개 Phase면 순차 실행합니다.
+
+Tier가 끝날 때마다 메인 세션에서 진행률을 표시합니다:
+
+```
+Tier {T} 완료 — Phase {N1}, {N2} 완료
+품질게이트: Phase {N1} {passed/failed}, Phase {N2} {passed/failed}
 ```
 
 #### A-5. 완료
@@ -867,32 +898,51 @@ Task tool 프롬프트:
 3. 실행 초기화:
    echo '{"id":"{ID}","mode":"auto"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js init-execution
 
-4. 상태 변경:
+4. 실행 계획 조회 (parallelGroups 확인):
+   node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js execution-plan-with-reviews --id {ID}
+   → parallelGroups (예: [[1,2],[3],[4,5]]) 확인
+
+5. 상태 변경:
    echo '{"id":"{ID}","status":"executing"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js update-status
 
 반환:
 - phaseCount: 총 Phase 수
 - taskCount: 총 태스크 수
 - taskSummary: Phase별 태스크 요약 (3줄 이내)
+- parallelGroups: Tier별 Phase 병렬 실행 그룹 (예: [[1,2],[3]])
 
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
 
 메인 세션에서 표시: "작업 분배 완료: Phase {N}개, 태스크 {M}개"
 
-#### B-4. Phase별 실행 (Task tool로 격리)
+#### B-4. Phase별 실행 (Tier 병렬 디스패치)
 
-> **컨텍스트 보호:** 각 Phase를 독립 Task tool로 실행하여 메인 세션의 컨텍스트 폭발을 방지합니다.
+> **컨텍스트 보호 + 병렬 실행:** 각 Phase를 독립 Task tool로 격리하되,
+> 같은 Tier의 Phase들은 **동시에 여러 Task tool을 병렬 실행**합니다.
 
-`next-step`으로 실행 계획의 Phase 수를 파악한 뒤, **각 Phase를 개별 Task tool**로 실행합니다.
-
-각 Phase의 Task tool 프롬프트: **"Phase 실행 프롬프트 템플릿"** (Step 5 상단 공통 섹션)을 사용합니다.
-
-Phase가 끝날 때마다 메인 세션에서 진행률을 표시합니다:
+B-2에서 반환된 `parallelGroups`를 사용하여 Tier별로 디스패치합니다:
 
 ```
-Phase {N}/{total} 완료 — {Phase 요약}
-품질게이트: {passed/failed}
+parallelGroups 예시: [[1, 2], [3], [4, 5]]
+
+Tier 0: Phase 1, Phase 2 → Task tool 2개 동시 실행 (병렬)
+  ↓ (둘 다 완료 후)
+Tier 1: Phase 3 → Task tool 1개 실행
+  ↓ (완료 후)
+Tier 2: Phase 4, Phase 5 → Task tool 2개 동시 실행 (병렬)
+```
+
+**같은 Tier의 Phase들은 반드시 동시에 여러 Task tool로 병렬 실행합니다.**
+각 Phase의 Task tool 프롬프트: **"Phase 실행 프롬프트 템플릿"** (Step 5 상단 공통 섹션)을 사용합니다.
+
+`parallelGroups`가 없거나 모든 Tier가 1개 Phase면 순차 실행합니다.
+
+Tier가 끝날 때마다 메인 세션에서 진행률을 표시합니다:
+
+```
+Tier {T} 완료 — Phase {N1}, {N2} 완료
+품질게이트: Phase {N1} {passed/failed}, Phase {N2} {passed/failed}
 ```
 
 #### B-5. 완료
@@ -1048,35 +1098,54 @@ Task tool 프롬프트:
 3. 실행 초기화:
    echo '{"id":"{ID}","mode":"{선택된모드}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js init-execution
 
-4. 상태 변경:
+4. 실행 계획 조회 (parallelGroups 확인):
+   node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js execution-plan-with-reviews --id {ID}
+   → parallelGroups (예: [[1,2],[3],[4,5]]) 확인
+
+5. 상태 변경:
    echo '{"id":"{ID}","status":"executing"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js update-status
 
 반환:
 - phaseCount: 총 Phase 수
 - taskCount: 총 태스크 수
 - taskSummary: Phase별 태스크 요약 (3줄 이내)
+- parallelGroups: Tier별 Phase 병렬 실행 그룹 (예: [[1,2],[3]])
 
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
 
 메인 세션에서 표시: "작업 분배 완료: Phase {N}개, 태스크 {M}개"
 
-#### C-4. Phase별 실행 (Task tool로 격리)
+#### C-4. Phase별 실행 (Tier 병렬 디스패치)
 
-> **컨텍스트 보호:** 각 Phase를 독립 Task tool로 실행하여 메인 세션의 컨텍스트 폭발을 방지합니다.
+> **컨텍스트 보호 + 병렬 실행:** 각 Phase를 독립 Task tool로 격리하되,
+> 같은 Tier의 Phase들은 **동시에 여러 Task tool을 병렬 실행**합니다.
 
-`next-step`으로 실행 계획의 Phase 수를 파악한 뒤, **각 Phase를 개별 Task tool**로 실행합니다.
+C-3에서 반환된 `parallelGroups`를 사용하여 Tier별로 디스패치합니다:
 
+```
+parallelGroups 예시: [[1, 2], [3], [4, 5]]
+
+Tier 0: Phase 1, Phase 2 → Task tool 2개 동시 실행 (병렬)
+  ↓ (둘 다 완료 후)
+Tier 1: Phase 3 → Task tool 1개 실행
+  ↓ (완료 후)
+Tier 2: Phase 4, Phase 5 → Task tool 2개 동시 실행 (병렬)
+```
+
+**같은 Tier의 Phase들은 반드시 동시에 여러 Task tool로 병렬 실행합니다.**
 각 Phase의 Task tool 프롬프트: **"Phase 실행 프롬프트 템플릿"** (Step 5 상단 공통 섹션)을 사용합니다.
 
-Phase가 끝날 때마다 메인 세션에서 진행률을 표시합니다:
+`parallelGroups`가 없거나 모든 Tier가 1개 Phase면 순차 실행합니다.
+
+Tier가 끝날 때마다 메인 세션에서 진행률을 표시합니다:
 
 ```
-Phase {N}/{total} 완료 — {Phase 요약}
-품질게이트: {passed/failed}
+Tier {T} 완료 — Phase {N1}, {N2} 완료
+품질게이트: Phase {N1} {passed/failed}, Phase {N2} {passed/failed}
 ```
 
-인터랙티브 모드에서는 각 Phase 후 CEO에게 진행 여부를 확인합니다.
+인터랙티브 모드에서는 각 Tier 후 CEO에게 진행 여부를 확인합니다.
 
 #### C-5. 완료
 

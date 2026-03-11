@@ -64,7 +64,7 @@ export async function advanceExecution(projectId, stepResult) {
   await updateExecutionState(projectId, updatedProject.executionState);
 
   // 자동 수집: fire-and-forget (실패해도 메인 로직 미영향)
-  const phase = project.executionState.currentPhase;
+  const phase = stepResult.phase ?? project.executionState.currentPhase;
   if (stepResult.completedAction === 'build-context') {
     const phaseTasks = getTasksForPhase(project, phase);
     recordMetrics(projectId, {
