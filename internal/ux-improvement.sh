@@ -4,7 +4,7 @@
 #
 # 사용법:
 #   bash internal/ux-improvement.sh          # 수동 실행
-#   crontab: 0 */3 * * * /path/to/internal/ux-improvement.sh  # 3시간마다
+#   crontab: 30 0 * * * /path/to/internal/ux-improvement.sh  # 매일 KST 09:30
 #
 # 사전 조건:
 #   - claude login (Max Plan OAuth)
@@ -15,7 +15,7 @@
 #   - 8가지 UX 관점 순환 (perspective rotation)
 #   - 5영역 UX SLA 평가 (vs 7영역 코드 SLA)
 #   - 안전 경로만 변경 시 자동 squash merge
-#   - 3시간 주기에 맞춘 축소 타임아웃
+#   - 1일 1회 실행 (Daily Improvement와 동일 주기)
 
 set -euo pipefail
 

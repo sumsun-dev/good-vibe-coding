@@ -619,18 +619,18 @@ logs/daily-improvement/
 ## UX Improvement 자율 파이프라인
 
 > **내부 개발 도구** — Daily Improvement와 별도로, 사용자 경험(UX) 관점에서 코드베이스를 자동 개선하는 파이프라인.
-> VPS에서 3시간마다 실행. 코드는 `internal/ux-improvement/` 디렉토리에 위치.
+> VPS에서 매일 1회 실행. 코드는 `internal/ux-improvement/` 디렉토리에 위치.
 
 ```
 ux-improvement.sh (오케스트레이터)
   │
   ├─ Phase 0: 사전 준비 + 관점 결정 (rotation)
   │
-  ├─── Round Loop (UX SLA 달성까지, 최대 2라운드) ─────┐
+  ├─── Round Loop (UX SLA 달성까지, 최대 3라운드) ─────┐
   │ ├─ Phase 1: UX Improver (관점 기반 분석 + 수정 + PR) │
   │ ├─ Phase 1.5: 이슈 검증                              │
   │ ├─ Phase 2: UX Reviewer (리뷰)                       │
-  │ ├─ Phase 3: 수정 루프 (최대 3사이클)                 │
+  │ ├─ Phase 3: 수정 루프 (최대 5사이클)                 │
   │ └─ Phase Eval: UX SLA 평가 → 달성/정체 → break      │
   └──────────────────────────────────────────────────────┘
   │
@@ -639,7 +639,7 @@ ux-improvement.sh (오케스트레이터)
 
 ### 8가지 관점 순환 (Perspective Rotation)
 
-3시간마다 실행되므로 하루 8회. 각 실행마다 다른 관점으로 분석 (`rotation_index = execution_count % 8`):
+매일 1회 실행. 각 실행마다 다른 관점으로 분석 (`rotation_index = execution_count % 8`):
 
 | #   | 관점 ID              | 이름           | 분석 대상                               |
 | --- | -------------------- | -------------- | --------------------------------------- |
@@ -701,7 +701,7 @@ logs/
 
 | 항목      | Daily Improvement                | UX Improvement                |
 | --------- | -------------------------------- | ----------------------------- |
-| 주기      | 매일 1회                         | 3시간마다                     |
+| 주기      | 매일 1회                         | 매일 1회                      |
 | 관점      | 코드 품질/보안/성능              | 사용자 경험 (8관점 순환)      |
 | SLA       | 7영역                            | 5영역 (UX)                    |
 | 자동 머지 | 수동                             | 안전 경로만 자동              |

@@ -19,8 +19,15 @@ const VALID_TYPES = new Set([
   'consultation-reply',
 ]);
 
+/** 단조 증가 시퀀스 — 동일 밀리초 내 메시지 순서 보장 */
+let _seq = 0;
+
 function generateId() {
   return `msg-${Date.now()}-${randomBytes(4).toString('hex')}`;
+}
+
+function nextSeq() {
+  return ++_seq;
 }
 
 const AGENT_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
@@ -81,6 +88,7 @@ export class MemoryMessageBus {
       content: payload.content,
       threadId: payload.threadId || null,
       timestamp: Date.now(),
+      seq: nextSeq(),
       read: false,
     };
     this._messages.push(message);
@@ -104,7 +112,7 @@ export class MemoryMessageBus {
   async getThread(threadId) {
     return this._messages
       .filter((m) => m.threadId === threadId)
-      .sort((a, b) => a.timestamp - b.timestamp);
+      .sort((a, b) => a.timestamp - b.timestamp || a.seq - b.seq);
   }
 
   async markAsRead(messageId) {
@@ -185,6 +193,7 @@ export class FileMessageBus {
       content: payload.content,
       threadId: payload.threadId || null,
       timestamp: Date.now(),
+      seq: nextSeq(),
       read: false,
     };
 
@@ -221,7 +230,7 @@ export class FileMessageBus {
     const allMessages = await this._readAllMessages();
     return allMessages
       .filter((m) => m.threadId === threadId)
-      .sort((a, b) => a.timestamp - b.timestamp);
+      .sort((a, b) => a.timestamp - b.timestamp || (a.seq || 0) - (b.seq || 0));
   }
 
   async markAsRead(messageId) {
@@ -280,7 +289,7 @@ export class FileMessageBus {
         const data = await readFile(join(agentDir, file), 'utf-8');
         messages.push(JSON.parse(data));
       }
-      return messages.sort((a, b) => a.timestamp - b.timestamp);
+      return messages.sort((a, b) => a.timestamp - b.timestamp || (a.seq || 0) - (b.seq || 0));
     } catch {
       return [];
     }
