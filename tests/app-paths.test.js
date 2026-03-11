@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { resolve, isAbsolute } from 'path';
 import {
   baseDir,
@@ -10,9 +10,25 @@ import {
   claudeDir,
   userSkillsDir,
   userAgentsDir,
+  resetConfiguration,
 } from '../scripts/lib/core/app-paths.js';
 
 describe('app-paths', () => {
+  let savedBaseDir;
+
+  beforeEach(() => {
+    // 글로벌 setup의 GOOD_VIBE_BASE_DIR을 일시 제거하여 기본 경로 테스트
+    savedBaseDir = process.env.GOOD_VIBE_BASE_DIR;
+    delete process.env.GOOD_VIBE_BASE_DIR;
+    resetConfiguration();
+  });
+
+  afterEach(() => {
+    // 복원
+    if (savedBaseDir) process.env.GOOD_VIBE_BASE_DIR = savedBaseDir;
+    resetConfiguration();
+  });
+
   it('baseDir는 .claude/good-vibe를 포함한다', () => {
     expect(baseDir()).toContain('.claude');
     expect(baseDir()).toContain('good-vibe');
