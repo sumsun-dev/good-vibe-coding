@@ -48,24 +48,38 @@ Claude Code 학습 가이드
 
 ```
 [개발자 심화]
-13. TDD 워크플로우 실전 (good-vibe:learn TDD)
-14. 코드 리뷰 자동화 (good-vibe:learn 코드리뷰)
+15. TDD 워크플로우 실전 (good-vibe:learn TDD)
+16. 코드 리뷰 자동화 (good-vibe:learn 코드리뷰)
 ```
 
 **PM 추가:**
 
 ```
 [PM/기획자 심화]
-13. PRD 작성하기 (good-vibe:learn PRD)
-14. 이슈 관리 자동화 (good-vibe:learn 이슈)
+15. PRD 작성하기 (good-vibe:learn PRD)
+16. 이슈 관리 자동화 (good-vibe:learn 이슈)
 ```
 
 **디자이너 추가:**
 
 ```
 [디자이너 심화]
-13. 접근성 가이드 (good-vibe:learn 접근성)
-14. 디자인 시스템 (good-vibe:learn 디자인시스템)
+15. 접근성 가이드 (good-vibe:learn 접근성)
+16. 디자인 시스템 (good-vibe:learn 디자인시스템)
+```
+
+**콘텐츠 크리에이터 추가:**
+
+```
+[콘텐츠 크리에이터 심화]
+15. 콘텐츠 워크플로우 (good-vibe:learn 콘텐츠)
+```
+
+**리서처 추가:**
+
+```
+[리서처 심화]
+15. 리서치 워크플로우 (good-vibe:learn 리서치)
 ```
 
 ### 주제 지정 시
@@ -75,5 +89,7 @@ Claude Code 학습 가이드
 예: `good-vibe:learn 기초` → `guides/common/01-what-is-claude-code.md` 내용 기반 안내
 예: `good-vibe:learn 사용법` → `guides/common/02-basic-usage.md` 내용 기반 안내
 예: `good-vibe:learn TDD` → `guides/developer/tdd-workflow.md` 내용 기반 안내
+예: `good-vibe:learn 콘텐츠` → `guides/content/00-content-workflow.md` 내용 기반 안내
+예: `good-vibe:learn 리서치` → `guides/researcher/00-research-workflow.md` 내용 기반 안내
 예: `good-vibe:learn 레퍼런스` → `guides/common/03-commands-reference.md` 내용 기반 안내
 예: `good-vibe:learn 고급커맨드` → `guides/common/12-advanced-commands.md` 내용 기반 안내
