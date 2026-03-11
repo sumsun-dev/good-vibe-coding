@@ -36,6 +36,8 @@ const GUIDE_MAP = {
   디자인시스템: 'designer/design-system.md',
   레퍼런스: 'common/03-commands-reference.md',
   고급커맨드: 'common/12-advanced-commands.md',
+  콘텐츠: 'content/00-content-workflow.md',
+  리서치: 'researcher/00-research-workflow.md',
 };
 
 export const commands = {
@@ -87,6 +89,22 @@ export const commands = {
         guides: [
           { topic: '디자인시스템', file: 'designer/design-system.md', title: '디자인 시스템' },
           { topic: '접근성', file: 'designer/accessibility.md', title: '접근성 가이드' },
+        ],
+      },
+      {
+        name: '콘텐츠 크리에이터 심화',
+        guides: [
+          { topic: '콘텐츠', file: 'content/00-content-workflow.md', title: '콘텐츠 워크플로우' },
+        ],
+      },
+      {
+        name: '리서처 심화',
+        guides: [
+          {
+            topic: '리서치',
+            file: 'researcher/00-research-workflow.md',
+            title: '리서치 워크플로우',
+          },
         ],
       },
     ];
