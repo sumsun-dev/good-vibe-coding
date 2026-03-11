@@ -8,6 +8,8 @@ import {
   groupAgentsForParallelDispatch,
   trackConvergenceEvolution,
   compressPreviousContext,
+  selectDiscussionReviewers,
+  extractKeyDecisions,
 } from '../scripts/lib/engine/orchestrator.js';
 
 const SAMPLE_PROJECT = {
@@ -825,5 +827,114 @@ describe('buildSynthesisPrompt 외부 서비스', () => {
     const agentOutputs = [{ roleId: 'cto', role: 'CTO', emoji: '', analysis: '분석' }];
     const { system } = buildSynthesisPrompt(SAMPLE_PROJECT, agentOutputs, 1);
     expect(system).toContain('명확화 필요 사항');
+  });
+});
+
+// --- selectDiscussionReviewers ---
+
+describe('selectDiscussionReviewers', () => {
+  it('팀 규모가 maxReviewers 이하면 전원 반환한다', () => {
+    const small = SAMPLE_TEAM.slice(0, 2);
+    const result = selectDiscussionReviewers(small, 3);
+    expect(result).toEqual(small);
+  });
+
+  it('유니버셜 리뷰어(cto, qa)를 우선 선정한다', () => {
+    const result = selectDiscussionReviewers(SAMPLE_TEAM, 3);
+    const roleIds = result.map((r) => r.roleId);
+    expect(roleIds).toContain('cto');
+    expect(roleIds).toContain('qa');
+    expect(result.length).toBe(3);
+  });
+
+  it('maxReviewers를 초과하지 않는다', () => {
+    const result = selectDiscussionReviewers(SAMPLE_TEAM, 2);
+    expect(result.length).toBe(2);
+  });
+
+  it('빈 배열이면 빈 배열을 반환한다', () => {
+    expect(selectDiscussionReviewers([], 3)).toEqual([]);
+    expect(selectDiscussionReviewers(null, 3)).toEqual([]);
+  });
+
+  it('유니버셜 외 나머지는 priority 순으로 채운다', () => {
+    const result = selectDiscussionReviewers(SAMPLE_TEAM, 3);
+    const roleIds = result.map((r) => r.roleId);
+    // cto(1), qa(6) 포함, 나머지 1자리는 po(2)
+    expect(roleIds).toContain('po');
+  });
+});
+
+// --- extractKeyDecisions ---
+
+describe('extractKeyDecisions', () => {
+  it('빈 입력이면 빈 문자열을 반환한다', () => {
+    expect(extractKeyDecisions('')).toBe('');
+    expect(extractKeyDecisions(null)).toBe('');
+  });
+
+  it('짧은 입력은 그대로 반환한다', () => {
+    const short = '### 기술 스택\n- Node.js';
+    expect(extractKeyDecisions(short, 1200)).toBe(short);
+  });
+
+  it('결정/아키텍처/리스크 섹션만 추출한다', () => {
+    const synthesis = `## 기획서
+
+### 프로젝트 개요
+이 프로젝트는 날씨 봇입니다.
+${'매우 긴 설명 내용이 여기에 들어갑니다. '.repeat(200)}
+
+### 기술 스택
+- Node.js
+- PostgreSQL
+
+### 결정 사항
+- 모놀리스 아키텍처 채택
+- REST API 사용
+
+### 리스크 및 대응
+- API 키 노출 위험
+- 레이트 리밋 초과 가능성
+
+### 일반 참고사항
+이 부분은 추출 대상이 아닙니다.`;
+
+    // maxLength를 기본값(1200)으로 사용하여 실제 압축 동작 검증
+    const result = extractKeyDecisions(synthesis);
+    expect(result).toContain('기술 스택');
+    expect(result).toContain('Node.js');
+    expect(result).toContain('결정 사항');
+    expect(result).toContain('모놀리스 아키텍처 채택');
+    expect(result).toContain('리스크');
+    expect(result).not.toContain('매우 긴 설명');
+  });
+
+  it('maxLength를 초과하면 절단한다', () => {
+    const synthesis = `### 기술 스택\n${'- 기술항목\n'.repeat(200)}\n### 결정 사항\n${'- 결정항목\n'.repeat(200)}`;
+    const result = extractKeyDecisions(synthesis, 500);
+    expect(result.length).toBeLessThanOrEqual(510);
+  });
+});
+
+// --- buildAgentAnalysisPrompt 라운드별 압축 ---
+
+describe('buildAgentAnalysisPrompt 라운드별 컨텍스트 압축', () => {
+  it('라운드 3에서는 핵심 결정 사항 중심으로 압축한다', () => {
+    const longSynthesis = `### 기술 스택\n- Node.js\n### 프로젝트 개요\n${'설명 '.repeat(500)}\n### 결정 사항\n- 결정1`;
+    const { user } = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {
+      round: 3,
+      previousSynthesis: longSynthesis,
+    });
+    expect(user).toContain('핵심 결정 사항');
+    expect(user).toContain('블로커 해결에 집중');
+  });
+
+  it('라운드 2에서는 기존 압축을 사용한다', () => {
+    const { user } = buildAgentAnalysisPrompt(SAMPLE_PROJECT, SAMPLE_TEAM[0], {
+      round: 2,
+      previousSynthesis: '## 기획서\n### 기술 스택\n- Node.js',
+    });
+    expect(user).toContain('수정/보완 의견');
   });
 });

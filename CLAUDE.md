@@ -335,6 +335,9 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 | 영역       | 상수                               | 값        | 설명                                                                                                |
 | ---------- | ---------------------------------- | --------- | --------------------------------------------------------------------------------------------------- |
 | 토론       | `discussion.parallelTiers`         | true      | Tier 간 병렬 실행 (false: 순차 fallback)                                                            |
+| 토론       | `discussion.maxReviewers`          | 3         | 토론 리뷰어 최대 수 (전원 대신 핵심 2-3명)                                                          |
+| 토론       | `discussion.reviewModel`           | haiku     | 토론 리뷰에 사용할 경량 모델                                                                        |
+| 토론       | `discussion.stagnationThreshold`   | 0.05      | 라운드 간 승인율 개선폭이 이 이하 + 블로커 0이면 조기 수렴                                          |
 | 수렴       | `convergence.threshold`            | 0.8       | 80% 승인 시 기획서 확정                                                                             |
 | 수렴       | `convergence.maxRounds`            | 3         | 최대 토론 라운드                                                                                    |
 | 실행       | `execution.maxFixAttempts`         | 2         | Phase당 수정 시도, 초과 시 CEO 에스컬레이션                                                         |
@@ -397,11 +400,19 @@ Round N:
     [병렬] Tier 3 (priority 5-7) — QA, Security, DevOps, Data, Tech/Design Researcher (검증)
     [병렬] Tier 4 (priority 8+) — Tech Writer (보완)
   → 전체 결과 종합 (기획서)
-  [병렬] 전 에이전트 리뷰 (critical 이슈만 블로커로 추출)
-  → 80%+ 승인 시 수렴, 아니면 역할별 피드백 주입 후 다음 라운드 (최대 3회)
+  핵심 리뷰어 선정 (CTO/QA/Security 우선, 최대 3명) — haiku 경량 모델 사용
+  [병렬] 선정된 리뷰어만 리뷰 (critical 이슈만 블로커로 추출)
+  → 80%+ 승인 시 수렴
+  → 라운드 2+: 개선폭 < 5% + 블로커 0 → 조기 수렴 (stagnation)
+  → 라운드 3+: 이전 기획서를 핵심 결정만 추출하여 컨텍스트 최소화
+  → 아니면 역할별 피드백 주입 후 다음 라운드 (최대 3회)
 ```
 
 - **Tier 병렬화**: `config.discussion.parallelTiers` 또는 `Discusser({ parallelTiers })` 옵션으로 제어. `buildAgentAnalysisPrompt()`가 `priorTierOutputs`를 미사용하므로 전체 병렬 안전
+- **리뷰어 선정**: `selectDiscussionReviewers`가 유니버셜 리뷰어(CTO, QA, Security) 우선 선정, 나머지는 priority 순 (전원 → 핵심 2-3명)
+- **리뷰 경량화**: `discussion.reviewModel = 'haiku'`로 리뷰 LLM 호출 시간 50-70% 단축
+- **조기 수렴**: 라운드 2+에서 승인율 개선폭 < `stagnationThreshold`(5%)이고 critical 블로커 0이면 즉시 수렴 처리
+- **라운드별 압축**: 라운드 2는 `compressPreviousContext`, 라운드 3+는 `extractKeyDecisions`로 핵심 결정만 전달
 - **역할별 피드백 주입**: 비승인 에이전트의 피드백이 해당 역할 에이전트의 다음 라운드 프롬프트에 타겟 주입
 - **블로커 추출**: `checkConvergence`가 critical 이슈만 블로커로 분류, important/minor는 무시
 - **메시지 컨텍스트**: `context.messages`로 다른 에이전트의 메시지를 프롬프트에 주입 가능 (opt-in)

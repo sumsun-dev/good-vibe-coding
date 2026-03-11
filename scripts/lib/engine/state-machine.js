@@ -91,8 +91,8 @@ export function createInitialExecutionState(mode = 'interactive', options = {}) 
     messaging: Boolean(options.messaging),
     lastCompletedStep: null,
     completedPhases: [],
-    activePhases: [],
-    parallelGroups: null,
+    activePhases: options.parallelGroups ? options.parallelGroups[0] || [] : [],
+    parallelGroups: options.parallelGroups || null,
     pendingEscalation: null,
     startedAt: new Date().toISOString(),
     completedAt: null,
@@ -171,7 +171,8 @@ const STEP_HANDLERS = {
     description: `Phase ${phase}: 저장`,
   }),
   'build-context': (phase, phaseTasks, state, totalPhases) => {
-    if (phase >= totalPhases) {
+    // parallelGroups가 있으면 handleBuildContext에서 완료 판단 — 여기서 단축 반환하지 않음
+    if (!state.parallelGroups && phase >= totalPhases) {
       return {
         action: 'complete',
         phase,

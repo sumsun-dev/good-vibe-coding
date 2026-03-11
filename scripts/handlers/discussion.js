@@ -27,6 +27,7 @@ import {
   checkConvergence,
   groupAgentsForParallelDispatch,
   trackConvergenceEvolution,
+  selectDiscussionReviewers,
 } from '../lib/engine/orchestrator.js';
 import {
   buildDiscussionDispatchPlan,
@@ -100,6 +101,13 @@ export const commands = {
     requireFields(data, ['team']);
     const tiers = groupAgentsForParallelDispatch(data.team);
     output({ tiers });
+  },
+
+  'select-discussion-reviewers': async () => {
+    const data = await readStdin();
+    requireFields(data, ['agents']);
+    const reviewers = selectDiscussionReviewers(data.agents, data.maxReviewers);
+    output({ reviewers });
   },
 
   'discussion-dispatch-plan': async () => {

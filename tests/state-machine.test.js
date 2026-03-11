@@ -1196,6 +1196,21 @@ describe('createInitialExecutionState — parallelGroups 필드', () => {
     expect(state.activePhases).toEqual([]);
     expect(state.parallelGroups).toBeNull();
   });
+
+  it('parallelGroups 옵션이 있으면 activePhases가 첫 tier로 세팅된다', () => {
+    const state = createInitialExecutionState('auto', {
+      parallelGroups: [[1], [2, 3], [4]],
+    });
+    expect(state.parallelGroups).toEqual([[1], [2, 3], [4]]);
+    expect(state.activePhases).toEqual([1]);
+  });
+
+  it('parallelGroups 옵션의 첫 tier에 복수 Phase가 있으면 activePhases에 모두 포함된다', () => {
+    const state = createInitialExecutionState('auto', {
+      parallelGroups: [[1, 2], [3]],
+    });
+    expect(state.activePhases).toEqual([1, 2]);
+  });
 });
 
 describe('handleBuildContext — parallelGroups가 null이면 기존 순차 실행', () => {
@@ -1271,6 +1286,32 @@ describe('handleBuildContext — parallelGroups가 있으면 다음 tier 세팅'
     // Phase 4 완료 → 전체 완료
     project = advanceThroughPhase(project);
     expect(project.executionState.status).toBe('completed');
+  });
+});
+
+describe('getNextExecutionStep — build-context에서 parallelGroups가 있으면 complete 단축 반환 방지', () => {
+  it('parallelGroups가 없고 마지막 Phase면 complete를 반환한다', () => {
+    const tasks = makeTasks(2, 1);
+    const project = makeProject(tasks, {
+      phaseStep: 'build-context',
+      currentPhase: 1,
+    });
+    const step = getNextExecutionStep(project);
+    expect(step.action).toBe('complete');
+  });
+
+  it('parallelGroups가 있으면 마지막 Phase 번호여도 build-context를 반환한다', () => {
+    const tasks = [...makeTasks(1, 1), ...makeTasks(1, 2), ...makeTasks(1, 3)];
+    const project = makeProject(tasks, {
+      phaseStep: 'build-context',
+      currentPhase: 3,
+      completedPhases: [1, 2],
+      activePhases: [3],
+      parallelGroups: [[1], [2, 3]],
+    });
+    const step = getNextExecutionStep(project);
+    // parallelGroups가 있으므로 complete가 아닌 build-context (auto 모드)
+    expect(step.action).toBe('build-context');
   });
 });
 

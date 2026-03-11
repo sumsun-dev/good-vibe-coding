@@ -319,12 +319,14 @@ PRD를 생성하고 복잡도를 분석하세요.
    → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js parse-complexity --input-file /tmp/gv-complexity.json
 
 반환: { prd, formatted, quality, complexity: { level, score, reasoning, dimensions } }
+**[필수] `formatted`는 `parse-prd` CLI가 반환한 마크다운 전체를 그대로 포함하세요. 요약하거나 생략하지 마세요. 아키텍처 다이어그램, 화면 흐름, 와이어프레임이 모두 포함되어야 합니다.**
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
 
 ### 2.B: CEO 확인 (메인 세션)
 
-PRD 마크다운(`formatted`)을 CEO에게 표시합니다.
+PRD 마크다운(`formatted`)을 CEO에게 **전체** 표시합니다. 요약하거나 축약하지 않습니다.
+아키텍처 다이어그램(Mermaid), 화면 흐름, 와이어프레임, 기술 요구사항이 모두 포함되어야 합니다.
 
 **`quality.adequate === false`이면** 품질 경고를 표시합니다:
 

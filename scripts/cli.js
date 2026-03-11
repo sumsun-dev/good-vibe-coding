@@ -55,6 +55,7 @@ const COMMAND_MAP = {
   'review-prompt': 'discussion',
   'check-convergence': 'discussion',
   'group-agents': 'discussion',
+  'select-discussion-reviewers': 'discussion',
   'discussion-dispatch-plan': 'discussion',
   'execution-dispatch-plan': 'discussion',
   'generate-prd-prompt': 'discussion',

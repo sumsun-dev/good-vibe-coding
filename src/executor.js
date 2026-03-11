@@ -9,6 +9,7 @@ import {
   computeStateTransition,
   createInitialExecutionState,
 } from '../scripts/lib/engine/execution-loop.js';
+import { buildExecutionPlan } from '../scripts/lib/engine/task-distributor.js';
 import {
   selectReviewers,
   buildTaskReviewPrompt,
@@ -400,15 +401,22 @@ export class Executor {
    */
   async _initProject(plan) {
     const projectId = `sdk-${Date.now()}-${randomBytes(3).toString('hex')}`;
+    const tasks = plan.tasks || [];
+    const team = plan.team || [];
+    const stateOptions = {};
+    if (tasks.length > 0) {
+      const execPlan = buildExecutionPlan(tasks, team);
+      if (execPlan.parallelGroups) stateOptions.parallelGroups = execPlan.parallelGroups;
+    }
     const project = {
       id: projectId,
       name: plan.document ? 'SDK Project' : 'Unnamed',
       type: 'custom',
       status: 'executing',
-      team: plan.team || [],
-      tasks: plan.tasks || [],
+      team,
+      tasks,
       discussion: { planDocument: plan.document || '', rounds: [] },
-      executionState: createInitialExecutionState('auto'),
+      executionState: createInitialExecutionState('auto', stateOptions),
     };
     await this.storage.write(projectId, project);
     return projectId;

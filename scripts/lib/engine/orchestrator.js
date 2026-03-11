@@ -17,6 +17,63 @@ function truncateSection(text) {
 }
 
 /**
+ * PRD 전체를 에이전트 프롬프트용 마크다운으로 포맷한다.
+ * overview/coreFeatures/successCriteria뿐 아니라 아키텍처/화면/기술요구사항까지 포함한다.
+ * @param {object} prd - PRD 객체
+ * @returns {string} 마크다운
+ */
+function formatPrdForPrompt(prd) {
+  const sections = [];
+  sections.push(`- 개요: ${prd.overview || ''}`);
+
+  const features = prd.coreFeatures || [];
+  if (features.length > 0) {
+    sections.push(`- 핵심 기능:\n${features.map((f, i) => `  ${i + 1}. ${f}`).join('\n')}`);
+  }
+
+  const scenarios = prd.userScenarios || [];
+  if (scenarios.length > 0) {
+    sections.push(`- 사용자 시나리오:\n${scenarios.map((s) => `  - ${s}`).join('\n')}`);
+  }
+
+  const tech = prd.technicalRequirements || {};
+  const stack = (tech.stack || []).join(', ');
+  const integrations = (tech.integrations || []).join(', ');
+  const constraints = (tech.constraints || []).join(', ');
+  if (stack || integrations || constraints) {
+    sections.push(
+      `- 기술 요구사항:\n  - 스택: ${stack || '(없음)'}\n  - 외부 연동: ${integrations || '(없음)'}\n  - 제약사항: ${constraints || '(없음)'}`,
+    );
+  }
+
+  const criteria = prd.successCriteria || [];
+  if (criteria.length > 0) {
+    sections.push(`- 성공 기준:\n${criteria.map((c, i) => `  ${i + 1}. ${c}`).join('\n')}`);
+  }
+
+  if (prd.architectureDiagram) {
+    sections.push(`- 시스템 아키텍처:\n\`\`\`mermaid\n${prd.architectureDiagram}\n\`\`\``);
+  }
+
+  if (prd.screenFlow) {
+    sections.push(`- 화면 흐름:\n\`\`\`mermaid\n${prd.screenFlow}\n\`\`\``);
+  }
+
+  if (prd.wireframes) {
+    sections.push(`- 화면 레이아웃:\n\`\`\`\n${prd.wireframes}\n\`\`\``);
+  }
+
+  const scope = prd.estimatedScope || {};
+  if (scope.complexity) {
+    sections.push(
+      `- 예상 규모: ${scope.complexity}${scope.reasoning ? ` — ${scope.reasoning}` : ''}`,
+    );
+  }
+
+  return sections.join('\n');
+}
+
+/**
  * 피드백 내 중복 라인을 제거한다 (대소문자 무시, 앞뒤 공백 무시).
  * @param {string} feedback - 원본 피드백 문자열
  * @returns {string} 중복 제거된 피드백
@@ -193,15 +250,23 @@ ${buildRoleQuestions(teamMember)}
 - 이름: ${project.name}
 - 유형: ${project.type}
 - 설명: ${project.description}
-${project.codebaseInfo ? `\n## 코드베이스 정보\n- 기술 스택: ${(project.codebaseInfo.techStack || []).join(', ')}\n- 파일 구조: ${project.codebaseInfo.fileStructure || '없음'}\n` : ''}${context.prd ? `\n## PRD (CEO 승인 완료)\n- 개요: ${context.prd.overview || ''}\n- 핵심 기능: ${(context.prd.coreFeatures || []).join(', ')}\n- 성공 기준: ${(context.prd.successCriteria || []).join('; ')}\n이 PRD 방향을 유지하면서 분석하세요.\n` : ''}
+${project.codebaseInfo ? `\n## 코드베이스 정보\n- 기술 스택: ${(project.codebaseInfo.techStack || []).join(', ')}\n- 파일 구조: ${project.codebaseInfo.fileStructure || '없음'}\n` : ''}${context.prd ? `\n## PRD (CEO 승인 완료)\n${formatPrdForPrompt(context.prd)}\n이 PRD의 아키텍처, 화면 구성, 기술 요구사항을 반영하여 분석하세요.\n` : ''}
 ## 분석 요청 (라운드 ${round})
 당신의 역할과 전문성에 기반하여 이 프로젝트를 분석하세요.
 당신의 말투와 성격으로 응답하세요.`;
 
   if (context.previousSynthesis) {
-    // 라운드 2 이상에서는 컨텍스트 압축으로 O(n²) 토큰 증가 방지
-    const compressedPrev = compressPreviousContext(context.previousSynthesis);
-    user += `\n\n## 이전 라운드 기획서\n다음은 이전 라운드에서 종합된 기획서입니다. 이를 기반으로 수정/보완 의견을 제시하세요.\n\n${compressedPrev}`;
+    // 라운드 3+에서는 핵심 결정만 추출하여 더 공격적으로 압축
+    const round = context.round || 2;
+    const compressedPrev =
+      round >= 3
+        ? extractKeyDecisions(context.previousSynthesis)
+        : compressPreviousContext(context.previousSynthesis);
+    const header =
+      round >= 3
+        ? '이전 라운드 핵심 결정 사항입니다. 미합의/블로커 해결에 집중하세요.'
+        : '이전 라운드에서 종합된 기획서입니다. 이를 기반으로 수정/보완 의견을 제시하세요.';
+    user += `\n\n## 이전 라운드 기획서\n${header}\n\n${compressedPrev}`;
   }
 
   if (context.feedbackForMe) {
@@ -300,7 +365,7 @@ graph TD
 - 이름: ${project.name}
 - 유형: ${project.type}
 - 설명: ${project.description}
-${project.codebaseInfo ? `\n## 코드베이스 정보\n- 기술 스택: ${(project.codebaseInfo.techStack || []).join(', ')}\n- 파일 구조: ${project.codebaseInfo.fileStructure || '없음'}\n` : ''}${context.prd ? `\n## PRD (CEO 승인 완료)\n- 개요: ${context.prd.overview || ''}\n- 핵심 기능: ${(context.prd.coreFeatures || []).join(', ')}\n- 성공 기준: ${(context.prd.successCriteria || []).join('; ')}\n기획서는 이 PRD 방향을 유지하되, 팀 분석을 반영하여 더 구체화하세요.\n` : ''}
+${project.codebaseInfo ? `\n## 코드베이스 정보\n- 기술 스택: ${(project.codebaseInfo.techStack || []).join(', ')}\n- 파일 구조: ${project.codebaseInfo.fileStructure || '없음'}\n` : ''}${context.prd ? `\n## PRD (CEO 승인 완료)\n${formatPrdForPrompt(context.prd)}\n기획서는 이 PRD의 아키텍처, 화면 구성, 기술 요구사항을 유지하되, 팀 분석을 반영하여 더 구체화하세요.\n` : ''}
 ## 팀원별 분석 결과
 
 ${analysisSection}` +
@@ -498,4 +563,81 @@ export function groupAgentsForParallelDispatch(team) {
   }
 
   return tiers.filter((tier) => tier.length > 0);
+}
+
+/**
+ * 토론 리뷰용 핵심 리뷰어를 선정한다.
+ * 유니버셜 리뷰어(CTO, QA, Security) 우선, 나머지는 priority 순으로 다양성 확보.
+ * 팀 규모가 maxReviewers 이하면 전원 리뷰.
+ * @param {Array<object>} agents - 전체 에이전트 배열
+ * @param {number} [maxReviewers] - 최대 리뷰어 수 (기본: config.discussion.maxReviewers)
+ * @returns {Array<object>} 선정된 리뷰어 배열
+ */
+export function selectDiscussionReviewers(agents, maxReviewers) {
+  const max = maxReviewers || config.discussion.maxReviewers || 3;
+  if (!agents || agents.length <= max) return agents || [];
+
+  const UNIVERSAL_ROLES = ['cto', 'qa', 'security'];
+  const universal = agents.filter((a) => UNIVERSAL_ROLES.includes(a.roleId));
+  const others = agents.filter((a) => !UNIVERSAL_ROLES.includes(a.roleId));
+
+  const selected = [...universal.slice(0, max)];
+  if (selected.length < max) {
+    const sorted = [...others].sort(
+      (a, b) => (a.discussionPriority || 5) - (b.discussionPriority || 5),
+    );
+    for (const agent of sorted) {
+      if (selected.length >= max) break;
+      selected.push(agent);
+    }
+  }
+
+  return selected.slice(0, max);
+}
+
+/**
+ * 이전 기획서에서 핵심 결정 사항만 추출한다 (라운드 3+ 컨텍스트 압축용).
+ * compressPreviousContext보다 더 공격적으로 압축하여 결정/블로커/작업 분배만 전달한다.
+ * @param {string} synthesis - 이전 라운드 기획서
+ * @param {number} [maxLength=1200] - 최대 길이
+ * @returns {string} 핵심 결정 요약
+ */
+export function extractKeyDecisions(synthesis, maxLength = 1200) {
+  if (!synthesis || typeof synthesis !== 'string') return '';
+  if (synthesis.length <= maxLength) return synthesis;
+
+  const lines = synthesis.split('\n');
+  const decisions = [];
+
+  const decisionHeaders =
+    /^#+\s*(기술 스택|아키텍처|역할별|일정|작업 분배|외부 서비스|리스크|미합의|CEO|결정|블로커)/;
+  const skipHeaders = /^#+\s*(프로젝트 개요|배경|목표|참고|요약)/;
+
+  let include = false;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    if (/^#{1,3}\s/.test(trimmed)) {
+      if (decisionHeaders.test(trimmed)) {
+        include = true;
+        decisions.push(trimmed);
+      } else if (skipHeaders.test(trimmed)) {
+        include = false;
+      } else {
+        include = false;
+        decisions.push(trimmed);
+      }
+      continue;
+    }
+
+    if (include && (/^[-*]\s/.test(trimmed) || /^\d+\.\s/.test(trimmed))) {
+      decisions.push(line);
+    }
+  }
+
+  const result = decisions.join('\n').trim();
+  if (!result) return truncateText(synthesis, maxLength, '\n...(생략)');
+  if (result.length <= maxLength) return result;
+  return truncateText(result, maxLength, '\n...(생략)');
 }

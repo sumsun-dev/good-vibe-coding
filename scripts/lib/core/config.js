@@ -5,7 +5,12 @@
 
 export const config = Object.freeze({
   convergence: Object.freeze({ threshold: 0.8, maxRounds: 3 }),
-  discussion: Object.freeze({ parallelTiers: true }),
+  discussion: Object.freeze({
+    parallelTiers: true,
+    maxReviewers: 3,
+    reviewModel: 'haiku',
+    stagnationThreshold: 0.05,
+  }),
   messaging: Object.freeze({
     enabled: false,
     maxMessages: 100,

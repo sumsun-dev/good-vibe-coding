@@ -48,6 +48,7 @@ import {
   isValidExecutionState,
 } from './state-machine.js';
 import { extractContributions, getTasksForPhase } from './execution-utils.js';
+import { buildExecutionPlan } from './task-distributor.js';
 
 /**
  * 실행 상태를 전이시키고 영속화한다.
@@ -169,9 +170,13 @@ export async function initExecution(projectId, options = {}) {
     throw inputError('기존 실행 상태가 손상되었습니다. resume=false로 재시작하세요.');
   }
 
-  // 새 실행 초기화
+  // 새 실행 초기화 — parallelGroups 자동 계산
   const stateOptions = batchSize ? { batchSize } : {};
   if (messaging) stateOptions.messaging = true;
+  if (project.tasks && project.tasks.length > 0) {
+    const plan = buildExecutionPlan(project.tasks, project.team || []);
+    if (plan.parallelGroups) stateOptions.parallelGroups = plan.parallelGroups;
+  }
   const initialState = createInitialExecutionState(mode, stateOptions);
   const updatedProject = await updateExecutionState(projectId, initialState);
 

@@ -11,6 +11,7 @@ import {
   buildReviewPrompt,
   checkConvergence,
   parseReviewOutput,
+  selectDiscussionReviewers,
 } from '../scripts/lib/engine/orchestrator.js';
 import { callLLM } from '../scripts/lib/llm/llm-provider.js';
 import { config } from '../scripts/lib/core/config.js';
@@ -24,13 +25,15 @@ export class Discusser {
    * @param {object} options.storage - 스토리지 인터페이스
    * @param {object} [options.hooks] - 이벤트 훅
    * @param {boolean} [options.parallelTiers] - Tier 간 병렬 실행 여부 (기본: config.discussion.parallelTiers)
+   * @param {string} [options.reviewModel] - 리뷰에 사용할 경량 모델 (기본: config.discussion.reviewModel)
    */
-  constructor({ provider, model, storage, hooks = {}, parallelTiers }) {
+  constructor({ provider, model, storage, hooks = {}, parallelTiers, reviewModel }) {
     this.provider = provider;
     this.model = model;
     this.storage = storage;
     this.hooks = hooks;
     this.parallelTiers = parallelTiers ?? config.discussion.parallelTiers;
+    this.reviewModel = reviewModel ?? config.discussion.reviewModel ?? model;
   }
 
   /**
@@ -106,11 +109,12 @@ export class Discusser {
       const planResponse = await this._call('synthesis', synthUser, synthSystem);
       lastPlan = planResponse.text;
 
-      // 3) 전원 리뷰 (병렬)
+      // 3) 핵심 리뷰어 선정 + 경량 모델로 리뷰 (병렬)
+      const reviewers = selectDiscussionReviewers(agents);
       const reviews = await Promise.all(
-        agents.map(async (member) => {
+        reviewers.map(async (member) => {
           const { system, user } = buildReviewPrompt(member, lastPlan, round);
-          const response = await this._call(member.roleId, user, system);
+          const response = await this._call(member.roleId, user, system, this.reviewModel);
           return { roleId: member.roleId, text: response.text };
         }),
       );
@@ -118,7 +122,6 @@ export class Discusser {
       // 4) 수렴 체크
       const parsed = reviews.map((r) => parseReviewOutput(r.text));
       const convergence = checkConvergence(parsed);
-      lastConvergence = convergence;
 
       // 5) 비승인 에이전트의 피드백을 역할별로 수집 → 다음 라운드에 주입
       feedbackByRole = {};
@@ -135,6 +138,23 @@ export class Discusser {
         await this._persist(team, result);
         return result;
       }
+
+      // 6) 조기 수렴: 라운드 2+에서 개선 정체 + 블로커 없으면 탈출
+      if (round >= 2 && lastConvergence) {
+        const improvement = convergence.approvalRate - lastConvergence.approvalRate;
+        const threshold = config.discussion.stagnationThreshold ?? 0.05;
+        if (improvement < threshold && convergence.blockers.length === 0) {
+          const result = {
+            document: lastPlan,
+            rounds: round,
+            convergence: { ...convergence, converged: true, reason: 'stagnation' },
+          };
+          await this._persist(team, result);
+          return result;
+        }
+      }
+
+      lastConvergence = convergence;
     }
 
     const result = {
@@ -175,11 +195,12 @@ export class Discusser {
    * @param {string} roleId - 역할 ID
    * @param {string} prompt - user 프롬프트
    * @param {string} [systemMessage] - system 프롬프트 (프롬프트 캐싱용)
+   * @param {string} [model] - 모델 오버라이드 (리뷰용 경량 모델 등)
    * @returns {Promise<{ text: string, provider: string, model: string, tokenCount: number }>}
    */
-  async _call(roleId, prompt, systemMessage) {
+  async _call(roleId, prompt, systemMessage, model) {
     const response = await callLLM(this.provider, prompt, {
-      model: this.model,
+      model: model || this.model,
       ...(systemMessage ? { systemMessage } : {}),
     });
     await this.hooks.onAgentCall?.(roleId, response);
