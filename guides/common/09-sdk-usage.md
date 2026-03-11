@@ -170,7 +170,7 @@ const result = await gv.execute(plan, {
 | `completed`          | 모든 Phase가 성공적으로 완료됨               | `gv.report(result)`로 보고서 생성                                                   |
 | `paused`             | 에스컬레이션 대기 또는 CEO 개입 필요         | `onEscalation` Hook 확인, 같은 plan으로 `execute()` 재호출                          |
 | `stuck`              | 동일 스텝이 3회 이상 반복됨 (무한 루프 감지) | `journal`에서 반복 스텝 확인, plan 수정 후 재실행 또는 `executeSteps()`로 수동 제어 |
-| `max-steps-exceeded` | 최대 스텝 수(기본 500) 초과                  | 태스크가 너무 많거나 수정 루프가 반복됨 — plan 단순화 또는 `maxSteps` 옵션 증가     |
+| `max-steps-exceeded` | 최대 스텝 수(기본 200) 초과                  | 태스크가 너무 많거나 수정 루프가 반복됨 — plan 단순화 또는 `maxSteps` 옵션 증가     |
 | `not-started`        | 실행 상태가 초기화되지 않음                  | plan에 tasks/document가 포함되어 있는지 확인                                        |
 
 ### `executeSteps(plan)`
@@ -572,11 +572,15 @@ const executor = new Executor({
   },
 
   // 고급 옵션
-  maxSteps: 500, // 세션당 최대 스텝 수 (무한 루프 방지)
+  maxSteps: 200, // 세션당 최대 스텝 수 (무한 루프 방지)
   enableCrossModel: true, // Gemini CLI로 교차 리뷰 활성화
   providerConfig: {
-    // 교차 리뷰 프로바이더 설정
-    gemini: { model: 'gemini-2.0-flash' },
+    // 교차 리뷰 프로바이더 설정 (providers.json 형식)
+    defaultProvider: 'claude',
+    reviewStrategy: 'cross-model', // 'single' | 'cross-model'
+    providers: {
+      gemini: { enabled: true, model: 'gemini-2.0-flash' },
+    },
   },
   messageBus: null, // 에이전트 간 메시징 (리뷰 대화, 전문가 상담)
   worktreeIsolation: false, // Phase별 git worktree 격리
@@ -585,14 +589,14 @@ const executor = new Executor({
 const result = await executor.run(plan);
 ```
 
-| 옵션                | 기본값  | 설명                                                        |
-| ------------------- | ------- | ----------------------------------------------------------- |
-| `maxSteps`          | `500`   | 세션당 최대 스텝 수. 초과 시 `max-steps-exceeded` 반환      |
-| `enableCrossModel`  | `false` | Gemini CLI로 교차 리뷰 수행. Gemini 미설치 시 graceful 폴백 |
-| `providerConfig`    | `null`  | 교차 리뷰 프로바이더별 모델 설정                            |
-| `messageBus`        | `null`  | 에이전트 간 메시징 버스 (리뷰 질문/답변, 전문가 상담)       |
-| `worktreeIsolation` | `false` | Phase별 독립 git worktree 생성/정리                         |
-| `projectDir`        | `null`  | 프로젝트 디렉토리 경로 (`worktreeIsolation` 사용 시 필수)   |
+| 옵션                | 기본값  | 설명                                                                   |
+| ------------------- | ------- | ---------------------------------------------------------------------- |
+| `maxSteps`          | `200`   | 세션당 최대 스텝 수. 초과 시 `max-steps-exceeded` 반환                 |
+| `enableCrossModel`  | `false` | Gemini CLI로 교차 리뷰 수행. Gemini 미설치 시 graceful 폴백            |
+| `providerConfig`    | `null`  | 교차 리뷰 설정 (`{ defaultProvider, reviewStrategy, providers }` 형식) |
+| `messageBus`        | `null`  | 에이전트 간 메시징 버스 (리뷰 질문/답변, 전문가 상담)                  |
+| `worktreeIsolation` | `false` | Phase별 독립 git worktree 생성/정리                                    |
+| `projectDir`        | `null`  | 프로젝트 디렉토리 경로 (`worktreeIsolation` 사용 시 필수)              |
 
 ---
 
