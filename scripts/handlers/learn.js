@@ -47,7 +47,6 @@ export const commands = {
       {
         name: '공통 기초',
         guides: [
-          { topic: '퀵스타트', file: 'common/00-quick-start.md', title: '6단계로 프로젝트 끝내기' },
           {
             topic: '기초',
             file: 'common/01-what-is-claude-code.md',
@@ -61,7 +60,18 @@ export const commands = {
           },
           { topic: '에이전트', file: 'common/04-agents.md', title: '에이전트 이해하기' },
           { topic: '자동화', file: 'common/05-hooks-and-automation.md', title: '훅과 자동화' },
+        ],
+      },
+      {
+        name: '활용',
+        guides: [
+          { topic: '연동', file: 'common/06-integrations.md', title: '연동 가이드' },
+          { topic: '예제', file: 'common/07-examples.md', title: '실전 예제' },
+          { topic: '문제해결', file: 'common/08-troubleshooting.md', title: '문제해결' },
+          { topic: 'SDK', file: 'common/09-sdk-usage.md', title: 'SDK 사용법' },
+          { topic: '실행모드', file: 'common/10-execution-modes.md', title: '실행 모드 가이드' },
           { topic: 'CEO', file: 'common/11-ceo-guide.md', title: 'CEO 가이드 (비개발자용)' },
+          { topic: '퀵스타트', file: 'common/00-quick-start.md', title: '6단계로 프로젝트 끝내기' },
           {
             topic: '레퍼런스',
             file: 'common/03-commands-reference.md',

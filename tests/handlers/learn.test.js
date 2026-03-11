@@ -25,13 +25,14 @@ describe('learn handler', () => {
 
       const result = output.mock.calls[0][0];
       expect(result.categories).toBeInstanceOf(Array);
-      expect(result.categories.length).toBe(6);
+      expect(result.categories.length).toBe(7);
       expect(result.categories[0].name).toBe('공통 기초');
-      expect(result.categories[1].name).toBe('개발자 심화');
-      expect(result.categories[2].name).toBe('PM/기획자 심화');
-      expect(result.categories[3].name).toBe('디자이너 심화');
-      expect(result.categories[4].name).toBe('콘텐츠 크리에이터 심화');
-      expect(result.categories[5].name).toBe('리서처 심화');
+      expect(result.categories[1].name).toBe('활용');
+      expect(result.categories[2].name).toBe('개발자 심화');
+      expect(result.categories[3].name).toBe('PM/기획자 심화');
+      expect(result.categories[4].name).toBe('디자이너 심화');
+      expect(result.categories[5].name).toBe('콘텐츠 크리에이터 심화');
+      expect(result.categories[6].name).toBe('리서처 심화');
       expect(result.guideMap).toBeDefined();
       expect(result.guideMap['기초']).toBe('common/01-what-is-claude-code.md');
       expect(result.guideMap['TDD']).toBe('developer/tdd-workflow.md');
