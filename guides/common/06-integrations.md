@@ -29,21 +29,99 @@ gh auth login
 # → GitHub.com 선택 → HTTPS 선택 → 브라우저로 인증
 ```
 
+### 기본 모드 vs 협업 모드
+
+GitHub 연동에는 두 가지 모드가 있습니다:
+
+| 모드                   | `github.enabled` | 동작                                              |
+| ---------------------- | ---------------- | ------------------------------------------------- |
+| **기본 모드** (기본값) | `false`          | main 브랜치에 직접 커밋. branch/PR 없음           |
+| **협업 모드**          | `true`           | feature branch 자동 생성 → Phase별 커밋 → 자동 PR |
+
 ### /hello에서 자동 연동
 
 `good-vibe:hello` 실행 시 gh CLI가 설치 + 인증되어 있으면:
 
 - 비공개/공개 저장소 중 선택 가능
 - 저장소 생성 → git init → 초기 커밋 → push 자동 처리
-- 이후 `good-vibe:execute`에서 작성한 코드가 자동으로 커밋됨
+- GitHub 협업 모드 사용 여부 선택 가능
 
-### GitHub Actions CI
+### GitHub 협업 워크플로우
 
-`good-vibe:execute`가 코드를 생성한 뒤, CI 파이프라인을 자동으로 설정할 수 있습니다.
-DevOps 역할 에이전트가 팀에 포함되어 있으면, 토론 시 CI/CD 전략을 제안합니다.
+`github.enabled = true`로 설정하면 전체 흐름이 달라집니다:
+
+```
+good-vibe:execute 시작
+  → feature branch 생성 (gv/{slug}-{timestamp})
+  → Phase별 conventional commit
+     feat(phase-1): API 라우터 구현
+     test(phase-2): API 통합 테스트
+     fix(phase-3): 리뷰 반영 수정
+  → 실행 완료
+  → 자동 PR 생성 (품질 게이트 결과 + 리뷰 요약 포함)
+  → CEO가 GitHub에서 직접 merge 승인
+```
+
+### 브랜치 네이밍 전략
+
+`github.branchStrategy` 설정으로 브랜치 이름 형식을 선택합니다:
+
+| 전략        | 형식                     | 사용 상황              |
+| ----------- | ------------------------ | ---------------------- |
+| `timestamp` | `gv/{slug}-202603110930` | 기본값. 중복 없이 고유 |
+| `phase`     | `gv/{slug}-phase-1`      | Phase별 별도 브랜치    |
+| `custom`    | 사용자 지정 이름         | 수동 제어              |
+
+### PR 자동 생성
+
+실행 완료 시 자동으로 PR이 생성됩니다. PR 본문에 포함되는 내용:
+
+- 실행 요약 (모드, 팀, Phase 수)
+- 품질 게이트 결과
+- 리뷰 요약
+- 생성된 파일 목록
+
+수동으로 PR을 생성하려면 `finalize-pr` 커맨드를 사용하세요.
+merge 보고서만 미리보기하려면 `build-merge-report` 커맨드를 사용하세요.
+
+### 협업 모드 설정값
+
+| 설정                       | 기본값      | 설명                                  |
+| -------------------------- | ----------- | ------------------------------------- |
+| `github.enabled`           | `false`     | 협업 모드 활성화                      |
+| `github.branchStrategy`    | `timestamp` | 브랜치 네이밍 전략                    |
+| `github.baseBranch`        | `main`      | 베이스 브랜치                         |
+| `github.autoPush`          | `true`      | 브랜치 자동 push                      |
+| `github.autoCreatePR`      | `true`      | 실행 완료 후 자동 PR 생성             |
+| `github.prDraft`           | `false`     | PR을 Draft로 생성                     |
+| `github.worktreeIsolation` | `false`     | Phase별 git worktree 격리 (아래 참고) |
+
+### Worktree 격리 (고급)
+
+`github.worktreeIsolation = true`로 설정하면 각 Phase가 독립된 git worktree에서 실행됩니다.
+Phase 간 파일 충돌을 방지할 때 유용합니다.
+
+- `good-vibe:new`에서 GitHub를 선택하면 worktree 격리 옵션이 제시됩니다
+- Phase 시작 시 worktree 생성 → Phase 완료 시 자동 정리
+- git이 설치되지 않았거나 worktree 생성 실패 시 graceful skip (일반 모드로 폴백)
+
+### GitHub Actions CI 자동 생성
+
+`good-vibe:execute`가 코드를 생성한 뒤, 프로젝트의 기술 스택을 감지하여 CI 워크플로우를 자동 생성합니다.
+
+지원 스택:
+
+| 기술 스택 | CI 내용                |
+| --------- | ---------------------- |
+| Node.js   | npm install → npm test |
+| Python    | pip install → pytest   |
+| Go        | go build → go test     |
+| Java      | mvn compile → mvn test |
+
+DevOps 역할 에이전트가 팀에 포함되어 있으면, 토론 시 CI/CD 전략을 추가로 제안합니다.
 
 ```yaml
-# .github/workflows/ci.yml 예시
+# .github/workflows/ci.yml 자동 생성 예시 (Node.js)
 name: CI
 on: [push, pull_request]
 jobs:
