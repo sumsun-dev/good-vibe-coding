@@ -43,7 +43,7 @@ good-vibe:new
 
 ---
 
-## 예제 2: REST API 서버 (plan-execute, 약 15분)
+## 예제 2: REST API 서버 (plan-execute, 약 10-15분)
 
 중간 규모 웹앱이나 API 서버를 만들 때.
 
@@ -62,9 +62,8 @@ good-vibe:new
 2. 복잡도 분석: medium → plan-execute 선택
 3. 팀 구성: CTO, PO, Fullstack, Backend, QA — 5명
 
-4. good-vibe:discuss (1라운드)
-   [전체 병렬] CTO, PO, Fullstack, Backend, QA, Security 동시 분석
-   → 종합 → 리뷰 → 승인율 85% → 수렴!
+4. CTO+PO 빠른 분석
+   CTO(아키텍처) + PO(요구사항) 병렬 분석 → 종합
 
 5. 자동 승인 → 작업 분배 (Phase 3개, 태스크 8개)
    Phase 1: DB 스키마 + 인증 시스템

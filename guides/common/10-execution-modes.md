@@ -35,15 +35,15 @@ good-vibe:new → CTO 분석 → 실행 → QA 리뷰 → 완료
 
 ### plan-execute
 
-중간 규모 프로젝트용. 1라운드 토론 후 자동으로 실행까지 이어집니다.
+중간 규모 프로젝트용. CTO+PO 빠른 분석 후 자동으로 실행까지 이어집니다.
 
 - **팀 규모:** 3-5명
-- **토론:** 1라운드
-- **승인:** 자동 (토론 후 바로 실행)
+- **토론:** 생략 (CTO+PO 빠른 분석)
+- **승인:** 자동 (분석 확인 후 바로 실행)
 - **적합한 프로젝트:** 웹앱, API 서버, 중소형 서비스
 
 ```
-good-vibe:new → good-vibe:discuss (1라운드) → 자동 승인 → good-vibe:execute → 완료
+good-vibe:new → CTO+PO 분석 → 자동 승인 → good-vibe:execute → 완료
 ```
 
 ### plan-only

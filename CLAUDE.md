@@ -18,11 +18,11 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 
 ## 프로젝트 모드 (3가지)
 
-| 모드             | 팀 규모 | 토론         | 추천 상황           | `good-vibe:new`에서의 자동 진행               |
-| ---------------- | ------- | ------------ | ------------------- | --------------------------------------------- |
-| **quick-build**  | 2-3명   | 생략         | 간단한 봇, 스크립트 | CTO 분석 → 작업 분배 → 실행 → QA 리뷰 → 완료  |
-| **plan-execute** | 3-5명   | 1라운드      | 웹앱, API 서버      | discuss(1라운드) → 자동 승인 → execute → 완료 |
-| **plan-only**    | 5-8명   | 최대 3라운드 | 대규모 시스템       | discuss(수렴까지) → CEO 승인 → execute → 완료 |
+| 모드             | 팀 규모 | 토론                    | 추천 상황           | `good-vibe:new`에서의 자동 진행               |
+| ---------------- | ------- | ----------------------- | ------------------- | --------------------------------------------- |
+| **quick-build**  | 2-3명   | 생략                    | 간단한 봇, 스크립트 | CTO 분석 → 작업 분배 → 실행 → QA 리뷰 → 완료  |
+| **plan-execute** | 3-5명   | 생략 (CTO+PO 빠른 분석) | 웹앱, API 서버      | CTO+PO 분석 → 자동 승인 → execute → 완료      |
+| **plan-only**    | 5-8명   | 최대 3라운드            | 대규모 시스템       | discuss(수렴까지) → CEO 승인 → execute → 완료 |
 
 ## 실행 모드 (2가지)
 
@@ -98,8 +98,8 @@ good-vibe:new "텔레그램 봇 만들어줘"
 good-vibe:new "팀 프로젝트 관리 웹앱"
   → 복잡도: medium → plan-execute 자동 선택
   → 팀 구성: CTO, PO, Fullstack, Frontend, QA (5명)
-  → good-vibe:discuss 자동 실행 (1라운드)
-     → Tier별 병렬 분석 → 종합 → 리뷰 → 수렴 확인
+  → CTO+PO 빠른 분석 (Task 1회)
+     → CTO+PO 병렬 분석 → 종합
   → 기획서 자동 승인 → 작업 분배
   → good-vibe:execute 자동 실행
      → Phase별: 실행 → 구체화 → 리뷰 → 품질게이트 → 커밋
@@ -131,16 +131,16 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 
 ## 혼동 방지
 
-| 비교                                                        | 차이                                                                                                                 |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `good-vibe:new` vs `good-vibe:new-project`                  | 자동(복잡도 분석 → 추천) vs 수동(직접 선택)                                                                          |
-| `good-vibe:status` vs `good-vibe:projects`                  | 현재 프로젝트만 vs 전체 목록                                                                                         |
-| `good-vibe:hello` → `good-vibe:new` vs `good-vibe:new` 단독 | hello는 환경+개인설정(1회), new는 프로젝트 시작. 처음이면 hello 먼저, 이후는 new만                                   |
-| `project.mode` vs `executionState.mode`                     | 프로젝트 워크플로우(plan-only/plan-execute/quick-build) vs 실행 인터랙션(interactive/semi-auto/auto)                 |
-| plan-only vs plan-execute                                   | 둘 다 실행까지 감. plan-only는 good-vibe:approve 후 수동 good-vibe:execute, plan-execute는 자동 연결                 |
-| approve 되돌리기                                            | 실행 시작 전이라면 `good-vibe:discuss --reset`으로 approved → planning 복귀 가능                                     |
-| `good-vibe:new` vs `good-vibe:modify`                       | `new`는 새 프로젝트 (아이디어 → 팀 구성 → 토론 → 실행), `modify`는 완료된 프로젝트의 기능 추가/수정 (기존 맥락 유지) |
-| `good-vibe:new`에서 "이어서"                                | 기존 프로젝트 전체 목록 → 선택 → 상태별 다음 커맨드 안내. 직접 실행은 안 함 (detect → offer → route)                 |
+| 비교                                                        | 차이                                                                                                                    |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `good-vibe:new` vs `good-vibe:new-project`                  | 자동(복잡도 분석 → 추천) vs 수동(직접 선택)                                                                             |
+| `good-vibe:status` vs `good-vibe:projects`                  | 현재 프로젝트만 vs 전체 목록                                                                                            |
+| `good-vibe:hello` → `good-vibe:new` vs `good-vibe:new` 단독 | hello는 환경+개인설정(1회), new는 프로젝트 시작. 처음이면 hello 먼저, 이후는 new만                                      |
+| `project.mode` vs `executionState.mode`                     | 프로젝트 워크플로우(plan-only/plan-execute/quick-build) vs 실행 인터랙션(interactive/semi-auto/auto)                    |
+| plan-only vs plan-execute                                   | 둘 다 실행까지 감. plan-only는 토론(최대 3라운드)+approve 후 수동 execute, plan-execute는 CTO+PO 빠른 분석 후 자동 연결 |
+| approve 되돌리기                                            | 실행 시작 전이라면 `good-vibe:discuss --reset`으로 approved → planning 복귀 가능                                        |
+| `good-vibe:new` vs `good-vibe:modify`                       | `new`는 새 프로젝트 (아이디어 → 팀 구성 → 토론 → 실행), `modify`는 완료된 프로젝트의 기능 추가/수정 (기존 맥락 유지)    |
+| `good-vibe:new`에서 "이어서"                                | 기존 프로젝트 전체 목록 → 선택 → 상태별 다음 커맨드 안내. 직접 실행은 안 함 (detect → offer → route)                    |
 
 ## 기술 스택
 

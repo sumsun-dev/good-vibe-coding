@@ -419,7 +419,7 @@ questions:
       - label: "바로 만들기"  (simple일 때 Recommended)
         description: "3-5분 · 2-3명 팀 · 토론 없이 바로 만들고 QA 리뷰"
       - label: "간단 기획 후 만들기"  (medium일 때 Recommended)
-        description: "10-20분 · 3-5명 팀 · 1라운드 토론 후 자동 실행"
+        description: "10-15분 · 3-5명 팀 · CTO+PO 빠른 분석 후 자동 실행"
       - label: "팀 토론 후 만들기"  (complex일 때 Recommended)
         description: "20-40분 · 5-8명 팀 · 최대 3라운드 토론 + CEO 승인"
   - question: "프로젝트 폴더를 생성할까요?"
@@ -795,37 +795,64 @@ echo '{"id":"{프로젝트ID}","status":"completed"}' | node ${CLAUDE_PLUGIN_ROO
 
 ### 모드 B: 간단 기획 후 만들기 (plan-execute)
 
-> **컨텍스트 보호:** discuss 전체와 execute의 각 Phase를 독립 Task tool로 실행합니다.
+> **컨텍스트 보호:** CTO+PO 빠른 분석과 execute의 각 Phase를 독립 Task tool로 실행합니다.
 > 메인 세션에는 요약만 반환되어 컨텍스트가 ~15KB 이내로 유지됩니다.
 
-#### B-1. 토론 + CEO 확인 (Ralph Loop)
+#### B-1. CTO+PO 빠른 분석 + CEO 확인 (Ralph Loop)
 
-토론을 라운드 단위로 서브에이전트에서 실행하고, CEO 확인은 메인 세션에서 수행합니다.
+CTO와 PO가 빠르게 분석하고, CEO 확인은 메인 세션에서 수행합니다.
+토론(discuss) 대신 2명 분석 + 종합으로 ~3-5분 내 완료. 실행 중 Phase별 크로스 리뷰가 품질을 보장합니다.
 
 **변수 초기화:**
 
 - `ceoFeedback = null`
-- `roundNumber = 1`
 
-##### B-1a. 토론 라운드 실행 (Task tool)
+##### B-1a. CTO+PO 빠른 분석 (Task tool)
 
 Task tool 프롬프트:
 
 ```
-프로젝트 ID: {ID}로 discuss 라운드 {roundNumber}을 실행하세요.
+프로젝트 ID: {ID}의 CTO+PO 빠른 분석을 실행하세요.
 
-1. commands/discuss.md의 Step 2를 실행합니다 (Phase A: Tier별 분석 + 종합 + Phase B: 리뷰 + 수렴).
-   Step 3(CEO 확인)과 Step 4-5(저장/안내)는 실행하지 마세요.
-2. {ceoFeedback이 있으면: "CEO 피드백을 context.ceoFeedback으로 전달하세요: {ceoFeedback}"}
-3. 에이전트 분석/종합 시 context.prd = {prd}를 전달하세요.
-4. 기획서에 Mermaid 아키텍처 다이어그램과 화면 구조를 반드시 포함하세요.
-5. 라운드 데이터 저장 시 ceoFeedback을 roundData에 포함하세요 (discuss.md "CEO 피드백 보존" 참조).
-6. 반환 (최대 1000자):
+**[필수] CLI에 JSON 전달 시 Write tool 사용:**
+- LLM 응답 등 큰 JSON은 반드시 Write tool로 /tmp/gv-*.json에 저장 후 --input-file로 전달하세요.
+
+1. CTO 분석 프롬프트 생성:
+   → 분석 입력을 Write tool로 /tmp/gv-cto-analysis.json에 저장
+     (형식: {"project": {project}, "teamMember": {CTO 팀원 객체}, "context": {"round": 1, "prd": {prd}}})
+   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js agent-analysis-prompt --input-file /tmp/gv-cto-analysis.json
+
+2. PO 분석 프롬프트 생성:
+   → 분석 입력을 Write tool로 /tmp/gv-po-analysis.json에 저장
+     (형식: {"project": {project}, "teamMember": {PO 팀원 객체}, "context": {"round": 1, "prd": {prd}}})
+   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js agent-analysis-prompt --input-file /tmp/gv-po-analysis.json
+
+3. {ceoFeedback이 있으면: "context.ceoFeedback에 다음을 추가하세요: {ceoFeedback}"}
+
+4. 생성된 프롬프트 2개를 각각 LLM으로 실행 (병렬):
+   - CTO: 아키텍처, 기술 스택, 작업 분배 관점
+   - PO: 사용자 스토리, 우선순위, 요구사항 관점
+   - 각 분석에 Mermaid 아키텍처 다이어그램 포함
+
+5. 종합 프롬프트 생성:
+   → 입력을 Write tool로 /tmp/gv-synthesis-input.json에 저장
+     (형식: {"project": {project}, "agentOutputs": [{CTO 결과}, {PO 결과}], "round": 1})
+   → node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js synthesis-prompt --input-file /tmp/gv-synthesis-input.json
+   → 생성된 프롬프트를 LLM으로 실행 → 통합 기획서
+
+6. 기획서 저장:
+   → Write tool로 /tmp/gv-save-plan.json에 저장
+     (형식: {"id": "{ID}", "plan": {통합 기획서}})
+   → echo '...' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js save-plan --input-file /tmp/gv-save-plan.json
+
+7. 반환 (최대 1000자):
    - planSummary: 기획서 핵심 요약
    - diagram: Mermaid 아키텍처 다이어그램
+   - uiStructure: 화면 구조 (해당 시)
    - techStack: 기술 스택 + 작업 규모 요약
-   - convergence: 수렴 상태
    상세 기획서는 project.json에 저장하세요.
+
+※ PO가 팀에 없으면 CTO만 분석. CTO도 없으면 팀의 가장 높은 priority 팀원 2명을 사용.
 
 CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 ```
@@ -842,8 +869,8 @@ CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
 예상 규모: Phase {N}개, 태스크 {M}개
 
 AskUserQuestion:
-  질문: "기획이 이대로 괜찮을까요?"
-  header: "기획 확인"
+  질문: "분석 결과가 이대로 괜찮을까요?"
+  header: "분석 확인"
   options:
     - "이대로 진행 (Recommended)" — 승인 후 실행으로 넘어갑니다
     - "수정 요청" — 구체적 피드백을 입력하세요
@@ -852,25 +879,9 @@ AskUserQuestion:
 
 ##### B-1c. 반복
 
-- **"수정 요청"** → CEO 피드백을 `ceoFeedback`에 저장, `roundNumber++`, B-1a로 돌아감
-- **"처음부터 다시"** → `ceoFeedback = null`, `roundNumber = 1`, CEO에게 새 방향 입력받고 B-1a로
-- **"이대로 진행"** → B-1d로
-
-##### B-1d. 리뷰 + 수렴 (Task tool)
-
-CEO 승인 후, 에이전트 리뷰를 실행합니다:
-
-Task tool 프롬프트:
-
-```
-프로젝트 ID: {ID}의 기획서를 팀원들이 리뷰합니다.
-
-1. commands/discuss.md의 Step 2 Phase B를 실행합니다 (리뷰 + 수렴 확인 + 라운드 데이터 저장).
-2. CEO가 이미 승인했으므로, 에이전트 수렴 여부와 관계없이 기획서를 확정합니다.
-3. 반환: 리뷰 요약 + 수렴 상태
-
-CLAUDE_PLUGIN_ROOT: {CLAUDE_PLUGIN_ROOT}
-```
+- **"수정 요청"** → CEO 피드백을 `ceoFeedback`에 저장, B-1a로 돌아감
+- **"처음부터 다시"** → `ceoFeedback = null`, CEO에게 새 방향 입력받고 B-1a로
+- **"이대로 진행"** → B-2로
 
 #### B-2. 자동 승인 + 작업 분배 + 실행 초기화 (Task tool)
 
