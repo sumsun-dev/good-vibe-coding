@@ -108,11 +108,13 @@ export function buildProjectAgents(_techStack) {
  * @param {string} options.name - 프로젝트명
  * @param {string} options.description - 프로젝트 설명
  * @param {string} options.techStack - 기술 스택
+ * @param {Array} [options.team] - 팀 구성 배열
+ * @param {string} [options.mode] - 프로젝트 모드
  * @returns {Promise<string>} 렌더링된 CLAUDE.md 내용
  */
 export async function buildProjectClaudeMd(options) {
-  const { name, description, techStack } = options;
-  return renderTemplate('project-claude-md.hbs', { name, description, techStack });
+  const { name, description, techStack, team, mode } = options;
+  return renderTemplate('project-claude-md.hbs', { name, description, techStack, team, mode });
 }
 
 /**
@@ -121,11 +123,12 @@ export async function buildProjectClaudeMd(options) {
  * @param {string} options.name - 프로젝트명
  * @param {string} options.description - 프로젝트 설명
  * @param {string} options.techStack - 기술 스택
+ * @param {Array} [options.team] - 팀 구성 배열
  * @returns {Promise<string>} 렌더링된 README.md 내용
  */
 export async function buildProjectReadme(options) {
-  const { name, description, techStack } = options;
-  return renderTemplate('project-readme.hbs', { name, description, techStack });
+  const { name, description, techStack, team } = options;
+  return renderTemplate('project-readme.hbs', { name, description, techStack, team });
 }
 
 /**
@@ -139,7 +142,7 @@ export async function buildProjectReadme(options) {
  * @returns {Promise<{files: Array<{path: string, written: boolean}>, projectDir: string}>}
  */
 export async function setupProjectInfra(options) {
-  const { name, description, techStack, targetDir, withCI = false } = options;
+  const { name, description, techStack, targetDir, withCI = false, team, mode } = options;
 
   if (!name || typeof name !== 'string') {
     throw inputError('name 필드가 필요합니다');
@@ -157,8 +160,8 @@ export async function setupProjectInfra(options) {
 
   await ensureDir(projectDir);
 
-  const claudeMd = await buildProjectClaudeMd({ name, description, techStack });
-  const readme = await buildProjectReadme({ name, description, techStack });
+  const claudeMd = await buildProjectClaudeMd({ name, description, techStack, team, mode });
+  const readme = await buildProjectReadme({ name, description, techStack, team });
   const gitignore = buildGitignore(techStack);
   const agents = buildProjectAgents(techStack);
 

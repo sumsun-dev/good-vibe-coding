@@ -48,6 +48,8 @@ export const commands = {
       description: data.description,
       techStack: data.techStack,
       targetDir: data.targetDir,
+      team: data.team,
+      mode: data.mode,
     });
     output(result);
   },

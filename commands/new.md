@@ -481,7 +481,7 @@ Task tool 프롬프트:
 
 {infraChoice가 "건너뛰기"가 아닐 때:}
 1. 프로젝트 폴더 생성:
-   echo '{"name": "{name}", "targetDir": "{targetDir}", "description": "{description}", "techStack": "{techStack}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js setup-project-infra
+   echo '{"name": "{name}", "targetDir": "{targetDir}", "description": "{description}", "techStack": "{techStack}", "team": {team 배열}, "mode": "{mode}"}' | node ${CLAUDE_PLUGIN_ROOT}/scripts/cli.js setup-project-infra
    → infraPath = 반환된 projectDir
 
 {infraChoice가 "폴더 + GitHub 저장소"일 때:}

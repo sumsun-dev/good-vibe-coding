@@ -1,14 +1,46 @@
-#
-{{name}}
+# {{name}}
 
 {{description}}
 
-## Tech Stack -
+## 기술 스택
+
 {{techStack}}
 
-## Project Rules - 한국어로 커뮤니케이션, 코드/기술 용어는 영어 - 모든 import에 `.js` 확장자 필수
-(ESM) - 테스트 작성 필수 ## Architecture
+{{#if team}}
+## 팀 구성
+
+{{#each team}}
+- **{{this.name}}** ({{this.roleId}}) — {{this.model}}
+{{/each}}
+{{/if}}
+
+{{#if mode}}
+## 프로젝트 모드
+
+- **모드:** {{mode}}
+{{#ifEquals mode "quick-build"}}
+- **흐름:** CTO 분석 → 작업 분배 → 실행 → QA 리뷰 → 완료
+{{/ifEquals}}
+{{#ifEquals mode "plan-execute"}}
+- **흐름:** CTO+PO 분석 → 자동 승인 → 실행 → 크로스 리뷰 → 완료
+{{/ifEquals}}
+{{#ifEquals mode "plan-only"}}
+- **흐름:** 토론(수렴까지) → CEO 승인 → 실행 → 크로스 리뷰 → 완료
+{{/ifEquals}}
+{{/if}}
+
+## 프로젝트 규칙
+
+- 한국어로 커뮤니케이션, 코드/기술 용어는 영어
+- 모든 import에 `.js` 확장자 필수 (ESM)
+- 테스트 작성 필수
+- 파일명 kebab-case
+- 커밋 메시지 conventional commits
+
+## 아키텍처
+
 <!-- architecture-placeholder -->
 
-## Decisions
+## 주요 결정 사항
+
 <!-- decisions-placeholder -->
