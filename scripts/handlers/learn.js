@@ -34,6 +34,8 @@ const GUIDE_MAP = {
   이슈: 'pm/issue-management.md',
   접근성: 'designer/accessibility.md',
   디자인시스템: 'designer/design-system.md',
+  레퍼런스: 'common/03-commands-reference.md',
+  고급커맨드: 'common/12-advanced-commands.md',
 };
 
 export const commands = {
@@ -58,6 +60,12 @@ export const commands = {
           { topic: '에이전트', file: 'common/04-agents.md', title: '에이전트 이해하기' },
           { topic: '자동화', file: 'common/05-hooks-and-automation.md', title: '훅과 자동화' },
           { topic: 'CEO', file: 'common/11-ceo-guide.md', title: 'CEO 가이드 (비개발자용)' },
+          {
+            topic: '레퍼런스',
+            file: 'common/03-commands-reference.md',
+            title: '커맨드 레퍼런스',
+          },
+          { topic: '고급커맨드', file: 'common/12-advanced-commands.md', title: '고급 커맨드' },
         ],
       },
       {
