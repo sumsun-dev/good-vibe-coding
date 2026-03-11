@@ -99,6 +99,12 @@ const plan = await gv.discuss(team, {
   onAgentCall: (roleId, response) => {
     console.log(`${roleId} 응답 완료 (${response.tokenCount} 토큰)`);
   },
+  onError: (type, err) => {
+    // 중간 결과 저장 실패 시 호출 (토론 자체는 중단되지 않음)
+    if (type === 'persist-failed') {
+      console.warn(`중간 결과 저장 실패: ${err.message}`);
+    }
+  },
 });
 ```
 
@@ -119,6 +125,32 @@ const plan = await gv.discuss(team, {
 ### `execute(plan, hooks?)`
 
 기획서를 기반으로 Phase별 작업을 실행합니다. LLM을 호출합니다.
+
+`plan`은 `discuss()` 반환값을 그대로 전달하거나, 수동으로 구성할 수 있습니다:
+
+```javascript
+// 방법 1: discuss() 결과를 그대로 전달
+const plan = await gv.discuss(team);
+const result = await gv.execute(plan);
+
+// 방법 2: 수동 Plan 구성 (discuss() 생략)
+const manualPlan = {
+  document: '# 기획서\n프로젝트 설명...', // 기획서 마크다운 (필수)
+  team: [
+    // 팀원 배열 (필수)
+    { roleId: 'backend', role: 'Backend Engineer', emoji: '⚙️', priority: 4 },
+    { roleId: 'qa', role: 'QA Engineer', emoji: '🧪', priority: 6 },
+  ],
+  tasks: [
+    // 태스크 배열 (필수)
+    { id: 'task-1', title: 'API 구현', assignee: 'backend', phase: 1 },
+    { id: 'task-2', title: '테스트 작성', assignee: 'qa', phase: 2 },
+  ],
+};
+const result = await gv.execute(manualPlan);
+```
+
+**hooks:**
 
 ```javascript
 const result = await gv.execute(plan, {
