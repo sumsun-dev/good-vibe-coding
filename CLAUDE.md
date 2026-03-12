@@ -655,12 +655,11 @@ SLA 목표: 7.0/10 (환경변수 `UX_SLA_TARGET`으로 조정)
 
 ### 자동 머지 정책
 
-다음 조건 **모두** 충족 시 자동 squash merge:
+PR 리뷰가 **APPROVED**이면 자동 squash merge + 브랜치 삭제:
 
-1. `npm test` 전체 통과
-2. PR 리뷰 APPROVED
-3. 변경 파일이 안전 경로만 포함 (commands/, guides/, templates/, presets/, agents/, skills/)
-4. 코어 로직 파일 변경 없음
+1. `npm test` 전체 통과 (CI)
+2. PR 리뷰 APPROVED (Phase 2-3 리뷰 프로세스)
+3. `gh pr merge --squash --delete-branch` 실행
 
 ### 파일 구조
 
@@ -688,16 +687,16 @@ logs/
 
 ### Daily Improvement와의 차이
 
-| 항목      | Daily Improvement                | UX Improvement                |
-| --------- | -------------------------------- | ----------------------------- |
-| 주기      | 매일 1회 (KST 자정)              | 매일 1회 (KST 오전 10시)      |
-| 관점      | 코드 품질/보안/성능              | 사용자 경험 (8관점 순환)      |
-| SLA       | 7영역                            | 5영역 (UX)                    |
-| 자동 머지 | 수동                             | 안전 경로만 자동              |
-| lock 파일 | `/tmp/gv-daily-improvement.lock` | `/tmp/gv-ux-improvement.lock` |
-| 정지 파일 | `/tmp/gv-daily-improvement.stop` | `/tmp/gv-ux-improvement.stop` |
-| 브랜치    | `improve/`                       | `ux-improve/`                 |
-| 라벨      | `improvement`                    | `ux-improvement`              |
+| 항목      | Daily Improvement                | UX Improvement                      |
+| --------- | -------------------------------- | ----------------------------------- |
+| 주기      | 매일 1회 (KST 자정)              | 매일 1회 (KST 오전 10시)            |
+| 관점      | 코드 품질/보안/성능              | 사용자 경험 (8관점 순환)            |
+| SLA       | 7영역                            | 5영역 (UX)                          |
+| 자동 머지 | 수동                             | APPROVED 시 자동 (브랜치 삭제 포함) |
+| lock 파일 | `/tmp/gv-daily-improvement.lock` | `/tmp/gv-ux-improvement.lock`       |
+| 정지 파일 | `/tmp/gv-daily-improvement.stop` | `/tmp/gv-ux-improvement.stop`       |
+| 브랜치    | `improve/`                       | `ux-improve/`                       |
+| 라벨      | `improvement`                    | `ux-improvement`                    |
 
 ## 코드 구체화 파이프라인
 

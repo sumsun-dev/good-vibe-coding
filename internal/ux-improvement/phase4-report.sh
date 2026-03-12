@@ -143,16 +143,17 @@ BODY_EOF
       if [[ "${AUTO_MERGE:-false}" == "true" ]]; then
         local is_safe
         is_safe=$(check_safe_paths "$pr_number")
-
         if [[ "$is_safe" == "true" ]]; then
-          log_phase "Phase4" "안전 경로만 변경됨 — 자동 머지 시도 (squash)..."
-          if gh pr merge "$pr_number" --squash --delete-branch >> "$LOG_FILE" 2>&1; then
-            log_phase "Phase4" "자동 머지 완료"
-          else
-            log_phase "Phase4" "자동 머지 실패 — 수동 확인 필요"
-          fi
+          log_phase "Phase4" "안전 경로만 변경됨"
         else
-          log_phase "Phase4" "코어 파일 변경 포함 — 자동 머지 건너뜀 (CEO 수동 머지 대기)"
+          log_phase "Phase4" "코어 파일 포함 (리뷰 APPROVED이므로 머지 진행)"
+        fi
+
+        log_phase "Phase4" "자동 머지 시도 (squash + 브랜치 삭제)..."
+        if gh pr merge "$pr_number" --squash --delete-branch >> "$LOG_FILE" 2>&1; then
+          log_phase "Phase4" "자동 머지 + 브랜치 삭제 완료"
+        else
+          log_phase "Phase4" "자동 머지 실패 — 수동 확인 필요"
         fi
       fi
     fi
