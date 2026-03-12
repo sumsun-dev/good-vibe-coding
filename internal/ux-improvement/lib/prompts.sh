@@ -14,8 +14,10 @@ build_ux_improver_prompt() {
 # ── UX Reviewer 프롬프트 (Phase 2) ────────────────────
 build_ux_reviewer_prompt() {
   local pr_number="$1"
-  node "${SCRIPT_DIR}/lib/ux-prompt-builder.js" reviewer \
-    "{\"prNumber\":${pr_number}}" 2>/dev/null || {
+  local json_args
+  json_args=$(jq -nc --argjson prNumber "$pr_number" '{prNumber: $prNumber}')
+
+  node "${SCRIPT_DIR}/lib/ux-prompt-builder.js" reviewer "$json_args" 2>/dev/null || {
     echo "PR #${pr_number}을 UX 관점에서 리뷰하세요. 사용자 흐름이 개선되었는지 확인하세요."
   }
 }
@@ -53,9 +55,7 @@ build_ux_rereviewer_prompt() {
     --arg previousMust "$previous_must_issues" \
     '{prNumber: $prNumber, cycle: $cycle, maxCycles: $maxCycles, previousMust: $previousMust}')
 
-  # Re-reviewer는 일반 reviewer와 동일 로직 사용 (ux-prompt-builder에 별도 함수 불필요)
-  node "${SCRIPT_DIR}/lib/ux-prompt-builder.js" reviewer \
-    "{\"prNumber\":${pr_number}}" 2>/dev/null || {
+  node "${SCRIPT_DIR}/lib/ux-prompt-builder.js" reviewer "$json_args" 2>/dev/null || {
     echo "PR #${pr_number}을 재리뷰하세요 (cycle ${cycle}/${MAX_FIX_CYCLES})."
   }
 }
