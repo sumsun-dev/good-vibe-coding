@@ -50,6 +50,7 @@ const perspectiveMap = new Map(PERSPECTIVES.map((p) => [p.id, p]));
 
 /**
  * 실행 횟수 기반으로 현재 관점을 결정
+ * 매일 1회 실행되므로 8일마다 같은 관점이 반복됨
  * @param {number} executionCount - 히스토리 카운트
  * @returns {object} PERSPECTIVES 항목
  */

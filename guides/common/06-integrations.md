@@ -37,13 +37,68 @@ gh auth login
 - 저장소 생성 → git init → 초기 커밋 → push 자동 처리
 - 이후 `good-vibe:execute`에서 작성한 코드가 자동으로 커밋됨
 
+### GitHub 협업 워크플로우 (opt-in)
+
+`github.enabled = true`를 설정하면 브랜치 기반 협업 워크플로우가 활성화됩니다.
+
+#### 설정 방법
+
+`good-vibe:my-config`로 GitHub 협업을 활성화하거나, 프로젝트 설정에서 직접 지정합니다:
+
+| 설정 키                    | 기본값      | 설명                                   |
+| -------------------------- | ----------- | -------------------------------------- |
+| `github.enabled`           | `false`     | GitHub 협업 기능 활성화                |
+| `github.branchStrategy`    | `timestamp` | 브랜치 네이밍 (timestamp/phase/custom) |
+| `github.baseBranch`        | `main`      | 베이스 브랜치                          |
+| `github.autoPush`          | `true`      | 브랜치 자동 push                       |
+| `github.autoCreatePR`      | `true`      | 실행 완료 후 자동 PR 생성              |
+| `github.prDraft`           | `false`     | PR을 Draft로 생성                      |
+| `github.worktreeIsolation` | `false`     | Phase별 git worktree 격리              |
+
+#### 워크플로우 흐름
+
+```
+github.enabled = true 시:
+  → 실행 시작 시 feature branch 생성 (gv/{slug}-{timestamp})
+  → Phase별 conventional commit (feat/fix/test/refactor/chore)
+  → 실행 완료 시 자동 PR 생성
+  → CEO가 GitHub에서 직접 merge 승인
+```
+
+#### 브랜치 네이밍 전략
+
+| 전략        | 예시                   | 적합한 상황        |
+| ----------- | ---------------------- | ------------------ |
+| `timestamp` | `gv/chat-app-20260312` | 기본값, 대부분     |
+| `phase`     | `gv/chat-app-phase-1`  | Phase별 PR 원할 때 |
+| `custom`    | `gv/{사용자 지정}`     | 직접 관리          |
+
+#### Worktree 격리
+
+`github.worktreeIsolation = true`로 설정하면 Phase마다 독립된 git worktree에서 작업합니다:
+
+- Phase 간 코드 충돌 방지
+- 각 Phase가 독립된 작업 디렉토리 사용
+- 실패한 Phase가 다른 Phase에 영향 없음
+
+> Worktree 격리는 opt-in 기능입니다. git worktree를 지원하지 않는 환경에서는 자동으로 건너뜁니다.
+
 ### GitHub Actions CI
 
 `good-vibe:execute`가 코드를 생성한 뒤, CI 파이프라인을 자동으로 설정할 수 있습니다.
 DevOps 역할 에이전트가 팀에 포함되어 있으면, 토론 시 CI/CD 전략을 제안합니다.
 
+기술 스택에 따라 자동 생성되는 CI 템플릿:
+
+| 기술 스택 | CI 템플릿              |
+| --------- | ---------------------- |
+| Node.js   | npm install → npm test |
+| Python    | pip install → pytest   |
+| Go        | go build → go test     |
+| Java      | mvn install → mvn test |
+
 ```yaml
-# .github/workflows/ci.yml 예시
+# .github/workflows/ci.yml 예시 (Node.js)
 name: CI
 on: [push, pull_request]
 jobs:

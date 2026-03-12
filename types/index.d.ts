@@ -173,7 +173,9 @@ export interface Plan {
 }
 
 export interface ProviderConfig {
-  providers: Record<string, { model: string }>;
+  defaultProvider?: string;
+  reviewStrategy?: 'single' | 'cross-model';
+  providers: Record<string, { enabled?: boolean; authType?: string; model: string }>;
 }
 
 // --- GoodVibe Options ---
@@ -199,9 +201,11 @@ export declare class GoodVibe {
 export declare class Discusser {
   constructor(options: {
     provider: string;
-    model: string;
+    model?: string;
     storage: StorageInterface;
     hooks?: DiscussHooks;
+    parallelTiers?: boolean;
+    reviewModel?: string;
   });
 
   run(team: Team): Promise<DiscussResult>;
@@ -210,12 +214,15 @@ export declare class Discusser {
 export declare class Executor {
   constructor(options: {
     provider: string;
-    model: string;
+    model?: string;
     storage: StorageInterface;
     hooks?: ExecuteHooks;
     maxSteps?: number;
     enableCrossModel?: boolean;
     providerConfig?: ProviderConfig | null;
+    messageBus?: object | null;
+    worktreeIsolation?: boolean;
+    projectDir?: string | null;
   });
 
   run(plan: Plan): Promise<ExecuteResult>;

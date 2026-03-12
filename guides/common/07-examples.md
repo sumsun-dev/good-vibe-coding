@@ -63,9 +63,9 @@ good-vibe:new
 3. 팀 구성: CTO, PO, Fullstack, Backend, QA — 5명
 
 4. good-vibe:discuss (1라운드)
-   Tier 1: CTO(아키텍처), PO(요구사항) 병렬 분석
-   Tier 2: Fullstack, Backend 구현 관점 분석
-   Tier 3: QA(테스트 전략), Security(인증 보안) 분석
+   [전체 병렬] 모든 에이전트 동시 분석
+   CTO(아키텍처), PO(요구사항), Fullstack, Backend,
+   QA(테스트 전략), Security(인증 보안) 동시 진행
    → 종합 → 리뷰 → 승인율 85% → 수렴!
 
 5. 자동 승인 → 작업 분배 (Phase 3개, 태스크 8개)
