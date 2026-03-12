@@ -151,7 +151,7 @@ Tier 3: Phase 4 + Phase 5 (동시 실행)
 | 모드        | Tier 완료 시 동작                                     |
 | ----------- | ----------------------------------------------------- |
 | interactive | Tier 내 모든 Phase 완료 후 다음 Tier 진행 여부를 확인 |
-| semi-auto   | batchSize 기준으로 확인 (Tier 단위로 카운트)          |
+| semi-auto   | batchSize 기준으로 확인 (Phase 번호 기준으로 카운트)  |
 | auto        | 자동으로 다음 Tier 진행                               |
 
 > 모든 Phase가 순차 의존성을 가지면 (각 Tier에 1개 Phase) 기존과 동일하게 순차 실행됩니다.
