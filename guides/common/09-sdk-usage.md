@@ -99,6 +99,12 @@ const plan = await gv.discuss(team, {
   onAgentCall: (roleId, response) => {
     console.log(`${roleId} 응답 완료 (${response.tokenCount} 토큰)`);
   },
+  onError: (type, err) => {
+    // 중간 결과 저장 실패 시 호출 (토론 자체는 중단되지 않음)
+    if (type === 'persist-failed') {
+      console.warn(`중간 결과 저장 실패: ${err.message}`);
+    }
+  },
 });
 ```
 
@@ -119,6 +125,32 @@ const plan = await gv.discuss(team, {
 ### `execute(plan, hooks?)`
 
 기획서를 기반으로 Phase별 작업을 실행합니다. LLM을 호출합니다.
+
+`plan`은 `discuss()` 반환값을 그대로 전달하거나, 수동으로 구성할 수 있습니다:
+
+```javascript
+// 방법 1: discuss() 결과를 그대로 전달
+const plan = await gv.discuss(team);
+const result = await gv.execute(plan);
+
+// 방법 2: 수동 Plan 구성 (discuss() 생략)
+const manualPlan = {
+  document: '# 기획서\n프로젝트 설명...', // 기획서 마크다운 (필수)
+  team: [
+    // 팀원 배열 (필수)
+    { roleId: 'backend', role: 'Backend Engineer', emoji: '⚙️', priority: 4 },
+    { roleId: 'qa', role: 'QA Engineer', emoji: '🧪', priority: 6 },
+  ],
+  tasks: [
+    // 태스크 배열 (필수)
+    { id: 'task-1', title: 'API 구현', assignee: 'backend', phase: 1 },
+    { id: 'task-2', title: '테스트 작성', assignee: 'qa', phase: 2 },
+  ],
+};
+const result = await gv.execute(manualPlan);
+```
+
+**hooks:**
 
 ```javascript
 const result = await gv.execute(plan, {
@@ -170,7 +202,7 @@ const result = await gv.execute(plan, {
 | `completed`          | 모든 Phase가 성공적으로 완료됨               | `gv.report(result)`로 보고서 생성                                                   |
 | `paused`             | 에스컬레이션 대기 또는 CEO 개입 필요         | `onEscalation` Hook 확인, 같은 plan으로 `execute()` 재호출                          |
 | `stuck`              | 동일 스텝이 3회 이상 반복됨 (무한 루프 감지) | `journal`에서 반복 스텝 확인, plan 수정 후 재실행 또는 `executeSteps()`로 수동 제어 |
-| `max-steps-exceeded` | 최대 스텝 수(기본 500) 초과                  | 태스크가 너무 많거나 수정 루프가 반복됨 — plan 단순화 또는 `maxSteps` 옵션 증가     |
+| `max-steps-exceeded` | 최대 스텝 수(기본 200) 초과                  | 태스크가 너무 많거나 수정 루프가 반복됨 — plan 단순화 또는 `maxSteps` 옵션 증가     |
 | `not-started`        | 실행 상태가 초기화되지 않음                  | plan에 tasks/document가 포함되어 있는지 확인                                        |
 
 ### `executeSteps(plan)`
@@ -572,11 +604,15 @@ const executor = new Executor({
   },
 
   // 고급 옵션
-  maxSteps: 500, // 세션당 최대 스텝 수 (무한 루프 방지)
+  maxSteps: 200, // 세션당 최대 스텝 수 (무한 루프 방지)
   enableCrossModel: true, // Gemini CLI로 교차 리뷰 활성화
   providerConfig: {
-    // 교차 리뷰 프로바이더 설정
-    gemini: { model: 'gemini-2.0-flash' },
+    // 교차 리뷰 프로바이더 설정 (providers.json 형식)
+    defaultProvider: 'claude',
+    reviewStrategy: 'cross-model', // 'single' | 'cross-model'
+    providers: {
+      gemini: { enabled: true, model: 'gemini-2.0-flash' },
+    },
   },
   messageBus: null, // 에이전트 간 메시징 (리뷰 대화, 전문가 상담)
   worktreeIsolation: false, // Phase별 git worktree 격리
@@ -585,14 +621,14 @@ const executor = new Executor({
 const result = await executor.run(plan);
 ```
 
-| 옵션                | 기본값  | 설명                                                        |
-| ------------------- | ------- | ----------------------------------------------------------- |
-| `maxSteps`          | `500`   | 세션당 최대 스텝 수. 초과 시 `max-steps-exceeded` 반환      |
-| `enableCrossModel`  | `false` | Gemini CLI로 교차 리뷰 수행. Gemini 미설치 시 graceful 폴백 |
-| `providerConfig`    | `null`  | 교차 리뷰 프로바이더별 모델 설정                            |
-| `messageBus`        | `null`  | 에이전트 간 메시징 버스 (리뷰 질문/답변, 전문가 상담)       |
-| `worktreeIsolation` | `false` | Phase별 독립 git worktree 생성/정리                         |
-| `projectDir`        | `null`  | 프로젝트 디렉토리 경로 (`worktreeIsolation` 사용 시 필수)   |
+| 옵션                | 기본값  | 설명                                                                   |
+| ------------------- | ------- | ---------------------------------------------------------------------- |
+| `maxSteps`          | `200`   | 세션당 최대 스텝 수. 초과 시 `max-steps-exceeded` 반환                 |
+| `enableCrossModel`  | `false` | Gemini CLI로 교차 리뷰 수행. Gemini 미설치 시 graceful 폴백            |
+| `providerConfig`    | `null`  | 교차 리뷰 설정 (`{ defaultProvider, reviewStrategy, providers }` 형식) |
+| `messageBus`        | `null`  | 에이전트 간 메시징 버스 (리뷰 질문/답변, 전문가 상담)                  |
+| `worktreeIsolation` | `false` | Phase별 독립 git worktree 생성/정리                                    |
+| `projectDir`        | `null`  | 프로젝트 디렉토리 경로 (`worktreeIsolation` 사용 시 필수)              |
 
 ---
 
