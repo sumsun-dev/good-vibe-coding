@@ -12,11 +12,17 @@
     ".": "./src/index.js",
     "./plugin": "./plugin/adapter.js",
     "./lib/core/*": "./scripts/lib/core/*.js",
+    "./lib/core/*.js": "./scripts/lib/core/*.js",
     "./lib/project/*": "./scripts/lib/project/*.js",
+    "./lib/project/*.js": "./scripts/lib/project/*.js",
     "./lib/engine/*": "./scripts/lib/engine/*.js",
+    "./lib/engine/*.js": "./scripts/lib/engine/*.js",
     "./lib/agent/*": "./scripts/lib/agent/*.js",
+    "./lib/agent/*.js": "./scripts/lib/agent/*.js",
     "./lib/llm/*": "./scripts/lib/llm/*.js",
-    "./lib/output/*": "./scripts/lib/output/*.js"
+    "./lib/llm/*.js": "./scripts/lib/llm/*.js",
+    "./lib/output/*": "./scripts/lib/output/*.js",
+    "./lib/output/*.js": "./scripts/lib/output/*.js"
   },
   "scripts": {
     "test": "vitest run",

@@ -140,7 +140,7 @@ export interface ExecuteHooks {
   onPhaseComplete?: (phase: number, context: PhaseContext) => void | Promise<void>;
   onAgentCall?: (roleId: string, response: LLMResponse) => void;
   onCommit?: (step: CommitStep) => void | Promise<void>;
-  onConfirmPhase?: (step: ConfirmStep) => Promise<boolean | { proceed: boolean; phaseGuidance?: string }>;
+  onConfirmPhase?: (step: ConfirmStep) => Promise<boolean | { phaseGuidance?: string }>;
   onReviewIntervention?: (step: ReviewStep) => Promise<{ decision: 'proceed' | 'revise'; revisionGuidance?: string }>;
 }
 

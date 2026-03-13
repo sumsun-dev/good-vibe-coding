@@ -104,7 +104,7 @@ const team = await gv.buildTeam('실시간 채팅 웹앱', {
 ```javascript
 const plan = await gv.discuss(team, {
   onRoundComplete: (round, convergence) => {
-    console.log(`라운드 ${round}: 승인율 ${convergence.approvalRate}%`);
+    console.log(`라운드 ${round}: 승인율 ${(convergence.approvalRate * 100).toFixed(0)}%`);
   },
   onAgentCall: (roleId, response) => {
     console.log(`${roleId} 응답 완료 (${response.tokenCount} 토큰)`);
