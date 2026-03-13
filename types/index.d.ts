@@ -184,6 +184,16 @@ export interface GoodVibeOptions {
   storage?: string | StorageInterface;
 }
 
+// --- Errors ---
+
+export type AppErrorCode = 'INPUT_ERROR' | 'NOT_FOUND' | 'SYSTEM_ERROR';
+
+export declare class AppError extends Error {
+  name: 'AppError';
+  code: AppErrorCode;
+  constructor(message: string, code?: AppErrorCode);
+}
+
 // --- Main Classes ---
 
 export declare class GoodVibe {
@@ -229,4 +239,11 @@ export declare class Executor {
 
   run(plan: Plan): Promise<ExecuteResult>;
   steps(plan: Plan): AsyncGenerator<ExecutionStep, void, unknown>;
+}
+
+// --- Plugin Adapter ---
+
+declare module 'good-vibe/plugin' {
+  import { GoodVibe, GoodVibeOptions } from 'good-vibe';
+  export function createFromClaude(options?: GoodVibeOptions): GoodVibe;
 }

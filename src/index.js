@@ -11,3 +11,4 @@ export { GoodVibe } from './good-vibe.js';
 export { FileStorage, MemoryStorage } from './storage.js';
 export { Discusser } from './discusser.js';
 export { Executor } from './executor.js';
+export { AppError } from '../scripts/lib/core/validators.js';

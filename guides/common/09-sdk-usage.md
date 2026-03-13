@@ -526,10 +526,10 @@ for await (const step of gv.executeSteps(plan)) {
 
 ### AppError 타입 확인
 
-`AppError`는 내부 모듈에서 import할 수 있습니다:
+`AppError`는 메인 패키지에서 바로 import할 수 있습니다:
 
 ```javascript
-import { AppError } from 'good-vibe/lib/core/validators.js';
+import { AppError } from 'good-vibe';
 
 try {
   await gv.execute(plan);
