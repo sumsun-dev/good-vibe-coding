@@ -104,7 +104,7 @@ const team = await gv.buildTeam('실시간 채팅 웹앱', {
 ```javascript
 const plan = await gv.discuss(team, {
   onRoundComplete: (round, convergence) => {
-    console.log(`라운드 ${round}: 승인율 ${convergence.approvalRate}%`);
+    console.log(`라운드 ${round}: 승인율 ${(convergence.approvalRate * 100).toFixed(0)}%`);
   },
   onAgentCall: (roleId, response) => {
     console.log(`${roleId} 응답 완료 (${response.tokenCount} 토큰)`);
@@ -526,10 +526,10 @@ for await (const step of gv.executeSteps(plan)) {
 
 ### AppError 타입 확인
 
-`AppError`는 내부 모듈에서 import할 수 있습니다:
+`AppError`는 메인 패키지에서 바로 import할 수 있습니다:
 
 ```javascript
-import { AppError } from 'good-vibe/lib/core/validators.js';
+import { AppError } from 'good-vibe';
 
 try {
   await gv.execute(plan);

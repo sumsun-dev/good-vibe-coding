@@ -140,7 +140,7 @@ export interface ExecuteHooks {
   onPhaseComplete?: (phase: number, context: PhaseContext) => void | Promise<void>;
   onAgentCall?: (roleId: string, response: LLMResponse) => void;
   onCommit?: (step: CommitStep) => void | Promise<void>;
-  onConfirmPhase?: (step: ConfirmStep) => Promise<boolean | { proceed: boolean; phaseGuidance?: string }>;
+  onConfirmPhase?: (step: ConfirmStep) => Promise<boolean | { phaseGuidance?: string }>;
   onReviewIntervention?: (step: ReviewStep) => Promise<{ decision: 'proceed' | 'revise'; revisionGuidance?: string }>;
 }
 
@@ -182,6 +182,16 @@ export interface GoodVibeOptions {
   provider?: 'claude' | 'openai' | 'gemini';
   model?: string;
   storage?: string | StorageInterface;
+}
+
+// --- Errors ---
+
+export type AppErrorCode = 'INPUT_ERROR' | 'NOT_FOUND' | 'SYSTEM_ERROR';
+
+export declare class AppError extends Error {
+  name: 'AppError';
+  code: AppErrorCode;
+  constructor(message: string, code?: AppErrorCode);
 }
 
 // --- Main Classes ---
@@ -229,4 +239,11 @@ export declare class Executor {
 
   run(plan: Plan): Promise<ExecuteResult>;
   steps(plan: Plan): AsyncGenerator<ExecutionStep, void, unknown>;
+}
+
+// --- Plugin Adapter ---
+
+declare module 'good-vibe/plugin' {
+  import { GoodVibe, GoodVibeOptions } from 'good-vibe';
+  export function createFromClaude(options?: GoodVibeOptions): GoodVibe;
 }
