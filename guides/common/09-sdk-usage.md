@@ -24,10 +24,18 @@ const gv = new GoodVibe({ provider: 'claude' });
 const team = await gv.buildTeam('날씨 알림 텔레그램 봇');
 
 // 2. 토론 (LLM 호출: 팀원별 분석 → 기획서)
-const plan = await gv.discuss(team);
+const discussion = await gv.discuss(team);
 
 // 3. 실행 (LLM 호출: 태스크 → 리뷰 → 품질 게이트)
-const result = await gv.execute(plan);
+//    discuss()는 기획서(document)만 반환하므로, 팀과 태스크를 함께 전달합니다.
+const result = await gv.execute({
+  document: discussion.document,
+  team: team.agents,
+  tasks: [
+    { id: 'task-1', title: 'API 서버 구현', assignee: 'backend', phase: 1 },
+    { id: 'task-2', title: '테스트 작성', assignee: 'qa', phase: 2 },
+  ],
+});
 
 // 4. 보고서 (로컬 포맷팅, LLM 호출 없음)
 const report = gv.report(result);
@@ -35,6 +43,8 @@ console.log(report);
 ```
 
 이 4단계가 슬래시 커맨드 `new` → `discuss` → `execute` → `report`에 대응됩니다.
+
+> **참고:** `discuss()`는 기획서 마크다운(`document`)만 반환합니다. `execute()`에는 `team`(팀원 배열)과 `tasks`(태스크 목록)를 직접 구성하여 전달해야 합니다. 슬래시 커맨드 플로우에서는 이 과정이 자동으로 처리됩니다.
 
 ---
 
@@ -126,28 +136,34 @@ const plan = await gv.discuss(team, {
 
 기획서를 기반으로 Phase별 작업을 실행합니다. LLM을 호출합니다.
 
-`plan`은 `discuss()` 반환값을 그대로 전달하거나, 수동으로 구성할 수 있습니다:
+`plan`에는 기획서(`document`), 팀원 배열(`team`), 태스크 목록(`tasks`)이 필요합니다.
+`discuss()`의 기획서를 활용하거나, 전체를 직접 구성할 수 있습니다:
 
 ```javascript
-// 방법 1: discuss() 결과를 그대로 전달
-const plan = await gv.discuss(team);
-const result = await gv.execute(plan);
+// 방법 1: discuss() 기획서 + 팀 + 태스크를 조합하여 전달
+const discussion = await gv.discuss(team);
+const result = await gv.execute({
+  document: discussion.document,
+  team: team.agents,
+  tasks: [
+    { id: 'task-1', title: 'API 구현', assignee: 'backend', phase: 1 },
+    { id: 'task-2', title: '테스트 작성', assignee: 'qa', phase: 2 },
+  ],
+});
 
-// 방법 2: 수동 Plan 구성 (discuss() 생략)
+// 방법 2: 직접 Plan 구성 (discuss() 생략)
 const manualPlan = {
-  document: '# 기획서\n프로젝트 설명...', // 기획서 마크다운 (필수)
+  document: '# 기획서\n프로젝트 설명...',
   team: [
-    // 팀원 배열 (필수)
     { roleId: 'backend', role: 'Backend Engineer', emoji: '⚙️', priority: 4 },
     { roleId: 'qa', role: 'QA Engineer', emoji: '🧪', priority: 6 },
   ],
   tasks: [
-    // 태스크 배열 (필수)
     { id: 'task-1', title: 'API 구현', assignee: 'backend', phase: 1 },
     { id: 'task-2', title: '테스트 작성', assignee: 'qa', phase: 2 },
   ],
 };
-const result = await gv.execute(manualPlan);
+const result2 = await gv.execute(manualPlan);
 ```
 
 **hooks:**

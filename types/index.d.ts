@@ -202,9 +202,15 @@ export declare class Discusser {
     model: string;
     storage: StorageInterface;
     hooks?: DiscussHooks;
+    parallelTiers?: boolean;
+    reviewModel?: string;
   });
 
   run(team: Team): Promise<DiscussResult>;
+}
+
+export interface MessageBus {
+  getStats(): Promise<Record<string, unknown>>;
 }
 
 export declare class Executor {
@@ -216,6 +222,9 @@ export declare class Executor {
     maxSteps?: number;
     enableCrossModel?: boolean;
     providerConfig?: ProviderConfig | null;
+    messageBus?: MessageBus | null;
+    worktreeIsolation?: boolean;
+    projectDir?: string | null;
   });
 
   run(plan: Plan): Promise<ExecuteResult>;
