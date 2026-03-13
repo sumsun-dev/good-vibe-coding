@@ -15,8 +15,10 @@ build_improver_prompt() {
 # ── Reviewer 프롬프트 (Phase 2) ──────────────────────────
 build_reviewer_prompt() {
   local pr_number="$1"
-  node "${SCRIPT_DIR}/lib/prompt-builder.js" reviewer \
-    "{\"prNumber\":${pr_number}}" 2>/dev/null || {
+  local json_args
+  json_args=$(jq -nc --argjson prNumber "$pr_number" '{prNumber: $prNumber}')
+
+  node "${SCRIPT_DIR}/lib/prompt-builder.js" reviewer "$json_args" 2>/dev/null || {
     echo "PR #${pr_number}을 깊이 있게 리뷰하세요. CLAUDE.md를 읽고, gh pr diff ${pr_number}으로 변경사항을 확인한 후 MUST/SHOULD 기준으로 판정하세요."
   }
 }
