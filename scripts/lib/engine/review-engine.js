@@ -69,10 +69,10 @@ export function selectReviewers(task, team, previousReviewerIds = []) {
 export function buildTaskReviewPrompt(reviewer, task, taskOutput, acceptanceCriteria = null) {
   const reviewDomains = reviewer.reviewDomains || reviewer.skills || [];
 
-  const MAX_REVIEW_OUTPUT = 3000;
+  const maxReviewOutput = config.llm.maxPromptSectionLength;
   const truncatedOutput =
-    taskOutput && taskOutput.length > MAX_REVIEW_OUTPUT
-      ? truncateText(taskOutput, MAX_REVIEW_OUTPUT, '\n...(truncated)')
+    taskOutput && taskOutput.length > maxReviewOutput
+      ? truncateText(taskOutput, maxReviewOutput, '\n...(truncated)')
       : taskOutput || '';
 
   // system: 리뷰어 역할 + 전문 분야 + 심각도 정의 + JSON 출력 형식 (리뷰어별 고정, 캐싱 가능)

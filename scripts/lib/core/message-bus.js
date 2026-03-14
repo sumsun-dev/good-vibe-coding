@@ -299,25 +299,22 @@ export class FileMessageBus {
 
   async _readAllMessages() {
     const dirs = await this._listAgentDirs();
-    const all = [];
-    for (const dir of dirs) {
-      const messages = await this._readAgentMessages(dir);
-      all.push(...messages);
-    }
-    return all;
+    const results = await Promise.all(dirs.map((dir) => this._readAgentMessages(dir)));
+    return results.flat();
   }
 
   async _countAllMessages() {
     const dirs = await this._listAgentDirs();
-    let count = 0;
-    for (const dir of dirs) {
-      try {
-        const files = await readdir(dir);
-        count += files.filter((f) => f.endsWith('.json') && !f.startsWith('.tmp-')).length;
-      } catch {
-        // ignore
-      }
-    }
-    return count;
+    const counts = await Promise.all(
+      dirs.map(async (dir) => {
+        try {
+          const files = await readdir(dir);
+          return files.filter((f) => f.endsWith('.json') && !f.startsWith('.tmp-')).length;
+        } catch {
+          return 0;
+        }
+      }),
+    );
+    return counts.reduce((sum, c) => sum + c, 0);
   }
 }

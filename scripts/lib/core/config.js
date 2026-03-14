@@ -4,7 +4,7 @@
  */
 
 export const config = Object.freeze({
-  convergence: Object.freeze({ threshold: 0.8, maxRounds: 3 }),
+  convergence: Object.freeze({ threshold: 0.8, maxRounds: 3, earlyExitThreshold: 0.85 }),
   discussion: Object.freeze({
     parallelTiers: true,
     maxReviewers: 3,
