@@ -6,7 +6,7 @@ import {
   readJsonFile,
   listFilesByExtension,
 } from '../core/file-writer.js';
-import { notFoundError, assertWithinRoot } from '../core/validators.js';
+import { notFoundError, inputError, assertWithinRoot } from '../core/validators.js';
 import { pluginRoot } from '../core/app-paths.js';
 
 const BUILTIN_TEMPLATES_DIR = resolve(pluginRoot(), 'presets/templates');
@@ -83,13 +83,19 @@ async function loadTemplatesFromDir(dir) {
  * @returns {Promise<object>}
  */
 export async function loadTemplate(name) {
+  if (!name || typeof name !== 'string' || /[/\\]/.test(name) || name.includes('..')) {
+    throw inputError(`유효하지 않은 템플릿 이름: ${name} (영문, 숫자, -, _ 만 허용)`);
+  }
+
   // custom 먼저
   const customPath = resolve(customTemplatesDir, `${name}.json`);
+  assertWithinRoot(customPath, customTemplatesDir, 'template path');
   const customData = await readJsonFile(customPath);
   if (customData) return customData;
 
   // built-in fallback
   const builtinPath = resolve(BUILTIN_TEMPLATES_DIR, `${name}.json`);
+  assertWithinRoot(builtinPath, BUILTIN_TEMPLATES_DIR, 'template path');
   const builtinData = await readJsonFile(builtinPath);
   if (builtinData) return builtinData;
 

@@ -102,11 +102,7 @@ export class MemoryMessageBus {
 
   async broadcast(from, payload) {
     const targets = [...this._agents].filter((id) => id !== from);
-    const results = [];
-    for (const to of targets) {
-      results.push(await this.send(from, to, payload));
-    }
-    return results;
+    return Promise.all(targets.map((to) => this.send(from, to, payload)));
   }
 
   async getThread(threadId) {
@@ -219,11 +215,7 @@ export class FileMessageBus {
 
   async broadcast(from, payload) {
     const targets = [...this._agents].filter((id) => id !== from);
-    const results = [];
-    for (const to of targets) {
-      results.push(await this.send(from, to, payload));
-    }
-    return results;
+    return Promise.all(targets.map((to) => this.send(from, to, payload)));
   }
 
   async getThread(threadId) {
@@ -236,17 +228,15 @@ export class FileMessageBus {
   async markAsRead(messageId) {
     const allDirs = await this._listAgentDirs();
     for (const dir of allDirs) {
-      const messages = await this._readAgentMessages(dir);
-      for (const msg of messages) {
-        if (msg.id === messageId) {
-          msg.read = true;
-          const files = await readdir(dir).catch(() => []);
-          const file = files.find((f) => f.includes(messageId));
-          if (file) {
-            await writeFile(join(dir, file), JSON.stringify(msg, null, 2), 'utf-8');
-          }
-          return;
-        }
+      const files = await readdir(dir).catch(() => []);
+      const file = files.find((f) => f.endsWith('.json') && f.includes(messageId));
+      if (file) {
+        const filePath = join(dir, file);
+        const data = await readFile(filePath, 'utf-8');
+        const msg = JSON.parse(data);
+        msg.read = true;
+        await writeFile(filePath, JSON.stringify(msg, null, 2), 'utf-8');
+        return;
       }
     }
   }
@@ -284,11 +274,12 @@ export class FileMessageBus {
     try {
       const files = await readdir(agentDir);
       const jsonFiles = files.filter((f) => f.endsWith('.json') && !f.startsWith('.tmp-'));
-      const messages = [];
-      for (const file of jsonFiles) {
-        const data = await readFile(join(agentDir, file), 'utf-8');
-        messages.push(JSON.parse(data));
-      }
+      const messages = await Promise.all(
+        jsonFiles.map(async (file) => {
+          const data = await readFile(join(agentDir, file), 'utf-8');
+          return JSON.parse(data);
+        }),
+      );
       return messages.sort((a, b) => a.timestamp - b.timestamp || (a.seq || 0) - (b.seq || 0));
     } catch {
       return [];
