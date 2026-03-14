@@ -487,7 +487,7 @@ export function checkConvergence(reviews) {
       (r.issues || []).filter((i) => i.severity === 'critical').map((i) => i.description),
     );
 
-  const earlyExit = approvalRate >= 0.85 && blockers.length === 0;
+  const earlyExit = approvalRate >= config.convergence.earlyExitThreshold && blockers.length === 0;
   const converged = approvalRate >= config.convergence.threshold || earlyExit;
 
   return { converged, approvalRate, blockers, earlyExit };
@@ -510,9 +510,10 @@ export function trackConvergenceEvolution(currentResult, previousRounds) {
       : currentResult.approvalRate;
   const velocity = currentResult.approvalRate - lastRate;
 
+  const velocityThreshold = config.discussion.stagnationThreshold;
   let trend = 'stagnating';
-  if (velocity > 0.05) trend = 'improving';
-  else if (velocity < -0.05) trend = 'declining';
+  if (velocity > velocityThreshold) trend = 'improving';
+  else if (velocity < -velocityThreshold) trend = 'declining';
 
   const prevBlockers =
     safeRounds.length > 0 ? safeRounds[safeRounds.length - 1].blockers || [] : [];
