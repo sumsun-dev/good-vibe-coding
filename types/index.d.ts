@@ -72,8 +72,9 @@ export interface BuildTeamOptions {
 export interface ConvergenceResult {
   converged: boolean;
   approvalRate: number;
-  reason?: string;
+  reason?: 'threshold-met' | 'stagnation' | 'max-rounds';
   blockers?: string[];
+  earlyExit?: boolean;
 }
 
 export interface DiscussResult {
@@ -141,7 +142,9 @@ export interface ExecuteHooks {
   onAgentCall?: (roleId: string, response: LLMResponse) => void;
   onCommit?: (step: CommitStep) => void | Promise<void>;
   onConfirmPhase?: (step: ConfirmStep) => Promise<boolean | { phaseGuidance?: string }>;
-  onReviewIntervention?: (step: ReviewStep) => Promise<{ decision: 'proceed' | 'revise'; revisionGuidance?: string }>;
+  onReviewIntervention?: (
+    step: ReviewStep,
+  ) => Promise<{ decision: 'proceed' | 'revise'; revisionGuidance?: string }>;
 }
 
 export interface JournalEntry {
@@ -173,7 +176,9 @@ export interface Plan {
 }
 
 export interface ProviderConfig {
-  providers: Record<string, { model: string }>;
+  defaultProvider?: string;
+  reviewStrategy?: 'single' | 'cross-model';
+  providers: Record<string, { enabled?: boolean; model?: string }>;
 }
 
 // --- GoodVibe Options ---
