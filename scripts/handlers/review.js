@@ -2,7 +2,7 @@
  * handlers/review — 크로스 리뷰 + 품질 게이트 커맨드
  */
 import { readStdin, output } from '../cli-utils.js';
-import { requireFields } from '../lib/core/validators.js';
+import { requireArray, requireFields } from '../lib/core/validators.js';
 import {
   selectReviewers,
   buildTaskReviewPrompt,
@@ -68,6 +68,12 @@ export const commands = {
 
   'analyze-efficiency': async () => {
     const data = await readStdin();
+    if (data.agentOutputs !== undefined && data.agentOutputs !== null) {
+      requireArray(data.agentOutputs, 'agentOutputs');
+    }
+    if (data.roleContributions !== undefined && data.roleContributions !== null) {
+      requireArray(data.roleContributions, 'roleContributions');
+    }
     const agentOutputs = data.agentOutputs || [];
     let roleContributions = data.roleContributions || [];
     const teamSize = data.teamSize;
