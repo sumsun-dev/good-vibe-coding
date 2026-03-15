@@ -2,7 +2,7 @@
  * handlers/feedback — 에이전트 피드백 + 오버라이드 커맨드
  */
 import { readStdin, output, outputOk, parseArgs } from '../cli-utils.js';
-import { inputError, requireFields } from '../lib/core/validators.js';
+import { inputError, requireArray, requireFields } from '../lib/core/validators.js';
 import { withProject } from '../lib/project/handler-helpers.js';
 import {
   extractAgentPerformance,
@@ -93,6 +93,9 @@ export const commands = {
   'merge-all-overrides': async () => {
     const data = await readStdin();
     if (!data.baseMd && data.baseMd !== '') throw inputError('baseMd가 필요합니다');
+    if (data.overrides !== undefined && data.overrides !== null) {
+      requireArray(data.overrides, 'overrides');
+    }
     const overrides = data.overrides || [];
     const result = mergeAgentWithOverrides(data.baseMd, overrides);
     output({ result });

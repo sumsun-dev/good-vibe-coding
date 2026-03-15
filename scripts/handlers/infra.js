@@ -227,6 +227,7 @@ export const commands = {
   'generate-onboarding': async () => {
     const data = await readStdin();
     requireFields(data, ['roles']);
+    requireArray(data.roles, 'roles');
     const rolePresets = await Promise.all(data.roles.map((r) => loadPreset('roles', r)));
     const presets = [...rolePresets];
     let stackPreset = null;

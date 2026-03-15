@@ -29,6 +29,10 @@ vi.mock('../../scripts/lib/core/validators.js', () => ({
       if (!(f in data)) throw new Error(`필수 필드 누락: ${f}`);
     }
   }),
+  requireArray: vi.fn((value, fieldName) => {
+    if (!Array.isArray(value)) throw new Error(`${fieldName}는 배열이어야 합니다`);
+    return value;
+  }),
 }));
 
 vi.mock('../../scripts/lib/project/project-manager.js', () => ({
