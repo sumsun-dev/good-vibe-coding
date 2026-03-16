@@ -13,6 +13,53 @@ npm install good-vibe
 
 ---
 
+## 사전 준비: LLM 프로바이더 연결
+
+SDK에서 `discuss()`와 `execute()`는 LLM을 호출합니다. 호출 전에 프로바이더 인증을 설정해야 합니다.
+`buildTeam()`과 `report()`는 LLM을 사용하지 않으므로 인증 없이도 동작합니다.
+
+### 프로바이더별 연결
+
+```bash
+# Claude (Anthropic)
+echo '{"provider":"claude","apiKey":"sk-ant-..."}' | node scripts/cli.js connect
+
+# OpenAI
+echo '{"provider":"openai","apiKey":"sk-..."}' | node scripts/cli.js connect
+
+# Gemini (CLI 모드 — Gemini CLI가 설치되어 있어야 함)
+echo '{"provider":"gemini","authType":"cli"}' | node scripts/cli.js connect
+```
+
+인증 정보는 `~/.claude/good-vibe/auth.json`에 저장됩니다 (파일 권한 `0o600`).
+
+### 연결 확인
+
+```bash
+# 특정 프로바이더 확인
+node scripts/cli.js verify-provider --provider claude
+
+# 전체 프로바이더 상태 확인
+node scripts/cli.js provider-status
+```
+
+### 설치 확인 (LLM 불필요)
+
+인증 설정 전에도 SDK가 제대로 설치되었는지 확인할 수 있습니다:
+
+```javascript
+import { GoodVibe } from 'good-vibe';
+
+const gv = new GoodVibe();
+const team = await gv.buildTeam('테스트 프로젝트');
+console.log(`모드: ${team.mode}, 팀원: ${team.agents.length}명`);
+// → "모드: plan-execute, 팀원: 4명"
+```
+
+`buildTeam()`은 로컬 계산만 하므로 LLM 인증 없이 즉시 결과를 반환합니다.
+
+---
+
 ## 기본 사용법
 
 ```javascript
@@ -685,6 +732,73 @@ import { createFromClaude } from 'good-vibe/plugin';
 // ~/.claude/good-vibe 경로로 자동 설정된 GoodVibe 인스턴스
 const gv = createFromClaude();
 ```
+
+---
+
+## 트러블슈팅
+
+### `NOT_FOUND`: 인증 정보가 없습니다
+
+```
+NOT_FOUND: claude 인증 정보가 없습니다. 먼저 connect 명령으로 인증하세요.
+```
+
+`discuss()` 또는 `execute()` 호출 시 발생합니다. [사전 준비](#사전-준비-llm-프로바이더-연결) 섹션을 참고하여 프로바이더를 연결하세요.
+
+### `INPUT_ERROR`: team.agents 배열이 비어있습니다
+
+```
+INPUT_ERROR: team.agents 배열이 비어있습니다. buildTeam()을 먼저 실행하세요
+```
+
+`discuss()`에 `buildTeam()` 결과가 아닌 다른 값을 전달했을 때 발생합니다:
+
+```javascript
+// 잘못된 사용
+await gv.discuss({ idea: '프로젝트' }); // agents 배열 없음
+
+// 올바른 사용
+const team = await gv.buildTeam('프로젝트');
+await gv.discuss(team);
+```
+
+### `discuss()` 결과로 바로 `execute()` 호출 시 동작하지 않음
+
+`discuss()`는 기획서(`document`)만 반환합니다. `execute()`에는 팀원과 태스크도 함께 전달해야 합니다:
+
+```javascript
+const team = await gv.buildTeam('프로젝트');
+const discussion = await gv.discuss(team);
+
+// discuss() 결과만으로는 부족
+// await gv.execute(discussion); ← tasks와 team이 없음
+
+// team과 tasks를 조합하여 전달
+await gv.execute({
+  document: discussion.document,
+  team: team.agents,
+  tasks: [{ id: 'task-1', title: 'API 구현', assignee: 'backend', phase: 1 }],
+});
+```
+
+### `SYSTEM_ERROR`: LLM 호출 실패
+
+네트워크 오류나 프로바이더 서버 오류 시 발생합니다. SDK는 내부적으로 최대 3회 재시도합니다.
+모든 재시도가 실패하면 `SYSTEM_ERROR`가 throw됩니다.
+
+- API 키가 유효한지 확인하세요 (만료/비활성화 여부)
+- 네트워크 연결을 확인하세요
+- `FileStorage` 사용 시 재호출하면 중단 지점부터 자동 재개됩니다
+
+### 어떤 메서드가 LLM을 호출하나요?
+
+| 메서드           | LLM 호출 | 인증 필요 |
+| ---------------- | -------- | --------- |
+| `buildTeam()`    | X        | X         |
+| `discuss()`      | O        | O         |
+| `execute()`      | O        | O         |
+| `executeSteps()` | O        | O         |
+| `report()`       | X        | X         |
 
 ---
 
