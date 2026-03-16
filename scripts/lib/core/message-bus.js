@@ -156,6 +156,7 @@ export class FileMessageBus {
     this._agents = new Set();
     this._maxMessages = options.maxMessages ?? config.messaging.maxMessages;
     this._maxThreadDepth = options.maxThreadDepth ?? config.messaging.maxThreadDepth;
+    this._cachedCount = null;
   }
 
   registerAgents(agentIds) {
@@ -175,9 +176,11 @@ export class FileMessageBus {
       }
     }
 
-    // 총 메시지 수 체크
-    const total = await this._countAllMessages();
-    if (total >= this._maxMessages) {
+    // 총 메시지 수 체크 (캐시된 카운트 사용, 첫 호출 시에만 디스크 스캔)
+    if (this._cachedCount === null) {
+      this._cachedCount = await this._countAllMessages();
+    }
+    if (this._cachedCount >= this._maxMessages) {
       throw inputError(`메시지 수 초과 (최대 ${this._maxMessages})`);
     }
 
@@ -203,6 +206,7 @@ export class FileMessageBus {
     await writeFile(tmpPath, JSON.stringify(message, null, 2), 'utf-8');
     await rename(tmpPath, finalPath);
 
+    this._cachedCount++;
     return message;
   }
 
@@ -268,6 +272,7 @@ export class FileMessageBus {
 
   async cleanup() {
     await rm(this._baseDir, { recursive: true, force: true });
+    this._cachedCount = null;
   }
 
   async _readAgentMessages(agentDir) {
