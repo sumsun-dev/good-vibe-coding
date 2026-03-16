@@ -172,7 +172,7 @@ const result2 = await gv.execute(manualPlan);
 const result = await gv.execute(plan, {
   onEscalation: (context) => {
     // 수정 2회 실패 시 호출됨. 반환값: 'continue' | 'skip' | 'abort'
-    console.log(`에스컬레이션: ${context.reason}`);
+    console.log(`에스컬레이션: ${context.escalation.reason}`);
     return 'skip';
   },
   onPhaseComplete: (phase, context) => {
@@ -389,19 +389,16 @@ const result = await gv.execute(plan, {
 
 ```javascript
 onEscalation: async (context) => {
-  const { phase, failureContext } = context;
-  const { attempt, issues } = failureContext;
+  const { reason, unresolvedIssues } = context.escalation;
 
   // 보안 이슈는 중단
-  if (issues.some(i => i.category === 'security')) return 'abort';
+  if (unresolvedIssues.some(i => i.category === 'security')) return 'abort';
 
   // 빌드 실패는 재시도
-  if (issues.some(i => i.category === 'build')) return 'continue';
+  if (unresolvedIssues.some(i => i.category === 'build')) return 'continue';
 
-  // 2회째 실패면 건너뛰기
-  if (attempt >= 2) return 'skip';
-
-  return 'continue';
+  // 그 외는 건너뛰기
+  return 'skip';
 },
 ```
 
