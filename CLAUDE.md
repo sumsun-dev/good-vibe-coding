@@ -704,7 +704,7 @@ logs/
 | 주기      | 매일 1회                         | 매일 1회                      |
 | 관점      | 코드 품질/보안/성능              | 사용자 경험 (8관점 순환)      |
 | SLA       | 7영역                            | 5영역 (UX)                    |
-| 자동 머지 | 수동                             | 안전 경로만 자동              |
+| 자동 머지 | APPROVED 시 자동                 | 안전 경로만 자동              |
 | lock 파일 | `/tmp/gv-daily-improvement.lock` | `/tmp/gv-ux-improvement.lock` |
 | 정지 파일 | `/tmp/gv-daily-improvement.stop` | `/tmp/gv-ux-improvement.stop` |
 | 브랜치    | `improve/`                       | `ux-improve/`                 |
