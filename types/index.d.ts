@@ -101,16 +101,14 @@ export interface TaskItem {
 }
 
 export interface EscalationContext {
-  phase: number;
-  failureContext: {
-    attempt: number;
-    maxAttempts: number;
-    issues: Array<{
+  escalation: {
+    reason: string;
+    unresolvedIssues: Array<{
       description: string;
       severity: string;
-      category: string;
+      category?: string;
     }>;
-    previousAttempts: unknown[];
+    failureHistory: unknown[];
   };
 }
 
