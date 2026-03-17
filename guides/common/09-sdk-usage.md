@@ -13,7 +13,7 @@ Good Vibe Coding은 슬래시 커맨드 외에 Node.js SDK도 제공합니다.
 import { GoodVibe } from 'good-vibe';
 
 const gv = new GoodVibe();
-const team = await gv.buildTeam('날씨 알림 텔레그램 봇');
+const team = await gv.buildTeam('날씨 알림 텔레그램 봇', { complexity: 'simple' });
 
 console.log(`모드: ${team.mode}`); // → "quick-build"
 console.log(`팀원: ${team.agents.map((a) => a.role).join(', ')}`);
