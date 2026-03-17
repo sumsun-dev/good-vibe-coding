@@ -5,6 +5,51 @@ Good Vibe Coding은 슬래시 커맨드 외에 Node.js SDK도 제공합니다.
 
 ---
 
+## 30초 체험 (LLM 불필요)
+
+설치 직후 바로 실행해볼 수 있습니다. `buildTeam()`은 로컬 계산만 하므로 LLM 인증 없이 즉시 동작합니다.
+
+```javascript
+import { GoodVibe } from 'good-vibe';
+
+const gv = new GoodVibe();
+const team = await gv.buildTeam('날씨 알림 텔레그램 봇');
+
+console.log(`모드: ${team.mode}`); // → "quick-build"
+console.log(`팀원: ${team.agents.map((a) => a.role).join(', ')}`);
+// → "CTO, Backend Engineer, QA Engineer"
+console.log(`복잡도: ${team.complexity.level}`); // → "simple"
+```
+
+이것만으로도 Good Vibe가 프로젝트를 어떻게 분석하는지 확인할 수 있습니다.
+LLM을 연결하면 토론(`discuss`)과 실행(`execute`)까지 가능합니다.
+
+---
+
+## SDK 데이터 흐름
+
+4개 메서드가 파이프라인을 구성합니다. 각 메서드의 입출력을 이해하면 SDK 사용이 쉬워집니다.
+
+```
+buildTeam(idea)    → Team { mode, agents, complexity }
+                        ↓
+discuss(team)      → DiscussResult { document, rounds, convergence }
+                        ↓  ⚠ discuss()는 document만 반환
+                        ↓    team.agents + tasks를 직접 조합해서 전달
+execute(plan)      → ExecuteResult { status, projectId, journal }
+                        ↓
+report(result)     → string (마크다운 보고서)
+```
+
+| 메서드        | LLM 호출 | 입력                           | 출력               |
+| ------------- | -------- | ------------------------------ | ------------------ |
+| `buildTeam()` | X        | idea 문자열                    | Team 객체          |
+| `discuss()`   | O        | Team 객체                      | 기획서 + 수렴 결과 |
+| `execute()`   | O        | Plan (document + team + tasks) | 실행 결과 + 저널   |
+| `report()`    | X        | 실행 결과                      | 마크다운 문자열    |
+
+---
+
 ## 설치
 
 ```bash
@@ -15,8 +60,8 @@ npm install good-vibe
 
 ## 사전 준비: LLM 프로바이더 연결
 
-SDK에서 `discuss()`와 `execute()`는 LLM을 호출합니다. 호출 전에 프로바이더 인증을 설정해야 합니다.
-`buildTeam()`과 `report()`는 LLM을 사용하지 않으므로 인증 없이도 동작합니다.
+`discuss()`와 `execute()`는 LLM을 호출합니다. 이 메서드를 사용하려면 프로바이더 인증이 필요합니다.
+`buildTeam()`과 `report()`는 LLM 없이 동작합니다.
 
 ### 프로바이더별 연결
 
@@ -43,21 +88,6 @@ node scripts/cli.js verify-provider --provider claude
 node scripts/cli.js provider-status
 ```
 
-### 설치 확인 (LLM 불필요)
-
-인증 설정 전에도 SDK가 제대로 설치되었는지 확인할 수 있습니다:
-
-```javascript
-import { GoodVibe } from 'good-vibe';
-
-const gv = new GoodVibe();
-const team = await gv.buildTeam('테스트 프로젝트');
-console.log(`모드: ${team.mode}, 팀원: ${team.agents.length}명`);
-// → "모드: plan-execute, 팀원: 4명"
-```
-
-`buildTeam()`은 로컬 계산만 하므로 LLM 인증 없이 즉시 결과를 반환합니다.
-
 ---
 
 ## 기본 사용법
@@ -73,8 +103,7 @@ const team = await gv.buildTeam('날씨 알림 텔레그램 봇');
 // 2. 토론 (LLM 호출: 팀원별 분석 → 기획서)
 const discussion = await gv.discuss(team);
 
-// 3. 실행 (LLM 호출: 태스크 → 리뷰 → 품질 게이트)
-//    discuss()는 기획서(document)만 반환하므로, 팀과 태스크를 함께 전달합니다.
+// 3. 실행 — discuss()는 document만 반환하므로 team + tasks를 직접 조합
 const result = await gv.execute({
   document: discussion.document,
   team: team.agents,
@@ -91,7 +120,9 @@ console.log(report);
 
 이 4단계가 슬래시 커맨드 `new` → `discuss` → `execute` → `report`에 대응됩니다.
 
-> **참고:** `discuss()`는 기획서 마크다운(`document`)만 반환합니다. `execute()`에는 `team`(팀원 배열)과 `tasks`(태스크 목록)를 직접 구성하여 전달해야 합니다. 슬래시 커맨드 플로우에서는 이 과정이 자동으로 처리됩니다.
+> **주의: discuss() → execute() 연결 시 수동 조합 필요**
+>
+> `discuss()`는 기획서(`document`)만 반환합니다. `execute()`를 호출하려면 `team.agents`와 `tasks`를 직접 구성하여 함께 전달해야 합니다. `discuss()` 결과를 그대로 `execute()`에 전달하면 에러 없이 빈 프로젝트가 생성되어 즉시 `not-started`를 반환합니다. 자세한 내용은 [트러블슈팅](#discuss-결과로-바로-execute-호출-시-동작하지-않음)을 참고하세요.
 
 ---
 

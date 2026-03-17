@@ -269,6 +269,32 @@ CEO: "날씨를 알려주는 텔레그램 봇을 만들고 싶어"
 
 ---
 
+## SDK로 사용하기
+
+슬래시 커맨드 대신 코드에서 직접 Good Vibe를 호출할 수 있습니다.
+
+```javascript
+import { GoodVibe } from 'good-vibe';
+
+const gv = new GoodVibe({ provider: 'claude' });
+
+// 1. 팀 구성 (LLM 불필요 — 바로 실행 가능)
+const team = await gv.buildTeam('날씨 알림 봇');
+
+// 2. 토론 → 3. 실행 → 4. 보고서
+const discussion = await gv.discuss(team);
+const result = await gv.execute({
+  document: discussion.document,
+  team: team.agents,
+  tasks: [{ id: 't-1', title: 'API 구현', assignee: 'backend', phase: 1 }],
+});
+console.log(gv.report(result));
+```
+
+자세한 내용은 [SDK 사용 가이드](09-sdk-usage.md)를 참고하세요.
+
+---
+
 ## 업데이트
 
 새 기능이나 버그 수정이 있으면 업데이트하세요:
