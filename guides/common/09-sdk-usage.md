@@ -770,14 +770,33 @@ await gv.discuss(team);
 const team = await gv.buildTeam('프로젝트');
 const discussion = await gv.discuss(team);
 
-// discuss() 결과만으로는 부족
-// await gv.execute(discussion); ← tasks와 team이 없음
+// ✗ discuss() 결과만으로는 부족 — 에러 없이 빈 프로젝트가 생성됨
+// await gv.execute(discussion);
 
-// team과 tasks를 조합하여 전달
+// ✓ team과 tasks를 조합하여 전달
 await gv.execute({
   document: discussion.document,
   team: team.agents,
   tasks: [{ id: 'task-1', title: 'API 구현', assignee: 'backend', phase: 1 }],
+});
+```
+
+> **주의:** `discuss()` 결과를 그대로 `execute()`에 전달하면 에러가 발생하지 않고, `tasks`와 `team`이 빈 배열인 프로젝트가 생성되어 즉시 `not-started` 또는 `completed`를 반환합니다. 반드시 `team`과 `tasks`를 직접 구성하여 전달하세요.
+
+### `createFromClaude()` 프로젝트가 CLI에서 보이지 않음
+
+현재 `createFromClaude()`의 FileStorage 경로(`~/.claude/good-vibe`)와 CLI의 프로젝트 경로(`~/.claude/good-vibe/projects/`)가 다릅니다. SDK adapter로 생성한 프로젝트가 `good-vibe:status`나 `good-vibe:projects`에서 보이지 않을 수 있습니다.
+
+CLI와 호환되는 경로를 사용하려면 storage를 직접 지정하세요:
+
+```javascript
+import { GoodVibe } from 'good-vibe';
+import { resolve } from 'path';
+import { homedir } from 'os';
+
+const gv = new GoodVibe({
+  provider: 'claude',
+  storage: resolve(homedir(), '.claude', 'good-vibe', 'projects'),
 });
 ```
 
