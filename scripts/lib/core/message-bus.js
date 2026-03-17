@@ -231,17 +231,20 @@ export class FileMessageBus {
 
   async markAsRead(messageId) {
     const allDirs = await this._listAgentDirs();
-    for (const dir of allDirs) {
-      const files = await readdir(dir).catch(() => []);
-      const file = files.find((f) => f.endsWith('.json') && f.includes(messageId));
-      if (file) {
-        const filePath = join(dir, file);
-        const data = await readFile(filePath, 'utf-8');
-        const msg = JSON.parse(data);
-        msg.read = true;
-        await writeFile(filePath, JSON.stringify(msg, null, 2), 'utf-8');
-        return;
-      }
+    // 모든 디렉토리를 병렬 탐색하여 N+1 순차 스캔 제거
+    const searchResults = await Promise.all(
+      allDirs.map(async (dir) => {
+        const files = await readdir(dir).catch(() => []);
+        const file = files.find((f) => f.endsWith('.json') && f.includes(messageId));
+        return file ? join(dir, file) : null;
+      }),
+    );
+    const filePath = searchResults.find(Boolean);
+    if (filePath) {
+      const data = await readFile(filePath, 'utf-8');
+      const msg = JSON.parse(data);
+      msg.read = true;
+      await writeFile(filePath, JSON.stringify(msg, null, 2), 'utf-8');
     }
   }
 
