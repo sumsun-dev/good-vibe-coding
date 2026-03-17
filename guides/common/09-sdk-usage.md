@@ -766,6 +766,149 @@ const gv = createFromClaude();
 
 ---
 
+## 실전 레시피
+
+### discuss 없이 바로 실행 (quick-build 패턴)
+
+간단한 프로젝트에서 토론을 생략하고 바로 실행하는 패턴입니다:
+
+```javascript
+import { GoodVibe } from 'good-vibe';
+
+const gv = new GoodVibe({ provider: 'claude' });
+const team = await gv.buildTeam('날씨 알림 텔레그램 봇', { complexity: 'simple' });
+
+// discuss() 없이 plan을 직접 구성
+const result = await gv.execute({
+  document: `# ${team.idea}\n텔레그램 봇으로 날씨 정보를 제공하는 서비스`,
+  team: team.agents,
+  tasks: [
+    { id: 'task-1', title: '봇 서버 구현', assignee: 'backend', phase: 1 },
+    { id: 'task-2', title: '테스트 작성', assignee: 'qa', phase: 2 },
+  ],
+});
+
+console.log(`상태: ${result.status}`); // → "completed"
+```
+
+### 진행 상황 모니터링
+
+Hook을 사용하여 실행 과정을 실시간으로 추적합니다:
+
+```javascript
+const result = await gv.execute(plan, {
+  onPhaseComplete: (phase) => {
+    console.log(`✅ Phase ${phase} 완료`);
+  },
+  onAgentCall: (roleId, response) => {
+    console.log(`🤖 ${roleId}: ${response.tokenCount} 토큰 사용`);
+  },
+  onEscalation: (context) => {
+    console.warn(`⚠️ 에스컬레이션: ${context.escalation.reason}`);
+    return 'skip'; // 실패한 Phase 건너뛰기
+  },
+});
+```
+
+### discuss → execute 연결 헬퍼
+
+`discuss()` 결과를 `execute()`에 전달할 때 매번 수동 조합하는 대신, 헬퍼 함수를 만들어 재사용하세요:
+
+```javascript
+function buildPlan(team, discussion, tasks) {
+  return {
+    document: discussion.document,
+    team: team.agents,
+    tasks,
+  };
+}
+
+// 사용
+const team = await gv.buildTeam('웹 대시보드');
+const discussion = await gv.discuss(team);
+const plan = buildPlan(team, discussion, [
+  { id: 'task-1', title: 'API 구현', assignee: 'backend', phase: 1 },
+  { id: 'task-2', title: 'UI 구현', assignee: 'frontend', phase: 1 },
+  { id: 'task-3', title: '통합 테스트', assignee: 'qa', phase: 2 },
+]);
+const result = await gv.execute(plan);
+```
+
+### 복잡도별 팀 구성 미리보기
+
+LLM 없이 세 가지 복잡도 옵션의 결과를 비교해볼 수 있습니다:
+
+```javascript
+const gv = new GoodVibe();
+
+for (const complexity of ['simple', 'medium', 'complex']) {
+  const team = await gv.buildTeam('SaaS 플랫폼', { complexity });
+  console.log(`[${complexity}] 모드: ${team.mode}, 팀: ${team.agents.length}명`);
+}
+// → [simple] 모드: quick-build, 팀: 3명
+// → [medium] 모드: plan-execute, 팀: 4명
+// → [complex] 모드: plan-only, 팀: 7명
+```
+
+---
+
+## API 빠른 참조
+
+### GoodVibe 클래스
+
+| 메서드         | 시그니처                               | LLM | 설명                  |
+| -------------- | -------------------------------------- | --- | --------------------- |
+| `buildTeam`    | `(idea: string, opts?) → Team`         | X   | 팀 구성 + 복잡도 분석 |
+| `discuss`      | `(team: Team, hooks?) → DiscussResult` | O   | 토론 루프 (수렴까지)  |
+| `execute`      | `(plan: Plan, hooks?) → ExecuteResult` | O   | 실행 루프 (Phase별)   |
+| `executeSteps` | `(plan: Plan) → AsyncGenerator<Step>`  | O   | 수동 스텝 실행        |
+| `report`       | `(result) → string`                    | X   | 마크다운 보고서       |
+
+### 생성자 옵션
+
+| 옵션       | 타입                               | 기본값       | 설명                               |
+| ---------- | ---------------------------------- | ------------ | ---------------------------------- |
+| `provider` | `'claude' \| 'openai' \| 'gemini'` | `'claude'`   | LLM 프로바이더                     |
+| `model`    | `string`                           | 프로바이더별 | 모델 이름                          |
+| `storage`  | `string \| StorageInterface`       | `'memory'`   | `'memory'`, 파일 경로, 커스텀 객체 |
+
+### Plan 객체 구조 (execute 입력)
+
+```javascript
+{
+  document: string,       // 기획서 마크다운 (discuss().document 또는 직접 작성)
+  team: AgentMember[],    // 팀원 배열 (buildTeam().agents)
+  tasks: TaskItem[],      // 태스크 목록 (직접 구성)
+  projectId?: string,     // 기존 프로젝트 재개 시
+}
+```
+
+### TaskItem 구조
+
+```javascript
+{ id: string, title: string, assignee: string, phase: number, description?: string }
+```
+
+### 주요 Hook
+
+| Hook              | 반환값                            | 호출 시점                     |
+| ----------------- | --------------------------------- | ----------------------------- |
+| `onEscalation`    | `'continue' \| 'skip' \| 'abort'` | 수정 2회 실패                 |
+| `onPhaseComplete` | `void`                            | Phase 완료                    |
+| `onAgentCall`     | `void`                            | 모든 LLM 호출                 |
+| `onRoundComplete` | `void`                            | 토론 라운드 완료              |
+| `onConfirmPhase`  | `boolean \| { phaseGuidance }`    | 다음 Phase 확인 (interactive) |
+
+### 에러 코드
+
+| 코드           | 의미          | 대처                  |
+| -------------- | ------------- | --------------------- |
+| `INPUT_ERROR`  | 입력 오류     | 파라미터 확인         |
+| `NOT_FOUND`    | 리소스 없음   | ID/경로 확인          |
+| `SYSTEM_ERROR` | LLM/내부 오류 | 재시도 또는 인증 확인 |
+
+---
+
 ## 트러블슈팅
 
 ### `NOT_FOUND`: 인증 정보가 없습니다
