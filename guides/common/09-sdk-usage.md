@@ -133,8 +133,8 @@ const team = await gv.buildTeam('실시간 채팅 웹앱', {
 {
   mode: 'plan-execute',          // 추천 모드
   agents: [                      // 팀원 배열
-    { roleId: 'cto', role: 'CTO', emoji: '...', priority: 1 },
-    { roleId: 'frontend', role: 'Frontend Engineer', ... },
+    { roleId: 'cto', role: 'CTO', emoji: '🏛️', model: 'sonnet', description: '기술 아키텍처 설계...', skills: [...], ... },
+    { roleId: 'frontend', role: 'Frontend Engineer', model: 'sonnet', ... },
     // ...
   ],
   optional: ['tech-writer'],     // 선택적 역할
