@@ -333,8 +333,12 @@ const gv = new GoodVibe({
 
 // 팀 구성 → 토론 → 실행 → 보고서
 const team = await gv.buildTeam('날씨 알림 텔레그램 봇', { complexity: 'simple' });
-const plan = await gv.discuss(team);
-const result = await gv.execute(plan);
+const { document } = await gv.discuss(team);
+const result = await gv.execute({
+  document,
+  team: team.agents,
+  tasks: [{ id: 't-1', title: 'Bot 구현', assignee: 'backend', phase: 1 }],
+});
 const report = gv.report(result);
 ```
 
