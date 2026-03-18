@@ -11,12 +11,30 @@ Good Vibe Coding은 슬래시 커맨드 외에 Node.js SDK도 제공합니다.
 npm install good-vibe
 ```
 
+> **요구사항:** Node.js 18 이상
+
 ---
 
-## 사전 준비: LLM 프로바이더 연결
+## 설치 확인 (LLM 불필요)
 
-SDK에서 `discuss()`와 `execute()`는 LLM을 호출합니다. 호출 전에 프로바이더 인증을 설정해야 합니다.
-`buildTeam()`과 `report()`는 LLM을 사용하지 않으므로 인증 없이도 동작합니다.
+인증 설정 전에도 SDK가 제대로 설치되었는지 바로 확인할 수 있습니다:
+
+```javascript
+import { GoodVibe } from 'good-vibe';
+
+const gv = new GoodVibe();
+const team = await gv.buildTeam('테스트 프로젝트');
+console.log(`모드: ${team.mode}, 팀원: ${team.agents.length}명`);
+// → "모드: plan-execute, 팀원: 4명"
+```
+
+`buildTeam()`과 `report()`는 로컬 계산만 하므로 LLM 인증 없이 즉시 결과를 반환합니다.
+
+---
+
+## LLM 프로바이더 연결 (discuss/execute 사용 시)
+
+`discuss()`와 `execute()`는 LLM을 호출합니다. 이 메서드를 사용하려면 프로바이더 인증을 설정하세요.
 
 ### 프로바이더별 연결
 
@@ -42,21 +60,6 @@ node scripts/cli.js verify-provider --provider claude
 # 전체 프로바이더 상태 확인
 node scripts/cli.js provider-status
 ```
-
-### 설치 확인 (LLM 불필요)
-
-인증 설정 전에도 SDK가 제대로 설치되었는지 확인할 수 있습니다:
-
-```javascript
-import { GoodVibe } from 'good-vibe';
-
-const gv = new GoodVibe();
-const team = await gv.buildTeam('테스트 프로젝트');
-console.log(`모드: ${team.mode}, 팀원: ${team.agents.length}명`);
-// → "모드: plan-execute, 팀원: 4명"
-```
-
-`buildTeam()`은 로컬 계산만 하므로 LLM 인증 없이 즉시 결과를 반환합니다.
 
 ---
 
