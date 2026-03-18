@@ -11,12 +11,30 @@ Good Vibe Coding은 슬래시 커맨드 외에 Node.js SDK도 제공합니다.
 npm install good-vibe
 ```
 
+> **요구사항:** Node.js 18 이상
+
 ---
 
-## 사전 준비: LLM 프로바이더 연결
+## 설치 확인 (LLM 불필요)
 
-SDK에서 `discuss()`와 `execute()`는 LLM을 호출합니다. 호출 전에 프로바이더 인증을 설정해야 합니다.
-`buildTeam()`과 `report()`는 LLM을 사용하지 않으므로 인증 없이도 동작합니다.
+인증 설정 전에도 SDK가 제대로 설치되었는지 바로 확인할 수 있습니다:
+
+```javascript
+import { GoodVibe } from 'good-vibe';
+
+const gv = new GoodVibe();
+const team = await gv.buildTeam('테스트 프로젝트');
+console.log(`모드: ${team.mode}, 팀원: ${team.agents.length}명`);
+// → "모드: plan-execute, 팀원: 4명"
+```
+
+`buildTeam()`과 `report()`는 로컬 계산만 하므로 LLM 인증 없이 즉시 결과를 반환합니다.
+
+---
+
+## LLM 프로바이더 연결 (discuss/execute 사용 시)
+
+`discuss()`와 `execute()`는 LLM을 호출합니다. 이 메서드를 사용하려면 프로바이더 인증을 설정하세요.
 
 ### 프로바이더별 연결
 
@@ -42,21 +60,6 @@ node scripts/cli.js verify-provider --provider claude
 # 전체 프로바이더 상태 확인
 node scripts/cli.js provider-status
 ```
-
-### 설치 확인 (LLM 불필요)
-
-인증 설정 전에도 SDK가 제대로 설치되었는지 확인할 수 있습니다:
-
-```javascript
-import { GoodVibe } from 'good-vibe';
-
-const gv = new GoodVibe();
-const team = await gv.buildTeam('테스트 프로젝트');
-console.log(`모드: ${team.mode}, 팀원: ${team.agents.length}명`);
-// → "모드: plan-execute, 팀원: 4명"
-```
-
-`buildTeam()`은 로컬 계산만 하므로 LLM 인증 없이 즉시 결과를 반환합니다.
 
 ---
 
@@ -133,8 +136,8 @@ const team = await gv.buildTeam('실시간 채팅 웹앱', {
 {
   mode: 'plan-execute',          // 추천 모드
   agents: [                      // 팀원 배열
-    { roleId: 'cto', role: 'CTO', emoji: '...', priority: 1 },
-    { roleId: 'frontend', role: 'Frontend Engineer', ... },
+    { roleId: 'cto', role: 'CTO', emoji: '🏛️', model: 'sonnet', description: '기술 아키텍처 설계...', skills: [...], ... },
+    { roleId: 'frontend', role: 'Frontend Engineer', model: 'sonnet', ... },
     // ...
   ],
   optional: ['tech-writer'],     // 선택적 역할
@@ -743,7 +746,7 @@ const gv = createFromClaude();
 NOT_FOUND: claude 인증 정보가 없습니다. 먼저 connect 명령으로 인증하세요.
 ```
 
-`discuss()` 또는 `execute()` 호출 시 발생합니다. [사전 준비](#사전-준비-llm-프로바이더-연결) 섹션을 참고하여 프로바이더를 연결하세요.
+`discuss()` 또는 `execute()` 호출 시 발생합니다. [LLM 프로바이더 연결](#llm-프로바이더-연결-discussexecute-사용-시) 섹션을 참고하여 프로바이더를 연결하세요.
 
 ### `INPUT_ERROR`: team.agents 배열이 비어있습니다
 
