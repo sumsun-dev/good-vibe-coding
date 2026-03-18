@@ -746,7 +746,7 @@ const gv = createFromClaude();
 NOT_FOUND: claude 인증 정보가 없습니다. 먼저 connect 명령으로 인증하세요.
 ```
 
-`discuss()` 또는 `execute()` 호출 시 발생합니다. [사전 준비](#사전-준비-llm-프로바이더-연결) 섹션을 참고하여 프로바이더를 연결하세요.
+`discuss()` 또는 `execute()` 호출 시 발생합니다. [LLM 프로바이더 연결](#llm-프로바이더-연결-discussexecute-사용-시) 섹션을 참고하여 프로바이더를 연결하세요.
 
 ### `INPUT_ERROR`: team.agents 배열이 비어있습니다
 
