@@ -10,6 +10,10 @@ export const config = Object.freeze({
     maxReviewers: 3,
     reviewModel: 'haiku',
     stagnationThreshold: 0.05,
+    compressMaxLength: 2000,
+    keyDecisionMaxLength: 1200,
+    minCompressedLength: 200,
+    defaultPriority: 5,
   }),
   messaging: Object.freeze({
     enabled: false,

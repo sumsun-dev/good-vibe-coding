@@ -100,7 +100,10 @@ function deduplicateFeedback(feedback) {
  * @param {number} [maxLength=2000] - 압축 후 최대 길이
  * @returns {string} 압축된 요약
  */
-export function compressPreviousContext(synthesis, maxLength = 2000) {
+export function compressPreviousContext(
+  synthesis,
+  maxLength = config.discussion.compressMaxLength,
+) {
   if (!synthesis || typeof synthesis !== 'string') return '';
   if (synthesis.length <= maxLength) return synthesis;
 
@@ -147,7 +150,7 @@ export function compressPreviousContext(synthesis, maxLength = 2000) {
     const compressed = extracted.join('\n').trim();
 
     // 추출 결과가 너무 짧으면 fallback
-    if (compressed.length < 200 && synthesis.length > maxLength) {
+    if (compressed.length < config.discussion.minCompressedLength && synthesis.length > maxLength) {
       return truncateText(synthesis, maxLength, '\n...(이전 라운드 내용 생략)');
     }
 
@@ -256,16 +259,15 @@ ${project.codebaseInfo ? `\n## 코드베이스 정보\n- 기술 스택: ${(proje
 당신의 말투와 성격으로 응답하세요.`;
 
   if (context.previousSynthesis) {
-    // 라운드 3+에서는 핵심 결정만 추출하여 더 공격적으로 압축
+    // maxRounds 이상에서는 핵심 결정만 추출하여 더 공격적으로 압축
     const round = context.round || 2;
-    const compressedPrev =
-      round >= 3
-        ? extractKeyDecisions(context.previousSynthesis)
-        : compressPreviousContext(context.previousSynthesis);
-    const header =
-      round >= 3
-        ? '이전 라운드 핵심 결정 사항입니다. 미합의/블로커 해결에 집중하세요.'
-        : '이전 라운드에서 종합된 기획서입니다. 이를 기반으로 수정/보완 의견을 제시하세요.';
+    const isLastRound = round >= config.convergence.maxRounds;
+    const compressedPrev = isLastRound
+      ? extractKeyDecisions(context.previousSynthesis)
+      : compressPreviousContext(context.previousSynthesis);
+    const header = isLastRound
+      ? '이전 라운드 핵심 결정 사항입니다. 미합의/블로커 해결에 집중하세요.'
+      : '이전 라운드에서 종합된 기획서입니다. 이를 기반으로 수정/보완 의견을 제시하세요.';
     user += `\n\n## 이전 라운드 기획서\n${header}\n\n${compressedPrev}`;
   }
 
@@ -558,7 +560,7 @@ export function groupAgentsForParallelDispatch(team) {
   const tiers = tierBounds.map(() => []);
 
   for (const member of team) {
-    const priority = member.discussionPriority || 5;
+    const priority = member.discussionPriority || config.discussion.defaultPriority;
     const tierIdx = tierBounds.findIndex((b) => priority <= b.max);
     tiers[tierIdx >= 0 ? tierIdx : tiers.length - 1].push(member);
   }
@@ -585,7 +587,9 @@ export function selectDiscussionReviewers(agents, maxReviewers) {
   const selected = [...universal.slice(0, max)];
   if (selected.length < max) {
     const sorted = [...others].sort(
-      (a, b) => (a.discussionPriority || 5) - (b.discussionPriority || 5),
+      (a, b) =>
+        (a.discussionPriority || config.discussion.defaultPriority) -
+        (b.discussionPriority || config.discussion.defaultPriority),
     );
     for (const agent of sorted) {
       if (selected.length >= max) break;
@@ -603,7 +607,7 @@ export function selectDiscussionReviewers(agents, maxReviewers) {
  * @param {number} [maxLength=1200] - 최대 길이
  * @returns {string} 핵심 결정 요약
  */
-export function extractKeyDecisions(synthesis, maxLength = 1200) {
+export function extractKeyDecisions(synthesis, maxLength = config.discussion.keyDecisionMaxLength) {
   if (!synthesis || typeof synthesis !== 'string') return '';
   if (synthesis.length <= maxLength) return synthesis;
 
