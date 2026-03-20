@@ -1,6 +1,7 @@
 import { readFile } from 'fs/promises';
 import { resolve } from 'path';
 import { getDefaultsForComplexity } from './complexity-analyzer.js';
+import { config } from '../core/config.js';
 import { LazyCache } from '../core/cache.js';
 import { pluginRoot } from '../core/app-paths.js';
 
@@ -186,7 +187,7 @@ export async function buildTeamWithDynamic(roleIds, dynamicRoles = [], options =
     reviewDomains: role.reviewDomains || [],
     workDomains: role.workDomains || [],
     dynamic: true,
-    discussionPriority: role.discussionPriority || 5,
+    discussionPriority: role.discussionPriority || config.discussion.defaultPriority,
   }));
 
   return [...catalogMembers, ...dynamicMembers];
