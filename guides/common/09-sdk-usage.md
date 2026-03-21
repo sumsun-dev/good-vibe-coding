@@ -738,6 +738,76 @@ const gv = createFromClaude();
 
 ---
 
+## TypeScript 지원
+
+SDK는 `types/index.d.ts`에 타입 정의를 포함하고 있어, TypeScript 프로젝트에서 별도 설치 없이 자동으로 타입을 인식합니다.
+
+### 주요 타입
+
+```typescript
+import type {
+  GoodVibeOptions, // 생성자 옵션
+  Team, // buildTeam() 반환값
+  BuildTeamOptions, // buildTeam() 옵션
+  DiscussResult, // discuss() 반환값
+  DiscussHooks, // discuss() 훅
+  ExecuteResult, // execute() 반환값
+  ExecuteHooks, // execute() 훅
+  Plan, // execute() 입력
+  StorageInterface, // 커스텀 스토리지 인터페이스
+  AgentMember, // 팀원 정보
+  ConvergenceResult, // 수렴 결과
+  AppErrorCode, // 에러 코드 ('INPUT_ERROR' | 'NOT_FOUND' | 'SYSTEM_ERROR')
+} from 'good-vibe';
+```
+
+### 커스텀 스토리지 구현
+
+`StorageInterface`를 사용하면 커스텀 스토리지를 타입 안전하게 구현할 수 있습니다:
+
+```typescript
+import { GoodVibe } from 'good-vibe';
+import type { StorageInterface } from 'good-vibe';
+
+const redisStorage: StorageInterface = {
+  async read(id) {
+    const data = await redis.get(`project:${id}`);
+    return data ? JSON.parse(data) : null;
+  },
+  async write(id, data) {
+    await redis.set(`project:${id}`, JSON.stringify(data));
+  },
+  async list() {
+    const keys = await redis.keys('project:*');
+    const values = await Promise.all(keys.map((k) => redis.get(k)));
+    return values.filter(Boolean).map((v) => JSON.parse(v!));
+  },
+};
+
+const gv = new GoodVibe({ storage: redisStorage });
+```
+
+### Hook 타입 활용
+
+```typescript
+import type { ExecuteHooks, EscalationContext } from 'good-vibe';
+
+const hooks: ExecuteHooks = {
+  onEscalation: async (context: EscalationContext) => {
+    const { reason, unresolvedIssues } = context.escalation;
+    if (unresolvedIssues.some((i) => i.category === 'security')) return 'abort';
+    return 'skip';
+  },
+  onPhaseComplete: (phase, context) => {
+    console.log(`Phase ${phase} 완료`);
+  },
+};
+```
+
+> `good-vibe/plugin` 모듈의 타입도 포함되어 있어 `createFromClaude()` 호출 시 자동 완성이 동작합니다.
+
+---
+
 ## 트러블슈팅
 
 ### `NOT_FOUND`: 인증 정보가 없습니다
