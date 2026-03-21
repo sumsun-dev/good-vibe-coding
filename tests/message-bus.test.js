@@ -241,4 +241,18 @@ describe('FileMessageBus 원자적 쓰기', () => {
     const tmpFiles = files.filter((f) => f.startsWith('.tmp-'));
     expect(tmpFiles.length).toBe(0);
   });
+
+  it('markAsRead는 손상된 JSON 파일을 무시한다', async () => {
+    const { writeFile } = await import('fs/promises');
+    await bus.send('cto', 'qa', { type: 'question', content: 'test' });
+    const messages = await bus.receive('qa');
+    const msgId = messages[0].id;
+    // 메시지 파일을 손상된 JSON으로 덮어쓰기
+    const qaDir = resolve(TMP_DIR, 'qa');
+    const files = await readdir(qaDir);
+    const msgFile = files.find((f) => f.includes(msgId));
+    await writeFile(resolve(qaDir, msgFile), '{corrupted json!!!', 'utf-8');
+    // markAsRead가 에러 없이 조용히 반환되어야 한다
+    await expect(bus.markAsRead(msgId)).resolves.toBeUndefined();
+  });
 });
