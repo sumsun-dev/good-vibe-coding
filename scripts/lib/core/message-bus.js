@@ -242,7 +242,12 @@ export class FileMessageBus {
     const filePath = searchResults.find(Boolean);
     if (filePath) {
       const data = await readFile(filePath, 'utf-8');
-      const msg = JSON.parse(data);
+      let msg;
+      try {
+        msg = JSON.parse(data);
+      } catch {
+        return;
+      }
       msg.read = true;
       await writeFile(filePath, JSON.stringify(msg, null, 2), 'utf-8');
     }

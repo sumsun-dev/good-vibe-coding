@@ -260,8 +260,9 @@ ${project.codebaseInfo ? `\n## 코드베이스 정보\n- 기술 스택: ${(proje
 
   if (context.previousSynthesis) {
     // maxRounds 이상에서는 핵심 결정만 추출하여 더 공격적으로 압축
-    const round = context.round || 2;
-    const isLastRound = round >= config.convergence.maxRounds;
+    // previousSynthesis가 존재하면 최소 라운드 2이므로 기본값 2 사용
+    const compressionRound = context.round || 2;
+    const isLastRound = compressionRound >= config.convergence.maxRounds;
     const compressedPrev = isLastRound
       ? extractKeyDecisions(context.previousSynthesis)
       : compressPreviousContext(context.previousSynthesis);
