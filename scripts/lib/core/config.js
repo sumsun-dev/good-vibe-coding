@@ -14,6 +14,7 @@ export const config = Object.freeze({
     keyDecisionMaxLength: 1200,
     minCompressedLength: 200,
     defaultPriority: 5,
+    tierBounds: Object.freeze([2, 4, 7]),
   }),
   messaging: Object.freeze({
     enabled: false,

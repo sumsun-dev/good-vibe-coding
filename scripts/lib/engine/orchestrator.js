@@ -551,10 +551,11 @@ export function trackConvergenceEvolution(currentResult, previousRounds) {
 export function groupAgentsForParallelDispatch(team) {
   if (!team || team.length === 0) return [];
 
+  const bounds = config.discussion.tierBounds;
   const tierBounds = [
-    { max: 2 }, // Tier 1: priority 1-2
-    { max: 4 }, // Tier 2: priority 3-4
-    { max: 7 }, // Tier 3: priority 5-7
+    { max: bounds[0] }, // Tier 1: priority 1-2
+    { max: bounds[1] }, // Tier 2: priority 3-4
+    { max: bounds[2] }, // Tier 3: priority 5-7
     { max: Infinity }, // Tier 4: priority 8+
   ];
 

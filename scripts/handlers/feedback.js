@@ -39,7 +39,8 @@ export const commands = {
 
   'parse-suggestions': async () => {
     const data = await readStdin();
-    const suggestions = parseImprovementSuggestions(data.analysisText || '');
+    requireFields(data, ['analysisText']);
+    const suggestions = parseImprovementSuggestions(data.analysisText);
     output(suggestions);
   },
 
