@@ -193,6 +193,8 @@ export async function buildTeamWithDynamic(roleIds, dynamicRoles = [], options =
   return [...catalogMembers, ...dynamicMembers];
 }
 
+const DEFAULT_ROLE_PRIORITY = 99;
+
 // 역할 우선순위 — 낮을수록 core에 우선 배치
 const ROLE_PRIORITY = {
   cto: 0,
@@ -242,13 +244,16 @@ export async function getOptimizedTeam(projectType, complexity, codebaseInfo = n
   for (const role of baseRoles) {
     if (!(role in ROLE_PRIORITY)) {
       process.stderr.write(
-        `[gvc] 동적 역할 "${role}"에 우선순위가 정의되지 않았습니다 (기본값 99 사용)\n`,
+        `[gvc] 동적 역할 "${role}"에 우선순위가 정의되지 않았습니다 (기본값 ${DEFAULT_ROLE_PRIORITY} 사용)\n`,
       );
     }
   }
 
   // 우선순위 정렬 (낮을수록 core 우선)
-  const sorted = [...baseRoles].sort((a, b) => (ROLE_PRIORITY[a] ?? 99) - (ROLE_PRIORITY[b] ?? 99));
+  const sorted = [...baseRoles].sort(
+    (a, b) =>
+      (ROLE_PRIORITY[a] ?? DEFAULT_ROLE_PRIORITY) - (ROLE_PRIORITY[b] ?? DEFAULT_ROLE_PRIORITY),
+  );
 
   // Rule 2: non-required를 max 기준으로 절단
   const coreByPriority = sorted.slice(0, defaults.teamSize.max);
@@ -258,7 +263,10 @@ export async function getOptimizedTeam(projectType, complexity, codebaseInfo = n
   const requiredSet = new Set(requiredRoles);
   const missingRequired = overflow.filter((r) => requiredSet.has(r));
   const coreRoles = [...coreByPriority, ...missingRequired];
-  coreRoles.sort((a, b) => (ROLE_PRIORITY[a] ?? 99) - (ROLE_PRIORITY[b] ?? 99));
+  coreRoles.sort(
+    (a, b) =>
+      (ROLE_PRIORITY[a] ?? DEFAULT_ROLE_PRIORITY) - (ROLE_PRIORITY[b] ?? DEFAULT_ROLE_PRIORITY),
+  );
 
   const optionalSet = new Set([
     ...typeRec.optional,
