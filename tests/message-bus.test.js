@@ -89,6 +89,12 @@ function makeMessageBusTests(name, createBus) {
       expect(messages).toEqual([]);
     });
 
+    it('markAsRead에 유효하지 않은 messageId를 전달하면 에러가 발생한다', async () => {
+      await expect(bus.markAsRead('../traversal')).rejects.toThrow('유효하지 않은 메시지 ID');
+      await expect(bus.markAsRead('')).rejects.toThrow('유효하지 않은 메시지 ID');
+      await expect(bus.markAsRead(null)).rejects.toThrow('유효하지 않은 메시지 ID');
+    });
+
     it('markAsRead로 메시지를 읽음 처리할 수 있다', async () => {
       await bus.send('cto', 'qa', { type: 'question', content: '질문' });
       const messages = await bus.receive('qa');
@@ -240,6 +246,17 @@ describe('FileMessageBus 원자적 쓰기', () => {
     const files = await readdir(resolve(TMP_DIR, 'qa'));
     const tmpFiles = files.filter((f) => f.startsWith('.tmp-'));
     expect(tmpFiles.length).toBe(0);
+  });
+
+  it('손상된 메시지 파일이 있어도 나머지 메시지는 정상 수신된다', async () => {
+    const { writeFile } = await import('fs/promises');
+    await bus.send('cto', 'qa', { type: 'question', content: '정상 메시지' });
+    // 손상된 JSON 파일을 직접 생성
+    const qaDir = resolve(TMP_DIR, 'qa');
+    await writeFile(resolve(qaDir, '9999999999999-cto-msg-0-bad00000.json'), '{corrupted', 'utf-8');
+    const messages = await bus.receive('qa', { includeRead: true });
+    expect(messages.length).toBe(1);
+    expect(messages[0].content).toBe('정상 메시지');
   });
 
   it('markAsRead는 손상된 JSON 파일을 무시한다', async () => {

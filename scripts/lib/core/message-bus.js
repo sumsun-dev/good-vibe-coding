@@ -31,6 +31,13 @@ function nextSeq() {
 }
 
 const AGENT_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
+const MESSAGE_ID_PATTERN = /^msg-\d+-[a-f0-9]{8}$/;
+
+function validateMessageId(messageId) {
+  if (!messageId || typeof messageId !== 'string' || !MESSAGE_ID_PATTERN.test(messageId)) {
+    throw inputError(`유효하지 않은 메시지 ID: ${messageId} (msg-{timestamp}-{hex8} 형식만 허용)`);
+  }
+}
 
 function validateAgentId(agentId) {
   if (!agentId || typeof agentId !== 'string' || !AGENT_ID_PATTERN.test(agentId)) {
@@ -112,6 +119,7 @@ export class MemoryMessageBus {
   }
 
   async markAsRead(messageId) {
+    validateMessageId(messageId);
     const msg = this._messages.find((m) => m.id === messageId);
     if (msg) msg.read = true;
   }
@@ -230,6 +238,7 @@ export class FileMessageBus {
   }
 
   async markAsRead(messageId) {
+    validateMessageId(messageId);
     const allDirs = await this._listAgentDirs();
     // 모든 디렉토리를 병렬 탐색하여 N+1 순차 스캔 제거
     const searchResults = await Promise.all(
@@ -287,13 +296,19 @@ export class FileMessageBus {
     try {
       const files = await readdir(agentDir);
       const jsonFiles = files.filter((f) => f.endsWith('.json') && !f.startsWith('.tmp-'));
-      const messages = await Promise.all(
+      const parsed = await Promise.all(
         jsonFiles.map(async (file) => {
-          const data = await readFile(join(agentDir, file), 'utf-8');
-          return JSON.parse(data);
+          try {
+            const data = await readFile(join(agentDir, file), 'utf-8');
+            return JSON.parse(data);
+          } catch {
+            return null;
+          }
         }),
       );
-      return messages.sort((a, b) => a.timestamp - b.timestamp || (a.seq || 0) - (b.seq || 0));
+      return parsed
+        .filter(Boolean)
+        .sort((a, b) => a.timestamp - b.timestamp || (a.seq || 0) - (b.seq || 0));
     } catch {
       return [];
     }
