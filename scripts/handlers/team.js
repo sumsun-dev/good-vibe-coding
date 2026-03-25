@@ -26,6 +26,7 @@ export const commands = {
 
   'optimized-team': async () => {
     const data = await readStdin();
+    requireFields(data, ['projectType', 'complexity']);
     const result = await getOptimizedTeam(data.projectType, data.complexity);
     output(result);
   },
