@@ -87,6 +87,13 @@ describe('handlers/team', () => {
     expect(result.team).toHaveLength(3);
   });
 
+  it('optimized-team → projectType/complexity 필수', () => {
+    const result = cliExecRaw('optimized-team', {});
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('INPUT_ERROR');
+    expect(result.stderr).toContain('projectType');
+  });
+
   it('optimized-team → 프로젝트 타입별 최적 팀', () => {
     const result = cliExec('optimized-team', {
       projectType: 'web-app',
