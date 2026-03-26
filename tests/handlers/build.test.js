@@ -127,6 +127,11 @@ describe('build handler', () => {
       await expect(commands['commit-phase']()).rejects.toThrow('phase');
     });
 
+    it('extract-materializable-blocks: taskOutput 누락 시 INPUT_ERROR', async () => {
+      readStdin.mockResolvedValue({});
+      await expect(commands['extract-materializable-blocks']()).rejects.toThrow('taskOutput');
+    });
+
     it('commit-phase-enhanced: team 누락 시 INPUT_ERROR', async () => {
       readStdin.mockResolvedValue({
         projectDir: '/tmp/p',

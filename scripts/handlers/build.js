@@ -40,6 +40,7 @@ export const commands = {
 
   'extract-materializable-blocks': async () => {
     const data = await readStdin();
+    requireFields(data, ['taskOutput']);
     const blocks = extractMaterializableBlocks(data.taskOutput);
     output({ blocks });
   },
