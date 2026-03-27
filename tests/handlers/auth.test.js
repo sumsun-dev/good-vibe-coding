@@ -8,6 +8,13 @@ vi.mock('../../scripts/cli-utils.js', () => ({
 
 vi.mock('../../scripts/lib/core/validators.js', () => ({
   inputError: vi.fn((msg) => new Error(msg)),
+  requireFields: vi.fn((data, fields) => {
+    for (const f of fields) {
+      if (data[f] === undefined || data[f] === null) {
+        throw new Error(`필수 필드 누락: ${f}`);
+      }
+    }
+  }),
 }));
 
 vi.mock('../../scripts/lib/llm/auth-manager.js', () => ({
@@ -158,7 +165,28 @@ describe('auth handler', () => {
     });
   });
 
+  describe('verify-provider', () => {
+    it('프로바이더 ID 없이 호출하면 에러를 던져야 한다', async () => {
+      readStdin.mockResolvedValue({});
+      await expect(commands['verify-provider']()).rejects.toThrow('프로바이더 ID가 필요합니다');
+    });
+
+    it('프로바이더 ID가 있으면 검증 결과를 출력해야 한다', async () => {
+      readStdin.mockResolvedValue({ provider: 'gemini' });
+      verifyConnection.mockResolvedValue({ connected: true, model: 'gemini-2.5-pro' });
+
+      await commands['verify-provider']();
+      expect(verifyConnection).toHaveBeenCalledWith('gemini');
+      expect(output).toHaveBeenCalledWith({ connected: true, model: 'gemini-2.5-pro' });
+    });
+  });
+
   describe('resolve-review-assignments', () => {
+    it('reviewers 필드 없이 호출하면 에러를 던져야 한다', async () => {
+      readStdin.mockResolvedValue({});
+      await expect(commands['resolve-review-assignments']()).rejects.toThrow('reviewers');
+    });
+
     it('리뷰 할당을 해석하고 출력해야 한다', async () => {
       const reviewers = [{ roleId: 'qa' }];
       const config = { providers: { claude: { enabled: true } } };
