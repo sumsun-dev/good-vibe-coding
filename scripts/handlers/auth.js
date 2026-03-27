@@ -87,6 +87,7 @@ export const commands = {
   'verify-provider': async () => {
     const data = await readStdin();
     const providerId = data.provider || args[0];
+    if (!providerId) throw inputError('프로바이더 ID가 필요합니다');
     const result = await verifyConnection(providerId);
     output(result);
   },
@@ -103,6 +104,7 @@ export const commands = {
 
   'resolve-review-assignments': async () => {
     const data = await readStdin();
+    requireFields(data, ['reviewers']);
     const config = data.providerConfig || (await loadProvidersConfig());
     const assignments = await resolveReviewAssignments(data.reviewers, config);
     output({ assignments });
