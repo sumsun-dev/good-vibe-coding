@@ -112,8 +112,9 @@ export const commands = {
 
   'update-provider-meta': async () => {
     const data = await readStdin();
+    requireFields(data, ['meta']);
     const meta = data.meta;
-    if (!meta || typeof meta !== 'object') throw inputError('meta 객체가 필요합니다');
+    if (typeof meta !== 'object') throw inputError('meta는 객체여야 합니다');
     const config = await loadProvidersConfig();
     const updated = { ...config, meta: { ...config.meta, ...meta } };
     await saveProvidersConfig(updated);

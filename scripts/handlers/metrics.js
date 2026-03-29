@@ -3,7 +3,7 @@
  */
 import { readStdin, output, outputOk, parseArgs } from '../cli-utils.js';
 import { getProject, recordMetrics } from '../lib/project/project-manager.js';
-import { inputError, notFoundError } from '../lib/core/validators.js';
+import { inputError, notFoundError, requireFields } from '../lib/core/validators.js';
 import { getCostSummary, buildMetricsDashboard } from '../lib/project/project-metrics.js';
 
 const [, , , ...args] = process.argv;
@@ -11,7 +11,7 @@ const [, , , ...args] = process.argv;
 export const commands = {
   'record-metrics': async () => {
     const data = await readStdin();
-    if (!data.id) throw inputError('--id가 필요합니다');
+    requireFields(data, ['id']);
     const updated = await recordMetrics(data.id, data);
     outputOk({ metrics: updated.metrics });
   },

@@ -93,7 +93,7 @@ export const commands = {
 
   'merge-all-overrides': async () => {
     const data = await readStdin();
-    if (!data.baseMd && data.baseMd !== '') throw inputError('baseMd가 필요합니다');
+    requireFields(data, ['baseMd']);
     if (data.overrides !== undefined && data.overrides !== null) {
       requireArray(data.overrides, 'overrides');
     }
