@@ -12,10 +12,14 @@ vi.mock('../../scripts/lib/project/project-manager.js', () => ({
   recordMetrics: vi.fn(),
 }));
 
-vi.mock('../../scripts/lib/core/validators.js', () => ({
-  inputError: vi.fn((msg) => new Error(msg)),
-  notFoundError: vi.fn((msg) => new Error(msg)),
-}));
+vi.mock('../../scripts/lib/core/validators.js', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    inputError: vi.fn((msg) => new Error(msg)),
+    notFoundError: vi.fn((msg) => new Error(msg)),
+  };
+});
 
 vi.mock('../../scripts/lib/project/project-metrics.js', () => ({
   getCostSummary: vi.fn(),
