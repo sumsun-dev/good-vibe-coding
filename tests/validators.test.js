@@ -158,6 +158,16 @@ describe('AppError', () => {
     const err = new AppError('test');
     expect(err.code).toBe('SYSTEM_ERROR');
   });
+
+  it('action 필드를 지원한다', () => {
+    const err = new AppError('test', 'INPUT_ERROR', 'retry with --id flag');
+    expect(err.action).toBe('retry with --id flag');
+  });
+
+  it('action 기본값은 null이다', () => {
+    const err = new AppError('test');
+    expect(err.action).toBeNull();
+  });
 });
 
 describe('inputError / notFoundError', () => {
@@ -171,6 +181,21 @@ describe('inputError / notFoundError', () => {
     const err = notFoundError('프로젝트 없음');
     expect(err.code).toBe('NOT_FOUND');
     expect(err.message).toBe('프로젝트 없음');
+  });
+
+  it('inputError는 action을 지원한다', () => {
+    const err = inputError('필드 누락', '필드를 확인하세요');
+    expect(err.action).toBe('필드를 확인하세요');
+  });
+
+  it('notFoundError는 action을 지원한다', () => {
+    const err = notFoundError('프로젝트 없음', 'good-vibe:projects로 확인');
+    expect(err.action).toBe('good-vibe:projects로 확인');
+  });
+
+  it('action 없이 호출하면 null이다', () => {
+    expect(inputError('test').action).toBeNull();
+    expect(notFoundError('test').action).toBeNull();
   });
 });
 

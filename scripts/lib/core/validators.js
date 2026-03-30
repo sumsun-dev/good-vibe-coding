@@ -8,34 +8,42 @@ import { sep, normalize } from 'path';
 /**
  * 구조화된 에러 클래스.
  * code: 'INPUT_ERROR' | 'NOT_FOUND' | 'SYSTEM_ERROR'
+ * action: 사용자가 취해야 할 다음 행동 (선택)
  */
 export class AppError extends Error {
-  constructor(message, code = 'SYSTEM_ERROR') {
+  constructor(message, code = 'SYSTEM_ERROR', action = null) {
     super(message);
     this.name = 'AppError';
     this.code = code;
+    this.action = action;
   }
 }
 
 /**
  * 입력 검증 에러를 생성한다.
+ * @param {string} message - 에러 메시지
+ * @param {string|null} [action] - 사용자가 취해야 할 다음 행동
  */
-export function inputError(message) {
-  return new AppError(message, 'INPUT_ERROR');
+export function inputError(message, action) {
+  return new AppError(message, 'INPUT_ERROR', action || null);
 }
 
 /**
  * 리소스를 찾을 수 없는 에러를 생성한다.
+ * @param {string} message - 에러 메시지
+ * @param {string|null} [action] - 사용자가 취해야 할 다음 행동
  */
-export function notFoundError(message) {
-  return new AppError(message, 'NOT_FOUND');
+export function notFoundError(message, action) {
+  return new AppError(message, 'NOT_FOUND', action || null);
 }
 
 /**
  * 시스템 에러를 생성한다.
+ * @param {string} message - 에러 메시지
+ * @param {string|null} [action] - 사용자가 취해야 할 다음 행동
  */
-export function systemError(message) {
-  return new AppError(message, 'SYSTEM_ERROR');
+export function systemError(message, action) {
+  return new AppError(message, 'SYSTEM_ERROR', action || null);
 }
 
 /**
@@ -104,7 +112,10 @@ export function requireFields(data, fields) {
     (f) => !Object.hasOwn(data, f) || data[f] === undefined || data[f] === null,
   );
   if (missing.length > 0) {
-    throw inputError(`다음 필드가 필요합니다: ${missing.join(', ')}`);
+    throw inputError(
+      `다음 필드가 필요합니다: ${missing.join(', ')}`,
+      `stdin으로 JSON 전달 시 ${missing.join(', ')} 필드를 포함하세요`,
+    );
   }
   return data;
 }

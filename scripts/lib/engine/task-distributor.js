@@ -105,6 +105,10 @@ export function buildExecutionPrompt(task, teamMember, context = {}) {
 - 사용자가 수정할 만한 부분과 방법
   - 예: "뉴스 소스 변경 → src/config.js의 NEWS_SOURCES 수정"`;
 
+  if (isCodeTask(task)) {
+    prompt += `\n\n## 구현 전 탐색 (Search Before Building)\n\n구현을 시작하기 전에 반드시 다음을 수행하세요:\n1. 프로젝트 내 기존 코드에서 유사한 패턴, 함수, 모듈을 검색하세요\n2. 이미 존재하는 유틸리티나 헬퍼가 있다면 재사용하세요\n3. 새로 만들기 전에 기존 코드와 일관된 패턴을 따르세요`;
+  }
+
   if (context.planExcerpt) {
     prompt += `\n\n## 기획 결정사항\n${context.planExcerpt}`;
   }
@@ -119,6 +123,10 @@ export function buildExecutionPrompt(task, teamMember, context = {}) {
 
   if (context.consultationEnabled) {
     prompt += `\n\n## 전문가 상담\n다른 역할에게 질문이 필요하면:\n\`[CONSULT:역할ID]: 질문\`\n(최대 1개, 선택사항)`;
+  }
+
+  if (context.allowedPaths && context.allowedPaths.length > 0) {
+    prompt += `\n\n## 편집 범위 제한\n\n이 Phase에서는 다음 경로의 파일만 수정하세요:\n${context.allowedPaths.map((p) => `- ${p}`).join('\n')}\n\n위 경로 외의 파일은 읽기만 가능합니다. 수정이 필요하면 리뷰에서 별도 요청하세요.`;
   }
 
   return prompt;
@@ -353,6 +361,8 @@ export function buildTddExecutionPrompt(task, teamMember, context = {}) {
 - 사용자가 수정할 만한 부분과 방법
   - 예: "뉴스 소스 변경 → src/config.js의 NEWS_SOURCES 수정"`;
 
+  prompt += `\n\n## 구현 전 탐색 (Search Before Building)\n\n구현을 시작하기 전에 반드시 다음을 수행하세요:\n1. 프로젝트 내 기존 코드에서 유사한 패턴, 함수, 모듈을 검색하세요\n2. 이미 존재하는 유틸리티나 헬퍼가 있다면 재사용하세요\n3. 새로 만들기 전에 기존 코드와 일관된 패턴을 따르세요`;
+
   if (context.projectType) {
     prompt += `\n\n## 프로젝트 힌트\n- 프로젝트 유형: ${context.projectType}`;
   }
@@ -371,6 +381,10 @@ export function buildTddExecutionPrompt(task, teamMember, context = {}) {
 
   if (context.consultationEnabled) {
     prompt += `\n\n## 전문가 상담\n다른 역할에게 질문이 필요하면:\n\`[CONSULT:역할ID]: 질문\`\n(최대 1개, 선택사항)`;
+  }
+
+  if (context.allowedPaths && context.allowedPaths.length > 0) {
+    prompt += `\n\n## 편집 범위 제한\n\n이 Phase에서는 다음 경로의 파일만 수정하세요:\n${context.allowedPaths.map((p) => `- ${p}`).join('\n')}\n\n위 경로 외의 파일은 읽기만 가능합니다. 수정이 필요하면 리뷰에서 별도 요청하세요.`;
   }
 
   return prompt;

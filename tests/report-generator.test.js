@@ -8,6 +8,7 @@ import {
   generateImplementationDetailsSection,
   generateEnvGuideSection,
   generateGettingStartedSection,
+  buildPhaseReflection,
 } from '../scripts/lib/output/report-generator.js';
 
 const SAMPLE_PROJECT = {
@@ -376,6 +377,61 @@ describe('generateGettingStartedSection', () => {
 
   it('데이터가 없으면 빈 문자열을 반환한다', () => {
     expect(generateGettingStartedSection({})).toBe('');
+  });
+});
+
+// --- buildPhaseReflection ---
+
+describe('buildPhaseReflection', () => {
+  it('phaseResults 배열이 있으면 회고 섹션을 반환한다', () => {
+    const project = {
+      executionState: {
+        phaseResults: [
+          { phaseNumber: 1, tasks: [{ id: 't1' }, { id: 't2' }], fixAttempts: 0, qualityScore: 90 },
+          { phaseNumber: 2, tasks: [{ id: 't3' }], fixAttempts: 1, qualityScore: 75 },
+        ],
+      },
+    };
+    const result = buildPhaseReflection(project);
+    expect(result).toContain('## Phase별 회고');
+    expect(result).toContain('Phase 1');
+    expect(result).toContain('태스크 2개');
+    expect(result).toContain('첫 시도 통과');
+    expect(result).toContain('90점');
+    expect(result).toContain('Phase 2');
+    expect(result).toContain('수정 1회');
+    expect(result).toContain('75점');
+  });
+
+  it('phaseResults가 없으면 빈 문자열을 반환한다', () => {
+    expect(buildPhaseReflection({})).toBe('');
+    expect(buildPhaseReflection({ executionState: null })).toBe('');
+    expect(buildPhaseReflection({ executionState: {} })).toBe('');
+  });
+
+  it('phaseResults가 빈 배열이면 빈 문자열을 반환한다', () => {
+    const project = { executionState: { phaseResults: [] } };
+    expect(buildPhaseReflection(project)).toBe('');
+  });
+
+  it('qualityScore가 없으면 "-"으로 표시한다', () => {
+    const project = {
+      executionState: {
+        phaseResults: [{ phaseNumber: 1, tasks: [], fixAttempts: 0 }],
+      },
+    };
+    const result = buildPhaseReflection(project);
+    expect(result).toContain('품질 -');
+  });
+
+  it('phaseNumber가 없으면 "?"로 표시한다', () => {
+    const project = {
+      executionState: {
+        phaseResults: [{ tasks: [], fixAttempts: 0 }],
+      },
+    };
+    const result = buildPhaseReflection(project);
+    expect(result).toContain('Phase ?');
   });
 });
 
