@@ -112,6 +112,17 @@ run_phase4() {
       sla_dashboard=$(node "${SCRIPT_DIR}/lib/ux-sla-evaluator.js" dashboard "${RUN_DIR}/round-metrics.jsonl" 2>/dev/null || echo "")
     fi
 
+    # 생성된 이슈 목록 (closes 키워드로 자동 닫기)
+    local issues_section=""
+    if [[ -f "${RUN_DIR}/issues-created.txt" ]] && [[ -s "${RUN_DIR}/issues-created.txt" ]]; then
+      issues_section=$'\n### 관련 이슈\n\n'
+      while read -r num; do
+        local issue_title
+        issue_title=$(gh issue view "$num" --json title --jq '.title' 2>/dev/null || echo "제목 조회 실패")
+        issues_section+="- closes #${num} ${issue_title}"$'\n'
+      done < "${RUN_DIR}/issues-created.txt"
+    fi
+
     local pr_body
     pr_body=$(cat <<BODY_EOF
 ## UX Improvement 결과
@@ -122,7 +133,7 @@ run_phase4() {
 ### 개선 요약
 
 > ${issue_count}건의 UX 개선점을 발견하고, ${file_count}개 파일을 수정했습니다.
-
+${issues_section}
 ${sla_dashboard}
 
 ---

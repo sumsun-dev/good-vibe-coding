@@ -211,9 +211,9 @@ run_phase4() {
         issue_title=$(gh issue view "$num" --json title --jq '.title' 2>/dev/null || echo "제목 조회 실패")
         issue_labels=$(gh issue view "$num" --json labels --jq '[.labels[].name] | join(", ")' 2>/dev/null || echo "")
         if [[ -n "$issue_labels" ]]; then
-          issues_section+="- #${num} [${issue_labels}] ${issue_title}"$'\n'
+          issues_section+="- closes #${num} [${issue_labels}] ${issue_title}"$'\n'
         else
-          issues_section+="- #${num} ${issue_title}"$'\n'
+          issues_section+="- closes #${num} ${issue_title}"$'\n'
         fi
       done < "${RUN_DIR}/issues-created.txt"
     fi

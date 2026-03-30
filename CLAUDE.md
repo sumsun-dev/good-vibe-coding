@@ -792,6 +792,19 @@ logs/
 - 테스트: `npm test` (Vitest), 커버리지 목표 80%+
 - 파일명: kebab-case
 - 커밋: conventional commits (`feat|fix|refactor|docs|test|chore(scope): subject`)
+- **CLI 우선 사용**: 외부 도구 연동 시 MCP 도구 대신 CLI를 직접 사용. MCP는 샌드박스 환경에서 키체인/인증 접근이 제한될 수 있음
+
+## 사용 가능한 CLI 도구
+
+| CLI                    | 용도                                             |
+| ---------------------- | ------------------------------------------------ |
+| `gh`                   | GitHub (이슈, PR, 리포지토리 관리)               |
+| `git`                  | 버전 관리                                        |
+| `ctx7`                 | Context7 문서 조회 (`ctx7 library`, `ctx7 docs`) |
+| `node` / `npm` / `npx` | Node.js 런타임, 패키지 관리                      |
+| `gemini`               | Gemini CLI (멀티리뷰)                            |
+| `codex`                | Codex CLI (멀티리뷰)                             |
+| `claude`               | Claude Code CLI                                  |
 
 ## 개발 워크플로우
 

@@ -374,6 +374,11 @@ export function generateReport(project) {
     report += '\n\n' + executionSection;
   }
 
+  const phaseReflection = buildPhaseReflection(project);
+  if (phaseReflection) {
+    report += '\n\n' + phaseReflection;
+  }
+
   const implDetails = generateImplementationDetailsSection(project);
   if (implDetails) report += '\n\n' + implDetails;
 
@@ -454,6 +459,39 @@ export function generateExecutionSummary(project) {
   }
 
   return section;
+}
+
+/**
+ * Phase별 회고 요약을 생성한다.
+ * phaseResults는 배열 또는 객체(숫자 키) 형태를 모두 지원한다.
+ * @param {object} project - 프로젝트 전체 데이터
+ * @returns {string} Phase별 회고 마크다운 (데이터 없으면 빈 문자열)
+ */
+export function buildPhaseReflection(project) {
+  const exec = project.executionState;
+  if (!exec || !exec.phaseResults) return '';
+
+  // phaseResults가 배열이면 그대로, 객체이면 값 배열로 변환
+  const phaseList = Array.isArray(exec.phaseResults)
+    ? exec.phaseResults
+    : Object.entries(exec.phaseResults).map(([key, val]) => ({ phaseNumber: Number(key), ...val }));
+
+  if (phaseList.length === 0) return '';
+
+  const lines = ['## Phase별 회고\n'];
+  for (const phase of phaseList) {
+    const fixAttempts = phase.fixAttempts || 0;
+    const quality =
+      phase.qualityScore !== null && phase.qualityScore !== undefined
+        ? `${phase.qualityScore}점`
+        : '-';
+    const taskCount = phase.tasks?.length || 0;
+    const status = fixAttempts > 0 ? `수정 ${fixAttempts}회` : '첫 시도 통과';
+    lines.push(
+      `- **Phase ${phase.phaseNumber || '?'}**: 태스크 ${taskCount}개, ${status}, 품질 ${quality}`,
+    );
+  }
+  return lines.join('\n');
 }
 
 /**

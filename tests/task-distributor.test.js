@@ -422,6 +422,64 @@ describe('buildTddExecutionPrompt with context', () => {
   });
 });
 
+describe('buildExecutionPrompt Search Before Building', () => {
+  it('코드 태스크이면 "구현 전 탐색" 섹션을 포함한다', () => {
+    const task = { id: 'task-1', title: 'API 구현', description: '설명', assignee: 'backend' };
+    const prompt = buildExecutionPrompt(task, SAMPLE_TEAM_MEMBER);
+    expect(prompt).toContain('구현 전 탐색 (Search Before Building)');
+  });
+
+  it('비코드 태스크이면 "구현 전 탐색" 섹션을 포함하지 않는다', () => {
+    const task = {
+      id: 'task-1',
+      title: '예산 검토',
+      description: '분기별 예산 확인',
+      assignee: 'cto',
+    };
+    const prompt = buildExecutionPrompt(task, SAMPLE_TEAM_MEMBER);
+    expect(prompt).not.toContain('구현 전 탐색 (Search Before Building)');
+  });
+
+  it('allowedPaths가 있으면 "편집 범위 제한" 섹션을 포함한다', () => {
+    const task = { id: 'task-1', title: '예산 검토', description: '분기', assignee: 'cto' };
+    const prompt = buildExecutionPrompt(task, SAMPLE_TEAM_MEMBER, {
+      allowedPaths: ['src/api/', 'tests/'],
+    });
+    expect(prompt).toContain('편집 범위 제한');
+    expect(prompt).toContain('src/api/');
+    expect(prompt).toContain('tests/');
+  });
+
+  it('allowedPaths가 없으면 "편집 범위 제한" 섹션을 포함하지 않는다', () => {
+    const task = { id: 'task-1', title: '예산 검토', description: '분기', assignee: 'cto' };
+    const prompt = buildExecutionPrompt(task, SAMPLE_TEAM_MEMBER);
+    expect(prompt).not.toContain('편집 범위 제한');
+  });
+});
+
+describe('buildTddExecutionPrompt Search Before Building', () => {
+  it('항상 "구현 전 탐색" 섹션을 포함한다', () => {
+    const task = { id: 'task-1', title: 'API 구현', description: '설명', assignee: 'backend' };
+    const prompt = buildTddExecutionPrompt(task, SAMPLE_TEAM_MEMBER);
+    expect(prompt).toContain('구현 전 탐색 (Search Before Building)');
+  });
+
+  it('allowedPaths가 있으면 "편집 범위 제한" 섹션을 포함한다', () => {
+    const task = { id: 'task-1', title: 'API 구현', description: '설명', assignee: 'backend' };
+    const prompt = buildTddExecutionPrompt(task, SAMPLE_TEAM_MEMBER, {
+      allowedPaths: ['src/'],
+    });
+    expect(prompt).toContain('편집 범위 제한');
+    expect(prompt).toContain('src/');
+  });
+
+  it('allowedPaths가 없으면 "편집 범위 제한" 섹션을 포함하지 않는다', () => {
+    const task = { id: 'task-1', title: 'API 구현', description: '설명', assignee: 'backend' };
+    const prompt = buildTddExecutionPrompt(task, SAMPLE_TEAM_MEMBER);
+    expect(prompt).not.toContain('편집 범위 제한');
+  });
+});
+
 describe('buildPhaseContext', () => {
   it('완료된 태스크의 컨텍스트를 생성한다', () => {
     const tasks = [

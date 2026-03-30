@@ -277,7 +277,8 @@ async function main() {
     const exitCode = code === 'INPUT_ERROR' ? 2 : code === 'NOT_FOUND' ? 3 : 1;
     const hint = ERROR_HINTS[code] || '';
     const userMessage = err instanceof AppError ? err.message : '내부 오류가 발생했습니다';
-    process.stderr.write(`오류 [${code}]: ${userMessage}\n${hint}\n`);
+    const action = err instanceof AppError && err.action ? `다음 행동: ${err.action}\n` : '';
+    process.stderr.write(`오류 [${code}]: ${userMessage}\n${action}${hint}\n`);
     process.exit(exitCode);
   }
 }
