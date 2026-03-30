@@ -738,31 +738,222 @@ const gv = createFromClaude();
 
 ---
 
+## TypeScript 지원
+
+SDK는 `types/index.d.ts`에 타입 정의를 포함하고 있어, TypeScript 프로젝트에서 별도 설치 없이 자동으로 타입을 인식합니다.
+
+### 주요 타입
+
+```typescript
+import type {
+  GoodVibeOptions, // 생성자 옵션
+  Team, // buildTeam() 반환값
+  BuildTeamOptions, // buildTeam() 옵션
+  DiscussResult, // discuss() 반환값
+  DiscussHooks, // discuss() 훅
+  ExecuteResult, // execute() 반환값
+  ExecuteHooks, // execute() 훅
+  Plan, // execute() 입력
+  StorageInterface, // 커스텀 스토리지 인터페이스
+  AgentMember, // 팀원 정보
+  ConvergenceResult, // 수렴 결과
+  AppErrorCode, // 에러 코드 ('INPUT_ERROR' | 'NOT_FOUND' | 'SYSTEM_ERROR')
+} from 'good-vibe';
+```
+
+### 커스텀 스토리지 구현
+
+`StorageInterface`를 사용하면 커스텀 스토리지를 타입 안전하게 구현할 수 있습니다:
+
+```typescript
+import { GoodVibe } from 'good-vibe';
+import type { StorageInterface } from 'good-vibe';
+
+const redisStorage: StorageInterface = {
+  async read(id) {
+    const data = await redis.get(`project:${id}`);
+    return data ? JSON.parse(data) : null;
+  },
+  async write(id, data) {
+    await redis.set(`project:${id}`, JSON.stringify(data));
+  },
+  async list() {
+    const keys = await redis.keys('project:*');
+    const values = await Promise.all(keys.map((k) => redis.get(k)));
+    return values.filter(Boolean).map((v) => JSON.parse(v!));
+  },
+};
+
+const gv = new GoodVibe({ storage: redisStorage });
+```
+
+### Hook 타입 활용
+
+```typescript
+import type { ExecuteHooks, EscalationContext } from 'good-vibe';
+
+const hooks: ExecuteHooks = {
+  onEscalation: async (context: EscalationContext) => {
+    const { reason, unresolvedIssues } = context.escalation;
+    if (unresolvedIssues.some((i) => i.category === 'security')) return 'abort';
+    return 'skip';
+  },
+  onPhaseComplete: (phase, context) => {
+    console.log(`Phase ${phase} 완료`);
+  },
+};
+```
+
+> `good-vibe/plugin` 모듈의 타입도 포함되어 있어 `createFromClaude()` 호출 시 자동 완성이 동작합니다.
+
+---
+
+## 자주 사용하는 패턴
+
+### discuss → execute 연결
+
+`discuss()`는 기획서(`document`)만 반환합니다. `execute()`에는 팀과 태스크를 함께 전달해야 합니다.
+이 연결 패턴을 헬퍼로 만들면 반복을 줄일 수 있습니다:
+
+```javascript
+/**
+ * discuss() 결과를 execute()에 전달할 plan으로 조합합니다.
+ * @param {object} team - buildTeam() 결과
+ * @param {object} discussion - discuss() 결과
+ * @param {Array} tasks - 태스크 목록
+ * @returns {object} execute()에 전달할 plan
+ */
+function buildPlan(team, discussion, tasks) {
+  return {
+    document: discussion.document,
+    team: team.agents,
+    tasks,
+  };
+}
+
+// 사용 예시
+const team = await gv.buildTeam('날씨 알림 봇');
+const discussion = await gv.discuss(team);
+const plan = buildPlan(team, discussion, [
+  { id: 'task-1', title: 'API 서버 구현', assignee: 'backend', phase: 1 },
+  { id: 'task-2', title: '테스트 작성', assignee: 'qa', phase: 2 },
+]);
+const result = await gv.execute(plan);
+```
+
+### discuss() 없이 바로 실행
+
+간단한 프로젝트라면 토론을 생략하고 직접 plan을 구성할 수 있습니다:
+
+```javascript
+const gv = new GoodVibe({ provider: 'claude' });
+const team = await gv.buildTeam('CLI 유틸리티', { complexity: 'simple' });
+
+const result = await gv.execute({
+  document: '# CLI 유틸리티\n파일 검색 CLI 도구를 만듭니다.',
+  team: team.agents,
+  tasks: [
+    { id: 'task-1', title: 'CLI 파서 구현', assignee: 'backend', phase: 1 },
+    { id: 'task-2', title: '단위 테스트', assignee: 'qa', phase: 1 },
+  ],
+});
+```
+
+### 진행 상황 모니터링
+
+hooks를 사용하여 실행 진행률을 실시간으로 추적합니다:
+
+```javascript
+const result = await gv.execute(plan, {
+  onPhaseComplete: (phase) => {
+    console.log(`✓ Phase ${phase} 완료`);
+  },
+  onAgentCall: (roleId, response) => {
+    console.log(`  ${roleId}: ${response.tokenCount} 토큰 사용`);
+  },
+  onEscalation: async (context) => {
+    console.warn(`⚠ 에스컬레이션: ${context.escalation.reason}`);
+    return 'skip'; // 실패한 Phase 건너뛰기
+  },
+});
+
+console.log(`최종 상태: ${result.status}, ${result.journal.length}개 스텝 실행`);
+```
+
+---
+
 ## 트러블슈팅
 
-### `NOT_FOUND`: 인증 정보가 없습니다
+### 에러 메시지 읽는 법
+
+SDK 에러는 `AppError` 형식으로 `code`와 `message` 필드를 포함합니다:
 
 ```
-NOT_FOUND: claude 인증 정보가 없습니다. 먼저 connect 명령으로 인증하세요.
+AppError [INPUT_ERROR]: idea는 비어있지 않은 문자열이어야 합니다
+         ^^^^^^^^^^^^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+         에러 코드       에러 메시지 (원인 + 힌트)
 ```
 
-`discuss()` 또는 `execute()` 호출 시 발생합니다. [LLM 프로바이더 연결](#llm-프로바이더-연결-discussexecute-사용-시) 섹션을 참고하여 프로바이더를 연결하세요.
+`code`로 에러 유형을 구분하고, `message`에서 구체적인 원인과 해결 방법을 확인하세요.
+
+### `INPUT_ERROR`: idea는 비어있지 않은 문자열이어야 합니다
+
+`buildTeam()`에 빈 문자열, `null`, `undefined`, 또는 문자열이 아닌 값을 전달했을 때 발생합니다:
+
+```javascript
+// 에러 발생 예시
+await gv.buildTeam(''); // 빈 문자열
+await gv.buildTeam(); // undefined
+await gv.buildTeam(123); // 문자열이 아님
+await gv.buildTeam('   '); // 공백만 있는 문자열
+
+// 올바른 사용 — 프로젝트를 설명하는 문자열 전달
+const team = await gv.buildTeam('실시간 채팅 웹앱');
+```
+
+### `INPUT_ERROR`: team 객체가 필요합니다
+
+`discuss()`에 `null`, `undefined`, 또는 객체가 아닌 값을 전달했을 때 발생합니다:
+
+```javascript
+// 에러 발생 예시
+await gv.discuss(null);
+await gv.discuss('프로젝트'); // 문자열이 아닌 객체가 필요
+
+// 올바른 사용 — buildTeam() 결과를 전달
+const team = await gv.buildTeam('프로젝트');
+await gv.discuss(team);
+```
 
 ### `INPUT_ERROR`: team.agents 배열이 비어있습니다
 
-```
-INPUT_ERROR: team.agents 배열이 비어있습니다. buildTeam()을 먼저 실행하세요
-```
-
-`discuss()`에 `buildTeam()` 결과가 아닌 다른 값을 전달했을 때 발생합니다:
+`discuss()`에 `buildTeam()` 결과가 아닌 다른 객체를 전달했을 때 발생합니다:
 
 ```javascript
-// 잘못된 사용
+// 에러 발생 예시
 await gv.discuss({ idea: '프로젝트' }); // agents 배열 없음
+await gv.discuss({ agents: [] }); // agents가 비어있음
 
-// 올바른 사용
+// 올바른 사용 — buildTeam()의 반환값을 그대로 전달
 const team = await gv.buildTeam('프로젝트');
-await gv.discuss(team);
+await gv.discuss(team); // team.agents가 자동으로 채워져 있음
+```
+
+### `INPUT_ERROR`: plan 객체가 필요합니다
+
+`execute()`에 `null`, `undefined`, 또는 객체가 아닌 값을 전달했을 때 발생합니다:
+
+```javascript
+// 에러 발생 예시
+await gv.execute(null);
+await gv.execute('plan');
+
+// 올바른 사용 — document, team, tasks를 포함한 객체 전달
+await gv.execute({
+  document: discussion.document,
+  team: team.agents,
+  tasks: [{ id: 'task-1', title: 'API 구현', assignee: 'backend', phase: 1 }],
+});
 ```
 
 ### `discuss()` 결과로 바로 `execute()` 호출 시 동작하지 않음
@@ -773,10 +964,10 @@ await gv.discuss(team);
 const team = await gv.buildTeam('프로젝트');
 const discussion = await gv.discuss(team);
 
-// discuss() 결과만으로는 부족
-// await gv.execute(discussion); ← tasks와 team이 없음
+// ✗ discuss() 결과만으로는 부족 — tasks와 team이 없음
+// await gv.execute(discussion);
 
-// team과 tasks를 조합하여 전달
+// ✓ team과 tasks를 조합하여 전달
 await gv.execute({
   document: discussion.document,
   team: team.agents,
@@ -784,24 +975,101 @@ await gv.execute({
 });
 ```
 
+> **왜 자동으로 연결되지 않나요?** `discuss()`는 기획서 생성만 담당하고, 태스크 분배는 사용자가 직접 결정합니다. 슬래시 커맨드 플로우에서는 이 과정이 자동이지만, SDK에서는 유연성을 위해 분리되어 있습니다. [자주 사용하는 패턴](#자주-사용하는-패턴) 섹션의 `buildPlan()` 헬퍼를 참고하세요.
+
+### `INPUT_ERROR`: report에 전달할 결과 객체가 필요합니다
+
+`report()`에 `null`, `undefined`, 또는 객체가 아닌 값을 전달했을 때 발생합니다:
+
+```javascript
+// 에러 발생 예시
+gv.report(null);
+gv.report(undefined);
+
+// 올바른 사용 — execute() 결과를 전달
+const result = await gv.execute(plan);
+const markdown = gv.report(result);
+```
+
+### `NOT_FOUND`: 인증 정보가 없습니다
+
+```
+NOT_FOUND: claude 인증 정보가 없습니다. 먼저 connect 명령으로 인증하세요.
+```
+
+`discuss()` 또는 `execute()` 호출 시 발생합니다. [LLM 프로바이더 연결](#llm-프로바이더-연결-discussexecute-사용-시) 섹션을 참고하여 프로바이더를 연결하세요.
+
+> **빠른 확인:** `buildTeam()`과 `report()`는 LLM 없이 동작합니다. 먼저 이 두 메서드로 SDK 설치를 확인한 뒤, 프로바이더를 연결하세요.
+
 ### `SYSTEM_ERROR`: LLM 호출 실패
 
 네트워크 오류나 프로바이더 서버 오류 시 발생합니다. SDK는 내부적으로 최대 3회 재시도합니다.
 모든 재시도가 실패하면 `SYSTEM_ERROR`가 throw됩니다.
 
-- API 키가 유효한지 확인하세요 (만료/비활성화 여부)
-- 네트워크 연결을 확인하세요
-- `FileStorage` 사용 시 재호출하면 중단 지점부터 자동 재개됩니다
+**확인 순서:**
+
+1. API 키가 유효한지 확인 (만료/비활성화 여부)
+2. 네트워크 연결 확인
+3. 프로바이더 서비스 상태 확인 (status page)
+4. `FileStorage` 사용 시 동일 호출을 재시도하면 중단 지점부터 자동 재개됩니다
+
+### `execute()` 결과가 `stuck` 또는 `max-steps-exceeded`
+
+| status               | 원인                           | 해결 방법                                                        |
+| -------------------- | ------------------------------ | ---------------------------------------------------------------- |
+| `stuck`              | 동일 스텝이 3회 반복됨         | `journal`에서 반복된 action/phase 확인 → plan 수정 후 재실행     |
+| `max-steps-exceeded` | 200스텝 초과 (복잡한 프로젝트) | plan 단순화, 또는 `Executor` 직접 생성하여 `maxSteps` 증가       |
+| `not-started`        | 실행 상태 미초기화             | plan에 `tasks`와 `document`가 포함되어 있는지 확인               |
+| `paused`             | 에스컬레이션 대기 중           | `onEscalation` Hook이 값을 반환하는지 확인, 같은 plan으로 재호출 |
+
+```javascript
+const result = await gv.execute(plan);
+if (result.status !== 'completed') {
+  // journal에서 마지막 스텝을 확인하여 원인 파악
+  const lastStep = result.journal.at(-1);
+  console.error(`실행 중단: ${result.status}`);
+  console.error(`마지막 스텝: ${lastStep?.action} (Phase ${lastStep?.phase})`);
+}
+```
 
 ### 어떤 메서드가 LLM을 호출하나요?
 
-| 메서드           | LLM 호출 | 인증 필요 |
-| ---------------- | -------- | --------- |
-| `buildTeam()`    | X        | X         |
-| `discuss()`      | O        | O         |
-| `execute()`      | O        | O         |
-| `executeSteps()` | O        | O         |
-| `report()`       | X        | X         |
+| 메서드           | LLM 호출 | 인증 필요 | 비고                           |
+| ---------------- | -------- | --------- | ------------------------------ |
+| `buildTeam()`    | X        | X         | 로컬 계산, 즉시 반환           |
+| `discuss()`      | O        | O         | 팀원별 분석 + 리뷰 + 수렴 체크 |
+| `execute()`      | O        | O         | 태스크 실행 + 리뷰 + 수정 루프 |
+| `executeSteps()` | O        | O         | 스텝별 수동 제어               |
+| `report()`       | X        | X         | 마크다운 포맷팅, 즉시 반환     |
+
+---
+
+## 빠른 참조
+
+### 전체 플로우 요약
+
+```
+buildTeam(idea)  →  discuss(team)  →  execute(plan)  →  report(result)
+  로컬 계산          LLM 호출          LLM 호출          로컬 포맷팅
+  팀 구성            기획서 생성        코드 실행         보고서 생성
+```
+
+### 메서드별 입출력 요약
+
+| 메서드      | 입력                            | 출력                                 | 다음 단계                      |
+| ----------- | ------------------------------- | ------------------------------------ | ------------------------------ |
+| `buildTeam` | `idea` (문자열)                 | `{ mode, agents, complexity, idea }` | `discuss(team)`에 결과 전달    |
+| `discuss`   | `team` (buildTeam 결과)         | `{ document, rounds, convergence }`  | plan 조합 후 `execute()` 호출  |
+| `execute`   | `{ document, team, tasks }`     | `{ status, projectId, journal }`     | `report(result)`로 보고서 생성 |
+| `report`    | execute 결과 또는 프로젝트 객체 | 마크다운 문자열                      | 완료                           |
+
+### 에러 코드 빠른 참조
+
+| 코드           | 의미                  | 일반적인 원인                       | 해결 방법                    |
+| -------------- | --------------------- | ----------------------------------- | ---------------------------- |
+| `INPUT_ERROR`  | 잘못된 입력           | 빈 문자열, 누락된 필드, 잘못된 타입 | 입력값과 타입 확인           |
+| `NOT_FOUND`    | 리소스를 찾을 수 없음 | 인증 미설정, 잘못된 프로젝트 ID     | 인증 연결 또는 ID 확인       |
+| `SYSTEM_ERROR` | 내부/외부 오류        | LLM 호출 실패, 네트워크 오류        | 재시도, 프로바이더 설정 확인 |
 
 ---
 
