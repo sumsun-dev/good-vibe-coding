@@ -12,6 +12,13 @@ export function resolveStorage(input) {
   if (input === 'memory') return new MemoryStorage();
   if (typeof input === 'string') return new FileStorage(input);
   if (typeof input === 'object' && input !== null && typeof input.read === 'function') return input;
+  if (typeof input === 'object' && input !== null) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      '[good-vibe] 커스텀 스토리지에 read() 메서드가 없어 MemoryStorage로 폴백합니다. ' +
+        '커스텀 스토리지는 { read(id), write(id, data), list() } 인터페이스를 구현해야 합니다.',
+    );
+  }
   return new MemoryStorage();
 }
 
