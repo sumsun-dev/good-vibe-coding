@@ -103,6 +103,29 @@ function collectFromTaskOutputs(phaseResults, sectionName, mapper) {
 }
 
 /**
+ * phaseResults를 1회 순회하면서 여러 섹션을 동시에 수집한다.
+ * collectFromTaskOutputs를 N번 호출하는 대신 단일 패스로 처리하여 O(N×M×S) → O(N×M) 최적화.
+ * @param {object} phaseResults - Phase별 결과 객체
+ * @param {Array<{ name: string, mapper?: (section: string, phase: string) => * }>} sections
+ * @returns {Map<string, Array>} 섹션명 → 수집 결과 맵
+ */
+function collectMultipleSections(phaseResults, sections) {
+  const resultMap = new Map(sections.map((s) => [s.name, []]));
+  for (const phase of Object.keys(phaseResults)) {
+    const pr = phaseResults[phase];
+    for (const tr of pr.taskResults || []) {
+      const out = tr.output || tr.taskOutput || '';
+      if (!out) continue;
+      for (const { name, mapper } of sections) {
+        const section = extractSection(out, name);
+        if (section) resultMap.get(name).push(mapper ? mapper(section, phase) : section);
+      }
+    }
+  }
+  return resultMap;
+}
+
+/**
  * 구현 상세 섹션을 생성한다.
  * phaseResults → taskResults → 에이전트 출력에서 추출.
  * @param {object} project - 프로젝트 전체 데이터
@@ -112,13 +135,15 @@ export function generateImplementationDetailsSection(project) {
   const state = project.executionState;
   if (!state || !state.phaseResults || typeof state.phaseResults !== 'object') return '';
 
-  const summaries = collectFromTaskOutputs(
-    state.phaseResults,
-    '구현 요약',
-    (s, phase) => `- Phase ${phase}: ${s}`,
-  );
-  const files = collectFromTaskOutputs(state.phaseResults, '핵심 파일');
-  const customizations = collectFromTaskOutputs(state.phaseResults, '커스터마이징 포인트');
+  const collected = collectMultipleSections(state.phaseResults, [
+    { name: '구현 요약', mapper: (s, phase) => `- Phase ${phase}: ${s}` },
+    { name: '핵심 파일' },
+    { name: '커스터마이징 포인트' },
+  ]);
+
+  const summaries = collected.get('구현 요약');
+  const files = collected.get('핵심 파일');
+  const customizations = collected.get('커스터마이징 포인트');
 
   if (summaries.length === 0 && files.length === 0 && customizations.length === 0) return '';
 
