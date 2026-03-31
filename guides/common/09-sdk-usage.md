@@ -337,6 +337,8 @@ const gv = new GoodVibe({
 });
 ```
 
+> **주의:** 커스텀 스토리지 객체는 반드시 `read` 메서드를 포함해야 합니다. `read` 메서드가 없는 객체(예: `{ get, set }` 또는 `{ save, load }`)를 전달하면 에러 없이 `MemoryStorage`로 폴백되어 프로세스 종료 시 데이터가 소실됩니다. 메서드 이름은 반드시 `read`, `write`, `list`를 사용하세요.
+
 DB 연동 예시:
 
 ```javascript
@@ -1031,6 +1033,44 @@ if (result.status !== 'completed') {
   console.error(`마지막 스텝: ${lastStep?.action} (Phase ${lastStep?.phase})`);
 }
 ```
+
+### 커스텀 스토리지 데이터가 저장되지 않음
+
+커스텀 스토리지 객체의 메서드 이름이 정확해야 합니다. `read` 메서드가 없으면 에러 없이 `MemoryStorage`로 폴백됩니다:
+
+```javascript
+// ✗ 메서드 이름이 다르면 MemoryStorage로 폴백 — 데이터 소실!
+const gv = new GoodVibe({
+  storage: {
+    async get(id) {
+      /* ... */
+    }, // read가 아닌 get
+    async save(id, data) {
+      /* ... */
+    }, // write가 아닌 save
+    async getAll() {
+      /* ... */
+    }, // list가 아닌 getAll
+  },
+});
+
+// ✓ 반드시 read, write, list 이름을 사용
+const gv = new GoodVibe({
+  storage: {
+    async read(id) {
+      /* ... */
+    },
+    async write(id, data) {
+      /* ... */
+    },
+    async list() {
+      /* ... */
+    },
+  },
+});
+```
+
+> 현재 SDK는 `read` 메서드 존재 여부로 커스텀 스토리지를 판별합니다. `read`가 없으면 에러를 던지지 않고 `MemoryStorage`로 대체합니다. 프로세스 종료 시 모든 데이터가 소실되므로, 커스텀 스토리지 사용 시 `read` 메서드가 반드시 있는지 확인하세요.
 
 ### 어떤 메서드가 LLM을 호출하나요?
 
