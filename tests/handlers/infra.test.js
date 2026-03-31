@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { homedir } from 'os';
 
 vi.mock('../../scripts/cli-utils.js', () => ({
   readStdin: vi.fn(),
@@ -359,7 +360,7 @@ describe('infra handler', () => {
       readStdin.mockResolvedValue({
         claudeMd: '# Project Config',
         coreRules: '# Project Rules',
-        projectDir: '/tmp/my-project',
+        projectDir: `${homedir()}/my-project`,
       });
       safeWriteFile.mockResolvedValue({ written: true });
       ensureDir.mockResolvedValue();
@@ -394,6 +395,15 @@ describe('infra handler', () => {
     it('claudeMd 누락 시 에러', async () => {
       readStdin.mockResolvedValue({ coreRules: '# Rules', projectDir: '/tmp' });
       await expect(commands['write-project-onboarding']()).rejects.toThrow();
+    });
+
+    it('homedir 외부 경로는 path traversal로 거부', async () => {
+      readStdin.mockResolvedValue({
+        claudeMd: '# MD',
+        coreRules: '# Rules',
+        projectDir: '/etc/evil',
+      });
+      await expect(commands['write-project-onboarding']()).rejects.toThrow('허용 범위');
     });
   });
 
