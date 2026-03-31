@@ -34,7 +34,10 @@ export class GoodVibe {
    */
   async buildTeam(idea, options = {}) {
     if (!idea || typeof idea !== 'string' || idea.trim() === '') {
-      throw inputError('idea는 비어있지 않은 문자열이어야 합니다');
+      throw inputError(
+        'idea는 비어있지 않은 문자열이어야 합니다',
+        "buildTeam('프로젝트 설명')처럼 프로젝트를 설명하는 문자열을 전달하세요",
+      );
     }
     const projectType = options.projectType || 'custom';
     const complexity = options.complexity || 'medium';
@@ -63,10 +66,16 @@ export class GoodVibe {
    */
   async discuss(team, hooks = {}) {
     if (!team || typeof team !== 'object') {
-      throw inputError('team 객체가 필요합니다');
+      throw inputError(
+        'team 객체가 필요합니다',
+        'buildTeam()의 반환값을 그대로 전달하세요: gv.discuss(await gv.buildTeam(idea))',
+      );
     }
     if (!Array.isArray(team.agents) || team.agents.length === 0) {
-      throw inputError('team.agents 배열이 비어있습니다. buildTeam()을 먼저 실행하세요');
+      throw inputError(
+        'team.agents 배열이 비어있습니다',
+        'buildTeam()의 반환값을 그대로 전달하세요: const team = await gv.buildTeam(idea); gv.discuss(team)',
+      );
     }
     const discusser = new Discusser({
       provider: this.provider,
@@ -85,7 +94,10 @@ export class GoodVibe {
    */
   async execute(plan, hooks = {}) {
     if (!plan || typeof plan !== 'object') {
-      throw inputError('plan 객체가 필요합니다');
+      throw inputError(
+        'plan 객체가 필요합니다',
+        'execute()에는 { document, team, tasks } 형태의 객체를 전달하세요. discuss() 결과만으로는 부족합니다',
+      );
     }
     const executor = new Executor({
       provider: this.provider,
@@ -117,7 +129,10 @@ export class GoodVibe {
    */
   report(result) {
     if (!result || typeof result !== 'object') {
-      throw inputError('report에 전달할 결과 객체가 필요합니다');
+      throw inputError(
+        'report에 전달할 결과 객체가 필요합니다',
+        'execute()의 반환값을 전달하세요: const result = await gv.execute(plan); gv.report(result)',
+      );
     }
     // result가 프로젝트 형태가 아니면 최소 구조를 만들어줌
     const project = result.name

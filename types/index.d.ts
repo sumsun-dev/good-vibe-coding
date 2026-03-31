@@ -194,7 +194,8 @@ export type AppErrorCode = 'INPUT_ERROR' | 'NOT_FOUND' | 'SYSTEM_ERROR';
 export declare class AppError extends Error {
   name: 'AppError';
   code: AppErrorCode;
-  constructor(message: string, code?: AppErrorCode);
+  action: string | null;
+  constructor(message: string, code?: AppErrorCode, action?: string | null);
 }
 
 // --- Main Classes ---

@@ -337,6 +337,8 @@ const gv = new GoodVibe({
 });
 ```
 
+> **주의:** 커스텀 스토리지 객체는 반드시 `read` 메서드를 포함해야 합니다. `read` 메서드가 없는 객체(예: `{ get, set }` 또는 `{ save, load }`)를 전달하면 에러 없이 `MemoryStorage`로 폴백되어 프로세스 종료 시 데이터가 소실됩니다. 메서드 이름은 반드시 `read`, `write`, `list`를 사용하세요.
+
 DB 연동 예시:
 
 ```javascript
@@ -371,6 +373,8 @@ try {
 } catch (err) {
   if (err.code === 'INPUT_ERROR') {
     console.error('입력 오류:', err.message);
+    // action 필드에 복구 방법이 포함되어 있습니다
+    if (err.action) console.error('해결 방법:', err.action);
   } else if (err.code === 'NOT_FOUND') {
     console.error('찾을 수 없음:', err.message);
   } else if (err.code === 'SYSTEM_ERROR') {
@@ -379,14 +383,16 @@ try {
 }
 ```
 
+> **`action` 필드**: SDK의 `AppError`는 `action` 필드에 사용자가 취해야 할 다음 행동을 포함합니다. 예: `"buildTeam('프로젝트 설명')처럼 프로젝트를 설명하는 문자열을 전달하세요"`. 에러 메시지(`message`)에 원인이, `action`에 해결 방법이 담겨 있으므로 둘 다 사용자에게 표시하면 빠른 복구가 가능합니다.
+
 ### 에러 코드 요약
 
-| 에러 코드      | 발생 조건                                  | 대처 방법                        |
-| -------------- | ------------------------------------------ | -------------------------------- |
-| `INPUT_ERROR`  | 필수 파라미터 누락, 잘못된 타입            | 입력값 확인                      |
-| `NOT_FOUND`    | 프로젝트를 찾을 수 없음                    | ID 확인, `storage.list()` 실행   |
-| `SYSTEM_ERROR` | 내부 오류, LLM 호출 실패                   | 재시도 또는 프로바이더 설정 확인 |
-| OS 에러        | `FileStorage` 쓰기 권한 없음 (`EACCES`) 등 | 디렉토리 권한 확인               |
+| 에러 코드      | 발생 조건                                  | 대처 방법                            |
+| -------------- | ------------------------------------------ | ------------------------------------ |
+| `INPUT_ERROR`  | 필수 파라미터 누락, 잘못된 타입            | `err.action` 확인 (복구 가이드 포함) |
+| `NOT_FOUND`    | 프로젝트를 찾을 수 없음                    | ID 확인, `storage.list()` 실행       |
+| `SYSTEM_ERROR` | 내부 오류, LLM 호출 실패                   | 재시도 또는 프로바이더 설정 확인     |
+| OS 에러        | `FileStorage` 쓰기 권한 없음 (`EACCES`) 등 | 디렉토리 권한 확인                   |
 
 ### 메서드별 에러 시나리오
 
@@ -886,15 +892,19 @@ console.log(`최종 상태: ${result.status}, ${result.journal.length}개 스텝
 
 ### 에러 메시지 읽는 법
 
-SDK 에러는 `AppError` 형식으로 `code`와 `message` 필드를 포함합니다:
+SDK 에러는 `AppError` 형식으로 `code`, `message`, `action` 필드를 포함합니다:
 
 ```
 AppError [INPUT_ERROR]: idea는 비어있지 않은 문자열이어야 합니다
          ^^^^^^^^^^^^   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-         에러 코드       에러 메시지 (원인 + 힌트)
+         에러 코드       에러 메시지 (원인)
+
+err.action → "buildTeam('프로젝트 설명')처럼 프로젝트를 설명하는 문자열을 전달하세요"
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+              복구 가이드 (다음에 취해야 할 행동)
 ```
 
-`code`로 에러 유형을 구분하고, `message`에서 구체적인 원인과 해결 방법을 확인하세요.
+`code`로 에러 유형을 구분하고, `message`에서 원인을, `action`에서 해결 방법을 확인하세요.
 
 ### `INPUT_ERROR`: idea는 비어있지 않은 문자열이어야 합니다
 
@@ -1031,6 +1041,44 @@ if (result.status !== 'completed') {
   console.error(`마지막 스텝: ${lastStep?.action} (Phase ${lastStep?.phase})`);
 }
 ```
+
+### 커스텀 스토리지 데이터가 저장되지 않음
+
+커스텀 스토리지 객체의 메서드 이름이 정확해야 합니다. `read` 메서드가 없으면 에러 없이 `MemoryStorage`로 폴백됩니다:
+
+```javascript
+// ✗ 메서드 이름이 다르면 MemoryStorage로 폴백 — 데이터 소실!
+const gv = new GoodVibe({
+  storage: {
+    async get(id) {
+      /* ... */
+    }, // read가 아닌 get
+    async save(id, data) {
+      /* ... */
+    }, // write가 아닌 save
+    async getAll() {
+      /* ... */
+    }, // list가 아닌 getAll
+  },
+});
+
+// ✓ 반드시 read, write, list 이름을 사용
+const gv = new GoodVibe({
+  storage: {
+    async read(id) {
+      /* ... */
+    },
+    async write(id, data) {
+      /* ... */
+    },
+    async list() {
+      /* ... */
+    },
+  },
+});
+```
+
+> 현재 SDK는 `read` 메서드 존재 여부로 커스텀 스토리지를 판별합니다. `read`가 없으면 에러를 던지지 않고 `MemoryStorage`로 대체합니다. 프로세스 종료 시 모든 데이터가 소실되므로, 커스텀 스토리지 사용 시 `read` 메서드가 반드시 있는지 확인하세요.
 
 ### 어떤 메서드가 LLM을 호출하나요?
 
