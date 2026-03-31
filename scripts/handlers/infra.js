@@ -2,7 +2,12 @@
  * handlers/infra — 프로젝트 인프라 셋업 + GitHub + 온보딩 + 설정 커맨드
  */
 import { readStdin, output } from '../cli-utils.js';
-import { requireFields, requireArray, requireOneOf } from '../lib/core/validators.js';
+import {
+  requireFields,
+  requireArray,
+  requireOneOf,
+  assertWithinRoot,
+} from '../lib/core/validators.js';
 import { setupProjectInfra, appendToClaudeMd } from '../lib/project/project-scaffolder.js';
 import { checkGhStatus, createGithubRepo, gitInitAndPush } from '../lib/project/github-manager.js';
 import {
@@ -38,6 +43,7 @@ import { loadPreset, mergePresets } from '../lib/core/preset-loader.js';
 import { safeWriteFile, ensureDir } from '../lib/core/file-writer.js';
 import { claudeDir } from '../lib/core/app-paths.js';
 import { resolve } from 'path';
+import { homedir } from 'os';
 
 export const commands = {
   'setup-project-infra': async () => {
@@ -84,6 +90,7 @@ export const commands = {
   'append-claude-md': async () => {
     const data = await readStdin();
     requireFields(data, ['claudeMdPath', 'sectionName', 'content']);
+    assertWithinRoot(resolve(data.claudeMdPath), homedir(), 'claudeMdPath');
     const result = await appendToClaudeMd(data.claudeMdPath, data.sectionName, data.content);
     output(result);
   },
@@ -251,6 +258,7 @@ export const commands = {
     const data = await readStdin();
     requireFields(data, ['claudeMd', 'coreRules', 'projectDir']);
     const resolvedDir = resolve(data.projectDir);
+    assertWithinRoot(resolvedDir, homedir(), 'projectDir');
     const claudeMdPath = resolve(resolvedDir, 'CLAUDE.md');
     const rulesDir = resolve(resolvedDir, '.claude', 'rules');
     const coreRulesPath = resolve(rulesDir, 'core.md');

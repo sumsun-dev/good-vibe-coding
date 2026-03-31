@@ -3,6 +3,21 @@
  * FileStorage (파일시스템), MemoryStorage (인메모리), 커스텀 스토리지 지원.
  */
 
+import { resolve, normalize, sep } from 'path';
+
+/**
+ * resolvedPath가 rootDir 내부에 있는지 검증한다.
+ * @param {string} resolvedPath
+ * @param {string} rootDir
+ */
+function assertIdWithinBase(resolvedPath, rootDir) {
+  const np = normalize(resolvedPath).toLowerCase();
+  const nr = normalize(rootDir).toLowerCase();
+  if (!np.startsWith(nr + sep) && np !== nr) {
+    throw new Error(`스토리지 경로가 허용 범위를 벗어났습니다 (baseDir: ${rootDir})`);
+  }
+}
+
 /**
  * 스토리지 입력을 적절한 구현체로 변환한다.
  * @param {string|object} input - 'memory', 경로 문자열, 또는 { read, write, list } 객체
@@ -33,9 +48,10 @@ export class FileStorage {
   }
 
   async read(id) {
-    const { resolve } = await import('path');
     const { readFile } = await import('fs/promises');
-    const filePath = resolve(this._baseDir, id, 'project.json');
+    const dir = resolve(this._baseDir, id);
+    assertIdWithinBase(dir, this._baseDir);
+    const filePath = resolve(dir, 'project.json');
     try {
       const content = await readFile(filePath, 'utf-8');
       return JSON.parse(content);
@@ -46,15 +62,14 @@ export class FileStorage {
   }
 
   async write(id, data) {
-    const { resolve } = await import('path');
     const { writeFile, mkdir } = await import('fs/promises');
     const dir = resolve(this._baseDir, id);
+    assertIdWithinBase(dir, this._baseDir);
     await mkdir(dir, { recursive: true });
     await writeFile(resolve(dir, 'project.json'), JSON.stringify(data, null, 2), 'utf-8');
   }
 
   async list() {
-    const { resolve } = await import('path');
     const { readdir, readFile } = await import('fs/promises');
     try {
       const entries = await readdir(this._baseDir, { withFileTypes: true });

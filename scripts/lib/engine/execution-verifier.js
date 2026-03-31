@@ -250,6 +250,11 @@ export function detectBuildStrategy(files, projectType) {
   return null;
 }
 
+// 코드 블록 추출용 정규식 — 루프 내부 재컴파일 방지
+const FENCE_OPEN_RE = /^(`{3,})(\w*)\s*([\w./-]*)\s*$/;
+const FENCE_CLOSE_RE = /^(`{3,})\s*$/;
+const FILENAME_COMMENT_RE = /^(?:\/\/|#)\s*filename:\s*(.+)$/m;
+
 /**
  * 마크다운 출력에서 펜스드 코드 블록을 추출한다.
  * 언어 태그와 파일명(info string 또는 코드 내 주석에서)을 감지한다.
@@ -265,7 +270,7 @@ export function extractCodeBlocks(markdownOutput) {
   let i = 0;
 
   while (i < lines.length) {
-    const openMatch = lines[i].match(/^(`{3,})(\w*)\s*([\w./-]*)\s*$/);
+    const openMatch = lines[i].match(FENCE_OPEN_RE);
     if (openMatch) {
       const fenceLen = openMatch[1].length;
       const language = (openMatch[2] || '').trim().toLowerCase();
@@ -275,7 +280,7 @@ export function extractCodeBlocks(markdownOutput) {
 
       // closing fence: 같은 수 이상의 백틱만 매칭 (중첩 안전)
       while (i < lines.length) {
-        const closeMatch = lines[i].match(/^(`{3,})\s*$/);
+        const closeMatch = lines[i].match(FENCE_CLOSE_RE);
         if (closeMatch && closeMatch[1].length >= fenceLen) {
           break;
         }
@@ -287,7 +292,7 @@ export function extractCodeBlocks(markdownOutput) {
 
       // 코드 내 주석에서 파일명 감지: // filename: src/app.js 또는 # filename: app.py
       let commentFilename = null;
-      const filenameCommentMatch = content.match(/^(?:\/\/|#)\s*filename:\s*(.+)$/m);
+      const filenameCommentMatch = content.match(FILENAME_COMMENT_RE);
       if (filenameCommentMatch) {
         commentFilename = filenameCommentMatch[1].trim();
       }

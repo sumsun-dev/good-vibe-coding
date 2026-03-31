@@ -88,6 +88,18 @@ describe('FileStorage', () => {
     const result = await storage.read('nonexistent');
     expect(result).toBeNull();
   });
+
+  it('read: path traversal ID를 차단한다', async () => {
+    const storage = new FileStorage(TMP_DIR);
+    await expect(storage.read('../../etc')).rejects.toThrow('허용 범위를 벗어났습니다');
+  });
+
+  it('write: path traversal ID를 차단한다', async () => {
+    const storage = new FileStorage(TMP_DIR);
+    await expect(storage.write('../escape', { id: 'x' })).rejects.toThrow(
+      '허용 범위를 벗어났습니다',
+    );
+  });
 });
 
 describe('resolveStorage', () => {

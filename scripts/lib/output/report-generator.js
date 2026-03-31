@@ -82,6 +82,50 @@ export function extractSection(text, sectionName) {
 }
 
 /**
+ * phaseResults의 모든 taskResult에서 특정 섹션을 수집한다.
+ * @param {object} phaseResults - Phase별 결과 객체
+ * @param {string} sectionName - 추출할 섹션명
+ * @param {(section: string, phase: string) => *} [mapper] - 섹션 값 변환 함수 (기본: 원본 반환)
+ * @returns {Array} 수집된 섹션 데이터
+ */
+function collectFromTaskOutputs(phaseResults, sectionName, mapper) {
+  const results = [];
+  for (const phase of Object.keys(phaseResults)) {
+    const pr = phaseResults[phase];
+    for (const tr of pr.taskResults || []) {
+      const out = tr.output || tr.taskOutput || '';
+      if (!out) continue;
+      const section = extractSection(out, sectionName);
+      if (section) results.push(mapper ? mapper(section, phase) : section);
+    }
+  }
+  return results;
+}
+
+/**
+ * phaseResults를 1회 순회하면서 여러 섹션을 동시에 수집한다.
+ * collectFromTaskOutputs를 N번 호출하는 대신 단일 패스로 처리하여 O(N×M×S) → O(N×M) 최적화.
+ * @param {object} phaseResults - Phase별 결과 객체
+ * @param {Array<{ name: string, mapper?: (section: string, phase: string) => * }>} sections
+ * @returns {Map<string, Array>} 섹션명 → 수집 결과 맵
+ */
+function collectMultipleSections(phaseResults, sections) {
+  const resultMap = new Map(sections.map((s) => [s.name, []]));
+  for (const phase of Object.keys(phaseResults)) {
+    const pr = phaseResults[phase];
+    for (const tr of pr.taskResults || []) {
+      const out = tr.output || tr.taskOutput || '';
+      if (!out) continue;
+      for (const { name, mapper } of sections) {
+        const section = extractSection(out, name);
+        if (section) resultMap.get(name).push(mapper ? mapper(section, phase) : section);
+      }
+    }
+  }
+  return resultMap;
+}
+
+/**
  * 구현 상세 섹션을 생성한다.
  * phaseResults → taskResults → 에이전트 출력에서 추출.
  * @param {object} project - 프로젝트 전체 데이터
@@ -91,26 +135,15 @@ export function generateImplementationDetailsSection(project) {
   const state = project.executionState;
   if (!state || !state.phaseResults || typeof state.phaseResults !== 'object') return '';
 
-  const summaries = [];
-  const files = [];
-  const customizations = [];
+  const collected = collectMultipleSections(state.phaseResults, [
+    { name: '구현 요약', mapper: (s, phase) => `- Phase ${phase}: ${s}` },
+    { name: '핵심 파일' },
+    { name: '커스터마이징 포인트' },
+  ]);
 
-  for (const phase of Object.keys(state.phaseResults)) {
-    const pr = state.phaseResults[phase];
-    for (const tr of pr.taskResults || []) {
-      const output = tr.output || tr.taskOutput || '';
-      if (!output) continue;
-
-      const summary = extractSection(output, '구현 요약');
-      if (summary) summaries.push(`- Phase ${phase}: ${summary}`);
-
-      const fileSection = extractSection(output, '핵심 파일');
-      if (fileSection) files.push(fileSection);
-
-      const custom = extractSection(output, '커스터마이징 포인트');
-      if (custom) customizations.push(custom);
-    }
-  }
+  const summaries = collected.get('구현 요약');
+  const files = collected.get('핵심 파일');
+  const customizations = collected.get('커스터마이징 포인트');
 
   if (summaries.length === 0 && files.length === 0 && customizations.length === 0) return '';
 
@@ -142,21 +175,13 @@ export function generateEnvGuideSection(project) {
   if (!state || !state.phaseResults || typeof state.phaseResults !== 'object') return '';
 
   const envEntries = new Set();
-
-  for (const phase of Object.keys(state.phaseResults)) {
-    const pr = state.phaseResults[phase];
-    for (const tr of pr.taskResults || []) {
-      const output = tr.output || tr.taskOutput || '';
-      if (!output) continue;
-
-      const envSection = extractSection(output, '외부 서비스 및 환경변수');
-      if (envSection && envSection !== '없음') {
-        const lines = envSection.split('\n').slice(0, 100);
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (trimmed && trimmed !== '-') envEntries.add(trimmed);
-        }
-      }
+  const envSections = collectFromTaskOutputs(state.phaseResults, '외부 서비스 및 환경변수');
+  for (const envSection of envSections) {
+    if (envSection === '없음') continue;
+    const lines = envSection.split('\n').slice(0, 100);
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed && trimmed !== '-') envEntries.add(trimmed);
     }
   }
 
@@ -201,17 +226,7 @@ export function generateGettingStartedSection(project) {
   }
 
   // 에이전트 출력에서 실행 방법 추출
-  const runMethods = [];
-  for (const phase of Object.keys(state.phaseResults)) {
-    const pr = state.phaseResults[phase];
-    for (const tr of pr.taskResults || []) {
-      const output = tr.output || tr.taskOutput || '';
-      if (!output) continue;
-
-      const runSection = extractSection(output, '실행 방법');
-      if (runSection) runMethods.push(runSection);
-    }
-  }
+  const runMethods = collectFromTaskOutputs(state.phaseResults, '실행 방법');
 
   if (createdFiles.length === 0 && runMethods.length === 0) return '';
 
