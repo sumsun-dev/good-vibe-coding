@@ -189,4 +189,5 @@ export const config = Object.freeze({
       pandas: 'data',
     }),
   }),
+  report: Object.freeze({ maxTextLength: 100_000, maxEnvLines: 100 }),
 });

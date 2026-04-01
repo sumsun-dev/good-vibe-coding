@@ -406,19 +406,4 @@ describe('infra handler', () => {
       await expect(commands['write-project-onboarding']()).rejects.toThrow('허용 범위');
     });
   });
-
-  describe('write-onboarding', () => {
-    it('CLAUDE.md와 core.md를 쓴다', async () => {
-      readStdin.mockResolvedValue({
-        claudeMd: '# Claude Code',
-        coreRules: '# Core Rules',
-      });
-      safeWriteFile.mockResolvedValue({ written: true });
-
-      await commands['write-onboarding']();
-
-      expect(safeWriteFile).toHaveBeenCalledTimes(2);
-      expect(output).toHaveBeenCalledWith(expect.objectContaining({ written: expect.any(Array) }));
-    });
-  });
 });

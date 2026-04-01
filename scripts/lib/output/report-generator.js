@@ -7,6 +7,7 @@ import {
   analyzeMessagePatterns,
   generateMessageAnalysisSection,
 } from '../engine/message-analyzer.js';
+import { config } from '../core/config.js';
 
 /**
  * 전체 프로젝트 보고서를 생성한다.
@@ -63,7 +64,7 @@ export function extractSection(text, sectionName) {
   if (!text || !sectionName) return null;
 
   // split 기반 파싱으로 ReDoS 방지
-  const safeText = text.slice(0, 100_000);
+  const safeText = text.slice(0, config.report.maxTextLength);
   const marker = `### ${sectionName}`;
   const startIdx = safeText.indexOf(marker);
   if (startIdx === -1) return null;
@@ -178,7 +179,7 @@ export function generateEnvGuideSection(project) {
   const envSections = collectFromTaskOutputs(state.phaseResults, '외부 서비스 및 환경변수');
   for (const envSection of envSections) {
     if (envSection === '없음') continue;
-    const lines = envSection.split('\n').slice(0, 100);
+    const lines = envSection.split('\n').slice(0, config.report.maxEnvLines);
     for (const line of lines) {
       const trimmed = line.trim();
       if (trimmed && trimmed !== '-') envEntries.add(trimmed);

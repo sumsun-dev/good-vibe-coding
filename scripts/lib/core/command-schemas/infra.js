@@ -150,11 +150,4 @@ export default {
     output: obj({ claudeMd: str(), coreRules: str() }),
     description: '역할/스택 프리셋으로 CLAUDE.md + core.md 내용을 생성한다',
   },
-  'write-onboarding': {
-    handler: 'infra',
-    inputMethod: 'stdin',
-    input: obj({ claudeMd: str(true), coreRules: str(true) }),
-    output: obj({ written: arr() }),
-    description: 'CLAUDE.md와 rules/core.md를 파일로 쓴다',
-  },
 };
