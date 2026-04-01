@@ -269,19 +269,4 @@ export const commands = {
     ]);
     output({ written: [claudeMdPath, coreRulesPath] });
   },
-
-  'write-onboarding': async () => {
-    const data = await readStdin();
-    requireFields(data, ['claudeMd', 'coreRules']);
-    const claudeBase = claudeDir();
-    const claudeMdPath = resolve(claudeBase, 'CLAUDE.md');
-    const rulesDir = resolve(claudeBase, 'rules');
-    const coreRulesPath = resolve(rulesDir, 'core.md');
-    await ensureDir(rulesDir);
-    await Promise.all([
-      safeWriteFile(claudeMdPath, data.claudeMd, { overwrite: true }),
-      safeWriteFile(coreRulesPath, data.coreRules, { overwrite: true }),
-    ]);
-    output({ written: [claudeMdPath, coreRulesPath] });
-  },
 };

@@ -156,7 +156,6 @@ const COMMAND_MAP = {
   'add-permissions': 'infra',
   'generate-onboarding': 'infra',
   'generate-global-onboarding': 'infra',
-  'write-onboarding': 'infra',
   'write-global-onboarding': 'infra',
   'write-project-onboarding': 'infra',
   // metrics
