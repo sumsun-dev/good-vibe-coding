@@ -205,6 +205,7 @@ export const commands = {
 
   'list-worktrees': async () => {
     const opts = parseArgs(args);
+    if (!opts.id) throw inputError('--id 옵션이 필요합니다');
     const projectDir = getProjectDir(opts.id);
     const worktrees = await listWorktrees(projectDir);
     output(worktrees);
