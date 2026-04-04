@@ -219,6 +219,7 @@ export class FileMessageBus {
   }
 
   async receive(agentId, options = {}) {
+    validateAgentId(agentId);
     const includeRead = options.includeRead || false;
     const agentDir = resolve(this._baseDir, agentId);
     const messages = await this._readAgentMessages(agentDir);
