@@ -2,6 +2,7 @@ import Handlebars from 'handlebars';
 import { readFile } from 'fs/promises';
 import { resolve } from 'path';
 import { pluginRoot } from '../core/app-paths.js';
+import { assertWithinRoot } from '../core/validators.js';
 
 /**
  * Handlebars 인스턴스를 생성하고 커스텀 헬퍼를 등록한다.
@@ -46,7 +47,9 @@ const hbs = createHandlebarsInstance();
  * @returns {Promise<string>} 렌더링된 문자열
  */
 export async function renderTemplate(templatePath, data) {
-  const fullPath = resolve(pluginRoot(), 'templates', templatePath);
+  const templatesDir = resolve(pluginRoot(), 'templates');
+  const fullPath = resolve(templatesDir, templatePath);
+  assertWithinRoot(fullPath, templatesDir, 'templatePath');
   const source = await readFile(fullPath, 'utf-8');
   const template = hbs.compile(source, { noEscape: true });
   return template(data);

@@ -1,6 +1,7 @@
 import { readFile } from 'fs/promises';
 import { resolve } from 'path';
 import { pluginRoot } from '../core/app-paths.js';
+import { assertWithinRoot, inputError } from '../core/validators.js';
 
 const AGENTS_DIR = resolve(pluginRoot(), 'agents');
 
@@ -36,7 +37,11 @@ export async function extractAllInstructions(agents) {
     agents.map(async (agent) => {
       const name = agent.template;
       try {
+        if (!name || typeof name !== 'string' || /[/\\]/.test(name) || name.includes('..')) {
+          throw inputError(`유효하지 않은 에이전트 템플릿 이름: ${name}`);
+        }
         const filePath = resolve(AGENTS_DIR, `${name}.md`);
+        assertWithinRoot(filePath, AGENTS_DIR, 'agent template path');
         const content = await readFile(filePath, 'utf-8');
         return [name, extractInstructions(content)];
       } catch {
