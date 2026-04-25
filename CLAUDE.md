@@ -142,6 +142,32 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 | `good-vibe:new` vs `good-vibe:modify`                       | `new`는 새 프로젝트 (아이디어 → 팀 구성 → 토론 → 실행), `modify`는 완료된 프로젝트의 기능 추가/수정 (기존 맥락 유지)    |
 | `good-vibe:new`에서 "이어서"                                | 기존 프로젝트 전체 목록 → 선택 → 상태별 다음 커맨드 안내. 직접 실행은 안 함 (detect → offer → route)                    |
 
+## 오케스트레이션 일반화 (Phase 1~3)
+
+OMC/LangGraph 같은 일반 하네스로 격상하기 위한 기반. **외부 의존성 0**, 모두 자체 구현.
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ Phase 1 — 동시성 / 모델 라우팅 기반                    │
+│  llm-pool         글로벌+provider 슬롯 + 429 backpressure│
+│  model-selector   default/cost/quality/custom + fallback │
+│  dispatch hint    plan에 명시적 병렬 메타 (allTiersParallel)│
+├─────────────────────────────────────────────────────────┤
+│ Phase 2 — 분산 안전성 / 상태 표현                      │
+│  file-lock        멀티프로세스 lockfile, reentrant, stale│
+│  journal          jsonl event log, monotonic timestamp   │
+│  state-machine-dsl  defineStateMachine + guard/actions   │
+├─────────────────────────────────────────────────────────┤
+│ Phase 3 — 비용 가시화 / 자동 폴백                      │
+│  cost-tracker     PROVIDER_PRICING + 누적/budget + 캐시 hit│
+│  llm-fallback     callLLMWithFallback (429 → 다음 모델)  │
+└─────────────────────────────────────────────────────────┘
+```
+
+- **callLLM 자동 통과**: llm-pool로 동시성 제어 + cost-tracker로 토큰/비용 자동 기록
+- **callLLMWithFallback**: 폴백이 필요한 경로에서 명시적으로 사용 (기존 callLLM 시그니처 변경 0)
+- **마이그레이션 상태**: 새 모듈은 모두 도입됨. 기존 `executionState.journal[]` → jsonl, `state-machine.js` → DSL은 점진적 적용 예정
+
 ## 기술 스택
 
 - Node.js 18+ (ESM)
@@ -228,7 +254,7 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 
 ## 코어 모듈 (`scripts/lib/`)
 
-**`core/`** — 기반 유틸리티 (17개)
+**`core/`** — 기반 유틸리티 (19개)
 
 - `validators.js` — 입력 검증 + AppError (inputError/notFoundError/systemError)
 - `config.js` — 중앙 설정 (Object.freeze, 전체 정책 상수)
@@ -236,23 +262,26 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 - `command-schemas.js` — 커맨드 스키마 레지스트리 (에이전트용 입출력 조회)
 - `app-paths.js` — 경로 중앙 관리 (SDK용 configure() 지원)
 - `file-writer.js` — 파일 시스템 유틸리티
+- `file-lock.js` — 파일 시스템 기반 분산 락 (O_EXCL atomic, reentrant 카운터, stale 감지, 외부 의존성 0)
 - `json-parser.js` — 3-tier LLM JSON 응답 파싱
 - `domain-parsers.js` — 도메인별 파서 + 스키마 검증 (리뷰, 복잡도, 태스크, 제안)
 - `cache.js` — 지연 로딩 캐시
 - `preset-loader.js` — 프리셋 JSON 로딩
 - `prompt-builder.js` — 프롬프트 조합 유틸리티 (순수 마크다운 포맷팅, 인젝션 방어: sanitizeForPrompt/wrapUserInput/DATA_BOUNDARY_INSTRUCTION)
 - `message-bus.js` — 에이전트 간 비동기 메시지 교환 (FileMessageBus/MemoryMessageBus, 원자적 쓰기, Path Traversal 방어, getStats() 통계)
+- `state-machine-dsl.js` — 경량 상태 머신 DSL (defineStateMachine, transition/guard/actions, xstate 미사용)
 - `nl-router.js` — 자연어 → 커맨드 매핑 (규칙 기반, LLM 호출 없음)
 - `onboarding-generator.js` — 온보딩 CLAUDE.md/rules 생성
 - `settings-manager.js` — 사용자 설정 관리
 - `text-utils.js` — 텍스트 유틸리티
 - `intent-gate.js` — 의도 분류 게이트 (resume/modify/status/create 라우팅, 프로젝트 상태 기반)
 
-**`project/`** — 프로젝트 관리 (13개)
+**`project/`** — 프로젝트 관리 (15개)
 
-- `project-manager.js` — CRUD + 상태 관리 (원자적 잠금, AppError, 기여도 기록, 수정 이력)
+- `project-manager.js` — CRUD + 상태 관리 (file-lock 기반 멀티프로세스 안전 잠금, AppError, 기여도 기록, 수정 이력)
 - `project-scaffolder.js` — 프로젝트 인프라 생성 (폴더, CLAUDE.md, README.md, 에이전트)
 - `project-metrics.js` — 비용/토큰 추적, 에이전트 기여도, 대시보드
+- `journal.js` — append-only 이벤트 로그 (jsonl, monotonic timestamp, file-lock 직렬화, type/since/limit 필터)
 - `github-manager.js` — gh CLI 래퍼 (저장소 생성, git init, push)
 - `handler-helpers.js` — 핸들러 공통 유틸리티 (withProject)
 - `template-scaffolder.js` — 프로젝트 템플릿 스캐폴딩 (5개 built-in + custom)
@@ -286,9 +315,13 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 - `evolution-engine.js` — 진화형 프롬프트 개선 엔진
 - `quality-evaluator.js` — 품질 평가 프레임워크
 
-**`llm/`** — LLM/외부 연동 (3개)
+**`llm/`** — LLM/외부 연동 (7개)
 
-- `llm-provider.js` — LLM 프로바이더 추상화 (Claude/OpenAI/Gemini)
+- `llm-provider.js` — LLM 프로바이더 추상화 (Claude/OpenAI/Gemini), llm-pool 자동 통과 + cost-tracker 자동 record
+- `llm-pool.js` — 글로벌+프로바이더별 동시성 풀 + 429 적응형 backpressure (반감 + cooldown 자동 회복, drain 다중 깨우기)
+- `model-selector.js` — 모델 선택 정책 (default/cost-optimized/quality-first/custom) + selectFallback (opus → sonnet → haiku)
+- `cost-tracker.js` — LLM 호출 비용 메터링 (PROVIDER_PRICING USD per million, 캐시 적중률, 예산 한도 + 콜백)
+- `llm-fallback.js` — 자동 모델 폴백 라우팅 (callLLMWithFallback: 429/5xx 시 selectFallback 체인 따라 자동 전환, onFallback 콜백)
 - `gemini-bridge.js` — Gemini CLI 래퍼 (shell injection 방지)
 - `auth-manager.js` — 멀티프로바이더 인증 (크레덴셜 CRUD)
 
@@ -362,6 +395,9 @@ good-vibe:new "마이크로서비스 SaaS 플랫폼"
 | LLM        | `llm.defaultMaxTokens`             | 4096      | 기본 최대 토큰                                                                                      |
 | LLM        | `llm.pingTimeout`                  | 15s       | 연결 확인 타임아웃                                                                                  |
 | LLM        | `llm.maxRetries`                   | 3         | 재시도 횟수                                                                                         |
+| LLM 풀     | `llmPool.maxConcurrent`            | 8         | 글로벌 동시 LLM 호출 상한                                                                           |
+| LLM 풀     | `llmPool.perProvider`              | 5/5/1     | claude/openai/gemini 동시성 (gemini는 spawnSync 블로킹이라 1)                                       |
+| LLM 풀     | `llmPool.backpressure`             | halve     | 429 시 effective limit 반감, recoveryMs(60s) 후 자동 회복, drain 다중 깨우기                        |
 | GitHub     | `github.enabled`                   | false     | GitHub 협업 기능 활성화                                                                             |
 | GitHub     | `github.branchStrategy`            | timestamp | 브랜치 네이밍 전략 (timestamp/phase/custom)                                                         |
 | GitHub     | `github.baseBranch`                | main      | 베이스 브랜치                                                                                       |
