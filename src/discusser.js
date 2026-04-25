@@ -13,7 +13,9 @@ import {
   parseReviewOutput,
   selectDiscussionReviewers,
 } from '../scripts/lib/engine/orchestrator.js';
-import { callLLM } from '../scripts/lib/llm/llm-provider.js';
+// callLLMWithFallback을 callLLM 별칭으로 사용 — 첫 모델이 429/5xx로 실패하면
+// ModelSelector.selectFallback 체인 따라 자동 다음 모델 시도. 시그니처/응답 호환.
+import { callLLMWithFallback as callLLM } from '../scripts/lib/llm/llm-fallback.js';
 import { config } from '../scripts/lib/core/config.js';
 import { DEFAULTS } from './defaults.js';
 
