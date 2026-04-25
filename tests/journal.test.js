@@ -101,6 +101,7 @@ describe('readJournalEntries 옵션', () => {
     const all = await readJournalEntries(projectId);
     const sinceTs = all[1].timestamp;
     const entries = await readJournalEntries(projectId, { since: sinceTs });
+    // monotonic timestamp 보장 — seq=2,3은 ts(1) 보다 항상 크다
     expect(entries.map((e) => e.seq)).toEqual([2, 3]);
   });
 });
