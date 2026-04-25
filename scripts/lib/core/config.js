@@ -44,6 +44,20 @@ export const config = Object.freeze({
     maxRetries: 3,
     maxPromptSectionLength: 3000,
   }),
+  llmPool: Object.freeze({
+    maxConcurrent: 8,
+    perProvider: Object.freeze({
+      claude: 5,
+      openai: 5,
+      // gemini-bridge.js는 spawnSync(블로킹). 비동기화 전까지 직렬 처리.
+      gemini: 1,
+    }),
+    backpressure: Object.freeze({
+      halveOnRateLimit: true,
+      minConcurrent: 1,
+      recoveryMs: 60_000,
+    }),
+  }),
   review: Object.freeze({
     minReviewers: 2,
     maxReviewers: 3,
