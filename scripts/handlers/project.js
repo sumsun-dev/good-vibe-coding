@@ -11,6 +11,7 @@ import {
   addModifyEntry,
   addProjectTasks,
 } from '../lib/project/project-manager.js';
+import { migrateAllJournals } from '../lib/project/journal-migration.js';
 import { generateReport } from '../lib/output/report-generator.js';
 import { scanCodebase } from '../lib/project/codebase-scanner.js';
 import {
@@ -80,6 +81,13 @@ export const commands = {
   'list-projects': async () => {
     const projects = await listProjects();
     output(projects);
+  },
+
+  'migrate-journal': async () => {
+    const opts = parseArgs(args);
+    const dryRun = opts['dry-run'] === true || opts['dry-run'] === 'true';
+    const result = await migrateAllJournals({ dryRun });
+    output(result);
   },
 
   'update-status': async () => {

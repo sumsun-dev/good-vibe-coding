@@ -27,6 +27,7 @@ const COMMAND_MAP = {
   'create-project': 'project',
   'get-project': 'project',
   'list-projects': 'project',
+  'migrate-journal': 'project',
   'update-status': 'project',
   'set-team': 'project',
   'execution-progress': 'project',
