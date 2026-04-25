@@ -9,6 +9,7 @@
 import { loadAuth } from './auth-manager.js';
 import { callGeminiCli } from './gemini-bridge.js';
 import { createLLMPool } from './llm-pool.js';
+import { createCostTracker } from './cost-tracker.js';
 import { config } from '../core/config.js';
 import { AppError, inputError, notFoundError } from '../core/validators.js';
 import { truncateText } from '../core/text-utils.js';
@@ -51,6 +52,19 @@ const llmPool = createLLMPool({
 /** 테스트/관측용 풀 통계 — getStats() 노출. */
 export function getLLMPoolStats() {
   return llmPool.getStats();
+}
+
+/** 글로벌 비용 추적기. callLLM이 응답 토큰 사용량을 자동 record. */
+const costTracker = createCostTracker();
+
+/** 테스트/관측용 비용 통계 — totalCost, byProvider, cacheStats 등. */
+export function getCostStats() {
+  return costTracker.getStats();
+}
+
+/** 테스트용 — 비용 통계 초기화. */
+export function resetCostStats() {
+  costTracker.reset();
 }
 
 /**
@@ -120,7 +134,16 @@ async function _executeLLMCall(providerId, prompt, options, auth) {
         lastError = err;
       } else {
         const data = await response.json();
-        return parseProviderResponse(providerId, data, model);
+        const result = parseProviderResponse(providerId, data, model);
+        costTracker.record({
+          provider: providerId,
+          model: result.model,
+          inputTokens: result.inputTokens || 0,
+          outputTokens: result.outputTokens || 0,
+          cacheReadInputTokens: result.cacheReadInputTokens || 0,
+          cacheCreationInputTokens: result.cacheCreationInputTokens || 0,
+        });
+        return result;
       }
     } catch (err) {
       // 이미 재시도 불가로 판정된 에러는 즉시 재throw
