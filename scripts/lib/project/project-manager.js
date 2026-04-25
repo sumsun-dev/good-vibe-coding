@@ -12,6 +12,7 @@ import { projectsDir } from '../core/app-paths.js';
 import { config } from '../core/config.js';
 import { truncateLines } from '../core/text-utils.js';
 import { withFileLock } from '../core/file-lock.js';
+import { readJournalEntries, appendJournalEntry } from './journal.js';
 
 const DEFAULT_BASE_DIR = projectsDir();
 
@@ -87,23 +88,68 @@ function getProjectFilePath(projectId) {
 }
 
 /**
- * 프로젝트 파일을 디스크에서 읽는다.
+ * jsonl이 있으면 우선 사용, 없으면 project.json의 journal[] 그대로 (legacy 호환).
+ * 호출자는 in-memory state.journal을 그대로 사용 가능 → 사용처 영향 0.
+ */
+async function hydrateJournal(projectId, project) {
+  if (!project) return project;
+  const jsonlEntries = await readJournalEntries(projectId);
+  if (jsonlEntries.length === 0) return project; // legacy: project.json journal[] 유지
+  if (!project.executionState) project.executionState = {};
+  project.executionState.journal = jsonlEntries;
+  return project;
+}
+
+/**
+ * state.journal의 새 entry를 jsonl에 append (delta only).
+ * 마이그레이션 안 한 프로젝트의 첫 write에서는 journal[] 전체가 jsonl로 이전됨.
+ *
+ * state-machine entries는 type 대신 action 필드를 사용하므로 자동 정규화.
+ */
+async function syncJournalToJsonl(projectId, project) {
+  const journal = project?.executionState?.journal;
+  if (!Array.isArray(journal) || journal.length === 0) return;
+  const existing = await readJournalEntries(projectId);
+  const newEntries = journal.slice(existing.length);
+  for (const entry of newEntries) {
+    if (!entry || typeof entry !== 'object') continue;
+    const normalized =
+      typeof entry.type === 'string' ? entry : { type: entry.action || 'unknown', ...entry };
+    await appendJournalEntry(projectId, normalized);
+  }
+}
+
+/** project.json에 저장하기 전 journal 필드 제거 — jsonl이 source of truth. */
+function stripJournalForPersistence(project) {
+  if (!project?.executionState?.journal) return project;
+  return {
+    ...project,
+    executionState: { ...project.executionState, journal: undefined },
+  };
+}
+
+/**
+ * 프로젝트 파일을 디스크에서 읽는다 (jsonl hydration 포함).
  * @param {string} projectId - 프로젝트 ID
  * @returns {Promise<object|null>} 프로젝트 또는 null (파일 없음)
  */
 async function readProjectFile(projectId) {
-  return readJsonFile(getProjectFilePath(projectId));
+  const project = await readJsonFile(getProjectFilePath(projectId));
+  if (!project) return null;
+  return hydrateJournal(projectId, project);
 }
 
 /**
- * 프로젝트 객체를 디스크에 기록한다.
+ * 프로젝트 객체를 디스크에 기록한다 (journal jsonl sync + journal 필드 strip).
  * @param {string} projectId - 프로젝트 ID
  * @param {object} project - 프로젝트 객체
  */
 async function writeProjectFile(projectId, project) {
   const dir = getProjectDir(projectId);
   await ensureDir(dir);
-  await writeFile(getProjectFilePath(projectId), JSON.stringify(project, null, 2), 'utf-8');
+  await syncJournalToJsonl(projectId, project);
+  const stripped = stripJournalForPersistence(project);
+  await writeFile(getProjectFilePath(projectId), JSON.stringify(stripped, null, 2), 'utf-8');
 }
 
 /**
