@@ -33,6 +33,13 @@ function getJournalLockPath(projectId) {
   return resolve(baseDir, '.locks', `${projectId}-journal.lock`);
 }
 
+/**
+ * 자동 할당 timestamp의 monotonic 보장용. 같은 ms 내 다중 append 시에도
+ * 순서가 보존되도록 (now <= last)일 때 last+1로 증가시킨다.
+ * 명시 timestamp가 들어오면 그대로 사용한다 (재현/마이그레이션 케이스).
+ */
+let lastAutoTimestamp = 0;
+
 function normalizeEntry(entry) {
   if (!entry || typeof entry !== 'object') {
     throw inputError('journal entry는 object여야 합니다');
@@ -40,10 +47,17 @@ function normalizeEntry(entry) {
   if (!entry.type || typeof entry.type !== 'string') {
     throw inputError('journal entry는 type 필드가 필요합니다');
   }
-  return {
-    timestamp: typeof entry.timestamp === 'number' ? entry.timestamp : Date.now(),
-    ...entry,
-  };
+
+  let timestamp;
+  if (typeof entry.timestamp === 'number') {
+    timestamp = entry.timestamp;
+  } else {
+    const now = Date.now();
+    timestamp = now <= lastAutoTimestamp ? lastAutoTimestamp + 1 : now;
+    lastAutoTimestamp = timestamp;
+  }
+
+  return { timestamp, ...entry };
 }
 
 function parseLines(content) {
