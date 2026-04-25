@@ -11,6 +11,7 @@ import {
 import { projectsDir } from '../core/app-paths.js';
 import { config } from '../core/config.js';
 import { truncateLines } from '../core/text-utils.js';
+import { withFileLock } from '../core/file-lock.js';
 
 const DEFAULT_BASE_DIR = projectsDir();
 
@@ -86,12 +87,6 @@ function getProjectFilePath(projectId) {
 }
 
 /**
- * In-process 쓰기 락 — 동일 프로젝트에 대한 동시 쓰기를 직렬화한다.
- * @type {Map<string, Promise<void>>}
- */
-const writeLocks = new Map();
-
-/**
  * 프로젝트 파일을 디스크에서 읽는다.
  * @param {string} projectId - 프로젝트 ID
  * @returns {Promise<object|null>} 프로젝트 또는 null (파일 없음)
@@ -112,33 +107,37 @@ async function writeProjectFile(projectId, project) {
 }
 
 /**
+ * 프로젝트 락 파일 경로.
+ *
+ * 프로젝트 디렉토리 밖(`baseDir/.locks/`)에 두어 호출자가 ensureDir을 거치지 않게 한다.
+ * 호출 시점에 비동기 ensureDir이 끼면 dispatch 순서와 큐 등록 순서가 어긋날 수 있다.
+ */
+function getProjectLockPath(projectId) {
+  // projectId 검증을 통과한 디렉토리만 락 경로로 허용
+  const projectDir = getProjectDir(projectId);
+  void projectDir; // assertWithinRoot 부수효과
+  return resolve(baseDir, '.locks', `${projectId}.lock`);
+}
+
+/**
  * 프로젝트 락을 획득하고 read → mutate → write 사이클을 원자적으로 수행한다.
+ *
+ * 파일 시스템 기반 잠금이라 멀티 프로세스에서도 안전하다.
+ * 같은 프로세스 내에서는 reentrant + 직렬화 (dispatch 순서 보존).
+ *
  * @param {string} projectId - 프로젝트 ID
  * @param {function} fn - (project) => updatedProject 변환 함수
  * @returns {Promise<object>} 업데이트된 프로젝트
  */
 async function withProjectLock(projectId, fn) {
-  const prev = writeLocks.get(projectId) || Promise.resolve();
-  let resolveLock;
-  const lockPromise = new Promise((r) => {
-    resolveLock = r;
-  });
-  writeLocks.set(projectId, lockPromise);
-
-  await prev;
-  try {
+  const lockPath = getProjectLockPath(projectId);
+  return withFileLock(lockPath, async () => {
     const project = await readProjectFile(projectId);
     if (!project) throw notFoundError(`프로젝트를 찾을 수 없습니다: ${projectId}`);
     const updated = fn(project);
     await writeProjectFile(projectId, updated);
     return updated;
-  } finally {
-    resolveLock();
-    // 현재 락이 Map에 남아있으면 삭제 (누수 방지)
-    if (writeLocks.get(projectId) === lockPromise) {
-      writeLocks.delete(projectId);
-    }
-  }
+  });
 }
 
 /**
