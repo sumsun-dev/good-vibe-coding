@@ -8,6 +8,7 @@ import {
   truncateJournalAtSize,
   clearJournal,
   setJournalBaseDir,
+  _resetTimestampForTesting,
 } from '../scripts/lib/project/journal.js';
 
 let tmpDir;
@@ -16,6 +17,7 @@ const projectId = 'test-project-2026-04';
 beforeEach(() => {
   tmpDir = mkdtempSync(join(tmpdir(), 'gvc-journal-'));
   setJournalBaseDir(tmpDir);
+  _resetTimestampForTesting();
 });
 
 afterEach(() => {

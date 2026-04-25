@@ -185,3 +185,11 @@ export async function clearJournal(projectId) {
 export function getJournalFilePath(projectId) {
   return getJournalPath(projectId);
 }
+
+/**
+ * 테스트용 — monotonic timestamp 카운터를 초기화한다.
+ * 다른 테스트에서 누적된 lastAutoTimestamp가 Date.now() 비교를 깨지 않게 한다.
+ */
+export function _resetTimestampForTesting() {
+  lastAutoTimestamp = 0;
+}
