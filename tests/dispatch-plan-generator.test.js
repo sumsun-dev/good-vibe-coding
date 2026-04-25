@@ -152,6 +152,14 @@ describe('buildDiscussionDispatchPlan', () => {
     expect(plan.reviewPrompts[0].roleId).toBe('cto');
     expect(plan.reviewPrompts[0].prompt).toContain('민준');
   });
+
+  it('명시적 concurrencyHint를 노출한다 (tier 간/내부 모두 병렬)', () => {
+    const plan = buildDiscussionDispatchPlan(SAMPLE_PROJECT, SAMPLE_TEAM);
+    expect(plan.concurrencyHint).toBeDefined();
+    expect(plan.concurrencyHint.allTiersParallel).toBe(true);
+    expect(plan.concurrencyHint.reviewsParallel).toBe(true);
+    expect(plan.concurrencyHint.reasoning).toMatch(/priorTierOutputs/i);
+  });
 });
 
 // --- buildExecutionDispatchPlan ---
@@ -215,6 +223,20 @@ describe('buildExecutionDispatchPlan', () => {
     const plan = buildExecutionDispatchPlan(SAMPLE_PROJECT, SAMPLE_TASKS, SAMPLE_TEAM);
     expect(plan.dependencies).toBeDefined();
     expect(plan.dependencies['task-3']).toContain('task-1');
+  });
+
+  it('execute 페이즈에 concurrencyHint를 노출한다', () => {
+    const plan = buildExecutionDispatchPlan(SAMPLE_PROJECT, SAMPLE_TASKS, SAMPLE_TEAM);
+    const executPhase = plan.phases.find((p) => p.type === 'execute');
+    expect(executPhase.concurrencyHint).toBeDefined();
+    expect(executPhase.concurrencyHint.tasksParallel).toBe(true);
+  });
+
+  it('review 페이즈에 concurrencyHint를 노출한다', () => {
+    const plan = buildExecutionDispatchPlan(SAMPLE_PROJECT, SAMPLE_TASKS, SAMPLE_TEAM);
+    const reviewPhase = plan.phases.find((p) => p.type === 'review');
+    expect(reviewPhase.concurrencyHint).toBeDefined();
+    expect(reviewPhase.concurrencyHint.reviewersParallel).toBe(true);
   });
 
   it('기획 결정사항을 전달할 수 있다', () => {

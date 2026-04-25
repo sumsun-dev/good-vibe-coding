@@ -95,6 +95,12 @@ export function buildDiscussionDispatchPlan(project, team, context = {}) {
       threshold: config.convergence.threshold,
       maxRounds,
     },
+    concurrencyHint: {
+      allTiersParallel: true,
+      reviewsParallel: true,
+      reasoning:
+        'buildAgentAnalysisPrompt가 priorTierOutputs를 미사용하므로 모든 tier 에이전트를 동시에 실행해도 안전하다. 리뷰 단계도 독립적이므로 병렬 실행한다. LLM 호출은 llm-pool에서 동시성/backpressure 제어.',
+    },
   };
 }
 
@@ -131,6 +137,11 @@ export function buildExecutionDispatchPlan(project, tasks, team, context = {}) {
       return {
         type: 'execute',
         phase: phase.phase,
+        concurrencyHint: {
+          tasksParallel: true,
+          reasoning:
+            '같은 phase 내 태스크는 의존이 없도록 분배되었다. 병렬 실행 안전. LLM 동시성은 llm-pool이 제어.',
+        },
         tasks: phase.tasks.map((task) => {
           const member = teamMap[task.assignee];
           const codeTask = isCodeTask(task);
@@ -166,6 +177,11 @@ export function buildExecutionDispatchPlan(project, tasks, team, context = {}) {
     return {
       type: 'review',
       phase: phase.phase,
+      concurrencyHint: {
+        reviewersParallel: true,
+        reasoning:
+          '리뷰어는 독립적으로 평가한다. 병렬 실행 안전. cross-model-strategy 사용 시 자동 분산.',
+      },
       tasks: phase.tasks.map((task) => {
         const reviewers = selectReviewers(task, team);
         return {

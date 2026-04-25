@@ -3,6 +3,9 @@ import { resolve } from 'path';
 import { getDefaultsForComplexity } from './complexity-analyzer.js';
 import { LazyCache } from '../core/cache.js';
 import { pluginRoot } from '../core/app-paths.js';
+import { createModelSelector } from '../llm/model-selector.js';
+
+const defaultSelector = createModelSelector('default');
 
 const CATALOG_PATH = resolve(pluginRoot(), 'presets', 'team-roles', 'catalog.json');
 const PROJECT_TYPES_PATH = resolve(pluginRoot(), 'presets', 'project-types.json');
@@ -127,27 +130,15 @@ export async function buildTeam(roleIds, personalityChoices = {}, options = {}) 
 
 /**
  * 역할의 카테고리와 복잡도에 따라 적절한 모델을 결정한다.
+ * 내부적으로 ModelSelector('default')에 위임. 정책 교체가 필요하면
+ * `createModelSelector`를 직접 사용하라.
  * @param {object} role - 카탈로그 역할 정보 (role.model, role.category)
  * @param {string} [complexity] - 복잡도 ('simple' | 'medium' | 'complex')
  * @param {string} [taskType] - 태스크 유형 (예: 'architecture-review')
  * @returns {string} 모델 이름
  */
 export function resolveModel(role, complexity, taskType) {
-  if (!complexity) return role.model;
-
-  const defaults = getDefaultsForComplexity(complexity);
-  const modelTiers = defaults.modelTiers;
-  if (!modelTiers) return role.model;
-
-  const category = role.category || 'engineering';
-  let model = modelTiers[category] || role.model;
-
-  // architecture-review + complex → opus 업그레이드
-  if (taskType === 'architecture-review' && complexity === 'complex') {
-    model = 'opus';
-  }
-
-  return model;
+  return defaultSelector.selectModel({ role, complexity, taskType });
 }
 
 /**

@@ -8,6 +8,7 @@
 
 import { loadAuth } from './auth-manager.js';
 import { callGeminiCli } from './gemini-bridge.js';
+import { createLLMPool } from './llm-pool.js';
 import { config } from '../core/config.js';
 import { AppError, inputError, notFoundError } from '../core/validators.js';
 import { truncateText } from '../core/text-utils.js';
@@ -40,6 +41,18 @@ const DEFAULT_MODELS = {
 /** 지원 프로바이더 목록 */
 export const SUPPORTED_PROVIDERS = ['claude', 'openai', 'gemini'];
 
+/** 글로벌 LLM 동시성 풀 (config.llmPool 정책). 모든 callLLM이 통과한다. */
+const llmPool = createLLMPool({
+  maxConcurrent: config.llmPool.maxConcurrent,
+  perProvider: { ...config.llmPool.perProvider },
+  backpressure: { ...config.llmPool.backpressure },
+});
+
+/** 테스트/관측용 풀 통계 — getStats() 노출. */
+export function getLLMPoolStats() {
+  return llmPool.getStats();
+}
+
 /**
  * 통합 LLM 호출 인터페이스.
  * @param {string} providerId - 'claude' | 'openai' | 'gemini'
@@ -57,6 +70,10 @@ export async function callLLM(providerId, prompt, options = {}) {
     throw notFoundError(`${providerId} 인증 정보가 없습니다. 먼저 connect 명령으로 인증하세요.`);
   }
 
+  return llmPool.run(providerId, () => _executeLLMCall(providerId, prompt, options, auth));
+}
+
+async function _executeLLMCall(providerId, prompt, options, auth) {
   // Gemini CLI 인증일 때 서브프로세스 경로로 분기
   if (providerId === 'gemini' && auth.type === 'cli') {
     const model = options.model || DEFAULT_MODELS.gemini;
@@ -68,6 +85,7 @@ export async function callLLM(providerId, prompt, options = {}) {
   const headers = buildAuthHeaders(providerId, auth);
   const maxRetries = options.maxRetries ?? config.llm.maxRetries;
   let lastError;
+  let rateLimitSignaled = false;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -86,6 +104,12 @@ export async function callLLM(providerId, prompt, options = {}) {
           'SYSTEM_ERROR',
         );
         err.statusCode = response.status;
+
+        // 429: 호출당 1회만 풀에 backpressure 신호 — 재시도마다 halve되면 과도한 감속
+        if (response.status === 429 && !rateLimitSignaled) {
+          llmPool.signalRateLimit(providerId);
+          rateLimitSignaled = true;
+        }
 
         // 재시도 불가 상태 코드(4xx, 429 제외)는 즉시 throw
         if (!RETRYABLE_STATUS_CODES.has(response.status)) {
