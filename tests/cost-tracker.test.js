@@ -140,8 +140,8 @@ describe('createCostTracker', () => {
     const stats = tracker.getStats();
     expect(stats.cacheStats.hitTokens).toBe(800);
     expect(stats.cacheStats.creationTokens).toBe(200);
-    // hit rate = read / (read + uncached input)
-    expect(stats.cacheStats.hitRate).toBeCloseTo(800 / (800 + 1000), 4);
+    // hit rate = read / (read + creation + uncached) — write도 청구 대상이므로 분모 포함
+    expect(stats.cacheStats.hitRate).toBeCloseTo(800 / (800 + 200 + 1000), 4);
   });
 
   it('reset()으로 통계 초기화', () => {

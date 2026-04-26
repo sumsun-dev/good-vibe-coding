@@ -73,11 +73,30 @@ export const PROVIDER_PRICING = Object.freeze({
  * @param {{ inputTokens?: number, outputTokens?: number, cacheReadInputTokens?: number, cacheCreationInputTokens?: number }} usage
  * @returns {number} 비용 (USD)
  */
+/** 미등록 모델 1회만 경고 (반복 노이즈 방지). */
+const _warnedUnknownModels = new Set();
+
 export function estimateCost(provider, model, usage = {}) {
   const providerTable = PROVIDER_PRICING[provider];
-  if (!providerTable) return 0;
+  if (!providerTable) {
+    const key = `${provider}/__provider__`;
+    if (!_warnedUnknownModels.has(key)) {
+      _warnedUnknownModels.add(key);
+      process.stderr.write(`[cost-tracker] 가격표 미등록 프로바이더: ${provider} (cost=0 처리)\n`);
+    }
+    return 0;
+  }
   const pricing = providerTable[model];
-  if (!pricing) return 0;
+  if (!pricing) {
+    const key = `${provider}/${model}`;
+    if (!_warnedUnknownModels.has(key)) {
+      _warnedUnknownModels.add(key);
+      process.stderr.write(
+        `[cost-tracker] 가격표 미등록 모델: ${provider}/${model} (cost=0 처리, PROVIDER_PRICING 갱신 필요)\n`,
+      );
+    }
+    return 0;
+  }
 
   const input = (usage.inputTokens || 0) / 1_000_000;
   const output = (usage.outputTokens || 0) / 1_000_000;
@@ -174,7 +193,9 @@ export function createCostTracker(options = {}) {
     },
 
     getStats() {
-      const cacheTotal = cacheHitTokens + totalUncachedInputTokens;
+      // billable input = 캐시 read + 캐시 write(creation) + uncached
+      // hitRate는 read / billable. write도 실제 청구되므로 분모에 포함.
+      const cacheTotal = cacheHitTokens + cacheCreationTokens + totalUncachedInputTokens;
       const hitRate = cacheTotal > 0 ? cacheHitTokens / cacheTotal : 0;
 
       const stats = {
