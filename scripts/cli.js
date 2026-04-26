@@ -20,6 +20,7 @@ const HANDLERS = {
   recommendation: () => import('./handlers/recommendation.js'),
   learn: () => import('./handlers/learn.js'),
   dispatch: () => import('./handlers/dispatch.js'),
+  cost: () => import('./handlers/cost.js'),
 };
 
 /** 커맨드 → 핸들러 모듈 O(1) 매핑 테이블 */
@@ -187,6 +188,10 @@ const COMMAND_MAP = {
   'get-guide': 'learn',
   // dispatch (v2)
   'gv-dispatch': 'dispatch',
+  // cost (v2)
+  'gv-budget-get': 'cost',
+  'gv-budget-set': 'cost',
+  'gv-budget-clear': 'cost',
 };
 
 async function resolveCommand(name) {
