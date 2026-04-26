@@ -24,10 +24,10 @@ CEO에게 다음을 한 번에 표시:
 1. **활성 프로젝트** (가장 최근 + 미완료)
    - 이름, 상태, 모드, 팀 규모, createdAt
 2. **상태별 다음 권장 액션**
-   - `planning` → `good-vibe:discuss` 또는 `good-vibe:approve`
-   - `approved` → `good-vibe:execute`
-   - `executing` / `reviewing` → `good-vibe:execute`로 재개
-   - `completed` → `good-vibe:modify` 또는 `good-vibe:report`
+   - `planning` → `/gv 추가 토론 ...` 또는 `/gv 기획 승인` (자연어 진입)
+   - `approved` → `/gv:execute`
+   - `executing` / `reviewing` → `/gv:resume` (또는 `/gv 이전 작업 이어서`)
+   - `completed` → `/gv 보고서 확인` / `/gv 피드백 분석` / `/gv 수정 요청 ...`
 3. **전체 프로젝트 목록** (최대 10개, 최근순)
 
 추가 작업/판단/LLM 호출 금지. 단일 CLI 결과를 그대로 가공 없이 표시.

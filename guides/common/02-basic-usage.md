@@ -42,13 +42,16 @@ package.json에서 사용하는 의존성을 설명해줘
 
 ## 커맨드 활용
 
-슬래시(/)로 시작하는 커맨드로 빠르게 작업할 수 있습니다:
+슬래시(`/`)로 시작하는 커맨드로 빠르게 작업할 수 있습니다. Good Vibe Coding은 자연어 한 줄로 작업을 던지는 `/gv`와 5개 보조 슬래시를 제공합니다:
 
 ```
-good-vibe:hello          → 환경 + 개인 설정
-good-vibe:learn         → 학습 가이드
-good-vibe:my-config     → 현재 설정 확인
-/help                   → 도움말
+/gv "..."        → 자연어 단일 진입점 (의도 분류 + 다음 액션 안내)
+/gv:status       → 활성 프로젝트 상태 + 다음 권장 액션
+/gv:execute      → task-graph 실행 시작
+/gv:resume       → 중단된 실행 재개
+/gv:team         → 팀 구성 + 모델 분포 확인
+/gv:cost         → 토큰/비용 집계 + 예산 임계 설정 (opt-in)
+/help            → Claude Code 도움말
 ```
 
 ## 효과적인 요청 팁
@@ -109,5 +112,5 @@ PM/기획자:
 
 ## 다음 단계
 
-- [커맨드와 스킬 활용하기](./03-commands-and-skills.md)
+- [커맨드 레퍼런스](./03-commands-reference.md)
 - [에이전트 이해하기](./04-agents.md)

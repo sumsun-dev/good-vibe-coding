@@ -31,8 +31,8 @@ CEO에게:
 
 1. **팀 멤버**: roleId, name, model(opus/sonnet/haiku), priority
 2. **모델 분포**: 각 모델별 멤버 수 (비용 가시성)
-3. **편집 옵션 안내**:
-   - 새 역할 추가: `good-vibe:my-team` 또는 동적 역할 설계
-   - 역할 제거/변경: `good-vibe:my-team`
+3. **편집 옵션 안내** (자연어 진입):
+   - 새 역할 추가: `/gv "Frontend 개발자 추가해줘"` 또는 `/gv "Security 전문가 합류시켜줘"`
+   - 역할 제거/변경: `/gv "QA 빼고 Tech Writer로 교체"`
 
 추가 가공/LLM 호출 금지.

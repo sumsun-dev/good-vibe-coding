@@ -56,16 +56,14 @@ CEO에게:
 1. **카테고리** + **분류 결과** (taskRoute가 있다면 taskType + intent)
 2. **다음 액션** (`nextActions` 배열의 안내문)
 3. **`escalateForConfirm: true`인 경우만** confidence와 warnings를 강조 표시 (모호 입력 안내)
-4. (Phase B-3, B-4 머지 후) 적절한 후속 슬래시 자동 안내
+4. category에 따라 적절한 보조 슬래시(`/gv:status`, `/gv:resume`, `/gv:execute`) 또는 자연어 재진입 안내
 
-### Step 4: 후속 안내 (현재는 안내까지만)
+### Step 4: 후속 안내
 
-- `category === 'status'` → "/good-vibe:status" 안내
-- `category === 'resume'` → "/good-vibe:execute" 안내
-- `category === 'modify'` → "/good-vibe:modify" 안내 (또는 task로 downgrade)
-- `category === 'task'` → 현재는 분류 결과만 표시.
-  - **Phase B-4 머지 후**: 적절한 task graph(task-graph-presets) 실행으로 연결됨
-  - **현재 단계**: CEO가 nextActions 안내를 보고 어떤 v1 슬래시를 쓸지 결정
+- `category === 'status'` → `/gv:status` 안내
+- `category === 'resume'` → `/gv:resume` 안내
+- `category === 'modify'` → 활성 프로젝트가 있으면 `/gv 수정 요청 ...` 자연어 재진입 안내 (또는 task로 downgrade)
+- `category === 'task'` → `/gv:execute`로 task-graph 실행 연결 (taskRoute 그대로 전달)
 
 ## 메인 세션 원칙 (Thin Controller)
 

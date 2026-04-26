@@ -26,7 +26,7 @@ node "${CLAUDE_PLUGIN_ROOT}/scripts/cli.js" list-projects
 CEO에게:
 
 1. **재개 대상**: 프로젝트 이름, 마지막 Phase, journal 마지막 이벤트 시각
-2. **다음 액션**: `good-vibe:execute`를 실행하면 자동으로 이전 Phase부터 이어서 진행
-3. **주의 사항**: 마지막 실행이 24시간 이상 지났다면 Stale 감지로 자동 재개가 거부될 수 있음. 이 경우 `good-vibe:execute --id <projectId>`로 수동 재개를 시도하세요
+2. **다음 액션**: `/gv:execute`를 실행하면 자동으로 이전 Phase부터 이어서 진행
+3. **주의 사항**: 마지막 실행에서 일정 시간이 경과했다면 file-lock의 stale 감지로 자동 재개가 제한될 수 있음(임계값은 실행 환경 설정에 따름). 이 경우 `/gv 이전 작업 강제 재개` 같은 자연어로 재진입하세요 (dispatch가 stale 처리 안내를 함께 표시)
 
 핸들러 1회 호출 외 추가 작업 금지.
