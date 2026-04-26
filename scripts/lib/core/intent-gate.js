@@ -1,7 +1,12 @@
 /**
  * intent-gate — 사용자 의도 분류 + 상태 라우팅
  * good-vibe:new Step 0.5에서 사용. 순수 함수, LLM 호출 없음.
+ *
+ * status/resume/modify 패턴은 `nl-router.js`의 `DISPATCH_PATTERNS`와 단일 출처로 공유.
+ * `create` 패턴만 intent-gate 자체에서 정의.
  */
+
+import { DISPATCH_PATTERNS } from './nl-router.js';
 
 const STATE_ROUTES = Object.freeze({
   planning: {
@@ -18,20 +23,9 @@ const STATE_ROUTES = Object.freeze({
 });
 
 const INTENT_PATTERNS = [
-  { intent: 'status', patterns: [/상태/, /진행.*상황/, /어디.*까지/, /status/i] },
-  { intent: 'modify', patterns: [/수정/, /변경/, /고쳐/, /개선/, /추가해/, /바꿔/, /modify/i] },
-  {
-    intent: 'resume',
-    patterns: [
-      /이어서/,
-      /계속.*하/,
-      /재개/,
-      /이전.*프로젝트/,
-      /하던.*프로젝트/,
-      /resume/i,
-      /continue.*project/i,
-    ],
-  },
+  { intent: 'status', patterns: DISPATCH_PATTERNS.status },
+  { intent: 'modify', patterns: DISPATCH_PATTERNS.modify },
+  { intent: 'resume', patterns: DISPATCH_PATTERNS.resume },
   {
     intent: 'create',
     patterns: [/팀.*만들/, /프로젝트.*시작/, /새.*프로젝트/, /create.*team/i, /new.*project/i],
