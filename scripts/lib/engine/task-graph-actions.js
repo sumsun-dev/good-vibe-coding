@@ -247,6 +247,24 @@ function buildCommitPrompt(taskRoute, materializeOut) {
   return `# 변경 요약\n${summary}\n\n# 작업\nConventional commits 형식의 커밋 제목 한 줄과 본문 2-3줄을 한국어로 작성. 형식 예: "feat(scope): 변경 내용"`;
 }
 
+function buildFixPrompt(taskRoute, executeOut, reviewOut, fixAttempt) {
+  const code = executeOut?.code || '(코드 없음)';
+  const review = reviewOut?.review || '(리뷰 없음)';
+  return `# 이전 코드\n${code}\n\n# 리뷰 지적사항\n${review}\n\n# 시도 횟수\n${fixAttempt + 1}회\n\n# 작업\n위 지적사항을 반영하여 수정된 코드를 fenced code block으로 작성하세요. 한국어 설명은 코드 위 1-2줄.`;
+}
+
+function buildEscalatingPrompt(executeOut, reviewOut, fixAttempts) {
+  const review = reviewOut?.review || '(리뷰 없음)';
+  return `# 누적 리뷰 결과\n${review}\n\n# 시도\n${fixAttempts}회 수정 후에도 통과 못 함\n\n# 작업\n다음 중 하나를 마지막 줄에 명시: [CONTINUE](재시도)/[SKIP](커밋 진행)/[ABORT](실패 종료). 1-2줄 근거 포함.`;
+}
+
+function extractEscalationDecision(text) {
+  if (!text) return 'ABORT';
+  if (/\[CONTINUE\]/i.test(text)) return 'CONTINUE';
+  if (/\[SKIP\]/i.test(text)) return 'SKIP';
+  return 'ABORT';
+}
+
 function extractVerdict(reviewText) {
   if (!reviewText) return 'FAIL';
   return /\[VERDICT:\s*PASS\]/i.test(reviewText) ? 'PASS' : 'FAIL';
@@ -321,10 +339,56 @@ export function buildCodeActions(opts = {}) {
       }
     },
 
-    // TODO(B-4c-2): 실제 fix LLM action. 현재는 GIVE_UP으로 즉시 failed.
-    fixing: placeholder('code:fixing', 'GIVE_UP'),
-    // TODO(B-4c-2): CEO 입력 통합. 현재는 SKIP으로 committing 진입.
-    escalating: placeholder('code:escalating', 'SKIP'),
+    /**
+     * 이전 review 결과를 받아 LLM이 수정안 생성. ctx.fixAttempt 증가.
+     * fixAttempt < maxFixAttempts(graph guard) → COMPLETE → reviewing 재진입
+     * 이미 max 도달이면 ESCALATE 발행 (graph guard가 COMPLETE 거부했을 때 대비)
+     */
+    fixing: async (state, taskRoute) => {
+      const maxFixAttempts = taskRoute.maxFixAttempts ?? 2;
+      const currentAttempt = taskRoute.fixAttempt ?? 0;
+
+      try {
+        const result = await callLLM(
+          provider,
+          buildFixPrompt(taskRoute, stage.execute, stage.review, currentAttempt),
+          callOpts,
+        );
+        // 수정된 코드로 stage.execute 갱신 → 다음 reviewing이 새 코드를 봄
+        stage.execute = { code: result.text, model: result.model };
+        // ctx에 fixAttempt 증가 (mutable 누적)
+        taskRoute.fixAttempt = currentAttempt + 1;
+        // 한도 도달 시 ESCALATE, 아니면 COMPLETE → reviewing 재진입
+        const event = taskRoute.fixAttempt >= maxFixAttempts ? 'ESCALATE' : 'COMPLETE';
+        return { event, output: { fixed: result.text, fixAttempt: taskRoute.fixAttempt } };
+      } catch (err) {
+        return { event: 'FAIL', output: { error: err.message } };
+      }
+    },
+
+    /**
+     * LLM에게 CONTINUE/SKIP/ABORT 결정 위임. 실제 CEO 입력 통합은 후속 인프라.
+     */
+    escalating: async (state, taskRoute) => {
+      const fixAttempts = taskRoute.fixAttempt ?? 0;
+      try {
+        const result = await callLLM(
+          provider,
+          buildEscalatingPrompt(stage.execute, stage.review, fixAttempts),
+          callOpts,
+        );
+        const decision = extractEscalationDecision(result.text);
+        // CONTINUE 시 fixAttempt 리셋 — 무한 루프 방지를 위해 escalation 횟수 별도 추적
+        if (decision === 'CONTINUE') {
+          taskRoute.fixAttempt = 0;
+          taskRoute.escalationCount = (taskRoute.escalationCount ?? 0) + 1;
+        }
+        return { event: decision, output: { decision, comment: result.text } };
+      } catch (err) {
+        // LLM 실패 시 안전하게 ABORT (실패로 종료)
+        return { event: 'ABORT', output: { error: err.message } };
+      }
+    },
 
     committing: async (state, taskRoute) => {
       try {
