@@ -135,9 +135,11 @@ const CODE_DEBUG_KEYWORDS = [
  * }}
  */
 export function routeTask(input, context = {}) {
+  const safeContext = context && typeof context === 'object' ? context : {};
   const ctx = {
-    hasGitRepo: true,
-    ...(context || {}),
+    ...safeContext,
+    // 컨텍스트 불명 시 보수적으로 hasGitRepo=true (plan 점수 +1 보너스를 주지 않는 쪽)
+    hasGitRepo: typeof safeContext.hasGitRepo === 'boolean' ? safeContext.hasGitRepo : true,
   };
 
   if (!input || typeof input !== 'string') {
