@@ -67,7 +67,7 @@ export function setBudget(input = {}) {
 }
 
 /**
- * 예산 설정 전체 해제 (양 필드 null).
+ * 예산 설정 전체 해제. 양 필드를 명시적으로 null로 덮어쓰며 updatedAt 갱신.
  */
 export function clearBudget() {
   return setBudget({ maxCostUsd: null, maxTokens: null });
