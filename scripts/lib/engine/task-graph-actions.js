@@ -14,6 +14,8 @@
 
 import { callLLMWithFallback } from '../llm/llm-fallback.js';
 import { wrapUserInput } from '../core/prompt-builder.js';
+import { runGraph } from './task-graph-runner.js';
+import { SUBGRAPH_MAP } from './task-graph-presets.js';
 
 const placeholder = (label, event) => async (state) => ({
   event,
@@ -361,6 +363,100 @@ const planPlaceholderActions = Object.freeze({
 });
 
 // ─────────────────────────────────────────────────────────
+// plan actions (Phase B-4d — code 서브그래프 위임 포함)
+// ─────────────────────────────────────────────────────────
+
+const PLAN_SYSTEM = `당신은 시니어 PM/아키텍트로서 대형 프로젝트 기획을 한국어로 정리합니다. 핵심 요구사항, 기술 스택, 단계별 마일스톤을 명확히 제시하세요.`;
+
+function buildDiscussionPrompt(taskRoute) {
+  const userInput = taskRoute.sanitizedInput || wrapUserInput(taskRoute.input || '');
+  return `# 사용자 아이디어\n${userInput}\n\n# 작업\n핵심 요구사항, 기술 스택 권고, 3단계 마일스톤을 한국어로 항목별로 정리하세요.`;
+}
+
+function buildApprovalPrompt(planText) {
+  return `# 작성된 기획안\n${planText}\n\n# 작업\n위 기획안에 대해 [APPROVE] 또는 [REJECT]를 마지막 줄에 명시하고, 1-2줄 의견을 한국어로 작성하세요.`;
+}
+
+function extractApprovalDecision(approvalText) {
+  if (!approvalText) return 'REJECT';
+  return /\[APPROVE\]/i.test(approvalText) ? 'APPROVE' : 'REJECT';
+}
+
+/**
+ * plan actions builder. discussing/approval은 LLM, executing은 code 서브그래프 위임.
+ * 단일 graph 실행 가정 (재사용 금지).
+ */
+export function buildPlanActions(opts = {}) {
+  const callLLM = opts.callLLM || callLLMWithFallback;
+  const provider = opts.provider || 'claude';
+  const model = opts.model;
+  const callOpts = { model, systemMessage: PLAN_SYSTEM };
+  const stage = {};
+
+  return Object.freeze({
+    pending: async () => ({ event: 'START' }),
+
+    discussing: async (state, taskRoute) => {
+      try {
+        const result = await callLLM(provider, buildDiscussionPrompt(taskRoute), callOpts);
+        stage.plan = { plan: result.text, model: result.model };
+        return { event: 'CONVERGE', output: stage.plan };
+      } catch (err) {
+        return { event: 'FAIL', output: { error: err.message } };
+      }
+    },
+
+    'awaiting-approval': async () => {
+      try {
+        const result = await callLLM(
+          provider,
+          buildApprovalPrompt(stage.plan?.plan || ''),
+          callOpts,
+        );
+        const decision = extractApprovalDecision(result.text);
+        stage.approval = { decision, comment: result.text, model: result.model };
+        return { event: decision, output: stage.approval };
+      } catch (err) {
+        return { event: 'REJECT', output: { error: err.message } };
+      }
+    },
+
+    /**
+     * SUBGRAPH_MAP['plan:executing'] = 'code'.
+     * 부모 그래프의 ctx와 callLLM을 그대로 자식에게 전달.
+     */
+    executing: async (state, taskRoute) => {
+      const childTaskType = SUBGRAPH_MAP[`${taskRoute.taskType}:executing`];
+      if (!childTaskType) {
+        return {
+          event: 'FAIL',
+          output: { error: `${taskRoute.taskType}:executing 위임 매핑 없음` },
+        };
+      }
+
+      const childRoute = {
+        ...taskRoute,
+        taskType: childTaskType,
+        intent: taskRoute.intent || 'feature',
+      };
+
+      try {
+        const childActions = buildCodeActions({ callLLM, provider, model });
+        const subResult = await runGraph(childRoute, {
+          actions: childActions,
+          maxSteps: opts.maxSteps,
+        });
+        return subResult.success
+          ? { event: 'COMPLETE', output: { subResult } }
+          : { event: 'FAIL', output: { subResult, error: subResult.reason } };
+      } catch (err) {
+        return { event: 'FAIL', output: { error: err.message } };
+      }
+    },
+  });
+}
+
+// ─────────────────────────────────────────────────────────
 // 라우팅
 // ─────────────────────────────────────────────────────────
 
@@ -409,7 +505,7 @@ export function defaultActions(taskType, options = {}) {
     case 'code':
       return useLLM ? buildCodeActions(options) : codePlaceholderActions;
     case 'plan':
-      return planPlaceholderActions;
+      return useLLM ? buildPlanActions(options) : planPlaceholderActions;
     default:
       throw new Error(`지원하지 않는 taskType: "${taskType}"`);
   }
