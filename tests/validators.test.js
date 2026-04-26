@@ -189,8 +189,8 @@ describe('inputError / notFoundError', () => {
   });
 
   it('notFoundError는 action을 지원한다', () => {
-    const err = notFoundError('프로젝트 없음', 'good-vibe:projects로 확인');
-    expect(err.action).toBe('good-vibe:projects로 확인');
+    const err = notFoundError('프로젝트 없음', '/gv:status로 확인');
+    expect(err.action).toBe('/gv:status로 확인');
   });
 
   it('action 없이 호출하면 null이다', () => {

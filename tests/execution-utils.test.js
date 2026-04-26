@@ -115,7 +115,7 @@ describe('getExecutionSummary', () => {
     expect(result.currentPhase).toBe(0);
     expect(result.percentage).toBe(0);
     expect(result.display).toBe('실행 대기 중');
-    expect(result.nextActions).toEqual(['good-vibe:execute (실행 시작)']);
+    expect(result.nextActions).toEqual(['/gv:execute (실행 시작)']);
   });
 
   it('executing 상태를 표시한다', () => {
@@ -156,9 +156,9 @@ describe('getExecutionSummary', () => {
     expect(result.percentage).toBe(100);
     expect(result.display).toContain('전체 완료');
     expect(result.nextActions).toEqual([
-      'good-vibe:report (보고서 확인)',
-      'good-vibe:feedback (팀 성과 분석)',
-      'good-vibe:modify (기능 추가/수정)',
+      '/gv 보고서 (자연어 task 라우팅)',
+      '/gv 피드백 분석 (자연어)',
+      '/gv 수정 요청 (자연어 task)',
     ]);
   });
 
@@ -178,7 +178,7 @@ describe('getExecutionSummary', () => {
     const result = getExecutionSummary(project);
     expect(result.status).toBe('escalated');
     expect(result.display).toContain('CEO 결정 대기');
-    expect(result.nextActions).toEqual(['good-vibe:execute (에스컬레이션 응답)']);
+    expect(result.nextActions).toEqual(['/gv:execute (에스컬레이션 응답)']);
   });
 
   it('paused 상태를 표시한다', () => {
@@ -195,9 +195,9 @@ describe('getExecutionSummary', () => {
     expect(result.status).toBe('paused');
     expect(result.display).toContain('일시 중지');
     expect(result.nextActions).toEqual([
-      'good-vibe:execute (중단 지점부터 재개)',
-      'good-vibe:discuss --reset (기획 재검토)',
-      'good-vibe:status (상세 상태 확인)',
+      '/gv:resume (중단 지점부터 재개)',
+      '/gv 자연어 (기획 재검토)',
+      '/gv:status (상세 상태 확인)',
     ]);
   });
 

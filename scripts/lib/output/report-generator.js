@@ -348,14 +348,13 @@ export function generateExecutiveSummary(project, stats) {
   if (project.status === 'completed') {
     section += '\n1. `.env` 파일 설정 (보고서의 "환경변수 설정 가이드" 참고)';
     section += '\n2. 의존성 설치 및 실행 확인';
-    section += '\n3. `good-vibe:report`로 상세 보고서 확인';
-    section += '\n4. `good-vibe:feedback`으로 에이전트 피드백 분석';
+    section += '\n3. `/gv 보고서 확인` 또는 `/gv 피드백 분석` (자연어로 task 라우팅)';
     section +=
       '\n\n> 설명을 읽고도 잘 모르겠는 부분이 있으면, 어떤 부분이 헷갈리는지 편하게 질문해 주세요!';
   } else if (project.status === 'approved') {
-    section += '\n- `good-vibe:execute`로 실행 시작';
+    section += '\n- `/gv:execute`로 실행 시작';
   } else if (project.status === 'planning') {
-    section += '\n- `good-vibe:discuss`로 추가 토론 또는 `good-vibe:approve`로 승인';
+    section += '\n- `/gv 자연어`로 추가 토론 진입 또는 승인 응답';
   }
 
   return section;

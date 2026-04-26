@@ -171,16 +171,16 @@ describe('generateExecutiveSummary', () => {
   it('completed 프로젝트에 적절한 다음 단계를 제안한다', () => {
     const stats = generateProjectStats(SAMPLE_PROJECT);
     const summary = generateExecutiveSummary(SAMPLE_PROJECT, stats);
-    expect(summary).toContain('good-vibe:report');
-    expect(summary).toContain('good-vibe:feedback');
+    expect(summary).toContain('/gv 보고서 확인');
+    expect(summary).toContain('/gv 피드백 분석');
   });
 
   it('planning 프로젝트에 적절한 다음 단계를 제안한다', () => {
     const project = { ...SAMPLE_PROJECT, status: 'planning' };
     const stats = generateProjectStats(project);
     const summary = generateExecutiveSummary(project, stats);
-    expect(summary).toContain('good-vibe:discuss');
-    expect(summary).toContain('good-vibe:approve');
+    expect(summary).toContain('/gv 자연어');
+    expect(summary).toContain('승인 응답');
   });
 
   it('generateReport에 Executive Summary가 포함된다', () => {
