@@ -11,8 +11,7 @@ Good Vibe Coding의 3가지 모드를 실제 프로젝트 흐름으로 보여드
 ### 입력
 
 ```
-good-vibe:new
-→ "날씨를 알려주는 텔레그램 봇을 만들어줘"
+/gv "날씨를 알려주는 텔레그램 봇을 만들어줘"
 ```
 
 ### 진행 과정
@@ -37,8 +36,8 @@ good-vibe:new
 
 ```
 프로젝트가 완료되었습니다!
-- good-vibe:report — 보고서 확인
-- good-vibe:feedback — 팀원 성과 분석
+- /gv "보고서 확인" — 결과 + 실행 방법
+- /gv "피드백 분석" — 팀원 성과 + 크로스프로젝트 학습
 ```
 
 ---
@@ -50,9 +49,8 @@ good-vibe:new
 ### 입력
 
 ```
-good-vibe:new
-→ "팀 프로젝트 관리를 위한 REST API 서버를 만들어줘.
-   사용자 인증, 프로젝트 CRUD, 태스크 관리 기능이 필요해."
+/gv "팀 프로젝트 관리를 위한 REST API 서버를 만들어줘.
+     사용자 인증, 프로젝트 CRUD, 태스크 관리 기능이 필요해."
 ```
 
 ### 진행 과정
@@ -70,7 +68,7 @@ good-vibe:new
    Phase 2: 프로젝트/태스크 CRUD API
    Phase 3: 미들웨어 + 통합 테스트
 
-6. good-vibe:execute (각 Phase: 실행 → 구체화 → 리뷰 → 품질 게이트)
+6. /gv:execute (각 Phase: 실행 → 구체화 → 리뷰 → 품질 게이트)
    Phase 1: 실행 → 리뷰 → PASS
    Phase 2: 실행 → 리뷰 → FAIL (critical 1건) → 수정 → PASS
    Phase 3: 실행 → 리뷰 → PASS
@@ -87,9 +85,8 @@ good-vibe:new
 ### 입력
 
 ```
-good-vibe:new
-→ "마이크로서비스 기반 SaaS 프로젝트 관리 플랫폼을 만들어줘.
-   멀티테넌시, 실시간 협업, 결제 연동이 필요해."
+/gv "마이크로서비스 기반 SaaS 프로젝트 관리 플랫폼을 만들어줘.
+     멀티테넌시, 실시간 협업, 결제 연동이 필요해."
 ```
 
 ### 진행 과정
@@ -103,7 +100,7 @@ good-vibe:new
 2. 복잡도 분석: complex → plan-only 선택
 3. 팀 구성: CTO, PO, Fullstack, Frontend, Backend, QA, Security, DevOps — 8명
 
-4. good-vibe:discuss (3라운드)
+4. plan 그래프 다층 토론 (3라운드)
    Round 1: 승인율 55% → 미수렴
      미합의: 마이크로서비스 경계, 인증 전략
    Round 2: 승인율 75% → 미수렴
@@ -111,9 +108,9 @@ good-vibe:new
      미합의: 실시간 이벤트 버스 선택
    Round 3: 승인율 90% → 수렴!
 
-5. good-vibe:approve → CEO 승인
+5. /gv "기획 승인" → CEO 승인
 
-6. good-vibe:execute (Phase 5개)
+6. /gv:execute (Phase 5개)
    Phase 1: 공통 인프라 + Auth 서비스
    Phase 2: 프로젝트 서비스 + 태스크 서비스
    Phase 3: 실시간 협업 (WebSocket)
@@ -132,10 +129,11 @@ good-vibe:new
 ### 입력
 
 ```
-good-vibe:modify
-→ 프로젝트 선택: "날씨 알림 텔레그램 봇"
-→ "미세먼지 정보도 같이 알려줘. 기준치 초과 시 경고 메시지도 보내줘"
+/gv "날씨 알림 텔레그램 봇에 미세먼지 정보도 같이 알려줘.
+     기준치 초과 시 경고 메시지도 보내줘"
 ```
+
+(활성 프로젝트가 `completed` 상태이므로 dispatch가 자동으로 category=modify로 분류)
 
 ### 진행 과정
 
@@ -157,7 +155,7 @@ good-vibe:modify
 
 ## 팁
 
-- 모드 선택이 어렵다면: `good-vibe:new`가 복잡도를 자동 분석해서 추천해줍니다
-- 중간에 멈추고 싶다면: `good-vibe:execute`에서 인터랙티브 모드를 선택하세요
-- 기획만 필요하다면: `good-vibe:discuss` → `good-vibe:approve` → `good-vibe:report`로 기획 보고서만 받을 수 있습니다
-- 실행 중 문제가 반복된다면: 에스컬레이션 시 "직접 지시"로 수정 방향을 제시하세요
+- 모드 선택이 어렵다면: `/gv`가 복잡도를 자동 분석해서 추천해줍니다 (자연어로 모드 힌트 추가 가능, 예: `/gv "...plan-only로"`)
+- 중간에 멈추고 싶다면: `/gv:execute`에서 `interactive` 모드를 선택하세요
+- 기획만 필요하다면: `/gv "...plan만"` 같은 자연어 + `/gv "기획 승인"` + `/gv "보고서 확인"`으로 기획 보고서만 받을 수 있습니다
+- 실행 중 문제가 반복된다면: 에스컬레이션 시 "계속"을 선택하고 수정 방향을 직접 지시하세요
