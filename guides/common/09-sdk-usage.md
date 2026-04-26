@@ -92,9 +92,9 @@ const report = gv.report(result);
 console.log(report);
 ```
 
-이 4단계가 슬래시 커맨드 `new` → `discuss` → `execute` → `report`에 대응됩니다.
+이 4단계가 v2 진입 흐름(`/gv "...만들어줘"` → plan 그래프 다층 토론 → `/gv:execute` → `/gv "보고서 확인"`)에 대응됩니다.
 
-> **참고:** `discuss()`는 기획서 마크다운(`document`)만 반환합니다. `execute()`에는 `team`(팀원 배열)과 `tasks`(태스크 목록)를 직접 구성하여 전달해야 합니다. 슬래시 커맨드 플로우에서는 이 과정이 자동으로 처리됩니다.
+> **참고:** `discuss()`는 기획서 마크다운(`document`)만 반환합니다. `execute()`에는 `team`(팀원 배열)과 `tasks`(태스크 목록)를 직접 구성하여 전달해야 합니다. v2 슬래시 진입에서는 이 과정이 dispatch + plan 그래프로 자동 처리됩니다.
 
 ---
 
@@ -603,15 +603,15 @@ try {
 
 ## 슬래시 커맨드와 SDK 비교
 
-| 슬래시 커맨드       | SDK 메서드           | LLM 호출 |
-| ------------------- | -------------------- | -------- |
-| `good-vibe:new`     | `gv.buildTeam(idea)` | X        |
-| `good-vibe:discuss` | `gv.discuss(team)`   | O        |
-| `good-vibe:approve` | (코드에서 직접 판단) | -        |
-| `good-vibe:execute` | `gv.execute(plan)`   | O        |
-| `good-vibe:report`  | `gv.report(result)`  | X        |
+| 진입 (v2)                     | SDK 메서드           | LLM 호출 |
+| ----------------------------- | -------------------- | -------- |
+| `/gv "...만들어줘"` (자연어)  | `gv.buildTeam(idea)` | X        |
+| plan 그래프 (다층 토론, 자동) | `gv.discuss(team)`   | O        |
+| `/gv "기획 승인"`             | (코드에서 직접 판단) | -        |
+| `/gv:execute`                 | `gv.execute(plan)`   | O        |
+| `/gv "보고서 확인"`           | `gv.report(result)`  | X        |
 
-SDK에서는 `approve` 단계가 별도로 없습니다. `discuss()` 결과를 검토한 뒤 `execute()`를 호출하면 됩니다.
+SDK에서는 별도의 `approve` 단계가 없습니다. `discuss()` 결과를 검토한 뒤 `execute()`를 호출하면 됩니다. SDK 실행 모드는 `auto` 고정입니다.
 
 ---
 
