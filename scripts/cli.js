@@ -19,6 +19,7 @@ const HANDLERS = {
   task: () => import('./handlers/task.js'),
   recommendation: () => import('./handlers/recommendation.js'),
   learn: () => import('./handlers/learn.js'),
+  dispatch: () => import('./handlers/dispatch.js'),
 };
 
 /** 커맨드 → 핸들러 모듈 O(1) 매핑 테이블 */
@@ -184,6 +185,8 @@ const COMMAND_MAP = {
   // learn
   'list-guides': 'learn',
   'get-guide': 'learn',
+  // dispatch (v2)
+  'gv-dispatch': 'dispatch',
 };
 
 async function resolveCommand(name) {
