@@ -1,12 +1,12 @@
 # PRD: Good Vibe v2 — AI-Native Agentic Team Platform
 
-| 항목      | 값                                                                               |
-| --------- | -------------------------------------------------------------------------------- |
-| 버전      | v2.4 (Phase A 완료 — 4개 모듈 + 2개 스파이크 머지)                               |
-| 작성일    | 2026-04-26                                                                       |
-| 작성자    | sose (CEO) + Claude (기획 보조)                                                  |
-| 상태      | **Phase B 진입 가능** — 게이트 모두 통과. 오픈 이슈 1개(자체 도그푸딩 시점) 보류 |
-| 영향 범위 | 진입 UX, 명령 체계, 메인 세션 가이드, SDK 표면 (코어 모듈은 유지)                |
+| 항목      | 값                                                                                                                    |
+| --------- | --------------------------------------------------------------------------------------------------------------------- |
+| 버전      | v2.5 (Phase B 완료 — 14 PR, Phase C 진입 가능)                                                                        |
+| 작성일    | 2026-04-26                                                                                                            |
+| 작성자    | sose (CEO) + Claude (기획 보조)                                                                                       |
+| 상태      | **Phase C 진입 가능** — Phase B 게이트 모두 통과. §13-5 도그푸딩 결정 완료([B-5 노트](spikes/b-5-self-dogfooding.md)) |
+| 영향 범위 | 진입 UX, 명령 체계, 메인 세션 가이드, SDK 표면 (코어 모듈은 유지)                                                     |
 
 ---
 
@@ -459,12 +459,42 @@ Intent Router: plan 작업 (대형) → 기존 plan-only 흐름을 동적 그래
 - ✅ task-router 한국어 인젝션 방어 + `wrapUserInput()` 적용
 - ✅ A-0a 결과 → `claude-panel-renderer.js` 인터페이스 확정 (stdout markdown)
 
-### Phase B 작업 (다음)
+### Phase B 완료 (2026-04-26)
 
-0. **선행 — `claude-panel-renderer` 출력 포맷 표준화** (Step 8 전제). 헤더 깊이, 표 컬럼 순서, 갱신 주기 결정. 별도 짧은 디자인 노트로 진행
-1. `/gv` 슬래시 커맨드 추가 (단일 진입점)
-2. 5개 작업 유형 동작 (Intent Router → 팀 구성 → 실행)
-3. `claude-panel-renderer.js` 신규 (stdout 기반 라이브 렌더링)
-4. `/gv:status`, `/gv:cost`, `/gv:team`, `/gv:resume` 추가
-5. 통합 테스트 + 자체 도그푸딩 가능성 검증
-6. 자체 도그푸딩 시점(§13-5) Phase B 끝에 결정
+- ✅ B-1: `claude-panel-renderer` (헤더 깊이/이벤트 제한/위험 신호 — #246)
+- ✅ B-2: `/gv` + dispatch 핸들러 — 단일 진입점 (#248)
+- ✅ B-3: `/gv:status, /gv:cost, /gv:team, /gv:resume` 보조 슬래시 4종 (#250)
+- ✅ B-4a: `task-graph-runner` 골격 + placeholder action (#252)
+- ✅ B-4b: `ask/review/research` 실제 LLM 통합 (#254)
+- ✅ B-4c: `code` happy path 5개 state LLM 통합 (#256)
+- ✅ B-4d: `plan` LLM + code 서브그래프 위임 (#258)
+- ✅ B-4c-2: code fix-loop + escalating LLM 통합 (#260)
+- ✅ B-5 도그푸딩 검증 — A 옵션 (mock + 단위 테스트로 충분, 실제 LLM은 v2 릴리즈 후): [노트](spikes/b-5-self-dogfooding.md)
+
+### Phase C 진입 게이트 (모두 통과)
+
+- ✅ `/gv` 단일 진입점 동작
+- ✅ 5개 작업 유형 LLM 통합 (placeholder도 fallback으로 유지)
+- ✅ 라이브 패널 + opt-in 예산
+- ✅ internal/ 파이프라인 점검 완료 (`good-vibe:` 의존 0건)
+- ✅ 전체 회귀 통과 (2910+ tests)
+
+### Phase C 작업 (다음)
+
+**진입 전 점검 (병렬 PR 가능)**:
+
+- ✅ C-pre1 internal/ 점검 — 의존 없음 확인
+- ⏳ C-pre2 commands/skills/guides 교차 참조 점검 — 약 263건의 `good-vibe:` 참조를 `/gv` 자연어 예시로 일괄 대치
+
+**Phase C 본 작업**:
+
+11. **v1 슬래시 명령 일괄 제거** (`good-vibe:*`)
+12. CLAUDE.md/README.md/guides 새 흐름 중심으로 재작성
+13. v1 영속 데이터 호환성 회귀 테스트 — §8.5의 6개 데이터 모두 v2에서 정상 읽힘 확인
+14. 메이저 버전 릴리즈
+
+**B-4 후속 (별도 마이너 버전)**:
+
+- code-materializer/execution-verifier 통합 (실제 파일 쓰기 + 빌드 검증)
+- 다중 라운드 토론 (plan)
+- 실제 CEO 입력 통합 (escalating)
