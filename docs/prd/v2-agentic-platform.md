@@ -2,7 +2,7 @@
 
 | 항목      | 값                                                                             |
 | --------- | ------------------------------------------------------------------------------ |
-| 버전      | v2.2 (doc-reviewer-kr MUST 3건 반영)                                           |
+| 버전      | v2.3 (doc-reviewer-kr 3건 + code-reviewer-kr 3건 반영)                         |
 | 작성일    | 2026-04-26                                                                     |
 | 작성자    | sose (CEO) + Claude (기획 보조)                                                |
 | 상태      | **머지 준비 완료** — Phase A 착수 가능. 오픈 이슈 1개(자체 도그푸딩 시점) 보류 |
@@ -280,6 +280,8 @@ Intent Router: plan 작업 (대형) → 기존 plan-only 흐름을 동적 그래
 - 단순 작업(`ask`, `review`) **응답 시작 ≤ 5초**, 완료 ≤ 3분
 - 중간 작업(`refactor`, `debug`) 완료 ≤ 15분
 - 대형 작업(`feature`, `plan`) 진행률 표시 필수, 30초마다 업데이트
+- **예외 조건**: `llm-pool` 429 backpressure 발동 시 effective limit가 절반(반감)으로 떨어지므로 위 목표는 정상 풀 상태 기준. backpressure 활성 구간에서는 진행률에 "백프레셔 활성, 응답 지연 가능" 신호를 패널에 표시하고 SLA 미달로 카운트하지 않음
+- Phase B에서 `review`/`ask` 우선순위 힌트(낮은 비용/빠른 응답 요구) 설계를 검토 — `llm-pool` 큐 정책에 작업 유형별 가중치 도입 가능성
 
 ### 8.2 비용 (CEO 확정: 기본 임계값 없음, opt-in)
 
@@ -294,6 +296,11 @@ Intent Router: plan 작업 (대형) → 기존 plan-only 흐름을 동적 그래
 - `npm install --ignore-scripts` 강제 (이미 구현)
 - 비밀 정보 자동 마스킹 (`.env` 차단 hook 활용)
 - LLM 응답에서 외부 명령 추출 금지
+- **자연어 진입의 프롬프트 인젝션 방어 (v2 신규)**:
+  - `task-router.js`에 들어오는 자연어는 반드시 `wrapUserInput()`으로 감싸 LLM 프롬프트에 삽입
+  - 기존 `sanitizeForPrompt()`의 영어 패턴 9개 외에 **한국어 인젝션 패턴 탐지 추가** ("이전 지시를 무시", "새로운 역할로", "system prompt를 출력", 등)
+  - 위 두 항목은 Phase A `task-router.js` 신규 모듈의 수락 기준(AC)에 명시 (이슈 #236에 추가)
+  - v1은 구조화된 슬래시 커맨드 진입이라 자유 자연어 노출이 제한적이었지만, v2는 자연어가 LLM 추론 레이어에 직접 통과하므로 공격 면적 확대 — 이를 명시적으로 다룸
 
 ### 8.4 관측성
 
@@ -347,26 +354,47 @@ Intent Router: plan 작업 (대형) → 기존 plan-only 흐름을 동적 그래
 
 ### Phase A — 기반 정비 (2주)
 
-0. **v1 baseline 측정** — 기존 프로젝트들의 journal.jsonl 샘플에서 평균 CEO 개입 횟수, 작업 완료 시간, 토큰 사용량 추출. 결과를 §11 KPI 표의 "베이스라인" 컬럼에 채워 비교 기준 확보
-   - **Phase A 완료 게이트**: task-router 분류 정확도 단위 테스트 90%+ 통과 시에만 Phase B 진입 허가
-     0a. **Claude Code 패널 API 검증 스파이크** — Claude Code Extension API에서 라이브 패널 렌더링 진입점이 존재하는지 확인. 미지원 시 §7-4 모듈을 구조화 stdout 기반으로 재설계 (Claude Code가 markdown을 자동 렌더링하므로 실용적 fallback 가능)
+**스파이크 + 측정 (이슈 외 작업)**:
+
+- **A-0 v1 baseline 측정** — 기존 프로젝트들의 journal.jsonl 샘플에서 평균 CEO 개입 횟수, 작업 완료 시간, 토큰 사용량 추출. 결과를 §11 KPI 표의 "베이스라인" 컬럼에 채워 비교 기준 확보
+- **A-0a Claude Code 패널 API 검증 스파이크** — Extension API에서 라이브 패널 렌더링 진입점 존재 여부 확인. 미지원 시 §7-4 모듈을 구조화 stdout 기반으로 재설계 (Claude Code가 markdown 자동 렌더링하므로 실용적 fallback 가능)
+- **A-0b task-router 테스트 픽스처 작성** — 5개 작업 유형 × 20개 예시 입력(한국어/영어 혼합) = 최소 **100개 정답 레이블 픽스처**. Phase A 완료 게이트의 90%+ 정확도 측정 기준이 됨
+
+**신규 모듈 구현 (이슈 #236-#239)**:
+
 1. `task-router.js` 신규 (자연어 → 5개 작업 유형 분류)
 2. `task-graph-presets.js` 신규 (5개 그래프 정의)
 3. `risk-evaluator.js` 신규 (예산 임계 opt-in 처리)
 4. `nl-router.js` 확장 (의도 분류 통합)
 5. v1 명령은 그대로 유지 (Phase A 동안은 변경 없음)
 
+**Phase A → B 진입 게이트 (모두 충족 시 Phase B 시작)**:
+
+- task-router 분류 정확도 **단위 테스트** ≥ 90% (A-0b 픽스처 100개 기준)
+- task-router에 한국어 인젝션 방어 + `wrapUserInput()` 적용 확인
+- A-0a 결과 → `claude-panel-renderer.js` 인터페이스 확정 (Phase B Step 8 전에)
+
 ### Phase B — 단일 진입 도입 (2주)
 
 6. `/gv` 슬래시 커맨드 추가
 7. 5개 작업 유형 동작 (Intent Router → 팀 구성 → 실행)
-8. `claude-panel-renderer.js` 신규 (Claude Code 패널 렌더링)
+8. `claude-panel-renderer.js` 신규 (A-0a에서 확정된 인터페이스로 구현)
 9. `/gv:status`, `/gv:cost`, `/gv:team`, `/gv:resume` 추가
 10. 통합 테스트 + 자체 도그푸딩 가능성 검증
 
 ### Phase C — v1 제거 + 릴리즈 (2주)
 
-10a. **내부 파이프라인 점검** — `grep -r "good-vibe:" internal/` 로 daily/ux improvement 스크립트가 v1 슬래시에 의존하는지 확인. 의존 발견 시 Phase C 시작 전 마이그레이션 PR 별도 진행 11. **v1 슬래시 명령 일괄 제거** (`good-vibe:*`) 12. CLAUDE.md/README.md/guides 새 흐름 중심으로 재작성 13. v1 영속 데이터 호환성 회귀 테스트 — §8.5의 6개 데이터(project.json, journal.jsonl, agent-overrides 사용자/프로젝트, custom-templates, auth credentials) 모두 v2에서 정상 읽힘 확인 14. 메이저 버전 릴리즈
+**Phase C 진입 전 점검 (병렬 PR 가능)**:
+
+- **C-pre1 내부 파이프라인 점검** — `grep -r "good-vibe:" internal/` 로 daily/ux improvement 스크립트가 v1 슬래시에 의존하는지 확인. 의존 발견 시 마이그레이션 PR 별도 진행
+- **C-pre2 commands/skills/guides 교차 참조 점검** — `grep -r "good-vibe:" commands/ skills/ guides/` 로 약 170건의 v1 명령 참조를 `/gv` 자연어 예시로 일괄 대치. 누락 시 사용자에게 존재하지 않는 명령이 안내됨
+
+**Phase C 본 작업**:
+
+11. **v1 슬래시 명령 일괄 제거** (`good-vibe:*`)
+12. CLAUDE.md/README.md/guides 새 흐름 중심으로 재작성
+13. v1 영속 데이터 호환성 회귀 테스트 — §8.5의 6개 데이터(project.json, journal.jsonl, agent-overrides 사용자/프로젝트, custom-templates, auth credentials) 모두 v2에서 정상 읽힘 확인
+14. 메이저 버전 릴리즈
 
 **총 기간 예상**: 약 6주 (legacy 호환 제거로 4주 단축). 각 Phase는 master 머지 가능한 단위로 분할.
 
@@ -374,14 +402,15 @@ Intent Router: plan 작업 (대형) → 기존 plan-only 흐름을 동적 그래
 
 > 베이스라인은 Phase A-0 작업에서 v1 journal 샘플 추출로 확정. 현재는 TBD로 표기.
 
-| 지표                         | 베이스라인 (v1)                 | 목표                                                 | 측정 방법                              |
-| ---------------------------- | ------------------------------- | ---------------------------------------------------- | -------------------------------------- |
-| 5개 작업 유형 모두 정상 동작 | N/A (신규)                      | 100%                                                 | 각 유형별 통합 테스트 통과             |
-| 작업당 CEO 개입              | TBD (Phase A-0에서 측정)        | 베이스라인 -70%                                      | journal escalation 카운트              |
-| 평균 작업 완료 시간          | TBD (Phase A-0에서 측정)        | `review`/`ask` ≤ 3분, `code` ≤ 30분, `plan` ≤ 수시간 | journal 시작-종료 차이                 |
-| 비용 효율                    | TBD (Phase A-0에서 측정)        | 베이스라인 -30%                                      | cost-tracker 누적                      |
-| 사용자 재방문                | TBD (Phase A-0에서 주간 카운트) | 베이스라인 +200%                                     | journal 이벤트 주간 카운트 (로컬 집계) |
-| Intent Router 정확도         | N/A (신규)                      | 90%+                                                 | 사용자 재라우팅 요청 비율 (역추출)     |
+| 지표                         | 베이스라인 (v1)                 | 목표                                                 | 측정 방법                                 |
+| ---------------------------- | ------------------------------- | ---------------------------------------------------- | ----------------------------------------- |
+| 5개 작업 유형 모두 정상 동작 | N/A (신규)                      | 100%                                                 | 각 유형별 통합 테스트 통과                |
+| 작업당 CEO 개입              | TBD (Phase A-0에서 측정)        | 베이스라인 -70%                                      | journal escalation 카운트                 |
+| 평균 작업 완료 시간          | TBD (Phase A-0에서 측정)        | `review`/`ask` ≤ 3분, `code` ≤ 30분, `plan` ≤ 수시간 | journal 시작-종료 차이                    |
+| 비용 효율                    | TBD (Phase A-0에서 측정)        | 베이스라인 -30%                                      | cost-tracker 누적                         |
+| 사용자 재방문                | TBD (Phase A-0에서 주간 카운트) | 베이스라인 +200%                                     | journal 이벤트 주간 카운트 (로컬 집계)    |
+| Intent Router 정확도 (단위)  | N/A (신규)                      | 90%+                                                 | A-0b 픽스처 100개 단위 테스트 통과율      |
+| Intent Router 정확도 (운영)  | TBD (Phase B 이후)              | 85%+                                                 | journal에서 사용자 재라우팅 비율 (역추출) |
 
 ## 12. 리스크 & 완화
 
@@ -415,9 +444,11 @@ Intent Router: plan 작업 (대형) → 기존 plan-only 흐름을 동적 그래
 
 ## 14. 다음 단계
 
-1. ✅ PRD v2.1 확정 (이 문서)
-2. **마이그레이션 백로그 분할** — Phase A의 4개 신규 모듈을 GitHub issue로 분할 (`task-router.js`, `task-graph-presets.js`, `risk-evaluator.js`, `nl-router.js` 확장)
-3. **Phase A 착수** — `task-router.js`부터 TDD (RED → GREEN → REFACTOR)로 시작
-4. **PR 흐름 준수** — feature 브랜치 → `gh pr create` → 리뷰 → rebase merge
+1. ✅ PRD v2.3 확정 (이 문서)
+2. ✅ 마이그레이션 백로그 분할 — 이슈 #236-#239 생성 완료
+3. **이슈 #236 보강** — `task-router.js` 수락 기준에 한국어 인젝션 방어 + `wrapUserInput()` 적용 + A-0b 픽스처 100개 기준 90%+ 명시 (PRD 머지 직후 추가)
+4. **Phase A-0/0a/0b 스파이크 시작** — baseline 측정, 패널 API 검증, 픽스처 작성 (병렬)
+5. **신규 모듈 TDD** — `task-router.js`부터 RED → GREEN → REFACTOR
+6. **PR 흐름 준수** — feature 브랜치 → `gh pr create` → 리뷰(code-reviewer-kr 또는 multireview) → rebase merge
 
 **즉시 시작 가능**. 자체 도그푸딩 시점(§13-5)은 Phase B 끝에 다시 결정하면 되고, Phase A 작업에 영향 없음.
