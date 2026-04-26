@@ -15,4 +15,4 @@
 bash internal/daily-improvement.sh
 ```
 
-자세한 내용은 프로젝트 루트 CLAUDE.md의 "Daily Improvement" 섹션 참조.
+자세한 내용은 [internal/CLAUDE.md](./CLAUDE.md) 참조 (Round Loop, SLA, 안전장치, UX 관점 순환 등).
