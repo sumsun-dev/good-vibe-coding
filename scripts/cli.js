@@ -21,6 +21,7 @@ const HANDLERS = {
   learn: () => import('./handlers/learn.js'),
   dispatch: () => import('./handlers/dispatch.js'),
   cost: () => import('./handlers/cost.js'),
+  'gv-execute': () => import('./handlers/gv-execute.js'),
 };
 
 /** 커맨드 → 핸들러 모듈 O(1) 매핑 테이블 */
@@ -192,6 +193,8 @@ const COMMAND_MAP = {
   'gv-budget-get': 'cost',
   'gv-budget-set': 'cost',
   'gv-budget-clear': 'cost',
+  // gv-execute (v2)
+  'gv-execute': 'gv-execute',
 };
 
 async function resolveCommand(name) {
