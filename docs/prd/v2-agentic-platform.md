@@ -1,12 +1,12 @@
 # PRD: Good Vibe v2 — AI-Native Agentic Team Platform
 
-| 항목      | 값                                                                |
-| --------- | ----------------------------------------------------------------- |
-| 버전      | v2.1 (CEO 1차 결정 반영)                                          |
-| 작성일    | 2026-04-26                                                        |
-| 작성자    | sose (CEO) + Claude (기획 보조)                                   |
-| 상태      | **Phase A 착수 가능** — 오픈 이슈 1개(자체 도그푸딩 시점) 보류    |
-| 영향 범위 | 진입 UX, 명령 체계, 메인 세션 가이드, SDK 표면 (코어 모듈은 유지) |
+| 항목      | 값                                                                             |
+| --------- | ------------------------------------------------------------------------------ |
+| 버전      | v2.2 (doc-reviewer-kr MUST 3건 반영)                                           |
+| 작성일    | 2026-04-26                                                                     |
+| 작성자    | sose (CEO) + Claude (기획 보조)                                                |
+| 상태      | **머지 준비 완료** — Phase A 착수 가능. 오픈 이슈 1개(자체 도그푸딩 시점) 보류 |
+| 영향 범위 | 진입 UX, 명령 체계, 메인 세션 가이드, SDK 표면 (코어 모듈은 유지)              |
 
 ---
 
@@ -271,7 +271,7 @@ Intent Router: plan 작업 (대형) → 기존 plan-only 흐름을 동적 그래
 1. `task-router.js` — 자연어 → 작업 유형(5개) + 동적 그래프 결정
 2. `task-graph-presets.js` — 5가지 작업 유형별 그래프 정의
 3. `risk-evaluator.js` — 위험/예산 임계(opt-in) 판정 → CEO 호출 트리거
-4. `claude-panel-renderer.js` — journal/cost를 **Claude Code 패널**에 라이브 렌더링
+4. `claude-panel-renderer.js` — journal/cost를 **Claude Code 패널**에 라이브 렌더링 (Phase A-0a 검증 결과 패널 API 미지원 시 구조화된 stdout으로 자동 fallback)
 
 ## 8. 비기능 요구사항
 
@@ -304,7 +304,14 @@ Intent Router: plan 작업 (대형) → 기존 plan-only 흐름을 동적 그래
 ### 8.5 호환성
 
 - **v1 슬래시 명령 호환 없음** (CEO 결정). v2 릴리즈 시 `good-vibe:*` 제거
-- 기존 프로젝트 데이터(`project.json`, `agent-overrides`, `journal.jsonl`)는 v2에서 그대로 읽기 (포맷 호환 유지)
+- **기존 영속 데이터는 v2에서 그대로 읽기** (포맷 호환 유지):
+  - `~/.claude/good-vibe/projects/{id}/project.json` — 프로젝트 메타/상태
+  - `~/.claude/good-vibe/projects/{id}/journal.jsonl` — 이벤트 로그
+  - `~/.claude/good-vibe/agent-overrides/*.md` — 사용자 레벨 에이전트 오버라이드
+  - `{projectDir}/.good-vibe/agent-overrides/*.md` — 프로젝트 레벨 오버라이드
+  - `~/.claude/good-vibe/custom-templates/*.json` — 커스텀 템플릿
+  - `~/.claude/good-vibe/auth/credentials.json` — auth-manager 멀티프로바이더 크레덴셜
+- Phase C 회귀 테스트는 위 6개 데이터 모두 검증 (§10-13에 반영)
 - SDK API는 1 마이너 버전 deprecate 후 제거
 
 ## 9. MVP 범위 (Milestone 1)
@@ -340,6 +347,9 @@ Intent Router: plan 작업 (대형) → 기존 plan-only 흐름을 동적 그래
 
 ### Phase A — 기반 정비 (2주)
 
+0. **v1 baseline 측정** — 기존 프로젝트들의 journal.jsonl 샘플에서 평균 CEO 개입 횟수, 작업 완료 시간, 토큰 사용량 추출. 결과를 §11 KPI 표의 "베이스라인" 컬럼에 채워 비교 기준 확보
+   - **Phase A 완료 게이트**: task-router 분류 정확도 단위 테스트 90%+ 통과 시에만 Phase B 진입 허가
+     0a. **Claude Code 패널 API 검증 스파이크** — Claude Code Extension API에서 라이브 패널 렌더링 진입점이 존재하는지 확인. 미지원 시 §7-4 모듈을 구조화 stdout 기반으로 재설계 (Claude Code가 markdown을 자동 렌더링하므로 실용적 fallback 가능)
 1. `task-router.js` 신규 (자연어 → 5개 작업 유형 분류)
 2. `task-graph-presets.js` 신규 (5개 그래프 정의)
 3. `risk-evaluator.js` 신규 (예산 임계 opt-in 처리)
@@ -356,33 +366,34 @@ Intent Router: plan 작업 (대형) → 기존 plan-only 흐름을 동적 그래
 
 ### Phase C — v1 제거 + 릴리즈 (2주)
 
-11. **v1 슬래시 명령 일괄 제거** (`good-vibe:*`)
-12. CLAUDE.md/README.md/guides 새 흐름 중심으로 재작성
-13. v1 데이터 호환성 회귀 테스트 (project.json/journal.jsonl 그대로 읽힘)
-14. 메이저 버전 릴리즈
+10a. **내부 파이프라인 점검** — `grep -r "good-vibe:" internal/` 로 daily/ux improvement 스크립트가 v1 슬래시에 의존하는지 확인. 의존 발견 시 Phase C 시작 전 마이그레이션 PR 별도 진행 11. **v1 슬래시 명령 일괄 제거** (`good-vibe:*`) 12. CLAUDE.md/README.md/guides 새 흐름 중심으로 재작성 13. v1 영속 데이터 호환성 회귀 테스트 — §8.5의 6개 데이터(project.json, journal.jsonl, agent-overrides 사용자/프로젝트, custom-templates, auth credentials) 모두 v2에서 정상 읽힘 확인 14. 메이저 버전 릴리즈
 
 **총 기간 예상**: 약 6주 (legacy 호환 제거로 4주 단축). 각 Phase는 master 머지 가능한 단위로 분할.
 
 ## 11. 성공 지표 (KPI)
 
-| 지표                         | 목표                                                 | 측정 방법                          |
-| ---------------------------- | ---------------------------------------------------- | ---------------------------------- |
-| 5개 작업 유형 모두 정상 동작 | 100%                                                 | 각 유형별 통합 테스트 통과         |
-| 작업당 CEO 개입              | v1 대비 -70%                                         | journal escalation 카운트          |
-| 평균 작업 완료 시간          | `review`/`ask` ≤ 3분, `code` ≤ 30분, `plan` ≤ 수시간 | journal 시작-종료 차이             |
-| 비용 효율                    | 작업당 평균 토큰 -30%                                | cost-tracker 누적                  |
-| 사용자 재방문                | 주간 사용 횟수 v1 대비 +200%                         | project.json metadata              |
-| Intent Router 정확도         | 90%+                                                 | 사용자 재라우팅 요청 비율 (역추출) |
+> 베이스라인은 Phase A-0 작업에서 v1 journal 샘플 추출로 확정. 현재는 TBD로 표기.
+
+| 지표                         | 베이스라인 (v1)                 | 목표                                                 | 측정 방법                              |
+| ---------------------------- | ------------------------------- | ---------------------------------------------------- | -------------------------------------- |
+| 5개 작업 유형 모두 정상 동작 | N/A (신규)                      | 100%                                                 | 각 유형별 통합 테스트 통과             |
+| 작업당 CEO 개입              | TBD (Phase A-0에서 측정)        | 베이스라인 -70%                                      | journal escalation 카운트              |
+| 평균 작업 완료 시간          | TBD (Phase A-0에서 측정)        | `review`/`ask` ≤ 3분, `code` ≤ 30분, `plan` ≤ 수시간 | journal 시작-종료 차이                 |
+| 비용 효율                    | TBD (Phase A-0에서 측정)        | 베이스라인 -30%                                      | cost-tracker 누적                      |
+| 사용자 재방문                | TBD (Phase A-0에서 주간 카운트) | 베이스라인 +200%                                     | journal 이벤트 주간 카운트 (로컬 집계) |
+| Intent Router 정확도         | N/A (신규)                      | 90%+                                                 | 사용자 재라우팅 요청 비율 (역추출)     |
 
 ## 12. 리스크 & 완화
 
-| 리스크                | 영향                                           | 완화                                                                                          |
-| --------------------- | ---------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Intent Router 오분류  | 작업이 엉뚱한 팀에 라우팅                      | 분류 confidence 낮으면 CEO 확인 단계 추가                                                     |
-| 위험 트리거 누락      | 비용 폭발 / 보안 사고                          | 다층 안전망: 비용 임계 + acceptance-criteria + 자체 검증                                      |
-| v1 사용자 이탈        | v1 명령 즉시 제거(CEO 결정)로 학습자 혼란 가능 | CHANGELOG와 README 첫 줄에 마이그레이션 안내, `/gv` 자연어가 자동 라우팅하므로 학습 곡선 낮음 |
-| 동적 그래프 무한 루프 | 자율성 ↑ → 종료 조건 모호                      | 작업당 최대 단계 수 + 비용 한도 + journal 기반 watchdog                                       |
-| 자체 도그푸딩 실패    | 사용자에게 노출 전 자신감 부족                 | Phase B 끝에 가능성 검증, 시점은 §13-5 보류                                                   |
+| 리스크                                     | 영향                                                             | 완화                                                                                                                                    |
+| ------------------------------------------ | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Intent Router 오분류                       | 작업이 엉뚱한 팀에 라우팅                                        | 분류 confidence 낮으면 CEO 확인 단계 추가                                                                                               |
+| 위험 트리거 누락                           | 비용 폭발 / 보안 사고                                            | 다층 안전망: 비용 임계 + acceptance-criteria + 자체 검증                                                                                |
+| v1 사용자 이탈                             | v1 명령 즉시 제거(CEO 결정)로 학습자 혼란 가능                   | CHANGELOG와 README 첫 줄에 마이그레이션 안내, `/gv` 자연어가 자동 라우팅하므로 학습 곡선 낮음                                           |
+| 동적 그래프 무한 루프                      | 자율성 ↑ → 종료 조건 모호                                        | 작업당 최대 단계 수 + 비용 한도 + journal 기반 watchdog                                                                                 |
+| 자체 도그푸딩 실패                         | 사용자에게 노출 전 자신감 부족                                   | Phase B 끝에 가능성 검증, 시점은 §13-5 보류                                                                                             |
+| Claude Code 패널 API 미지원                | `claude-panel-renderer.js` 구현 불가 → Phase B 차단              | Phase A-0a 스파이크에서 검증. 미지원 시 구조화된 stdout(markdown 헤더 + 표)으로 fallback — Claude Code가 자동 렌더링하므로 UX 손실 최소 |
+| 내부 파이프라인 (`internal/`) v1 명령 의존 | Phase C에서 v1 슬래시 제거 시 daily/ux improvement 스크립트 깨짐 | Phase C 진입 전 `grep -r "good-vibe:" internal/` 점검 + 마이그레이션 체크리스트                                                         |
 
 ## 13. 오픈 이슈 — CEO 결정 사항 정리
 
