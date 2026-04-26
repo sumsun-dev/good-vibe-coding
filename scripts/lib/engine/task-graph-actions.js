@@ -213,8 +213,134 @@ export function buildResearchActions(opts = {}) {
 }
 
 // ─────────────────────────────────────────────────────────
-// placeholder (code/plan은 B-4c/d에서 교체)
+// code actions (Phase B-4c — happy path만 LLM, fix/escalating은 placeholder)
 // ─────────────────────────────────────────────────────────
+
+const CODE_SYSTEM = `당신은 시니어 엔지니어로서 사용자 요구사항을 코드로 구현하고 검증합니다. 한국어로 명확하게 응답하되, 코드 블록은 일반적인 fenced code block 형식을 따릅니다.`;
+
+function buildSideImpactPrompt(taskRoute) {
+  const userInput = taskRoute.sanitizedInput || wrapUserInput(taskRoute.input || '');
+  const intent = taskRoute.intent ? `의도: ${taskRoute.intent}` : '';
+  return `# 사용자 요청\n${userInput}\n\n${intent}\n\n# 작업\n위 요청이 코드베이스에 미칠 영향 범위를 한국어로 5줄 이내로 정리하세요. 변경 없이 진행 가능하면 첫 줄에 "SKIP"을 표시.`;
+}
+
+function buildExecutePrompt(taskRoute, sideImpact) {
+  const userInput = taskRoute.sanitizedInput || wrapUserInput(taskRoute.input || '');
+  const ctx = sideImpact?.summary || '(분석 없음)';
+  return `# 사용자 요청\n${userInput}\n\n# 영향 분석\n${ctx}\n\n# 작업\n구현 코드를 fenced code block으로 작성하세요. 한국어 설명은 코드 블록 위에 1-2줄.`;
+}
+
+function buildMaterializePrompt(taskRoute, executeOut) {
+  const code = executeOut?.code || '(코드 없음)';
+  return `# 작성된 코드\n${code}\n\n# 작업\n위 코드에서 변경된 파일 경로와 변경 요약을 한국어로 항목별로 정리하세요 (불필요한 코드 재출력 금지).`;
+}
+
+function buildCodeReviewPrompt(taskRoute, executeOut) {
+  const code = executeOut?.code || '(코드 없음)';
+  return `# 작성된 코드\n${code}\n\n# 작업\n위 코드를 보안/성능/회귀 관점에서 한국어로 리뷰하세요. 마지막 줄에 [VERDICT: PASS] 또는 [VERDICT: FAIL]을 명시.`;
+}
+
+function buildCommitPrompt(taskRoute, materializeOut) {
+  const summary = materializeOut?.summary || '(요약 없음)';
+  return `# 변경 요약\n${summary}\n\n# 작업\nConventional commits 형식의 커밋 제목 한 줄과 본문 2-3줄을 한국어로 작성. 형식 예: "feat(scope): 변경 내용"`;
+}
+
+function extractVerdict(reviewText) {
+  if (!reviewText) return 'FAIL';
+  return /\[VERDICT:\s*PASS\]/i.test(reviewText) ? 'PASS' : 'FAIL';
+}
+
+/**
+ * code actions builder. 단일 graph 실행 가정 (재사용 금지).
+ * happy path 5개 state(analyzing-side-impact/executing/materializing/reviewing/committing)는
+ * 실제 LLM 호출. fixing/escalating은 placeholder 유지(B-4c-2 후속 PR).
+ */
+export function buildCodeActions(opts = {}) {
+  const callLLM = opts.callLLM || callLLMWithFallback;
+  const provider = opts.provider || 'claude';
+  const model = opts.model;
+  const callOpts = { model, systemMessage: CODE_SYSTEM };
+  const stage = {};
+
+  return Object.freeze({
+    pending: async () => ({ event: 'START' }),
+
+    'analyzing-side-impact': async (state, taskRoute) => {
+      try {
+        const result = await callLLM(provider, buildSideImpactPrompt(taskRoute), callOpts);
+        stage.sideImpact = { summary: result.text, model: result.model };
+        const event = /^\s*SKIP\b/im.test(result.text) ? 'SKIP' : 'COMPLETE';
+        return { event, output: stage.sideImpact };
+      } catch (err) {
+        return { event: 'FAIL', output: { error: err.message } };
+      }
+    },
+
+    executing: async (state, taskRoute) => {
+      try {
+        const result = await callLLM(
+          provider,
+          buildExecutePrompt(taskRoute, stage.sideImpact),
+          callOpts,
+        );
+        stage.execute = { code: result.text, model: result.model };
+        return { event: 'COMPLETE', output: stage.execute };
+      } catch (err) {
+        return { event: 'FAIL', output: { error: err.message } };
+      }
+    },
+
+    materializing: async (state, taskRoute) => {
+      try {
+        const result = await callLLM(
+          provider,
+          buildMaterializePrompt(taskRoute, stage.execute),
+          callOpts,
+        );
+        stage.materialize = { summary: result.text, model: result.model };
+        return { event: 'COMPLETE', output: stage.materialize };
+      } catch (err) {
+        return { event: 'FAIL', output: { error: err.message } };
+      }
+    },
+
+    reviewing: async (state, taskRoute) => {
+      try {
+        const result = await callLLM(
+          provider,
+          buildCodeReviewPrompt(taskRoute, stage.execute),
+          callOpts,
+        );
+        const verdict = extractVerdict(result.text);
+        stage.review = { review: result.text, verdict, model: result.model };
+        return { event: verdict, output: stage.review };
+      } catch (err) {
+        return { event: 'FAIL', output: { error: err.message } };
+      }
+    },
+
+    // TODO(B-4c-2): 실제 fix LLM action. 현재는 GIVE_UP으로 즉시 failed.
+    fixing: placeholder('code:fixing', 'GIVE_UP'),
+    // TODO(B-4c-2): CEO 입력 통합. 현재는 SKIP으로 committing 진입.
+    escalating: placeholder('code:escalating', 'SKIP'),
+
+    committing: async (state, taskRoute) => {
+      try {
+        const result = await callLLM(
+          provider,
+          buildCommitPrompt(taskRoute, stage.materialize),
+          callOpts,
+        );
+        return {
+          event: 'COMPLETE',
+          output: { commitMessage: result.text, model: result.model },
+        };
+      } catch (err) {
+        return { event: 'FAIL', output: { error: err.message } };
+      }
+    },
+  });
+}
 
 const codePlaceholderActions = Object.freeze({
   pending: placeholder('code:pending', 'START'),
@@ -222,9 +348,7 @@ const codePlaceholderActions = Object.freeze({
   executing: placeholder('code:executing', 'COMPLETE'),
   materializing: placeholder('code:materializing', 'COMPLETE'),
   reviewing: placeholder('code:reviewing', 'PASS'),
-  // TODO(B-4c): 실제 fix action으로 교체.
   fixing: placeholder('code:fixing', 'GIVE_UP'),
-  // TODO(B-4c): 실제 escalating action (CEO 입력) 으로 교체.
   escalating: placeholder('code:escalating', 'SKIP'),
   committing: placeholder('code:committing', 'COMPLETE'),
 });
@@ -283,7 +407,7 @@ export function defaultActions(taskType, options = {}) {
     case 'research':
       return useLLM ? buildResearchActions(options) : RESEARCH_PLACEHOLDER;
     case 'code':
-      return codePlaceholderActions;
+      return useLLM ? buildCodeActions(options) : codePlaceholderActions;
     case 'plan':
       return planPlaceholderActions;
     default:
