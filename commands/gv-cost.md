@@ -37,6 +37,13 @@ echo '{"maxCostUsd": 10, "maxTokens": 100000}' \
   | node "${CLAUDE_PLUGIN_ROOT}/scripts/cli.js" gv-budget-set
 ```
 
+> Windows bash에서 따옴표 escape가 문제가 되면 임시 파일 경로 사용:
+>
+> ```bash
+> printf '%s' '{"maxCostUsd": 10}' > /tmp/budget.json
+> node "${CLAUDE_PLUGIN_ROOT}/scripts/cli.js" gv-budget-set < /tmp/budget.json
+> ```
+
 **해제**:
 
 ```bash
