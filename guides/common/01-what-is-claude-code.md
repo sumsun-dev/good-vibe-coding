@@ -34,8 +34,8 @@ Claude Code에게 "나는 이런 사람이고, 이렇게 일해줘"라고 알려
 
 ### 2. 커맨드 (Commands)
 
-`good-vibe:hello`, `good-vibe:learn` 처럼 플러그인 접두사로 시작하는 단축 명령어입니다.
-자주 하는 작업을 한 번의 입력으로 실행할 수 있습니다.
+`/gv`처럼 슬래시(`/`)로 시작하는 단축 명령어입니다.
+자주 하는 작업을 한 번의 입력으로 실행할 수 있습니다. Good Vibe는 자연어 한 줄을 받는 단일 진입점(`/gv`)과 5개 보조 슬래시(`/gv:status`, `/gv:execute`, `/gv:resume`, `/gv:team`, `/gv:cost`)를 제공합니다.
 
 ### 3. 스킬 (Skills)
 

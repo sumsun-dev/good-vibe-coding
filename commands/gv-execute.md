@@ -1,12 +1,12 @@
 ---
-description: 'task-graph 기반 작업 실행 (Phase B-4a 골격, B-4b/c/d에서 실제 LLM 통합)'
+description: 'task-graph 기반 작업 실행 — 5개 작업 유형(code/plan/research/review/ask) 동적 그래프 진입점'
 ---
 
 # /gv:execute — 작업 그래프 실행
 
 `/gv` 자연어 진입에서 분류된 task를 실제 그래프 진행으로 실행합니다.
 
-**현재 단계 (Phase B-4a):** placeholder action으로 그래프가 happy path를 따라 진행되는 골격만 동작. 실제 LLM 호출은 후속 PR에서 추가.
+**현재 동작:** ask/review/research, code(happy path + fix-loop + escalating), plan(다층 토론 + code 서브그래프 위임)이 모두 실제 LLM action으로 통합되어 있습니다. placeholder는 LLM 미연동 환경에서 fallback으로만 사용됩니다.
 
 ## 실행 흐름
 
@@ -46,5 +46,4 @@ CEO에게:
 
 ## 참고
 
-- 후속 PR (Phase B-4b/c/d)에서 각 taskType별 실제 LLM action으로 교체됩니다.
-- 현재는 그래프 진행만 검증 가능 (단위/통합 테스트로).
+- 5개 taskType 모두 실제 LLM action으로 동작 중. code-materializer 통합(실제 파일 쓰기 + 빌드 검증), 다중 라운드 토론, 실제 CEO 입력 escalating 통합은 후속 마이너에서 진행됩니다.
