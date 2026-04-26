@@ -57,4 +57,4 @@ Technical Writer, Content Editor 역할의 콘텐츠 제작 가이드입니다.
 - `@content-editor-kr`: 콘텐츠 편집 및 톤/스타일 교정
 - `@doc-reviewer-kr`: 문서 기술 정확성 검토 및 피드백
 
-`good-vibe:add-agent`로 설치하거나, 대화에서 `@에이전트명`으로 호출할 수 있습니다.
+서포트 에이전트는 Good Vibe 플러그인 설치 시 자동 등록되며, 대화에서 `@에이전트명`으로 호출할 수 있습니다. 외부 에이전트는 Claude Code 표준 `/plugin install`로 추가합니다.
