@@ -10,6 +10,7 @@ import { runGraph, DEFAULT_MAX_STEPS } from '../lib/engine/task-graph-runner.js'
 import { defaultActions } from '../lib/engine/task-graph-actions.js';
 import { selectGraph } from '../lib/engine/task-graph-presets.js';
 import { renderPanel } from '../lib/output/claude-panel-renderer.js';
+import { callLLMWithFallback } from '../lib/llm/llm-fallback.js';
 import { inputError } from '../lib/core/validators.js';
 
 export const commands = {
@@ -32,8 +33,16 @@ export const commands = {
       });
     };
 
+    // useLLM: 입력으로 명시적 활성화. 기본은 placeholder (외부 LLM 의존 회피).
+    // 활성화 시 callLLMWithFallback을 명시적으로 주입 (의도 명시 + 추적 용이).
+    const useLLM = data.useLLM === true;
+    const actions = defaultActions(
+      taskRoute.taskType,
+      useLLM ? { useLLM: true, callLLM: callLLMWithFallback } : {},
+    );
+
     const result = await runGraph(taskRoute, {
-      actions: defaultActions(taskRoute.taskType),
+      actions,
       journal: journalCb,
       maxSteps: DEFAULT_MAX_STEPS,
     });
