@@ -127,12 +127,20 @@ describe('defaultActions(taskType, options)', () => {
     expect(r.event).toBe('COMPLETE');
   });
 
-  it('code/plan은 옵션 무관 placeholder', async () => {
+  it('plan은 옵션 무관 placeholder (B-4d 대기)', async () => {
     const callLLM = mockLLM();
-    const code = defaultActions('code', { callLLM });
-    const r = await code.executing('executing', { taskType: 'code' });
+    const plan = defaultActions('plan', { callLLM });
+    const r = await plan.discussing('discussing', { taskType: 'plan' });
     expect(r.output.placeholder).toBe(true);
     expect(callLLM).not.toHaveBeenCalled();
+  });
+
+  it('code는 B-4c 이후 useLLM=true 시 LLM 모드 진입', async () => {
+    const callLLM = mockLLM('[VERDICT: PASS]');
+    const code = defaultActions('code', { callLLM });
+    const r = await code.executing('executing', { taskType: 'code', input: 'test' });
+    expect(r.event).toBe('COMPLETE');
+    expect(callLLM).toHaveBeenCalled();
   });
 
   it('지원하지 않는 taskType → throw', () => {
