@@ -166,6 +166,11 @@ export async function releaseFileLock(handle) {
  * @returns {Promise<T>}
  */
 export async function withFileLock(lockPath, fn, options = {}) {
+  // 전체 deadline은 호출 진입 시점부터 계산. 큐에서 대기하는 동안 시간이 흘러도
+  // 누적 timeout이 N×timeoutMs로 부풀지 않게 acquire에 남은 시간만 전달한다.
+  const opts = { ...DEFAULTS, ...options };
+  const deadline = Date.now() + opts.timeoutMs;
+
   // In-process 직렬화: 같은 lockPath의 동시 호출이 reentrant로 들어가지 않게
   const prev = inProcessQueue.get(lockPath) || Promise.resolve();
   let releaseQueue;
@@ -176,7 +181,8 @@ export async function withFileLock(lockPath, fn, options = {}) {
 
   await prev;
   try {
-    const handle = await acquireFileLock(lockPath, options);
+    const remainingMs = Math.max(0, deadline - Date.now());
+    const handle = await acquireFileLock(lockPath, { ...opts, timeoutMs: remainingMs });
     try {
       return await fn();
     } finally {
