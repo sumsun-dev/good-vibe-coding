@@ -105,13 +105,13 @@ Good Vibe Coding에서 제공하는 기본 훅입니다:
 
 ## 훅 활성화/비활성화
 
-### 온보딩 시 자동 설정
+### 자동 설정
 
-`good-vibe:hello`를 통해 역할을 선택하면, 해당 역할에 맞는 훅이 자동으로 활성화됩니다.
+Good Vibe 플러그인 설치 시 기본 훅이 함께 등록됩니다. 추가 설정은 `~/.claude/settings.json`(전역) 또는 프로젝트 `.claude/settings.json`을 직접 편집하거나 Claude Code의 `/plugin` 메뉴를 사용합니다.
 
 ### 수동 관리
 
-`good-vibe:my-config` 커맨드로 현재 활성화된 훅을 확인할 수 있습니다.
+설치된 에이전트/스킬/훅은 Claude Code 표준 `/plugin` 메뉴 또는 settings.json 파일에서 직접 확인할 수 있습니다.
 
 ## 이전 가이드
 
