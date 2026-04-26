@@ -41,12 +41,12 @@ export const commands = {
 function buildNextActions(result, ctx) {
   switch (result.category) {
     case 'status':
-      return ['good-vibe:status로 현재 프로젝트 상태를 확인하세요'];
+      return ['/gv:status로 현재 프로젝트 상태를 확인하세요'];
     case 'resume':
-      return ['good-vibe:execute로 중단된 작업을 재개하세요'];
+      return ['/gv:resume으로 중단된 작업을 재개하세요'];
     case 'modify':
       return ctx.hasProject
-        ? ['good-vibe:modify로 완료된 프로젝트에 기능을 추가하거나 수정하세요']
+        ? ['/gv 수정 요청을 자연어로 입력하면 task로 라우팅됩니다 (예: "이 함수 리팩토링해줘")']
         : [];
     case 'task':
       return buildTaskActions(result.taskRoute);

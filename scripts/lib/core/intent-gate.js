@@ -1,6 +1,6 @@
 /**
  * intent-gate — 사용자 의도 분류 + 상태 라우팅
- * good-vibe:new Step 0.5에서 사용. 순수 함수, LLM 호출 없음.
+ * /gv 진입점에서 사용. 순수 함수, LLM 호출 없음.
  *
  * status/resume/modify 패턴은 `nl-router.js`의 `DISPATCH_PATTERNS`와 단일 출처로 공유.
  * `create` 패턴만 intent-gate 자체에서 정의.
@@ -11,14 +11,14 @@ import { DISPATCH_PATTERNS } from './nl-router.js';
 const STATE_ROUTES = Object.freeze({
   planning: {
     commands: ['discuss', 'approve'],
-    message: 'good-vibe:discuss로 토론을 계속하거나, good-vibe:approve로 승인하세요',
+    message: '/gv 자연어로 추가 토론 또는 승인 응답을 입력하세요',
   },
-  approved: { commands: ['execute'], message: 'good-vibe:execute로 실행을 시작하세요' },
-  executing: { commands: ['execute'], message: 'good-vibe:execute로 중단된 작업을 재개하세요' },
-  reviewing: { commands: ['execute'], message: 'good-vibe:execute로 리뷰 중인 작업을 재개하세요' },
+  approved: { commands: ['execute'], message: '/gv:execute로 실행을 시작하세요' },
+  executing: { commands: ['execute'], message: '/gv:resume으로 중단된 작업을 재개하세요' },
+  reviewing: { commands: ['execute'], message: '/gv:resume으로 리뷰 중인 작업을 재개하세요' },
   completed: {
     commands: ['modify', 'report'],
-    message: 'good-vibe:modify로 수정하거나, good-vibe:report로 보고서를 확인하세요',
+    message: '/gv 수정 요청 또는 /gv 보고서 확인을 자연어로 입력하세요',
   },
 });
 

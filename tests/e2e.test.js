@@ -569,7 +569,7 @@ describe('E2E: CLI 에러 경로', () => {
     const result = cliExecRaw('get-project --id non-existent-id-xyz');
     expect(result.exitCode).toBe(3);
     expect(result.stderr).toContain('NOT_FOUND');
-    expect(result.stderr).toContain('목록을 확인');
+    expect(result.stderr).toContain('/gv:status');
   });
 });
 

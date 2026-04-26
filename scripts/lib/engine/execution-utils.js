@@ -118,19 +118,19 @@ export function getTasksForPhase(project, phase) {
   return (project.tasks || []).filter((t) => (t.phase || 1) === phase);
 }
 
-/** 상태별 nextActions 매핑 */
+/** 상태별 nextActions 매핑 (v2 진입점 기준) */
 const STATUS_NEXT_ACTIONS = {
-  idle: ['good-vibe:execute (실행 시작)'],
+  idle: ['/gv:execute (실행 시작)'],
   paused: [
-    'good-vibe:execute (중단 지점부터 재개)',
-    'good-vibe:discuss --reset (기획 재검토)',
-    'good-vibe:status (상세 상태 확인)',
+    '/gv:resume (중단 지점부터 재개)',
+    '/gv 자연어 (기획 재검토)',
+    '/gv:status (상세 상태 확인)',
   ],
-  escalated: ['good-vibe:execute (에스컬레이션 응답)'],
+  escalated: ['/gv:execute (에스컬레이션 응답)'],
   completed: [
-    'good-vibe:report (보고서 확인)',
-    'good-vibe:feedback (팀 성과 분석)',
-    'good-vibe:modify (기능 추가/수정)',
+    '/gv 보고서 (자연어 task 라우팅)',
+    '/gv 피드백 분석 (자연어)',
+    '/gv 수정 요청 (자연어 task)',
   ],
 };
 
