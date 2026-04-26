@@ -1,12 +1,12 @@
 # PRD: Good Vibe v2 — AI-Native Agentic Team Platform
 
-| 항목      | 값                                                                             |
-| --------- | ------------------------------------------------------------------------------ |
-| 버전      | v2.3 (doc-reviewer-kr 3건 + code-reviewer-kr 3건 반영)                         |
-| 작성일    | 2026-04-26                                                                     |
-| 작성자    | sose (CEO) + Claude (기획 보조)                                                |
-| 상태      | **머지 준비 완료** — Phase A 착수 가능. 오픈 이슈 1개(자체 도그푸딩 시점) 보류 |
-| 영향 범위 | 진입 UX, 명령 체계, 메인 세션 가이드, SDK 표면 (코어 모듈은 유지)              |
+| 항목      | 값                                                                               |
+| --------- | -------------------------------------------------------------------------------- |
+| 버전      | v2.4 (Phase A 완료 — 4개 모듈 + 2개 스파이크 머지)                               |
+| 작성일    | 2026-04-26                                                                       |
+| 작성자    | sose (CEO) + Claude (기획 보조)                                                  |
+| 상태      | **Phase B 진입 가능** — 게이트 모두 통과. 오픈 이슈 1개(자체 도그푸딩 시점) 보류 |
+| 영향 범위 | 진입 UX, 명령 체계, 메인 세션 가이드, SDK 표면 (코어 모듈은 유지)                |
 
 ---
 
@@ -271,7 +271,7 @@ Intent Router: plan 작업 (대형) → 기존 plan-only 흐름을 동적 그래
 1. `task-router.js` — 자연어 → 작업 유형(5개) + 동적 그래프 결정
 2. `task-graph-presets.js` — 5가지 작업 유형별 그래프 정의
 3. `risk-evaluator.js` — 위험/예산 임계(opt-in) 판정 → CEO 호출 트리거
-4. `claude-panel-renderer.js` — journal/cost를 **Claude Code 패널**에 라이브 렌더링 (Phase A-0a 검증 결과 패널 API 미지원 시 구조화된 stdout으로 자동 fallback)
+4. `claude-panel-renderer.js` — journal/cost를 **구조화된 stdout markdown**으로 라이브 렌더링 (Phase A-0a 결과 패널 API 미지원 확정, [Spike A-0a 노트](spikes/a-0a-claude-panel-api.md) 참조. statusline 보조 통합은 옵션)
 
 ## 8. 비기능 요구사항
 
@@ -400,17 +400,18 @@ Intent Router: plan 작업 (대형) → 기존 plan-only 흐름을 동적 그래
 
 ## 11. 성공 지표 (KPI)
 
-> 베이스라인은 Phase A-0 작업에서 v1 journal 샘플 추출로 확정. 현재는 TBD로 표기.
+> Phase A-0 결과 v1 journal 데이터 부재 (테스트 데이터만 존재). 자세한 내용은 [Spike A-0](spikes/a-0-baseline-measurement.md) 참조.
+> v2 운영 첫 1주 데이터를 자체 baseline으로 사용 → 2주 시점에 KPI 목표 재설정.
 
-| 지표                         | 베이스라인 (v1)                 | 목표                                                 | 측정 방법                                 |
-| ---------------------------- | ------------------------------- | ---------------------------------------------------- | ----------------------------------------- |
-| 5개 작업 유형 모두 정상 동작 | N/A (신규)                      | 100%                                                 | 각 유형별 통합 테스트 통과                |
-| 작업당 CEO 개입              | TBD (Phase A-0에서 측정)        | 베이스라인 -70%                                      | journal escalation 카운트                 |
-| 평균 작업 완료 시간          | TBD (Phase A-0에서 측정)        | `review`/`ask` ≤ 3분, `code` ≤ 30분, `plan` ≤ 수시간 | journal 시작-종료 차이                    |
-| 비용 효율                    | TBD (Phase A-0에서 측정)        | 베이스라인 -30%                                      | cost-tracker 누적                         |
-| 사용자 재방문                | TBD (Phase A-0에서 주간 카운트) | 베이스라인 +200%                                     | journal 이벤트 주간 카운트 (로컬 집계)    |
-| Intent Router 정확도 (단위)  | N/A (신규)                      | 90%+                                                 | A-0b 픽스처 100개 단위 테스트 통과율      |
-| Intent Router 정확도 (운영)  | TBD (Phase B 이후)              | 85%+                                                 | journal에서 사용자 재라우팅 비율 (역추출) |
+| 지표                         | 베이스라인                       | 목표                                                 | 측정 방법                                 |
+| ---------------------------- | -------------------------------- | ---------------------------------------------------- | ----------------------------------------- |
+| 5개 작업 유형 모두 정상 동작 | N/A (신규)                       | 100%                                                 | 각 유형별 통합 테스트 통과                |
+| 작업당 CEO 개입              | v2 운영 첫 1주 누적값            | 베이스라인 -70% (2주차 재설정)                       | journal escalation 카운트                 |
+| 평균 작업 완료 시간          | v2 운영 첫 1주 누적값            | `review`/`ask` ≤ 3분, `code` ≤ 30분, `plan` ≤ 수시간 | journal 시작-종료 차이                    |
+| 비용 효율                    | v2 운영 첫 1주 누적값            | 베이스라인 -30% (2주차 재설정)                       | cost-tracker 누적                         |
+| 사용자 재방문                | v2 운영 첫 1주 누적값            | 베이스라인 +200% (2주차 재설정)                      | journal 이벤트 주간 카운트 (로컬 집계)    |
+| Intent Router 정확도 (단위)  | task-router PR(#240) 100% 측정 ✓ | 90%+                                                 | A-0b 픽스처 100개 단위 테스트 통과율      |
+| Intent Router 정확도 (운영)  | v2 운영 첫 1주 누적값            | 85%+                                                 | journal에서 사용자 재라우팅 비율 (역추출) |
 
 ## 12. 리스크 & 완화
 
@@ -444,11 +445,25 @@ Intent Router: plan 작업 (대형) → 기존 plan-only 흐름을 동적 그래
 
 ## 14. 다음 단계
 
-1. ✅ PRD v2.3 확정 (이 문서)
-2. ✅ 마이그레이션 백로그 분할 — 이슈 #236-#239 생성 완료
-3. **이슈 #236 보강** — `task-router.js` 수락 기준에 한국어 인젝션 방어 + `wrapUserInput()` 적용 + A-0b 픽스처 100개 기준 90%+ 명시 (PRD 머지 직후 추가)
-4. **Phase A-0/0a/0b 스파이크 시작** — baseline 측정, 패널 API 검증, 픽스처 작성 (병렬)
-5. **신규 모듈 TDD** — `task-router.js`부터 RED → GREEN → REFACTOR
-6. **PR 흐름 준수** — feature 브랜치 → `gh pr create` → 리뷰(code-reviewer-kr 또는 multireview) → rebase merge
+### Phase A 완료 (2026-04-26)
 
-**즉시 시작 가능**. 자체 도그푸딩 시점(§13-5)은 Phase B 끝에 다시 결정하면 되고, Phase A 작업에 영향 없음.
+- ✅ PRD v2.4 확정
+- ✅ 4개 신규 모듈 모두 머지: `task-router` (#236), `task-graph-presets` (#237), `risk-evaluator` (#238), `nl-router 확장` (#239)
+- ✅ A-0b 픽스처 100개 + task-router 100% 분류 정확도
+- ✅ A-0a 패널 API 검증 → stdout fallback 확정 ([노트](spikes/a-0a-claude-panel-api.md))
+- ✅ A-0 v1 baseline 측정 시도 → 데이터 부재로 v2 운영 자체 baseline 정책으로 변경 ([노트](spikes/a-0-baseline-measurement.md))
+
+### Phase B 진입 게이트 (모두 통과)
+
+- ✅ task-router 분류 정확도 단위 테스트 ≥ 90% (실측 100%)
+- ✅ task-router 한국어 인젝션 방어 + `wrapUserInput()` 적용
+- ✅ A-0a 결과 → `claude-panel-renderer.js` 인터페이스 확정 (stdout markdown)
+
+### Phase B 작업 (다음)
+
+1. `/gv` 슬래시 커맨드 추가 (단일 진입점)
+2. 5개 작업 유형 동작 (Intent Router → 팀 구성 → 실행)
+3. `claude-panel-renderer.js` 신규 (stdout 기반 라이브 렌더링)
+4. `/gv:status`, `/gv:cost`, `/gv:team`, `/gv:resume` 추가
+5. 통합 테스트 + 자체 도그푸딩 가능성 검증
+6. 자체 도그푸딩 시점(§13-5) Phase B 끝에 결정
