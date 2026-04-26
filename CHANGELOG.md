@@ -7,10 +7,14 @@
 
 ### Changed
 
+- **BREAKING (v2)**: 슬래시 커맨드 체계를 단일 진입점으로 재설계
+  - v1 슬래시 20개(`good-vibe:*`) 일괄 제거 (`#3216fba`)
+  - v2: `/gv "..."` 자연어 단일 진입점 + 보조 슬래시 5개(`/gv:status`, `/gv:execute`, `/gv:resume`, `/gv:team`, `/gv:cost`)
+  - NL 라우터가 의도를 5개 작업 유형(code/plan/research/review/ask)으로 자동 분류
+  - 매핑 표: [커맨드 레퍼런스](guides/common/03-commands-reference.md), [고급 커맨드 마이그레이션](guides/common/12-advanced-commands.md)
 - **BREAKING**: 플러그인 이름 `good-vibe-coding` → `good-vibe`로 변경
-  - 커맨드 형식: `good-vibe:new`, `good-vibe:execute` 등
   - 기존 유저: `node scripts/migrate.js`로 자동 마이그레이션
-- 모든 문서의 커맨드 참조를 `good-vibe:xxx` 형태로 통일
+- 모든 문서의 커맨드 참조를 v2 흐름(`/gv "..."`, `/gv:execute` 등)으로 통일
 
 ## [1.1.0] - 2026-03-05
 
