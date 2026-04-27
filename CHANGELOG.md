@@ -5,16 +5,37 @@
 
 ## [Unreleased]
 
+## [2.0.0-rc.1] - 2026-04-27
+
+> **메이저 버전 릴리즈 후보 1** — v2 Agentic Platform 첫 외부 노출. CEO 도그푸딩을 거쳐 정식 v2.0.0 승급 여부 결정.
+
+### Added
+
+- **AI-Native 단일 진입점**: `/gv "<자연어>"` — NL 라우터가 입력을 5개 작업 유형(`code` / `plan` / `research` / `review` / `ask`)으로 자동 분류 후 동적 그래프 실행
+- **보조 슬래시 5개**: `/gv:status`, `/gv:execute`, `/gv:resume`, `/gv:team`, `/gv:cost`
+- **task-graph 엔진**: 작업 유형별 동적 워크플로우 그래프 (state-machine DSL 기반). `code` 그래프는 fix-loop + escalating, `plan`은 다층 토론·서브그래프 위임, `ask/review/research`는 단일 그래프
+- **claude-panel-renderer**: stdout markdown 라이브 렌더링 (헤더 깊이/이벤트 제한/위험 신호)
+- **opt-in 비용 임계** (`/gv:cost`): 토큰/비용/예산 한도 설정·조회
+- **3가지 실행 모드**: interactive / semi-auto (batchSize=3) / auto, `/gv:execute` 시작 시 선택
+- **v1 영속 데이터 호환성 회귀 테스트** (`tests/v1-data-compat.test.js`, 12 케이스): `project.json`, `journal.jsonl`, agent-overrides(사용자/프로젝트), custom-templates, `auth.json` 모두 v1 fixture 그대로 v2 로더에서 정상 동작 확인
+
 ### Changed
 
-- **BREAKING (v2)**: 슬래시 커맨드 체계를 단일 진입점으로 재설계
+- **BREAKING**: 슬래시 커맨드 체계를 단일 진입점으로 재설계
   - v1 슬래시 20개(`good-vibe:*`) 일괄 제거 (`#3216fba`)
-  - v2: `/gv "..."` 자연어 단일 진입점 + 보조 슬래시 5개(`/gv:status`, `/gv:execute`, `/gv:resume`, `/gv:team`, `/gv:cost`)
+  - v2: `/gv "..."` 자연어 단일 진입점 + 보조 슬래시 5개
   - NL 라우터가 의도를 5개 작업 유형(code/plan/research/review/ask)으로 자동 분류
   - 매핑 표: [커맨드 레퍼런스](guides/common/03-commands-reference.md), [고급 커맨드 마이그레이션](guides/common/12-advanced-commands.md)
 - **BREAKING**: 플러그인 이름 `good-vibe-coding` → `good-vibe`로 변경
   - 기존 유저: `node scripts/migrate.js`로 자동 마이그레이션
 - 모든 문서의 커맨드 참조를 v2 흐름(`/gv "..."`, `/gv:execute` 등)으로 통일
+- 메인 세션 원칙(Thin Controller) 강화: CEO UI만 담당, 실제 작업은 모두 Task tool 위임
+
+### Migration (v1 → v2)
+
+- v1 슬래시 사용자: 자연어 `/gv "..."` 또는 보조 슬래시 5개로 옮겨오세요 ([매핑 표](guides/common/03-commands-reference.md))
+- 영속 데이터(프로젝트/journal/agent-overrides/templates/auth)는 v1 그대로 v2에서 읽힙니다 (회귀 테스트로 검증)
+- SDK API는 1 마이너 버전 deprecate 후 제거 예정
 
 ## [1.1.0] - 2026-03-05
 
