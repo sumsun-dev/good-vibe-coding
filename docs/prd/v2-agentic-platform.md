@@ -317,8 +317,8 @@ Intent Router: plan 작업 (대형) → 기존 plan-only 흐름을 동적 그래
   - `~/.claude/good-vibe/agent-overrides/*.md` — 사용자 레벨 에이전트 오버라이드
   - `{projectDir}/.good-vibe/agent-overrides/*.md` — 프로젝트 레벨 오버라이드
   - `~/.claude/good-vibe/custom-templates/*.json` — 커스텀 템플릿
-  - `~/.claude/good-vibe/auth/credentials.json` — auth-manager 멀티프로바이더 크레덴셜
-- Phase C 회귀 테스트는 위 6개 데이터 모두 검증 (§10-13에 반영)
+  - `~/.claude/good-vibe/auth.json` — auth-manager 멀티프로바이더 크레덴셜
+- Phase C 회귀 테스트는 위 6개 데이터 모두 검증 (§10-13에 반영) — 구현: `tests/v1-data-compat.test.js` (12 케이스)
 - SDK API는 1 마이너 버전 deprecate 후 제거
 
 ## 9. MVP 범위 (Milestone 1)
