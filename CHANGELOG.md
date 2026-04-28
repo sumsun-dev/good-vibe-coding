@@ -5,6 +5,23 @@
 
 ## [Unreleased]
 
+## [2.0.0-rc.3] - 2026-04-28
+
+> **RC 3** — Unprefixed 슬래시 단축어 설치 기능 추가. 사용자가 `/good-vibe:install-shortcuts` 한 번 실행하면 `/gv`, `/gv-status` 등을 네임스페이스 없이 호출 가능. ECC/OMC/claude-forge 가 검증한 `install.sh` 패턴.
+
+### Added
+
+- **`/good-vibe:install-shortcuts` 슬래시** — `~/.claude/commands/` 에 7개 단축어 래퍼(`gv`, `gv-status`, `gv-execute`, `gv-resume`, `gv-team`, `gv-cost`, `gv-agent-history`)를 한 번에 설치. 멱등성 보장, `--force` 덮어쓰기 옵션
+- **`uninstall-shortcuts` CLI** — 우리가 설치한 파일만 안전하게 제거. 서명 없는 사용자 직접 작성 파일은 보존
+- **`scripts/lib/core/shortcuts-installer.js`** — `WRAPPER_SIGNATURE` 기반 래퍼 정의 + install/uninstall 코어 로직
+- **README 단축어 설치 섹션** — 사용법 + 멱등성 + 충돌 처리 명시
+
+### Why
+
+- Claude Code 플러그인은 `{plugin}:{cmd}` 네임스페이스가 강제됨 → `/good-vibe:gv` 매번 길게 입력
+- 유저 스코프 `~/.claude/commands/` 에 직접 배치된 커맨드는 prefix 없이 호출 가능 → 단축어 래퍼로 우회
+- 다른 인기 프로젝트(everything-claude-code 168K⭐, oh-my-claudecode 31K⭐, claude-forge 668⭐) 모두 동일 패턴 채택
+
 ## [2.0.0-rc.2] - 2026-04-28
 
 > **RC 2** — 자가발전(self-evolution) 시스템 완성. 학습 루프 + 회귀 안전망 + CEO 가시성/제어가 모두 갖춰진 1단계 완료. v2.0.0 정식 승급은 도그푸딩 후 결정.

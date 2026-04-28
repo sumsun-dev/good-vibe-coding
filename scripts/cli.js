@@ -170,6 +170,8 @@ const COMMAND_MAP = {
   'generate-global-onboarding': 'infra',
   'write-global-onboarding': 'infra',
   'write-project-onboarding': 'infra',
+  'install-shortcuts': 'infra',
+  'uninstall-shortcuts': 'infra',
   // metrics
   'record-metrics': 'metrics',
   'project-metrics': 'metrics',

@@ -62,6 +62,27 @@ npm install
 /plugin marketplace update good-vibe
 ```
 
+### 단축어 설치 (선택, 권장)
+
+플러그인은 Claude Code 규약상 `/good-vibe:gv` 처럼 네임스페이스가 강제됩니다. 한 번 실행하면 `/gv`, `/gv-status` 등 짧은 형태로 호출할 수 있습니다.
+
+```bash
+/good-vibe:install-shortcuts
+```
+
+설치 후 사용:
+
+```
+/gv 트위터 봇 만들고 싶어
+/gv-status
+/gv-execute auto
+```
+
+- 멱등성: 여러 번 실행해도 안전 (이미 설치된 항목은 skip)
+- `--force`: 기존 파일 덮어쓰기
+- `/good-vibe:uninstall-shortcuts`: 우리가 설치한 파일만 제거 (사용자 직접 만든 동명 파일은 보존)
+- 설치 위치: `~/.claude/commands/gv*.md` (사용자 스코프)
+
 ### 필요한 것
 
 - [Claude Code](https://claude.ai/code) 2.0 이상
