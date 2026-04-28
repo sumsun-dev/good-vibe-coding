@@ -74,6 +74,7 @@ npm install
 
 ```
 /gv 트위터 봇 만들고 싶어
+/gv-init                    # 폴더 + (선택) GitHub repo 셋업
 /gv-status
 /gv-execute auto
 ```
@@ -82,6 +83,7 @@ npm install
 - `--force`: 기존 파일 덮어쓰기
 - `/good-vibe:uninstall-shortcuts`: 우리가 설치한 파일만 제거 (사용자 직접 만든 동명 파일은 보존)
 - 설치 위치: `~/.claude/commands/gv*.md` (사용자 스코프)
+- 신규 프로젝트는 `/gv-init` 으로 폴더/repo 셋업 → `/gv-execute` 로 task-graph 진입 (gh 인증 상태에 따라 GitHub repo 옵션 자동 분기)
 
 ### 필요한 것
 

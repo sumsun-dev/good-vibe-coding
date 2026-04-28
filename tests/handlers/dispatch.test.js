@@ -93,4 +93,42 @@ describe('handlers/dispatch — gv-dispatch', () => {
       expect(statusResult.taskRoute).toBeNull();
     });
   });
+
+  describe('needsProjectSetup 플래그 (코드 task + 프로젝트 없음)', () => {
+    it('코드 task + hasProject=false → needsProjectSetup=true + /gv-init 안내', () => {
+      const r = cliExec('gv-dispatch', { input: '결제 시스템 구현해줘', hasProject: false });
+      expect(r.category).toBe('task');
+      expect(r.taskRoute.taskType).toBe('code');
+      expect(r.needsProjectSetup).toBe(true);
+      expect(r.nextActions.join(' ')).toMatch(/gv-init/);
+    });
+
+    it('코드 task + hasProject=true → needsProjectSetup=false', () => {
+      const r = cliExec('gv-dispatch', { input: '결제 시스템 구현해줘', hasProject: true });
+      expect(r.needsProjectSetup).toBe(false);
+      expect(r.nextActions.join(' ')).not.toMatch(/gv-init/);
+    });
+
+    it('research task → needsProjectSetup=false (코드/기획 아님)', () => {
+      const r = cliExec('gv-dispatch', { input: 'BullMQ vs Temporal 비교', hasProject: false });
+      expect(r.taskRoute.taskType).toBe('research');
+      expect(r.needsProjectSetup).toBe(false);
+    });
+
+    it('plan task + hasProject=false → needsProjectSetup=true (대형 기획도 신규 프로젝트)', () => {
+      const r = cliExec('gv-dispatch', {
+        input: '마이크로서비스 SaaS 플랫폼 만들고 싶어',
+        hasProject: false,
+      });
+      expect(r.taskRoute.taskType).toBe('plan');
+      expect(r.needsProjectSetup).toBe(true);
+      expect(r.nextActions.join(' ')).toMatch(/gv-init/);
+    });
+
+    it('escalate 입력 → needsProjectSetup=false (모호하므로 setup 권유 안 함)', () => {
+      const r = cliExec('gv-dispatch', { input: '', hasProject: false });
+      expect(r.taskRoute.escalateForConfirm).toBe(true);
+      expect(r.needsProjectSetup).toBe(false);
+    });
+  });
 });

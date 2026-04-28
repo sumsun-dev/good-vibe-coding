@@ -172,6 +172,8 @@ const COMMAND_MAP = {
   'write-project-onboarding': 'infra',
   'install-shortcuts': 'infra',
   'uninstall-shortcuts': 'infra',
+  'init-project': 'infra',
+  'slugify-name': 'infra',
   // metrics
   'record-metrics': 'metrics',
   'project-metrics': 'metrics',
