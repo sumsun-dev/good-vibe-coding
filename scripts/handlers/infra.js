@@ -7,6 +7,7 @@ import {
   requireArray,
   requireOneOf,
   assertWithinRoot,
+  inputError,
 } from '../lib/core/validators.js';
 import { setupProjectInfra, appendToClaudeMd } from '../lib/project/project-scaffolder.js';
 import { checkGhStatus, createGithubRepo, gitInitAndPush } from '../lib/project/github-manager.js';
@@ -43,6 +44,7 @@ import { loadPreset, mergePresets } from '../lib/core/preset-loader.js';
 import { safeWriteFile, ensureDir } from '../lib/core/file-writer.js';
 import { claudeDir } from '../lib/core/app-paths.js';
 import { installShortcuts, uninstallShortcuts } from '../lib/core/shortcuts-installer.js';
+import { initProject, slugifyName } from '../lib/project/project-initializer.js';
 import { resolve } from 'path';
 import { homedir } from 'os';
 
@@ -288,5 +290,42 @@ export const commands = {
     if (data.targetDir) assertWithinRoot(targetDir, homedir(), 'targetDir');
     const result = await uninstallShortcuts({ targetDir });
     outputOk(result);
+  },
+
+  'init-project': async () => {
+    const data = await readStdin();
+    requireFields(data, ['name', 'targetDir']);
+    const target = resolve(data.targetDir);
+    assertWithinRoot(target, homedir(), 'targetDir');
+    // GitHub 옵션이면 핸들러 레벨에서 인증 사전 검증 (CLI 직접 호출 시에도 보호).
+    if (data.github === 'private' || data.github === 'public') {
+      const status = checkGhStatus();
+      if (!status.installed) {
+        throw inputError(
+          'gh CLI 가 설치되지 않았습니다. github=none 으로 진행하거나 gh 를 먼저 설치하세요',
+        );
+      }
+      if (!status.authenticated) {
+        throw inputError(
+          'gh 인증이 필요합니다. `gh auth login` 후 재시도하거나 github=none 으로 진행하세요',
+        );
+      }
+    }
+    const result = await initProject({
+      name: data.name,
+      type: data.type,
+      description: data.description,
+      targetDir: target,
+      techStack: data.techStack,
+      github: data.github,
+      mode: data.mode,
+    });
+    outputOk(result);
+  },
+
+  'slugify-name': async () => {
+    const data = await readStdin();
+    requireFields(data, ['name']);
+    output({ slug: slugifyName(data.name) });
   },
 };

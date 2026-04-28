@@ -5,6 +5,25 @@
 
 ## [Unreleased]
 
+## [2.0.0-rc.4] - 2026-04-28
+
+> **RC 4** — `/gv-init` 신규 프로젝트 통합 셋업. 폴더 scaffold + (선택) GitHub repo + Good Vibe 프로젝트 엔트리를 한 번에 만듬. `gh auth status` 기반 자동 옵션 분기.
+
+### Added
+
+- **`/gv-init` 슬래시** — AskUserQuestion 으로 이름/폴더/GitHub 옵션 수집 → `init-project` CLI 1회 호출 → 결과 표시. `commands/gv-init.md`
+- **`init-project` CLI** — `setupProjectInfra` + (선택) `createGithubRepo` + `gitInitAndPush` + `createProject` 를 묶은 통합 진입점. 부분 실패 시 `warnings` 배열에 사유 기록, 로컬 프로젝트는 유지
+- **`slugify-name` CLI** — 한글/특수문자 제거 + 하이픈 정규화. AskUserQuestion 기본값 계산용
+- **`scripts/lib/project/project-initializer.js`** — `initProject()` + `slugifyName()` 코어
+- **`gv-dispatch` 응답 확장** — `needsProjectSetup: boolean` 플래그. `code` task + `hasProject=false` + non-escalate 일 때 true. `nextActions` 에 `/gv-init` 안내 자동 포함
+- **단축어 추가** — `gv-init` (총 8개). `shortcuts-installer` `SHORTCUT_DEFINITIONS` 갱신
+
+### Why
+
+- 신규 프로젝트는 폴더/repo 셋업이 `/gv-execute` 진입 전에 필요. 기존 흐름은 사용자가 수동 `mkdir` + `gh repo create` + `setup-project-infra` 를 따로 호출해야 했음
+- gh 인증 상태에 따라 선택지가 달라야 자연스러움 (인증 안되면 GitHub 옵션 자체를 보여주지 않음)
+- 부분 실패(repo 이름 충돌, push 실패) 시 로컬 프로젝트는 유지해야 작업 손실 없음
+
 ## [2.0.0-rc.3] - 2026-04-28
 
 > **RC 3** — Unprefixed 슬래시 단축어 설치 기능 추가. 사용자가 `/good-vibe:install-shortcuts` 한 번 실행하면 `/gv`, `/gv-status` 등을 네임스페이스 없이 호출 가능. ECC/OMC/claude-forge 가 검증한 `install.sh` 패턴.

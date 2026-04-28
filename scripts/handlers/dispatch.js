@@ -30,10 +30,17 @@ export const commands = {
       result = { category: 'task', taskRoute: routeTask(input, { hasGitRepo }) };
     }
 
+    const needsProjectSetup =
+      result.category === 'task' &&
+      (result.taskRoute?.taskType === 'code' || result.taskRoute?.taskType === 'plan') &&
+      !hasProject &&
+      !result.taskRoute?.escalateForConfirm;
+
     output({
       category: result.category,
       taskRoute: result.taskRoute || null,
-      nextActions: buildNextActions(result, { hasProject }),
+      needsProjectSetup,
+      nextActions: buildNextActions(result, { hasProject, needsProjectSetup }),
     });
   },
 };
@@ -49,13 +56,13 @@ function buildNextActions(result, ctx) {
         ? ['/gv 수정 요청을 자연어로 입력하면 task로 라우팅됩니다 (예: "이 함수 리팩토링해줘")']
         : [];
     case 'task':
-      return buildTaskActions(result.taskRoute);
+      return buildTaskActions(result.taskRoute, ctx);
     default:
       return [];
   }
 }
 
-function buildTaskActions(taskRoute) {
+function buildTaskActions(taskRoute, ctx = {}) {
   if (!taskRoute) return [];
   if (taskRoute.escalateForConfirm) {
     const reason = (taskRoute.warnings && taskRoute.warnings[0]) || '입력이 모호합니다';
@@ -72,5 +79,13 @@ function buildTaskActions(taskRoute) {
 
   const intent = taskRoute.taskType === 'code' && taskRoute.intent ? ` (${taskRoute.intent})` : '';
 
-  return [`${messages[taskRoute.taskType] || '작업으로 분류됨'}${intent}`];
+  const actions = [`${messages[taskRoute.taskType] || '작업으로 분류됨'}${intent}`];
+
+  if (ctx.needsProjectSetup) {
+    actions.push(
+      '활성 프로젝트가 없습니다. /gv-init 으로 폴더 + (선택) GitHub repo + Good Vibe 프로젝트를 한 번에 셋업하세요',
+    );
+  }
+
+  return actions;
 }

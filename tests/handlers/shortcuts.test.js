@@ -44,13 +44,13 @@ function execRaw(command, input) {
 }
 
 describe('handlers/infra — install-shortcuts E2E', () => {
-  it('targetDir 지정 시 7개 파일을 작성하고 success 응답', async () => {
+  it('targetDir 지정 시 8개 파일을 작성하고 success 응답', async () => {
     const r = exec('install-shortcuts', { targetDir: TARGET_DIR });
     expect(r.success).toBe(true);
-    expect(r.installed).toHaveLength(7);
+    expect(r.installed).toHaveLength(8);
     expect(r.skipped).toHaveLength(0);
     const files = await readdir(TARGET_DIR);
-    expect(files.filter((f) => f.endsWith('.md'))).toHaveLength(7);
+    expect(files.filter((f) => f.endsWith('.md'))).toHaveLength(8);
   });
 
   it('각 래퍼는 description, targetSkill, $ARGUMENTS 포함', async () => {
@@ -65,7 +65,7 @@ describe('handlers/infra — install-shortcuts E2E', () => {
     exec('install-shortcuts', { targetDir: TARGET_DIR });
     const r2 = exec('install-shortcuts', { targetDir: TARGET_DIR });
     expect(r2.installed).toHaveLength(0);
-    expect(r2.skipped).toHaveLength(7);
+    expect(r2.skipped).toHaveLength(8);
     expect(r2.skipped[0].reason).toBe('already-installed');
   });
 
@@ -73,7 +73,7 @@ describe('handlers/infra — install-shortcuts E2E', () => {
     exec('install-shortcuts', { targetDir: TARGET_DIR });
     await writeFile(resolve(TARGET_DIR, 'gv.md'), 'tampered', 'utf-8');
     const r = exec('install-shortcuts', { targetDir: TARGET_DIR, force: true });
-    expect(r.installed).toHaveLength(7);
+    expect(r.installed).toHaveLength(8);
     const content = await readFile(resolve(TARGET_DIR, 'gv.md'), 'utf-8');
     expect(content).toContain('good-vibe:gv');
   });

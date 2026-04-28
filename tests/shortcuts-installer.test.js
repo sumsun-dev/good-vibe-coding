@@ -21,8 +21,8 @@ describe('shortcuts-installer', () => {
   });
 
   describe('SHORTCUT_DEFINITIONS', () => {
-    it('7개 단축어를 정의해야 한다', () => {
-      expect(SHORTCUT_DEFINITIONS).toHaveLength(7);
+    it('8개 단축어를 정의해야 한다', () => {
+      expect(SHORTCUT_DEFINITIONS).toHaveLength(8);
     });
 
     it('각 단축어는 name, targetSkill, description 필드를 가져야 한다', () => {
@@ -40,6 +40,7 @@ describe('shortcuts-installer', () => {
         expect.arrayContaining([
           'gv',
           'gv-status',
+          'gv-init',
           'gv-execute',
           'gv-resume',
           'gv-team',
@@ -94,26 +95,26 @@ describe('shortcuts-installer', () => {
   });
 
   describe('installShortcuts', () => {
-    it('지정 디렉토리에 7개 파일을 작성해야 한다', async () => {
+    it('지정 디렉토리에 8개 파일을 작성해야 한다', async () => {
       const result = await installShortcuts({ targetDir: TMP_DIR });
-      expect(result.installed).toHaveLength(7);
+      expect(result.installed).toHaveLength(8);
       expect(result.skipped).toHaveLength(0);
       const files = await readdir(TMP_DIR);
-      expect(files.filter((f) => f.endsWith('.md'))).toHaveLength(7);
+      expect(files.filter((f) => f.endsWith('.md'))).toHaveLength(8);
     });
 
     it('targetDir이 없으면 자동 생성해야 한다', async () => {
       const nestedDir = resolve(TMP_DIR, 'nested', 'commands');
       await installShortcuts({ targetDir: nestedDir });
       const files = await readdir(nestedDir);
-      expect(files.filter((f) => f.endsWith('.md'))).toHaveLength(7);
+      expect(files.filter((f) => f.endsWith('.md'))).toHaveLength(8);
     });
 
     it('이미 같은 단축어가 존재하면 skip 한다 (멱등성)', async () => {
       await installShortcuts({ targetDir: TMP_DIR });
       const result = await installShortcuts({ targetDir: TMP_DIR });
       expect(result.installed).toHaveLength(0);
-      expect(result.skipped).toHaveLength(7);
+      expect(result.skipped).toHaveLength(8);
     });
 
     it('force=true 면 기존 파일을 덮어쓴다', async () => {
@@ -121,7 +122,7 @@ describe('shortcuts-installer', () => {
       const filePath = resolve(TMP_DIR, 'gv.md');
       await writeFile(filePath, 'modified', 'utf-8');
       const result = await installShortcuts({ targetDir: TMP_DIR, force: true });
-      expect(result.installed).toHaveLength(7);
+      expect(result.installed).toHaveLength(8);
       const content = await readFile(filePath, 'utf-8');
       expect(content).toContain('good-vibe:gv');
     });
@@ -134,15 +135,15 @@ describe('shortcuts-installer', () => {
       expect(result.skipped).toContainEqual(
         expect.objectContaining({ name: 'gv', reason: 'conflict' }),
       );
-      expect(result.installed.length).toBeLessThan(7);
+      expect(result.installed.length).toBeLessThan(8);
     });
   });
 
   describe('uninstallShortcuts', () => {
-    it('우리가 설치한 7개 파일만 제거한다', async () => {
+    it('우리가 설치한 8개 파일만 제거한다', async () => {
       await installShortcuts({ targetDir: TMP_DIR });
       const result = await uninstallShortcuts({ targetDir: TMP_DIR });
-      expect(result.removed).toHaveLength(7);
+      expect(result.removed).toHaveLength(8);
       const files = await readdir(TMP_DIR);
       expect(files.filter((f) => f.endsWith('.md'))).toHaveLength(0);
     });

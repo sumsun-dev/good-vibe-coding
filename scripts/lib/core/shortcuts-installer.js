@@ -48,6 +48,12 @@ export const SHORTCUT_DEFINITIONS = [
     description: 'Good Vibe 상태/진행 조회',
   },
   {
+    name: 'gv-init',
+    targetSkill: 'good-vibe:gv-init',
+    description: 'Good Vibe 신규 프로젝트 셋업 — 폴더 + (선택) GitHub repo + 프로젝트 엔트리',
+    argumentHint: '[프로젝트 이름]',
+  },
+  {
     name: 'gv-execute',
     targetSkill: 'good-vibe:gv-execute',
     description: 'Good Vibe 실행 시작 — task-graph 진입점',
