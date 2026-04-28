@@ -21,6 +21,10 @@ import {
   analyzeMessagePatterns,
   generateMessageAnalysisSection,
 } from '../lib/engine/message-analyzer.js';
+import {
+  processProjectCompletion,
+  formatCompletionSummary,
+} from '../lib/agent/project-completion-handler.js';
 
 const [, , , ...args] = process.argv;
 
@@ -114,5 +118,28 @@ export const commands = {
       const section = generateMessageAnalysisSection(analysis);
       output({ ...analysis, section });
     });
+  },
+
+  // 자가발전: 프로젝트 완료 시 모든 candidate를 평가하고 promote/discard 자동 실행.
+  // --id={projectId} 필수. stdin으로 옵션 전달 가능: { autoApply, minProjects, weights }.
+  'evaluate-completion': async () => {
+    const opts = parseArgs(args);
+    const stdinOpts = (await readStdin()) || {};
+    await withProject(opts.id, async (project) => {
+      const summary = await processProjectCompletion(project, {
+        autoApply: stdinOpts.autoApply !== false,
+        minProjects: stdinOpts.minProjects,
+        weights: stdinOpts.weights,
+      });
+      output(summary);
+    });
+  },
+
+  // CompletionSummary를 CEO 노출용 마크다운으로 변환. stdin: { summary }.
+  'format-completion-summary': async () => {
+    const data = await readStdin();
+    requireFields(data, ['summary']);
+    const markdown = formatCompletionSummary(data.summary);
+    output({ markdown });
   },
 };
