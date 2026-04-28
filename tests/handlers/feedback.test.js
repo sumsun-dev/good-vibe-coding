@@ -91,4 +91,33 @@ describe('handlers/feedback', () => {
     const result = cliExec('list-agent-overrides', {});
     expect(Array.isArray(result)).toBe(true);
   });
+
+  it('evaluate-completion → --id 누락 시 에러 종료', () => {
+    const result = cliExecRaw('evaluate-completion', {});
+    expect(result.exitCode).not.toBe(0);
+  });
+
+  it('evaluate-completion → 존재하지 않는 프로젝트 NOT_FOUND', () => {
+    const result = cliExecRaw('evaluate-completion --id nonexistent-project-id', {});
+    expect(result.exitCode).toBe(3);
+    expect(result.stderr).toContain('NOT_FOUND');
+  });
+
+  it('format-completion-summary → summary 필수 검증', () => {
+    const result = cliExecRaw('format-completion-summary', {});
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('summary');
+  });
+
+  it('format-completion-summary → 빈 evaluations 시 안내 문구', () => {
+    const result = cliExec('format-completion-summary', {
+      summary: {
+        projectId: 'p-test',
+        processedAt: '2026-04-28T00:00:00Z',
+        totals: { promoted: 0, discarded: 0, pending: 0, skipped: 0 },
+        evaluations: [],
+      },
+    });
+    expect(result.markdown).toContain('p-test');
+  });
 });

@@ -138,6 +138,8 @@ const COMMAND_MAP = {
   'list-project-overrides': 'feedback',
   'merge-all-overrides': 'feedback',
   'analyze-messages': 'feedback',
+  'evaluate-completion': 'feedback',
+  'format-completion-summary': 'feedback',
   // infra
   'setup-project-infra': 'infra',
   'check-gh-status': 'infra',
