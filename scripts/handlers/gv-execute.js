@@ -12,6 +12,8 @@ import { selectGraph } from '../lib/engine/task-graph-presets.js';
 import { renderPanel } from '../lib/output/claude-panel-renderer.js';
 import { callLLMWithFallback } from '../lib/llm/llm-fallback.js';
 import { inputError } from '../lib/core/validators.js';
+import { getProject } from '../lib/project/project-manager.js';
+import { processProjectCompletion } from '../lib/agent/project-completion-handler.js';
 
 export const commands = {
   'gv-execute': async () => {
@@ -57,6 +59,27 @@ export const commands = {
       recentEvents: events,
     });
 
+    // 자가발전 자동 평가 (옵트인) — 그래프 success + projectId 명시 시
+    // processProjectCompletion 인-프로세스 호출. 평가 실패는 grace 처리하여
+    // 그래프 결과를 깨뜨리지 않는다 (try/catch + 응답에 evaluationError 필드).
+    let completionSummary = null;
+    let evaluationError = null;
+    if (data.evaluateOnComplete === true && result.success && data.projectId) {
+      try {
+        const project = await getProject(data.projectId);
+        if (project) {
+          completionSummary = await processProjectCompletion(project, {
+            autoApply: data.autoApplyShadow !== false,
+            minProjects: data.minShadowProjects,
+          });
+        } else {
+          evaluationError = `project not found: ${data.projectId}`;
+        }
+      } catch (err) {
+        evaluationError = err.message;
+      }
+    }
+
     output({
       success: result.success,
       finalState: result.finalState,
@@ -64,6 +87,8 @@ export const commands = {
       reason: result.reason,
       history: result.history,
       panel,
+      completionSummary,
+      evaluationError,
     });
   },
 };

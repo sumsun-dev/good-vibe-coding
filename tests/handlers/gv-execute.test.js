@@ -67,4 +67,31 @@ describe('handlers/gv-execute — E2E', () => {
       });
     });
   });
+
+  describe('자가발전 자동 평가 (evaluateOnComplete)', () => {
+    it('기본은 평가 안 함 → completionSummary=null', () => {
+      const r = exec('gv-execute', { taskRoute: { taskType: 'ask' } });
+      expect(r.completionSummary).toBeNull();
+      expect(r.evaluationError).toBeNull();
+    });
+
+    it('evaluateOnComplete=true이지만 projectId 없으면 평가 생략', () => {
+      const r = exec('gv-execute', {
+        taskRoute: { taskType: 'ask' },
+        evaluateOnComplete: true,
+      });
+      expect(r.completionSummary).toBeNull();
+      expect(r.evaluationError).toBeNull();
+    });
+
+    it('evaluateOnComplete=true + 존재하지 않는 projectId → evaluationError', () => {
+      const r = exec('gv-execute', {
+        taskRoute: { taskType: 'ask' },
+        evaluateOnComplete: true,
+        projectId: 'nonexistent-project-id-for-test',
+      });
+      expect(r.completionSummary).toBeNull();
+      expect(r.evaluationError).toMatch(/not found|nonexistent/i);
+    });
+  });
 });
