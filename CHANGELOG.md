@@ -5,6 +5,43 @@
 
 ## [Unreleased]
 
+## [2.0.0-rc.2] - 2026-04-28
+
+> **RC 2** — 자가발전(self-evolution) 시스템 완성. 학습 루프 + 회귀 안전망 + CEO 가시성/제어가 모두 갖춰진 1단계 완료. v2.0.0 정식 승급은 도그푸딩 후 결정.
+
+### Added
+
+- **자가발전 Tier 1 — 회귀 안전망 + 다차원 신호 + 추적성**
+  - `agent-performance.js` — 6개 학습 신호(quality / time / cost / retry / escalation / contribution) + 가중치 통합 점수 (#273)
+  - `agent-provenance.js` — 각 학습의 origin 메타데이터를 별도 JSON으로 추적 (`{roleId}.provenance.json`) (#274)
+  - `agent-shadow-mode.js` — 학습안을 candidate로 격리, N개 프로젝트 동안 평가 후 promote/discard 자동 결정 (#275)
+- **자가발전 통합 (A 시리즈)**
+  - `autoApplyFeedbackViaShadow` — 학습안을 active가 아닌 candidate로 저장 (A-1, #276)
+  - `processProjectCompletion` — 프로젝트 종료 시 신호 기록 + 평가 + promote/discard 자동 실행 (A-2/A-3, #277)
+  - CLI 노출: `evaluate-completion`, `format-completion-summary`, `list-shadow-candidates` (A-4, #278)
+  - `/gv:status`에 활성 candidate 학습 진행률 노출 (A-5a, #279)
+  - `gv-execute` 핸들러에 `evaluateOnComplete` 옵션 — 그래프 성공 후 in-process 평가 (A-5b, #280)
+- **CEO 가시성/제어 (B 시리즈)**
+  - `/gv:agent-history --role={roleId}` 신규 슬래시 — 학습 이력 조회 + entry 단위 revert + candidate 폐기 + provenance reset (#281)
+  - `formatProvenance` — CEO 노출용 마크다운 포맷터 (source별 헤더 / signals 표 / candidate 섹션)
+  - 신규 CLI 5개: `get-provenance`, `format-provenance`, `revert-provenance-entry`, `reset-provenance`, `discard-shadow-candidate`
+
+### Changed
+
+- `agent-feedback.autoApplyFeedback` 기존 동작 유지 (하위 호환). 신규 학습 흐름은 `autoApplyFeedbackViaShadow` 권장.
+
+### Safety
+
+- 모든 자동 학습은 shadow 격리 (active override.md는 즉시 변경되지 않음)
+- 회귀 감지 시 자동 discard (candidate 점수 ≤ active 점수)
+- CEO revert/discard/reset은 모두 `AskUserQuestion`으로 명시 확인 후 실행
+- active override.md는 어떤 명령으로도 자동 삭제되지 않음
+
+### Stats
+
+- 신규 모듈 4개, 신규 슬래시 1개, 신규 CLI 커맨드 10개
+- 신규 테스트 100+개, 전체 회귀 3041 pass
+
 ## [2.0.0-rc.1] - 2026-04-27
 
 > **메이저 버전 릴리즈 후보 1** — v2 Agentic Platform 첫 외부 노출. CEO 도그푸딩을 거쳐 정식 v2.0.0 승급 여부 결정.
