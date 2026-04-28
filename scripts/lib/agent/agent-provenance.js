@@ -207,3 +207,77 @@ export async function clearProvenance(roleId) {
   await unlink(path);
   return { deleted: true };
 }
+
+/**
+ * provenance를 CEO 노출용 마크다운으로 변환한다.
+ * 각 entry는 source별로 다른 헤더 + signal 표를 포함하며,
+ * entryId를 명시해 CEO가 revert 명령에 그대로 쓸 수 있다.
+ *
+ * @param {ProvenanceFile} file
+ * @param {{ candidateState?: { exists: boolean, projectCount: number, projectIds: string[] } }} [options]
+ * @returns {string}
+ */
+export function formatProvenance(file, options = {}) {
+  if (!file || typeof file !== 'object') return '';
+  const lines = [
+    `# 학습 이력 — ${file.roleId || '(unknown)'}`,
+    '',
+    `revision: ${file.revision || '-'}  ·  마지막 갱신: ${file.lastUpdated || '-'}`,
+    '',
+  ];
+
+  const cs = options.candidateState;
+  if (cs && cs.exists) {
+    lines.push('## 활성 candidate (평가 중)');
+    lines.push('');
+    lines.push(`- 누적 ${cs.projectCount}개 프로젝트 (기본 임계 3)`);
+    if (cs.projectIds && cs.projectIds.length > 0) {
+      lines.push(`- 평가 프로젝트: ${cs.projectIds.join(', ')}`);
+    }
+    lines.push('- discard하려면: `/gv:agent-history --role={roleId} --discard-candidate`');
+    lines.push('');
+  }
+
+  const entries = file.entries || [];
+  if (entries.length === 0) {
+    lines.push('학습 이력 없음.');
+    return lines.join('\n');
+  }
+
+  lines.push(`## 적용된 학습 (${entries.length}개)`);
+  lines.push('');
+  for (const e of entries) {
+    const id = e.id || '-';
+    const ts = e.timestamp || '-';
+    if (e.source === 'project-feedback') {
+      lines.push(`### ${id} · project-feedback · ${ts}`);
+      lines.push(`- 출처 프로젝트: ${e.projectId || '-'}`);
+    } else if (e.source === 'cross-project-pattern') {
+      lines.push(`### ${id} · cross-project-pattern · ${ts}`);
+      lines.push(`- 패턴: \`${e.pattern || '-'}\``);
+      lines.push(`- 반복 ${e.repeatCount ?? '-'}회 (${(e.projectIds || []).join(', ')})`);
+    } else if (e.source === 'manual') {
+      lines.push(`### ${id} · manual · ${ts}`);
+    } else {
+      lines.push(`### ${id} · ${e.source || 'unknown'} · ${ts}`);
+    }
+    if (e.summary) lines.push(`- ${e.summary}`);
+    if (e.signals) {
+      const s = e.signals;
+      lines.push(
+        `- signals: quality=${num(s.quality)} time=${num(s.time)} cost=${num(s.cost)} retry=${num(s.retry)} escalation=${num(s.escalation)} contribution=${num(s.contribution)}`,
+      );
+    }
+    lines.push('');
+  }
+
+  lines.push('---');
+  lines.push('특정 학습을 되돌리려면: `/gv:agent-history --role={roleId} --revert={entryId}`');
+  return lines.join('\n');
+}
+
+function num(v) {
+  if (v === null || v === undefined) return '-';
+  if (typeof v !== 'number') return String(v);
+  return Number.isInteger(v) ? String(v) : v.toFixed(3);
+}

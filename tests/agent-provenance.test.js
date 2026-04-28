@@ -12,6 +12,7 @@ import {
   appendProvenanceEntry,
   removeProvenanceEntry,
   clearProvenance,
+  formatProvenance,
 } from '../scripts/lib/agent/agent-provenance.js';
 
 const TMP_DIR = resolve('.tmp-test-agent-provenance');
@@ -245,6 +246,104 @@ describe('clearProvenance', () => {
   it('파일이 없으면 deleted=false', async () => {
     const result = await clearProvenance('cto');
     expect(result.deleted).toBe(false);
+  });
+});
+
+describe('formatProvenance', () => {
+  it('빈 file은 "학습 이력 없음" 표시', () => {
+    const md = formatProvenance({ roleId: 'cto', entries: [] });
+    expect(md).toContain('학습 이력 — cto');
+    expect(md).toContain('학습 이력 없음');
+  });
+
+  it('null/잘못된 입력은 빈 문자열', () => {
+    expect(formatProvenance(null)).toBe('');
+    expect(formatProvenance('not object')).toBe('');
+  });
+
+  it('project-feedback entry에 projectId + signals 표시', () => {
+    const file = {
+      roleId: 'cto',
+      revision: '2.0.0-rc.1',
+      lastUpdated: '2026-04-28T00:00:00Z',
+      entries: [
+        {
+          id: 'ent-001',
+          source: 'project-feedback',
+          projectId: 'proj-abc',
+          timestamp: '2026-04-20T10:00:00Z',
+          summary: 'TDD 강제',
+          signals: { quality: 4, time: 2000, cost: 0.5, retry: 1, escalation: 0, contribution: 1 },
+        },
+      ],
+    };
+    const md = formatProvenance(file);
+    expect(md).toContain('ent-001');
+    expect(md).toContain('project-feedback');
+    expect(md).toContain('proj-abc');
+    expect(md).toContain('TDD 강제');
+    expect(md).toContain('quality=4');
+    expect(md).toContain('time=2000');
+    expect(md).toContain('--revert=');
+  });
+
+  it('cross-project-pattern entry에 patterns + repeatCount 표시', () => {
+    const file = {
+      roleId: 'qa',
+      entries: [
+        {
+          id: 'ent-002',
+          source: 'cross-project-pattern',
+          projectIds: ['p-1', 'p-2', 'p-3'],
+          pattern: 'edge-case-coverage',
+          repeatCount: 3,
+          timestamp: '2026-04-25T15:00:00Z',
+        },
+      ],
+    };
+    const md = formatProvenance(file);
+    expect(md).toContain('cross-project-pattern');
+    expect(md).toContain('edge-case-coverage');
+    expect(md).toContain('반복 3회');
+    expect(md).toContain('p-1, p-2, p-3');
+  });
+
+  it('candidateState exists=true면 활성 candidate 섹션 표시', () => {
+    const file = { roleId: 'cto', entries: [] };
+    const md = formatProvenance(file, {
+      candidateState: { exists: true, projectCount: 2, projectIds: ['p-a', 'p-b'] },
+    });
+    expect(md).toContain('활성 candidate (평가 중)');
+    expect(md).toContain('누적 2개 프로젝트');
+    expect(md).toContain('p-a, p-b');
+    expect(md).toContain('--discard-candidate');
+  });
+
+  it('candidateState exists=false면 활성 candidate 섹션 생략', () => {
+    const file = { roleId: 'cto', entries: [] };
+    const md = formatProvenance(file, { candidateState: { exists: false } });
+    expect(md).not.toContain('활성 candidate');
+  });
+
+  it('소수점 신호는 toFixed(3)으로 포맷', () => {
+    const md = formatProvenance({
+      roleId: 'cto',
+      entries: [
+        {
+          id: 'e-1',
+          source: 'manual',
+          signals: {
+            quality: 0,
+            time: 0,
+            cost: 0.123456,
+            retry: 0,
+            escalation: 0,
+            contribution: 0.5,
+          },
+        },
+      ],
+    });
+    expect(md).toContain('cost=0.123');
   });
 });
 

@@ -25,7 +25,17 @@ import {
   processProjectCompletion,
   formatCompletionSummary,
 } from '../lib/agent/project-completion-handler.js';
-import { listActiveCandidates } from '../lib/agent/agent-shadow-mode.js';
+import {
+  listActiveCandidates,
+  discardCandidate,
+  getCandidateState,
+} from '../lib/agent/agent-shadow-mode.js';
+import {
+  loadProvenance,
+  removeProvenanceEntry,
+  clearProvenance,
+  formatProvenance,
+} from '../lib/agent/agent-provenance.js';
 
 const [, , , ...args] = process.argv;
 
@@ -148,5 +158,49 @@ export const commands = {
   'list-shadow-candidates': async () => {
     const candidates = await listActiveCandidates();
     output(candidates);
+  },
+
+  // 특정 역할의 provenance + 활성 candidate 상태 함께 반환. /gv:agent-history Step 1.
+  'get-provenance': async () => {
+    const opts = parseArgs(args);
+    if (!opts.role) throw inputError('--role 옵션이 필요합니다');
+    const file = await loadProvenance(opts.role);
+    const candidateState = await getCandidateState(opts.role);
+    output({ provenance: file, candidateState });
+  },
+
+  // provenance를 CEO 노출용 마크다운으로 변환. stdin: { provenance, candidateState? }.
+  'format-provenance': async () => {
+    const data = await readStdin();
+    requireFields(data, ['provenance']);
+    const markdown = formatProvenance(data.provenance, {
+      candidateState: data.candidateState,
+    });
+    output({ markdown });
+  },
+
+  // 특정 entry를 id로 제거 (CEO revert).
+  'revert-provenance-entry': async () => {
+    const opts = parseArgs(args);
+    if (!opts.role) throw inputError('--role 옵션이 필요합니다');
+    if (!opts['entry-id']) throw inputError('--entry-id 옵션이 필요합니다');
+    const result = await removeProvenanceEntry(opts.role, opts['entry-id']);
+    output({ roleId: opts.role, entryId: opts['entry-id'], ...result });
+  },
+
+  // provenance 파일 전체 삭제 (override.md는 보존).
+  'reset-provenance': async () => {
+    const opts = parseArgs(args);
+    if (!opts.role) throw inputError('--role 옵션이 필요합니다');
+    const result = await clearProvenance(opts.role);
+    output({ roleId: opts.role, ...result });
+  },
+
+  // 활성 candidate 폐기 — /gv:agent-history --discard-candidate 진입점.
+  'discard-shadow-candidate': async () => {
+    const opts = parseArgs(args);
+    if (!opts.role) throw inputError('--role 옵션이 필요합니다');
+    const result = await discardCandidate(opts.role);
+    output({ roleId: opts.role, ...result });
   },
 };
