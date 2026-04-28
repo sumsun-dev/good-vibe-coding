@@ -120,4 +120,9 @@ describe('handlers/feedback', () => {
     });
     expect(result.markdown).toContain('p-test');
   });
+
+  it('list-shadow-candidates → 배열 반환 (candidate 없으면 빈 배열)', () => {
+    const result = cliExec('list-shadow-candidates', {});
+    expect(Array.isArray(result)).toBe(true);
+  });
 });

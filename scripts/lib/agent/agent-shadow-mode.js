@@ -20,7 +20,7 @@
  * 실제 dry-run 실행(execution loop 통합)은 후속 PR. 이 모듈은 데이터 구조 + 의사결정 로직만.
  */
 
-import { readFile, writeFile, unlink } from 'fs/promises';
+import { readFile, writeFile, unlink, readdir } from 'fs/promises';
 import { resolve } from 'path';
 import { ensureDir, fileExists } from '../core/file-writer.js';
 import { agentOverridesDir } from '../core/app-paths.js';
@@ -385,4 +385,36 @@ async function unlinkIfExists(path) {
   if (await fileExists(path)) {
     await unlink(path);
   }
+}
+
+/**
+ * 활성 candidate가 있는 모든 역할의 상태를 열거한다 (CEO 노출용).
+ * overridesDir에서 `*.candidate.md` 파일을 스캔하여 각각의 getCandidateState를 반환.
+ *
+ * 디렉토리가 없으면 빈 배열 반환 (graceful).
+ *
+ * @returns {Promise<Array<{ roleId: string, projectCount: number, projectIds: string[], entryCount: number }>>}
+ */
+export async function listActiveCandidates() {
+  let entries;
+  try {
+    entries = await readdir(overridesDir);
+  } catch (err) {
+    if (err.code === 'ENOENT') return [];
+    throw err;
+  }
+
+  const roleIds = entries
+    .filter((name) => name.endsWith('.candidate.md'))
+    .map((name) => name.slice(0, -'.candidate.md'.length))
+    .filter((roleId) => VALID_ROLE_PATTERN.test(roleId));
+
+  const results = [];
+  for (const roleId of roleIds) {
+    const state = await getCandidateState(roleId);
+    if (state.exists) {
+      results.push({ roleId, ...state });
+    }
+  }
+  return results;
 }
