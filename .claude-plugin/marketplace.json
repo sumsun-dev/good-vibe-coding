@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "AI 팀을 구성하여 프로젝트를 기획-토론-실행-리뷰하는 멀티에이전트 플랫폼",
-    "version": "2.0.0-rc.2"
+    "version": "2.0.0-rc.3"
   },
   "plugins": [
     {
@@ -15,7 +15,7 @@
         "url": "https://github.com/sumsun-dev/good-vibe-coding.git"
       },
       "description": "AI 팀을 구성하고 프로젝트를 관리하세요. CEO가 되어 가상 AI 팀원들과 기획부터 실행까지.",
-      "version": "2.0.0-rc.2",
+      "version": "2.0.0-rc.3",
       "category": "productivity"
     }
   ]

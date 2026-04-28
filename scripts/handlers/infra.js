@@ -1,7 +1,7 @@
 /**
  * handlers/infra — 프로젝트 인프라 셋업 + GitHub + 온보딩 + 설정 커맨드
  */
-import { readStdin, output } from '../cli-utils.js';
+import { readStdin, output, outputOk } from '../cli-utils.js';
 import {
   requireFields,
   requireArray,
@@ -42,6 +42,7 @@ import {
 import { loadPreset, mergePresets } from '../lib/core/preset-loader.js';
 import { safeWriteFile, ensureDir } from '../lib/core/file-writer.js';
 import { claudeDir } from '../lib/core/app-paths.js';
+import { installShortcuts, uninstallShortcuts } from '../lib/core/shortcuts-installer.js';
 import { resolve } from 'path';
 import { homedir } from 'os';
 
@@ -268,5 +269,24 @@ export const commands = {
       safeWriteFile(coreRulesPath, data.coreRules, { overwrite: true }),
     ]);
     output({ written: [claudeMdPath, coreRulesPath] });
+  },
+
+  'install-shortcuts': async () => {
+    const data = await readStdin();
+    const targetDir = data.targetDir ? resolve(data.targetDir) : resolve(claudeDir(), 'commands');
+    if (data.targetDir) assertWithinRoot(targetDir, homedir(), 'targetDir');
+    const result = await installShortcuts({
+      targetDir,
+      force: Boolean(data.force),
+    });
+    outputOk(result);
+  },
+
+  'uninstall-shortcuts': async () => {
+    const data = await readStdin();
+    const targetDir = data.targetDir ? resolve(data.targetDir) : resolve(claudeDir(), 'commands');
+    if (data.targetDir) assertWithinRoot(targetDir, homedir(), 'targetDir');
+    const result = await uninstallShortcuts({ targetDir });
+    outputOk(result);
   },
 };
