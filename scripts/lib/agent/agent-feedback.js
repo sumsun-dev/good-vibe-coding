@@ -11,6 +11,11 @@ import { parseJsonArray } from '../core/json-parser.js';
 import { validateRoleId, assertWithinRoot } from '../core/validators.js';
 import { agentOverridesDir, projectsDir } from '../core/app-paths.js';
 import { buildSectioned, toMarkdownList } from '../core/prompt-builder.js';
+import {
+  saveCandidateOverride,
+  loadCandidateOverride,
+  discardCandidate,
+} from './agent-shadow-mode.js';
 
 const DEFAULT_OVERRIDES_DIR = agentOverridesDir();
 let overridesDir = DEFAULT_OVERRIDES_DIR;
@@ -230,6 +235,47 @@ export async function autoApplyFeedback(feedbackList) {
         await writeFile(filePath, feedback, 'utf-8');
       }),
   );
+}
+
+/**
+ * 피드백 리스트를 shadow mode 경유로 적용한다.
+ *
+ * 기존 autoApplyFeedback은 active override(`{roleId}.md`)에 즉시 덮어써서
+ * 잘못된 학습이 다음 프로젝트들을 더 나쁘게 만들어도 회귀가 어렵다.
+ * 이 함수는 candidate(`{roleId}.candidate.md`)로 격리 저장하고 N개 프로젝트
+ * 동안 평가받게 해, 회귀 안전망(agent-shadow-mode)을 통과한 후에만 promote된다.
+ *
+ * 이전 candidate가 평가 중이었다면 새 제안이 들어올 때 폐기한다 — 최신 학습 제안 우선.
+ *
+ * @param {Array<{roleId: string, feedback: string, origin?: object}>|null} feedbackList
+ * @param {{ defaultOrigin?: object }} [options] - 각 항목에 origin이 없을 때 사용할 기본값
+ * @returns {Promise<Array<{ roleId: string, candidatePath: string, entryId: string, replacedExisting: boolean }>>}
+ */
+export async function autoApplyFeedbackViaShadow(feedbackList, options = {}) {
+  if (!feedbackList || feedbackList.length === 0) return [];
+  const defaultOrigin = options.defaultOrigin || { source: 'manual' };
+
+  const results = [];
+  for (const item of feedbackList) {
+    if (!item || !item.feedback) continue;
+    const { roleId, feedback, origin } = item;
+
+    // 이전 candidate가 남아 있으면 폐기 (최신 제안 우선)
+    const existing = await loadCandidateOverride(roleId);
+    const replacedExisting = existing !== null;
+    if (replacedExisting) {
+      await discardCandidate(roleId);
+    }
+
+    const saved = await saveCandidateOverride(roleId, feedback, origin || defaultOrigin);
+    results.push({
+      roleId,
+      candidatePath: saved.candidatePath,
+      entryId: saved.entryId,
+      replacedExisting,
+    });
+  }
+  return results;
 }
 
 /**
