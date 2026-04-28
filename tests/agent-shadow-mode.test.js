@@ -15,6 +15,7 @@ import {
   promoteCandidate,
   discardCandidate,
   getCandidateState,
+  listActiveCandidates,
   DEFAULT_MIN_SHADOW_PROJECTS,
 } from '../scripts/lib/agent/agent-shadow-mode.js';
 import { setProvenanceDir, loadProvenance } from '../scripts/lib/agent/agent-provenance.js';
@@ -297,6 +298,48 @@ describe('getCandidateState', () => {
     expect(state.projectCount).toBe(2);
     expect(state.projectIds).toEqual(['p-1', 'p-2']);
     expect(state.entryCount).toBe(1); // origin entry 1개
+  });
+});
+
+describe('listActiveCandidates', () => {
+  it('overrides 디렉토리가 없으면 빈 배열', async () => {
+    await rm(TMP_DIR, { recursive: true, force: true });
+    const result = await listActiveCandidates();
+    expect(result).toEqual([]);
+  });
+
+  it('candidate가 없으면 빈 배열', async () => {
+    expect(await listActiveCandidates()).toEqual([]);
+  });
+
+  it('여러 역할의 candidate를 모두 열거', async () => {
+    await saveCandidateOverride('cto', '# cto', SAMPLE_ORIGIN);
+    await saveCandidateOverride('qa', '# qa', SAMPLE_ORIGIN);
+    await recordProjectResult('cto', 'p-1', fixtureSignals());
+    await recordProjectResult('cto', 'p-2', fixtureSignals());
+
+    const result = await listActiveCandidates();
+    expect(result).toHaveLength(2);
+    const byRole = Object.fromEntries(result.map((r) => [r.roleId, r]));
+    expect(byRole.cto.projectCount).toBe(2);
+    expect(byRole.qa.projectCount).toBe(0);
+  });
+
+  it('잘못된 roleId 패턴의 파일은 무시', async () => {
+    await saveCandidateOverride('cto', '# cto', SAMPLE_ORIGIN);
+    // 잘못된 패턴의 파일을 직접 만들어도 무시되어야 함
+    await writeFile(resolve(TMP_DIR, 'INVALID-Role.candidate.md'), '# x', 'utf-8');
+
+    const result = await listActiveCandidates();
+    expect(result).toHaveLength(1);
+    expect(result[0].roleId).toBe('cto');
+  });
+
+  it('active.md만 있는 역할은 제외 (candidate가 핵심 조건)', async () => {
+    await writeFile(resolve(TMP_DIR, 'cto.md'), '# active only', 'utf-8');
+
+    const result = await listActiveCandidates();
+    expect(result).toEqual([]);
   });
 });
 

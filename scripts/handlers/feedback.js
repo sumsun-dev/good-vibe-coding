@@ -25,6 +25,7 @@ import {
   processProjectCompletion,
   formatCompletionSummary,
 } from '../lib/agent/project-completion-handler.js';
+import { listActiveCandidates } from '../lib/agent/agent-shadow-mode.js';
 
 const [, , , ...args] = process.argv;
 
@@ -141,5 +142,11 @@ export const commands = {
     requireFields(data, ['summary']);
     const markdown = formatCompletionSummary(data.summary);
     output({ markdown });
+  },
+
+  // 활성 candidate 목록 — /gv:status에서 학습 진행 상황 노출용.
+  'list-shadow-candidates': async () => {
+    const candidates = await listActiveCandidates();
+    output(candidates);
   },
 };

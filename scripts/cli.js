@@ -140,6 +140,7 @@ const COMMAND_MAP = {
   'analyze-messages': 'feedback',
   'evaluate-completion': 'feedback',
   'format-completion-summary': 'feedback',
+  'list-shadow-candidates': 'feedback',
   // infra
   'setup-project-infra': 'infra',
   'check-gh-status': 'infra',
