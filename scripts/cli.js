@@ -141,6 +141,11 @@ const COMMAND_MAP = {
   'evaluate-completion': 'feedback',
   'format-completion-summary': 'feedback',
   'list-shadow-candidates': 'feedback',
+  'get-provenance': 'feedback',
+  'format-provenance': 'feedback',
+  'revert-provenance-entry': 'feedback',
+  'reset-provenance': 'feedback',
+  'discard-shadow-candidate': 'feedback',
   // infra
   'setup-project-infra': 'infra',
   'check-gh-status': 'infra',

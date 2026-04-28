@@ -125,4 +125,58 @@ describe('handlers/feedback', () => {
     const result = cliExec('list-shadow-candidates', {});
     expect(Array.isArray(result)).toBe(true);
   });
+
+  it('get-provenance → --role 누락 시 INPUT_ERROR', () => {
+    const result = cliExecRaw('get-provenance', {});
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('role');
+  });
+
+  it('get-provenance → 없으면 빈 entries + candidateState.exists=false', () => {
+    const result = cliExec('get-provenance --role=cto-history-test', {});
+    expect(result.provenance.entries).toEqual([]);
+    expect(result.candidateState.exists).toBe(false);
+  });
+
+  it('format-provenance → provenance 필수 검증', () => {
+    const result = cliExecRaw('format-provenance', {});
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('provenance');
+  });
+
+  it('format-provenance → 빈 entries → "학습 이력 없음"', () => {
+    const result = cliExec('format-provenance', {
+      provenance: { roleId: 'cto', entries: [] },
+    });
+    expect(result.markdown).toContain('학습 이력 없음');
+  });
+
+  it('revert-provenance-entry → --role/--entry-id 누락 시 INPUT_ERROR', () => {
+    const result = cliExecRaw('revert-provenance-entry --role=cto', {});
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toContain('entry-id');
+  });
+
+  it('revert-provenance-entry → 존재하지 않는 entry → removed=false', () => {
+    const result = cliExec(
+      'revert-provenance-entry --role=cto-revert-test --entry-id=ent-nonexistent',
+      {},
+    );
+    expect(result.removed).toBe(false);
+  });
+
+  it('reset-provenance → --role 필수', () => {
+    const result = cliExecRaw('reset-provenance', {});
+    expect(result.exitCode).toBe(2);
+  });
+
+  it('discard-shadow-candidate → --role 필수', () => {
+    const result = cliExecRaw('discard-shadow-candidate', {});
+    expect(result.exitCode).toBe(2);
+  });
+
+  it('discard-shadow-candidate → 없으면 discarded=false', () => {
+    const result = cliExec('discard-shadow-candidate --role=cto-discard-test', {});
+    expect(result.discarded).toBe(false);
+  });
 });
