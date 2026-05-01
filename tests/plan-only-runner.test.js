@@ -195,3 +195,54 @@ describe('plan-only-runner — 엣지 케이스', () => {
     );
   });
 });
+
+describe('plan-only-runner — provider 옵션', () => {
+  it('opts.provider가 명시되면 callLLM에 그 provider로 호출한다', async () => {
+    const callLLM = vi.fn(async (provider) => {
+      if (provider !== 'gemini') throw new Error(`expected gemini, got ${provider}`);
+      return { text: JSON.stringify({ approved: true, feedback: 'ok', issues: [] }), model: 'g' };
+    });
+
+    const result = await runPlanOnly(baseProject, {
+      useLLM: true,
+      callLLM,
+      provider: 'gemini',
+    });
+
+    expect(result.finalState).toBe('approved');
+    // 모든 호출이 gemini로 갔는지 검증
+    for (const call of callLLM.mock.calls) {
+      expect(call[0]).toBe('gemini');
+    }
+  });
+
+  it('claude 외 provider면 callLLM의 model 옵션이 undefined로 전달된다', async () => {
+    const callLLM = vi.fn(async () => ({
+      text: JSON.stringify({ approved: true, feedback: 'ok', issues: [] }),
+      model: 'gemini-2.5-flash',
+    }));
+
+    await runPlanOnly(baseProject, {
+      useLLM: true,
+      callLLM,
+      provider: 'gemini',
+    });
+
+    for (const call of callLLM.mock.calls) {
+      expect(call[2].model).toBeUndefined();
+    }
+  });
+
+  it('provider 미지정 시 claude가 기본값', async () => {
+    const callLLM = vi.fn(async () => ({
+      text: JSON.stringify({ approved: true, feedback: 'ok', issues: [] }),
+      model: 'haiku',
+    }));
+
+    await runPlanOnly(baseProject, { useLLM: true, callLLM });
+
+    for (const call of callLLM.mock.calls) {
+      expect(call[0]).toBe('claude');
+    }
+  });
+});

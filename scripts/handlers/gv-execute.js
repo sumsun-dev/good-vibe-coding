@@ -54,6 +54,7 @@ async function runActiveFlow(data, project, events, journalCb) {
   const result = await runActiveProjectFlow(project, {
     useLLM,
     callLLM: useLLM ? callLLMWithFallback : undefined,
+    provider: data.provider,
     journal: journalCb,
     maxRounds: data.maxRounds,
   });
