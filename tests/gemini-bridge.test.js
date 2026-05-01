@@ -22,7 +22,7 @@ describe('parseGeminiCliOutput', () => {
       },
     });
 
-    const result = parseGeminiCliOutput(stdout, 'gemini-2.0-flash');
+    const result = parseGeminiCliOutput(stdout, 'gemini-2.5-flash');
     expect(result.text).toBe('리뷰 결과입니다.');
     expect(result.provider).toBe('gemini');
     expect(result.model).toBe('gemini-2.5-flash');
@@ -32,23 +32,23 @@ describe('parseGeminiCliOutput', () => {
   it('stats가 없는 응답을 처리한다', () => {
     const stdout = JSON.stringify({ response: '간단한 응답' });
 
-    const result = parseGeminiCliOutput(stdout, 'gemini-2.0-flash');
+    const result = parseGeminiCliOutput(stdout, 'gemini-2.5-flash');
     expect(result.text).toBe('간단한 응답');
     expect(result.provider).toBe('gemini');
-    expect(result.model).toBe('gemini-2.0-flash');
+    expect(result.model).toBe('gemini-2.5-flash');
     expect(result.tokenCount).toBe(0);
   });
 
   it('빈 stdout을 처리한다', () => {
-    const result = parseGeminiCliOutput('', 'gemini-2.0-flash');
+    const result = parseGeminiCliOutput('', 'gemini-2.5-flash');
     expect(result.text).toBe('');
     expect(result.provider).toBe('gemini');
-    expect(result.model).toBe('gemini-2.0-flash');
+    expect(result.model).toBe('gemini-2.5-flash');
     expect(result.tokenCount).toBe(0);
   });
 
   it('null stdout을 처리한다', () => {
-    const result = parseGeminiCliOutput(null, 'gemini-2.0-flash');
+    const result = parseGeminiCliOutput(null, 'gemini-2.5-flash');
     expect(result.text).toBe('');
     expect(result.provider).toBe('gemini');
     expect(result.tokenCount).toBe(0);
@@ -57,17 +57,17 @@ describe('parseGeminiCliOutput', () => {
   it('JSON이 아닌 raw 텍스트를 fallback 처리한다', () => {
     const stdout = 'This is plain text response from CLI';
 
-    const result = parseGeminiCliOutput(stdout, 'gemini-2.0-flash');
+    const result = parseGeminiCliOutput(stdout, 'gemini-2.5-flash');
     expect(result.text).toBe('This is plain text response from CLI');
     expect(result.provider).toBe('gemini');
-    expect(result.model).toBe('gemini-2.0-flash');
+    expect(result.model).toBe('gemini-2.5-flash');
     expect(result.tokenCount).toBe(0);
   });
 
   it('response 키가 없는 JSON을 처리한다', () => {
     const stdout = JSON.stringify({ data: 'something', stats: {} });
 
-    const result = parseGeminiCliOutput(stdout, 'gemini-2.0-flash');
+    const result = parseGeminiCliOutput(stdout, 'gemini-2.5-flash');
     expect(result.text).toBe('');
     expect(result.provider).toBe('gemini');
     expect(result.tokenCount).toBe(0);
@@ -79,7 +79,7 @@ describe('parseGeminiCliOutput', () => {
       stats: {
         models: {
           'gemini-2.5-pro': { tokens: { total: 500 } },
-          'gemini-2.0-flash': { tokens: { total: 200 } },
+          'gemini-2.5-flash': { tokens: { total: 200 } },
         },
       },
     });
@@ -94,7 +94,7 @@ describe('parseGeminiCliOutput', () => {
     const stdout = JSON.stringify({ response: '기본 모델 응답' });
 
     const result = parseGeminiCliOutput(stdout);
-    expect(result.model).toBe('gemini-2.0-flash');
+    expect(result.model).toBe('gemini-2.5-flash');
   });
 
   it('stats.models가 빈 객체일 때 처리한다', () => {
@@ -103,9 +103,9 @@ describe('parseGeminiCliOutput', () => {
       stats: { models: {} },
     });
 
-    const result = parseGeminiCliOutput(stdout, 'gemini-2.0-flash');
+    const result = parseGeminiCliOutput(stdout, 'gemini-2.5-flash');
     expect(result.text).toBe('빈 stats');
-    expect(result.model).toBe('gemini-2.0-flash');
+    expect(result.model).toBe('gemini-2.5-flash');
     expect(result.tokenCount).toBe(0);
   });
 
@@ -119,7 +119,7 @@ describe('parseGeminiCliOutput', () => {
       },
     });
 
-    const result = parseGeminiCliOutput(stdout, 'gemini-2.0-flash');
+    const result = parseGeminiCliOutput(stdout, 'gemini-2.5-flash');
     expect(result.text).toBe('no total');
     expect(result.model).toBe('gemini-2.5-flash');
     expect(result.tokenCount).toBe(0);
@@ -225,11 +225,14 @@ describe('callGeminiCli', () => {
       signal: null,
     });
 
-    callGeminiCli('테스트 프롬프트', { model: 'gemini-2.0-flash', cliPath: '/custom/gemini' });
+    callGeminiCli('테스트 프롬프트', { model: 'gemini-2.5-flash', cliPath: '/custom/gemini' });
 
     const callArgs = vi.mocked(spawnSync).mock.calls[1];
     expect(callArgs[0]).toBe('/custom/gemini');
-    expect(callArgs[1]).toEqual(['-p', '테스트 프롬프트', '-o', 'json', '-m', 'gemini-2.0-flash']);
+    // 새 Gemini CLI 호환: prompt는 stdin으로, -p는 빈 문자열로 non-interactive 트리거만
+    expect(callArgs[1]).toEqual(['-o', 'json', '-m', 'gemini-2.5-flash']);
+    expect(callArgs[2].input).toBe('테스트 프롬프트');
+    expect(callArgs[2].stdio).toEqual(['pipe', 'pipe', 'pipe']);
   });
 
   it('CLI 미설치 시 에러를 던진다', () => {
@@ -303,7 +306,7 @@ describe('callGeminiCli', () => {
     callGeminiCli('기본값 테스트');
 
     const callArgs = vi.mocked(spawnSync).mock.calls[1];
-    expect(callArgs[1]).toContain('gemini-2.0-flash');
+    expect(callArgs[1]).toContain('gemini-2.5-flash');
     expect(callArgs[2].timeout).toBe(120000);
   });
 });
@@ -344,8 +347,9 @@ describe('callGeminiCli — 보안', () => {
     callGeminiCli(malicious);
 
     const callArgs = vi.mocked(spawnSync).mock.calls[1];
-    // args 배열로 전달 — shell 해석 안 함
-    expect(callArgs[1]).toContain(malicious);
+    // 새 호환 모드: prompt는 stdin input으로 전달 (shell이 절대 해석 안 함)
+    expect(callArgs[1]).not.toContain(malicious);
+    expect(callArgs[2].input).toBe(malicious);
     // Windows에서는 .cmd 래퍼 인식을 위해 shell: true 허용 (args 배열이므로 injection 안전)
     if (process.platform === 'win32') {
       expect(callArgs[2].shell).toBe(true);

@@ -28,7 +28,7 @@ export const _installCache = new Map();
  * @returns {{ text: string, provider: string, model: string, tokenCount: number }}
  */
 export function parseGeminiCliOutput(stdout, model) {
-  const fallbackModel = model || 'gemini-2.0-flash';
+  const fallbackModel = model || 'gemini-2.5-flash';
 
   if (!stdout || stdout.trim() === '') {
     return { text: '', provider: 'gemini', model: fallbackModel, tokenCount: 0 };
@@ -90,7 +90,7 @@ export function isGeminiCliInstalled(cliPath) {
  */
 export function callGeminiCli(prompt, options = {}) {
   const cliPath = options.cliPath || DEFAULT_CLI_PATH;
-  const model = options.model || 'gemini-2.0-flash';
+  const model = options.model || 'gemini-2.5-flash';
   const timeout = options.timeout || DEFAULT_TIMEOUT_MS;
 
   if (!isGeminiCliInstalled(cliPath)) {
@@ -99,10 +99,15 @@ export function callGeminiCli(prompt, options = {}) {
     );
   }
 
-  const args = ['-p', prompt, '-o', 'json', '-m', model];
+  // 새 버전 Gemini CLI(>=0.x)는 -p 플래그 + positional prompt 충돌하고,
+  // Windows cmd.exe(shell: true)는 빈 문자열/공백 인수를 손실시킨다.
+  // 해결: stdin이 TTY가 아니면 gemini가 자동으로 non-interactive 모드 진입하므로
+  // -p 플래그를 제거하고 prompt를 stdin으로만 전달한다 (Linux/macOS/Windows 공통).
+  const args = ['-o', 'json', '-m', model];
   const result = spawnSync(cliPath, args, {
     timeout,
-    stdio: ['ignore', 'pipe', 'pipe'],
+    stdio: ['pipe', 'pipe', 'pipe'],
+    input: prompt,
     encoding: 'utf-8',
     maxBuffer: 10 * 1024 * 1024,
     shell: IS_WINDOWS,

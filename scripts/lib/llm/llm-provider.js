@@ -36,7 +36,7 @@ const PROVIDER_ENDPOINTS = {
 const DEFAULT_MODELS = {
   claude: 'claude-sonnet-4-6',
   openai: 'gpt-4o',
-  gemini: 'gemini-2.0-flash',
+  gemini: 'gemini-2.5-flash',
 };
 
 /** 지원 프로바이더 목록 */
