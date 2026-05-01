@@ -41,14 +41,18 @@ async function ensureTeam(project) {
   return team;
 }
 
-async function callOrPlaceholder({ useLLM, callLLM }, prompt, options, placeholderText) {
+async function callOrPlaceholder({ useLLM, callLLM, provider }, prompt, options, placeholderText) {
   if (!useLLM) return placeholderText;
   const isObj = prompt && typeof prompt === 'object';
   const userText = isObj ? prompt.user : prompt;
   const systemText = isObj ? prompt.system : undefined;
-  const result = await callLLM(DEFAULT_PROVIDER, userText, {
+  const usedProvider = provider || DEFAULT_PROVIDER;
+  // member.model은 buildTeam에서 claude tier ID(opus/sonnet/haiku)로 할당됨.
+  // claude 외 provider 호출 시 모델 ID가 호환되지 않으므로 provider default 사용.
+  const passModel = usedProvider === 'claude' ? options.model : undefined;
+  const result = await callLLM(usedProvider, userText, {
     systemMessage: systemText,
-    model: options.model,
+    model: passModel,
   });
   return result.text;
 }
@@ -119,19 +123,21 @@ async function runReviews(team, synthesis, round, ctx) {
  * @param {object} [opts]
  * @param {boolean} [opts.useLLM=false] - 실제 LLM 호출 여부
  * @param {Function} [opts.callLLM] - useLLM=true일 때 필수. (provider, prompt, options) → {text, model, ...}
+ * @param {string} [opts.provider] - LLM provider ('claude' | 'openai' | 'gemini'). 미지정 시 'claude'
  * @param {number} [opts.maxRounds] - 기본 config.convergence.maxRounds
  * @returns {Promise<{finalState: 'approved'|'maxRounds', rounds: number, converged: boolean, planDocument?: string}>}
  */
 export async function runPlanOnly(project, opts = {}) {
   const useLLM = opts.useLLM === true;
   const callLLM = opts.callLLM;
+  const provider = opts.provider;
   if (useLLM && typeof callLLM !== 'function') {
     throw inputError('useLLM=true이면 callLLM 함수를 주입해야 합니다');
   }
 
   const maxRounds = opts.maxRounds || config.convergence.maxRounds || 3;
   const team = await ensureTeam(project);
-  const ctx = { useLLM, callLLM };
+  const ctx = { useLLM, callLLM, provider };
 
   let round = 0;
   let previousSynthesis = '';
