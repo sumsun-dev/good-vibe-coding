@@ -4,14 +4,15 @@ AI 팀을 만들고, 프로젝트를 함께 굴리는 플랫폼.
 
 ## 진입점 (v2)
 
-| 슬래시 커맨드  | 역할                                                          |
-| -------------- | ------------------------------------------------------------- |
-| `/gv <자연어>` | **단일 진입점.** NL 라우터가 status/resume/modify/task로 분류 |
-| `/gv:status`   | 현재 프로젝트 상태 확인                                       |
-| `/gv:resume`   | 중단된 실행 재개                                              |
-| `/gv:execute`  | 활성 프로젝트(planning)면 mode 흐름 진입, 아니면 task-graph   |
-| `/gv:cost`     | 비용/토큰 집계 + 예산 임계 설정 (opt-in)                      |
-| `/gv:team`     | 팀 구성 확인                                                  |
+| 슬래시 커맨드          | 역할                                                          |
+| ---------------------- | ------------------------------------------------------------- |
+| `/gv <자연어>`         | **단일 진입점.** NL 라우터가 status/resume/modify/task로 분류 |
+| `/gv:status`           | 현재 프로젝트 상태 확인                                       |
+| `/gv:resume`           | 중단된 실행 재개                                              |
+| `/gv:execute`          | 활성 프로젝트(planning)면 mode 흐름 진입, 아니면 task-graph   |
+| `/gv:cost`             | 비용/토큰 집계 + 예산 임계 설정 (opt-in)                      |
+| `/gv:team`             | 팀 구성 확인                                                  |
+| `/good-vibe:ai-assess` | AI 활용 역량 평가 + 30일 액션 플랜                            |
 
 흐름: `/gv` → 에이전트 디스패치 → `cli.js` → 핸들러(`scripts/handlers/*.js`) → 코어 라이브러리(`scripts/lib/*`).
 **SDK** (`src/`): 동일한 코어를 프로그래밍 API로 노출 — `import { GoodVibe } from 'good-vibe'`.
