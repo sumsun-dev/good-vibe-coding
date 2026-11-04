@@ -11,15 +11,16 @@ Claude Code 로 매일 일하면서 쓰는 작업 습관 묶음. [good-vibe](../
 
 ## 들어 있는 것
 
-| 이름                     | 종류   | 하는 일                                                                                                                                                          |
-| ------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/gv-workflow:daily-end` | 커맨드 | 저장소 정리(푸시·PR 머지·이슈 닫기·브랜치 삭제·pull, 확인 후 실행) → 오늘 한 일·다음 할 일을 `~/daily-logs/<프로젝트>/YYYY-MM-DD.md` 로 저장. `review` 는 점검만 |
-| `/gv-workflow:improve`   | 커맨드 | 대화 회고 → 메모리·규칙·CLAUDE.md·커맨드·훅 개선안 제안, 승인한 것만 적용. `week`(최근 7일 일지), `explore`(외부 도구 탐색)                                      |
-| `/gv-workflow:qa-design` | 커맨드 | 디자인 토큰·컴포넌트·반응형·접근성 4개 관점 병렬 감사                                                                                                            |
-| `/gv-workflow:qa-data`   | 커맨드 | 스키마·평가 로직·커버리지·정합성 4개 관점 병렬 감사                                                                                                              |
-| `/gv-workflow:qa-full`   | 커맨드 | 위 두 감사 8개를 한 번에, 통합 리포트                                                                                                                            |
-| `hangul-wrap`            | 스킬   | 한글 어절 쪼개짐·고아 줄·가로 넘침을 브라우저 6개 폭에서 실측 → 자리별 CSS 처방 → 재측정                                                                         |
-| `working-style`          | 스킬   | 사용자에게 일을 넘길 때의 규칙 (검증은 끝까지, 비밀값은 터미널 앱, 막히는 단계는 `!` 한 줄)                                                                      |
+| 이름                     | 종류   | 하는 일                                                                                                                                                                              |
+| ------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `/gv-workflow:daily-end` | 커맨드 | 저장소 정리(푸시·PR 머지·이슈 닫기·브랜치 삭제·pull, 확인 후 실행) → 오늘 한 일·다음 할 일을 `~/daily-logs/<프로젝트>/YYYY-MM-DD.md` 로 저장. `review` 는 점검만                     |
+| `/gv-workflow:improve`   | 커맨드 | 대화 회고 → 메모리·규칙·CLAUDE.md·커맨드·훅 개선안 제안, 승인한 것만 적용. `week`(최근 7일 일지), `explore`(외부 도구 탐색)                                                          |
+| `/gv-workflow:qa-design` | 커맨드 | 디자인 토큰·컴포넌트·반응형·접근성 4개 관점 병렬 감사                                                                                                                                |
+| `/gv-workflow:qa-data`   | 커맨드 | 스키마·평가 로직·커버리지·정합성 4개 관점 병렬 감사                                                                                                                                  |
+| `/gv-workflow:qa-full`   | 커맨드 | 위 두 감사 8개를 한 번에, 통합 리포트                                                                                                                                                |
+| `hangul-wrap`            | 스킬   | 한글 어절 쪼개짐·고아 줄·가로 넘침을 브라우저 6개 폭에서 실측 → 자리별 CSS 처방 → 재측정                                                                                             |
+| `kr-service-style`       | 스킬   | 토스·당근의 공개 원칙·문구 규칙·화면 패턴을 기존 화면에 적용하고 검사기로 전·후 실측. 색·로고·전용 서체는 가져오지 않음. 네이버·카카오·배민은 공개 서체·로그인 버튼 가이드·상표 경계 |
+| `working-style`          | 스킬   | 사용자에게 일을 넘길 때의 규칙 (검증은 끝까지, 비밀값은 터미널 앱, 막히는 단계는 `!` 한 줄)                                                                                          |
 
 ## 추천 루틴
 
@@ -44,6 +45,8 @@ Claude Code 로 매일 일하면서 쓰는 작업 습관 묶음. [good-vibe](../
 - [superpowers](https://github.com/obra/superpowers) — 서브에이전트 오케스트레이션·검증 패턴
 - [ponytail](https://github.com/DietrichGebert/ponytail) — 과설계를 막는 최소 구현 모드
 - [giting hangul-wrap](https://github.com/hanmariyang/giting-skills/tree/main/plugins/hangul-wrap) — 더 정밀한 한글 줄바꿈 실측(글리프 위치 재구성, 확대 상태 버튼 잘림). 위 `hangul-wrap` 스킬의 상위 호환 (`/plugin marketplace add hanmariyang/giting-skills` → `/plugin install hangul-wrap@giting`)
+- [oh-my-design](https://github.com/kwakseongjae/oh-my-design) — 회사별 DESIGN.md 아카이브와 적용 스킬 (값은 웹 실측)
+- [k-style-ui-ux](https://github.com/vmc-inner-circle/k-style-ui-ux) — PRD 로 한국 앱 스타일 모바일 화면을 처음부터 생성
 
 ## 라이선스
 
