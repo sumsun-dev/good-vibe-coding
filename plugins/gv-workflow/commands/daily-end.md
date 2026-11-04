@@ -32,6 +32,22 @@ description: '하루 마무리 — 저장소 정리(PR·이슈·브랜치·동�
   gh pr list --state all --search "updated:>=$(date +%F)" --json number,title,state,url
   gh issue list --state open --json number,title,labels,updatedAt
   ```
+- 저장소에 Claude Code 플러그인(`.claude-plugin/plugin.json`)이 있으면, 플러그인마다 마지막으로 버전을 바꾼 뒤 플러그인 파일이 바뀌었는지 본다. 설치본은 버전이 올라야 갱신된다
+  ```bash
+  PLUGINS=$(git ls-files '*.claude-plugin/plugin.json' | xargs -n1 dirname | xargs -n1 dirname)
+  for D in $PLUGINS; do
+    P="$D/.claude-plugin/plugin.json"
+    V=$(git log -1 --format=%H -G'"version"' -- "$P")
+    V=${V:-$(git hash-object -t tree /dev/null)}   # 버전을 바꾼 적 없으면 처음부터
+    EX=""   # 안쪽에 든 다른 플러그인 폴더는 빼고 본다
+    for O in $PLUGINS; do
+      [ "$O" = "$D" ] && continue
+      case "$O" in "$D"/*) EX="$EX :(exclude)$O" ;; esac
+      [ "$D" = . ] && EX="$EX :(exclude)$O"
+    done
+    echo "== $D"; git diff --name-only "$V"..HEAD -- "$D" $EX; git status --short --untracked-files=no -- "$D" $EX
+  done
+  ```
 - `gh` 가 없거나 인증이 안 돼 있으면 PR·이슈 단계는 건너뛰고 일지에 "gh 없음 — PR·이슈 미확인" 이라 적는다. 멈추지 않는다
 - 확인 안 된 것은 "한 것" 에 넣지 않는다. 진행 중·결과 대기 중이면 그렇게 적는다
 
@@ -41,11 +57,12 @@ description: '하루 마무리 — 저장소 정리(PR·이슈·브랜치·동�
 
 **동기화**
 
-| 조건            | 판정                                             |
-| --------------- | ------------------------------------------------ |
-| 푸시 안 한 커밋 | **푸시 권장** — 브랜치·커밋 수 명시              |
-| 원격보다 behind | **pull 필요** (미커밋 변경이 있으면 먼저 알림)   |
-| 미커밋 파일     | **알림만** — 오늘 작업 것인지 무관한 것인지 구분 |
+| 조건                                   | 판정                                                                                                                       |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| 푸시 안 한 커밋                        | **푸시 권장** — 브랜치·커밋 수 명시                                                                                        |
+| 원격보다 behind                        | **pull 필요** (미커밋 변경이 있으면 먼저 알림)                                                                             |
+| 미커밋 파일                            | **알림만** — 오늘 작업 것인지 무관한 것인지 구분                                                                           |
+| 플러그인 파일이 바뀌었는데 버전 그대로 | **버전 올림 권장** — 바뀐 파일 목록. 커맨드·스킬 추가는 minor, 수정은 patch. `marketplace.json`·`.claude/` 만 바뀐 건 무시 |
 
 **PR**
 
@@ -79,11 +96,12 @@ description: '하루 마무리 — 저장소 정리(PR·이슈·브랜치·동�
 
 실행 계획을 한 번에 보여주고 확인을 받은 뒤 진행한다. 사용자가 고른 것만 한다.
 
-1. **푸시** — 푸시 안 한 커밋 (새 브랜치면 `-u`)
-2. **PR 머지** — 머지 가능 판정만 `--squash --delete-branch`
-3. **이슈 닫기** — 해결 근거(PR·커밋)를 코멘트로 남기고 닫기
-4. **브랜치 삭제** — 삭제 가능 판정만, 원격 + 로컬
-5. **동기화** — 기본 브랜치로 `git pull`, `git remote prune origin`. 미커밋 변경이 있으면 checkout 하지 않고 알린다
+1. **플러그인 버전** — `plugin.json` 과 `marketplace.json` 의 같은 항목을 함께 올려 커밋
+2. **푸시** — 푸시 안 한 커밋 (새 브랜치면 `-u`)
+3. **PR 머지** — 머지 가능 판정만 `--squash --delete-branch`
+4. **이슈 닫기** — 해결 근거(PR·커밋)를 코멘트로 남기고 닫기
+5. **브랜치 삭제** — 삭제 가능 판정만, 원격 + 로컬
+6. **동기화** — 기본 브랜치로 `git pull`, `git remote prune origin`. 미커밋 변경이 있으면 checkout 하지 않고 알린다
 
 머지·푸시·삭제가 권한 정책에 막히면 다른 방법으로 우회하지 않는다. 남은 명령을 `! cd <저장소> && ...` 한 줄로 묶어 사용자에게 넘기고, 일지 "다음에 할 일" 에도 적는다.
 
