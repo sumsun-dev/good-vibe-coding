@@ -1,9 +1,10 @@
 /* global document, window, getComputedStyle, NodeFilter */
 // kr-service-style 검사기 — 페이지 안에서 실행 (DevTools 콘솔, Playwright page.evaluate, 브라우저 자동화 도구의 JS 실행).
 // 프로필: 실행 전에 window.KR_STYLE_PROFILE = 'toss' | 'karrot' 로 정한다. 없으면 'common'(공통 규칙만).
-// 결과: 문구 규칙 위반, 첫 화면 주 버튼 개수, 탭 개수, 최소 글자 크기, 남의 브랜드 색 사용.
+// 범위: window.KR_STYLE_SCOPE = ['ux', 'ui', 'writing'] 중 고른 것. 없으면 셋 다.
+// 결과: writing(문구 규칙) · ux(첫 화면 주 버튼 개수, 탭 개수) · ui(최소 글자 크기, 남의 브랜드 색).
 // ponytail: 문구는 정규식 근사. "취소"가 정말 작업 취소인지 같은 맥락은 사람이 판단한다 — 결과는 후보 목록이다.
-((profile) => {
+((profile, scope) => {
   const HANGUL = /[가-힣]/;
   const SKIP = 'script,style,code,pre,kbd,samp,textarea,[aria-hidden="true"]';
   const on = (ps) => ps.includes(profile) || ps.includes('common');
@@ -167,13 +168,20 @@
     }
   }
 
+  const UX = ['주 버튼 여러 개', '탭 개수'];
+  const UI = ['11px 미만 글자', '남의 브랜드 색'];
+  const scopeOf = (rule) => (UX.includes(rule) ? 'ux' : UI.includes(rule) ? 'ui' : 'writing');
+  const kept = issues
+    .map((i) => ({ scope: scopeOf(i.rule), ...i }))
+    .filter((i) => scope.includes(i.scope));
   const count = {};
-  for (const i of issues) count[i.rule] = (count[i.rule] || 0) + 1;
+  for (const i of kept) count[`${i.scope}:${i.rule}`] = (count[`${i.scope}:${i.rule}`] || 0) + 1;
   return {
     profile,
+    scope,
     width: window.innerWidth,
-    total: issues.length,
+    total: kept.length,
     count,
-    issues: issues.slice(0, 40),
+    issues: kept.slice(0, 40),
   };
-})(window.KR_STYLE_PROFILE || 'common');
+})(window.KR_STYLE_PROFILE || 'common', window.KR_STYLE_SCOPE || ['ux', 'ui', 'writing']);
