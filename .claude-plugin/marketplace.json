@@ -22,7 +22,7 @@
       "name": "gv-workflow",
       "source": "./plugins/gv-workflow",
       "description": "저장소 정리, 하루 작업 일지, 회고 기반 환경 개선, 디자인·데이터 QA 감사 — 매일 쓰는 작업 습관 묶음",
-      "version": "0.2.2",
+      "version": "0.3.0",
       "category": "productivity"
     }
   ]
