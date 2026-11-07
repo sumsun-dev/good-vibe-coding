@@ -243,6 +243,8 @@ beginner-guide, korean-workflow, onboarding-wizard, project-setup, multi-review 
 - 파일명: kebab-case
 - 커밋: conventional commits (`feat|fix|refactor|docs|test|chore(scope): subject`)
 - **CLI 우선**: 외부 도구 연동 시 MCP 도구 대신 CLI 직접 사용 (MCP는 샌드박스에서 키체인/인증 제한 가능)
+- **플러그인 버전**: `plugins/*` 를 고친 커밋은 `plugins/<이름>/.claude-plugin/plugin.json` 과 `.claude-plugin/marketplace.json` 의 같은 항목 버전을 함께 올린다 (추가 minor, 수정 patch). 버전이 같으면 설치한 쪽 캐시가 갱신되지 않는다
+- **커밋 전 lint**: `npx prettier --write <파일> && npx eslint --fix <파일>` 을 먼저 돌린다. lint-staged 가 실패하면 되돌리는 중에 `.claude/settings.local.json` EPERM 으로 새 파일이 지워질 수 있다 → `git checkout -- <경로>` 로 인덱스에서 되살린다. 브라우저에서 도는 JS 에는 `/* global document, window */` 줄을 넣는다
 
 ## 사용 가능한 CLI 도구
 
