@@ -52,7 +52,7 @@
     '[role="switch"], input[switch], .toggle, .switch, [class*="toggle-switch"], [class*="switch-toggle"]';
   const SAVE = /^(저장|적용|확인|변경|save|apply)/i;
   for (const sw of all(SWITCH)) {
-    const box = sw.closest('form, section, fieldset, [role="dialog"], dialog') || sw.parentElement;
+    const box = sw.closest('form, fieldset, [role="dialog"], dialog') || sw.parentElement;
     const save = [...box.querySelectorAll('button, input[type="submit"]')].find(
       (b) =>
         b !== sw && visible(b) && (b.type === 'submit' || SAVE.test(clean(b.innerText || b.value))),
